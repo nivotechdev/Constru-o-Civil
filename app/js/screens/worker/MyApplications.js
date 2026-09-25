@@ -8,6 +8,9 @@ import { statusInfo, IN_PROGRESS, CLOSED } from '../../utils/applicationStatus.j
 import * as store from '../../store.js';
 
 export default function renderMyApplications(navigate) {
+  store.ensureMyApplicationsLoaded();
+  store.ensureJobsLoaded();
+  store.ensureSavedJobsLoaded();
   const worker = store.currentWorker();
   const apps = store.applicationsForWorker(worker.id);
   const inProgress = apps.filter((a) => IN_PROGRESS.has(a.status));

@@ -24,6 +24,7 @@ function km(distance) { return parseFloat(String(distance || '0').replace(',', '
 function payNum(job) { return job.pay == null ? -1 : job.pay; }
 
 export default function renderFeed(navigate) {
+  store.ensureJobsLoaded();
   const role = store.getRole();
   const ui = store.getUI(KEY, { search: '', location: 'Tatuapé, SP', locationOpen: false, filtersOpen: false, tipo: null, dist: 'Toda a cidade', quando: null, sort: 'perto', notifyUrgent: true });
 

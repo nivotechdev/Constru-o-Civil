@@ -8,6 +8,8 @@ import { goBack } from '../../router.js';
 import * as store from '../../store.js';
 
 export default function renderSavedJobs(navigate) {
+  store.ensureJobsLoaded();
+  store.ensureSavedJobsLoaded();
   const jobs = store.savedJobs();
 
   return h('div', { class: 'flex flex-col' },

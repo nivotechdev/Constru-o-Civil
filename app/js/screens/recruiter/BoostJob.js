@@ -3,7 +3,8 @@ import { BackBar } from '../../components/TopBar.js';
 import { Card } from '../../components/Card.js';
 import { Button } from '../../components/Button.js';
 import { Icon } from '../../utils/icons.js';
-import { getUI, setUI, getJob } from '../../store.js';
+import { getUI, setUI, getJob, updateJob } from '../../store.js';
+import { traduzirErroSupabase } from '../../utils/erros.js';
 import { goBack } from '../../router.js';
 
 const KEY = 'boost-job';
@@ -16,8 +17,18 @@ const PLANS = [
 export default function renderBoostJob(navigate, params) {
   const job = getJob(params.id);
   if (!job) return h('div', { class: 'p-6 text-concrete-500' }, 'Vaga não encontrada.');
-  const ui = getUI(KEY, { plan: '24h' });
+  const ui = getUI(KEY, { plan: '24h', boosting: false, error: null });
   const chosen = PLANS.find((p) => p.id === ui.plan);
+
+  async function boost() {
+    setUI(KEY, { boosting: true, error: null });
+    try {
+      await updateJob(job.id, { boosted: true, urgent: true });
+      navigate('/vaga-gerenciar/' + job.id);
+    } catch (error) {
+      setUI(KEY, { boosting: false, error: traduzirErroSupabase(error) });
+    }
+  }
 
   return h('div', { class: 'flex flex-col' },
     BackBar({ title: 'Impulsionar vaga', onBack: () => goBack('/vaga-gerenciar/' + job.id) }),
@@ -50,10 +61,11 @@ export default function renderBoostJob(navigate, params) {
           );
         }))
       ),
-      h('span', { class: 'text-sm text-concrete-500' }, 'Cobrança única no cartão cadastrado. Sem renovação automática. O trabalhador nunca paga nada.')
+      h('span', { class: 'text-sm text-concrete-500' }, 'Cobrança única no cartão cadastrado. Sem renovação automática. O trabalhador nunca paga nada.'),
+      ui.error ? h('span', { class: 'text-sm text-danger-500' }, ui.error) : null
     ),
     h('div', { class: 'px-4 sm:px-0 py-3 flex flex-col gap-2 lg:max-w-app' },
-      Button({ label: `Impulsionar por ${chosen.price}`, size: 'lg', fullWidth: true, onClick: () => { job.boosted = true; job.urgent = true; navigate('/vaga-gerenciar/' + job.id); } }),
+      Button({ label: `Impulsionar por ${chosen.price}`, size: 'lg', fullWidth: true, loading: ui.boosting, onClick: boost }),
       Button({ label: 'Agora não', variant: 'ghost', fullWidth: true, onClick: () => navigate('/vaga-gerenciar/' + job.id) })
     )
   );

@@ -10,13 +10,16 @@ import { Dialog } from '../../components/Modal.js';
 import { Icon } from '../../utils/icons.js';
 import { formatBRL } from '../../utils/format.js';
 import { goBack } from '../../router.js';
+import { traduzirErroSupabase } from '../../utils/erros.js';
 import * as store from '../../store.js';
 
 const KEY = 'job-manage';
 
 export default function renderJobManage(navigate, params) {
+  store.ensureJobsLoaded();
   const job = store.getJob(params.id);
   if (!job) return h('div', { class: 'p-6 text-concrete-500' }, 'Vaga não encontrada.');
+  store.ensureApplicationsForJobLoaded(job.id);
 
   if (job.companyId !== store.currentCompanyId()) {
     return h('div', { class: 'flex flex-col' },
@@ -28,7 +31,18 @@ export default function renderJobManage(navigate, params) {
     );
   }
 
-  const ui = store.getUI(KEY, { confirmClose: false });
+  const ui = store.getUI(KEY, { confirmClose: false, deciding: false, error: null, photoUploading: false });
+
+  async function trocarFoto(objectUrl, file) {
+    store.setUI(KEY, { photoUploading: true, error: null });
+    try {
+      const url = await store.uploadImage(file, 'vaga-' + job.id);
+      await store.updateJob(job.id, { photo: url });
+      store.setUI(KEY, { photoUploading: false });
+    } catch (error) {
+      store.setUI(KEY, { photoUploading: false, error: traduzirErroSupabase(error) });
+    }
+  }
 
   const applications = store.applicationsForJob(job.id);
   const slots = job.slots || 1;
@@ -43,7 +57,7 @@ export default function renderJobManage(navigate, params) {
       h('div', { class: 'flex flex-col gap-4' },
         h('div', { class: 'flex flex-col gap-1.5' },
           h('span', { class: 'text-xs font-bold tracking-[0.08em] uppercase text-concrete-500' }, 'Foto da vaga'),
-          PhotoSlot({ shape: 'rect', height: '9rem', placeholder: 'Toque para escolher uma foto do canteiro', value: job.photo, onChange: (v) => store.updateJob(job.id, { photo: v }) })
+          PhotoSlot({ shape: 'rect', height: '9rem', placeholder: 'Toque para escolher uma foto do canteiro', value: job.photo, onChange: trocarFoto })
         ),
         h('div', { class: 'flex flex-col gap-1.5' },
           h('div', { class: 'flex items-center gap-2' }, Badge(status), h('span', { class: 'font-mono text-xs text-concrete-500' }, job.id)),
@@ -88,15 +102,26 @@ export default function renderJobManage(navigate, params) {
             h('div', { class: 'text-xs font-bold tracking-[0.08em] uppercase text-concrete-500' }, applications.length === 1 ? '1 candidato' : `${applications.length} candidatos`),
             pending ? h('span', { class: 'text-xs text-brand-600' }, `${pending} ${pending === 1 ? 'novo' : 'novos'}`) : null
           ),
+          ui.error ? h('span', { class: 'text-sm text-danger-500' }, ui.error) : null,
           applications.length
             ? h('div', { class: 'bg-white border border-concrete-200 rounded-card shadow-card overflow-hidden' }, ...applications.map((a) => {
                 const worker = store.getWorker(a.workerId);
                 const decision = a.status === 'pre_selecionado' || a.status === 'contratado' ? 'aprovado' : a.status === 'nao_selecionado' ? 'recusado' : null;
+                async function decidir(d) {
+                  store.setUI(KEY, { deciding: true, error: null });
+                  try {
+                    await store.decideApplication(job.id, worker.id, d);
+                    store.setUI(KEY, { deciding: false });
+                    if (d === 'aprovado' && store.isJobClosed(store.getJob(job.id))) navigate('/fechado/' + job.id);
+                  } catch (error) {
+                    store.setUI(KEY, { deciding: false, error: traduzirErroSupabase(error) });
+                  }
+                }
                 return CandidateRow({
                   worker, summary: worker.role + ' · ' + worker.region, distance: worker.distance, isNew: worker.novo, decision,
                   onClick: () => navigate(`/trabalhador/${worker.id}/${job.id}`),
-                  onApprove: !decision && !closed ? (e) => { e.stopPropagation(); store.decideApplication(job.id, worker.id, 'aprovado'); if (store.isJobClosed(job)) navigate('/fechado/' + job.id); } : null,
-                  onReject: !decision && !closed ? (e) => { e.stopPropagation(); store.decideApplication(job.id, worker.id, 'recusado'); } : null
+                  onApprove: !decision && !closed && !ui.deciding ? (e) => { e.stopPropagation(); decidir('aprovado'); } : null,
+                  onReject: !decision && !closed && !ui.deciding ? (e) => { e.stopPropagation(); decidir('recusado'); } : null
                 });
               }))
             : EmptyState({ icon: 'users', title: 'Nenhum candidato ainda', description: 'Vagas com valor acima da média da região costumam receber candidato no mesmo dia. Você também pode impulsionar.', actionLabel: 'Impulsionar vaga', onAction: () => navigate('/impulsionar/' + job.id) })
@@ -111,7 +136,11 @@ export default function renderJobManage(navigate, params) {
     Dialog({
       open: ui.confirmClose, tone: 'danger', title: 'Encerrar essa vaga?',
       description: 'A vaga sai do mural imediatamente e para de receber candidaturas. Isso não pode ser desfeito.',
-      confirmLabel: 'Encerrar vaga', onConfirm: () => { store.closeJob(job.id); store.setUI(KEY, { confirmClose: false }); navigate('/mural'); },
+      confirmLabel: 'Encerrar vaga', onConfirm: async () => {
+        store.setUI(KEY, { confirmClose: false });
+        try { await store.closeJob(job.id); navigate('/mural'); }
+        catch (error) { store.setUI(KEY, { error: traduzirErroSupabase(error) }); }
+      },
       cancelLabel: 'Cancelar', onCancel: () => store.setUI(KEY, { confirmClose: false })
     })
   );

@@ -1,14 +1,19 @@
 import { h, cx } from '../dom.js';
 import { Icon } from '../utils/icons.js';
 
-/** Tap-to-choose photo well (cover banner, avatar, job-site photo). No backend — stores a local object URL. */
+/**
+ * Tap-to-choose photo well (cover banner, avatar, job-site photo). Shows an
+ * instant local preview via object URL, but also hands the raw `File` to
+ * `onChange` as a second argument — callers that persist the image (upload
+ * to Storage) need the file; the object URL alone only lives in this tab.
+ */
 export function PhotoSlot({ shape = 'rect', value, onChange, placeholder = 'Toque para escolher uma foto', className = '', height = '9rem' }) {
   const isCircle = shape === 'circle';
   const input = h('input', {
     type: 'file', accept: 'image/*', class: 'sr-only',
     onchange: (e) => {
       const file = e.target.files && e.target.files[0];
-      if (file && onChange) onChange(URL.createObjectURL(file));
+      if (file && onChange) onChange(URL.createObjectURL(file), file);
     }
   });
   return h('label', {

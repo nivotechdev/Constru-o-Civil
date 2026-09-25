@@ -9,6 +9,8 @@ import * as store from '../../store.js';
 
 export default function renderReviews(navigate, params) {
   const type = params.type === 'construtora' ? 'construtora' : 'trabalhador';
+  store.ensureProfileLoaded(params.id);
+  store.ensureReviewsLoaded(params.id);
   const subject = type === 'trabalhador' ? store.getWorker(params.id) : store.getCompany(params.id);
   if (!subject) return notFound(navigate);
 

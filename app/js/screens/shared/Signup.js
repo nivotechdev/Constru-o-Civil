@@ -3,9 +3,10 @@ import { Button } from '../../components/Button.js';
 import { Input, PasswordInput } from '../../components/Input.js';
 import { Checkbox } from '../../components/Checkbox.js';
 import { IconButton } from '../../components/IconButton.js';
-import { getUI, setUI, resetUI } from '../../store.js';
+import { getUI, setUI, resetUI, signUp } from '../../store.js';
 import { maskCPF, maskCNPJ, isValidEmail, passwordStrength, STRENGTH_LABEL } from '../../utils/format.js';
 import { goBack as routerGoBack } from '../../router.js';
+import { traduzirErroSupabase, emailDuplicado, documentoDuplicado } from '../../utils/erros.js';
 
 const COMUM_EMAIL = { id: 'email', label: 'E-mail', question: 'Qual é o seu e-mail?', placeholder: 'voce@email.com', icon: 'mail', type: 'email' };
 const COMUM_SENHA = { id: 'senha', label: 'Senha', question: 'Crie uma senha', help: 'Use 8 caracteres ou mais, misturando letras e números.', placeholder: 'Sua senha', isPassword: true };
@@ -30,9 +31,6 @@ const PERFIS = {
     ]
   }
 };
-
-// Demo-only sentinel that reproduces the "documento já cadastrado" form-level error state.
-const TAKEN_DOC = ['111.111.111-11', '11.111.111/1111-11'];
 
 function validateField(field, values, role) {
   const v = String(values[field.id] || '').trim();
@@ -61,13 +59,13 @@ export default function renderSignup(navigate, params) {
   const role = params.role === 'recrutador' ? 'recrutador' : 'trabalhador';
   const key = 'cadastro-' + role;
   const cfg = PERFIS[role];
-  const ui = getUI(key, () => ({ step: 0, values: {}, errors: {}, generalError: false, submitting: false, passwordVisible: false, confirmPassword: '', confirmError: null, accepted: false, acceptError: false }));
+  const ui = getUI(key, () => ({ step: 0, values: {}, errors: {}, generalError: false, serverError: null, submitting: false, passwordVisible: false, confirmPassword: '', confirmError: null, accepted: false, acceptError: false }));
   const step = Math.max(0, Math.min(ui.step, cfg.fields.length - 1));
   const field = cfg.fields[step];
   const isLast = step === cfg.fields.length - 1;
 
   function goBack() {
-    if (step > 0) setUI(key, { step: step - 1, generalError: false });
+    if (step > 0) setUI(key, { step: step - 1, generalError: false, serverError: null });
     else routerGoBack('/escolha-perfil');
   }
 
@@ -75,27 +73,48 @@ export default function renderSignup(navigate, params) {
     let value = v;
     if (field.mask === 'cpf') value = maskCPF(v);
     if (field.mask === 'cnpj') value = maskCNPJ(v);
-    setUI(key, (s) => ({ values: Object.assign({}, s.values, { [field.id]: value }), errors: Object.assign({}, s.errors, { [field.id]: null }), generalError: false }));
+    setUI(key, (s) => ({ values: Object.assign({}, s.values, { [field.id]: value }), errors: Object.assign({}, s.errors, { [field.id]: null }), generalError: false, serverError: null }));
   }
 
-  function continueStep() {
+  async function continueStep() {
     const err = validateField(field, ui.values, role);
     if (err) { setUI(key, (s) => ({ errors: Object.assign({}, s.errors, { [field.id]: err }) })); return; }
     if (!isLast) { setUI(key, { step: step + 1 }); return; }
     if (ui.confirmPassword !== ui.values.senha) { setUI(key, { confirmError: 'As senhas não são iguais. Confira os dois campos.' }); return; }
     if (!ui.accepted) { setUI(key, { acceptError: true }); return; }
-    setUI(key, { submitting: true, acceptError: false });
-    setTimeout(() => {
-      if (TAKEN_DOC.indexOf(ui.values.doc) >= 0) {
-        const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
-        setUI(key, { submitting: false, step: docStep, generalError: true });
+    setUI(key, { submitting: true, acceptError: false, generalError: false, serverError: null });
+
+    try {
+      const data = await signUp({
+        email: ui.values.email.trim().toLowerCase(),
+        senha: ui.values.senha,
+        nome: ui.values.nome || ui.values.razao,
+        tipoPerfil: role === 'recrutador' ? 'construtora' : 'pedreiro',
+        documento: ui.values.doc
+      });
+      setUI(key, { submitting: false });
+      resetUI(key);
+      if (data.session) {
+        // "Confirmar e-mail" está desligado neste projeto — a conta já nasce
+        // com sessão ativa, então pula direto para completar o perfil.
+        navigate('/completar-perfil/' + role);
+      } else {
+        setUI('authFlow', { role, email: ui.values.email });
+        navigate('/verificar-email');
+      }
+    } catch (error) {
+      if (emailDuplicado(error)) {
+        const emailStep = cfg.fields.findIndex((f) => f.id === 'email');
+        setUI(key, { submitting: false, step: emailStep, generalError: 'email' });
         return;
       }
-      setUI(key, { submitting: false });
-      setUI('authFlow', { role, email: ui.values.email || 'voce@email.com' });
-      resetUI(key);
-      navigate('/verificar-email');
-    }, 700);
+      if (documentoDuplicado(error)) {
+        const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
+        setUI(key, { submitting: false, step: docStep, generalError: 'doc' });
+        return;
+      }
+      setUI(key, { submitting: false, serverError: traduzirErroSupabase(error) });
+    }
   }
 
   const strength = passwordStrength(ui.values.senha);
@@ -116,7 +135,8 @@ export default function renderSignup(navigate, params) {
     h('div', { class: 'flex gap-2.5 items-start' },
       h('span', { class: 'shrink-0 mt-0.5' }),
       h('div', { class: 'flex flex-col gap-1' },
-        h('span', { class: 'font-semibold text-danger-500' }, role === 'recrutador' ? 'Esse CNPJ já tem conta na Bicos.' : 'Esse CPF já tem conta na Bicos.'),
+        h('span', { class: 'font-semibold text-danger-500' },
+          ui.generalError === 'email' ? 'Esse e-mail já tem conta na Bicos.' : (role === 'recrutador' ? 'Esse CNPJ já tem conta na Bicos.' : 'Esse CPF já tem conta na Bicos.')),
         h('span', { class: 'text-sm text-concrete-700' }, 'Entre com o e-mail cadastrado ou recupere a senha. Se não foi você, fale com a gente pelo WhatsApp.')
       )
     ),
@@ -124,6 +144,10 @@ export default function renderSignup(navigate, params) {
       Button({ label: 'Entrar na conta', variant: 'secondary', size: 'sm', className: 'flex-1', onClick: () => navigate('/login') }),
       Button({ label: 'Recuperar senha', variant: 'ghost', size: 'sm', className: 'flex-1', onClick: () => navigate('/esqueci-senha') })
     )
+  ) : null;
+
+  const serverErrorBox = ui.serverError ? h('div', { class: 'flex gap-2.5 items-start p-3.5 bg-danger-50 border border-danger-500 rounded-card' },
+    h('span', { class: 'text-sm text-danger-500' }, ui.serverError)
   ) : null;
 
   const questionBlock = h('div', { class: 'flex flex-col gap-2.5' },
@@ -174,7 +198,7 @@ export default function renderSignup(navigate, params) {
   return h('div', { class: 'min-h-screen flex flex-col bg-white lg:max-w-app lg:mx-auto lg:shadow-card lg:my-10 lg:rounded-card lg:overflow-hidden' },
     header,
     h('div', { class: 'flex-1 px-5 sm:px-8 py-8 flex flex-col gap-7 bg-concrete-50' },
-      generalErrorBox, questionBlock, fieldBlock
+      generalErrorBox, serverErrorBox, questionBlock, fieldBlock
     ),
     h('div', { class: 'px-5 sm:px-8 py-3 bg-white shadow-bar' },
       Button({ label: isLast ? 'Criar minha conta' : 'Continuar', size: 'lg', fullWidth: true, loading: ui.submitting, onClick: continueStep })

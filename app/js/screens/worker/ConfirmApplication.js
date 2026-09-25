@@ -3,17 +3,19 @@ import { BackBar } from '../../components/TopBar.js';
 import { Card } from '../../components/Card.js';
 import { Button } from '../../components/Button.js';
 import { formatBRL } from '../../utils/format.js';
-import { getUI, setUI, getJob, getCompany, currentWorker, applyToJob } from '../../store.js';
+import { getUI, setUI, getJob, getCompany, currentWorker, applyToJob, ensureJobsLoaded } from '../../store.js';
+import { traduzirErroSupabase } from '../../utils/erros.js';
 import { goBack } from '../../router.js';
 
 const KEY = 'confirm-application';
 
 export default function renderConfirmApplication(navigate, params) {
+  ensureJobsLoaded();
   const job = getJob(params.id);
   if (!job) return h('div', { class: 'p-6 text-concrete-500' }, 'Vaga não encontrada.');
   const company = getCompany(job.companyId);
   const worker = currentWorker();
-  const ui = getUI(KEY, { submitting: false });
+  const ui = getUI(KEY, { submitting: false, error: null });
 
   return h('div', { class: 'flex flex-col' },
     BackBar({ title: 'Confirmar candidatura', onBack: () => goBack('/vaga/' + job.id) }),
@@ -35,14 +37,21 @@ export default function renderConfirmApplication(navigate, params) {
           )
         )
       ),
-      h('span', { class: 'text-sm text-concrete-500' }, 'A construtora vai ver seu perfil, suas especialidades e suas avaliações. O contato por WhatsApp só abre se ela te escolher.')
+      h('span', { class: 'text-sm text-concrete-500' }, 'A construtora vai ver seu perfil, suas especialidades e suas avaliações. O contato por WhatsApp só abre se ela te escolher.'),
+      ui.error ? h('span', { class: 'text-sm text-danger-500' }, ui.error) : null
     ),
     h('div', { class: 'px-4 sm:px-0 py-3 flex flex-col gap-2 lg:max-w-app' },
       Button({
         label: 'Sim, quero esse bico', size: 'lg', fullWidth: true, loading: ui.submitting,
-        onClick: () => {
-          setUI(KEY, { submitting: true });
-          setTimeout(() => { setUI(KEY, { submitting: false }); applyToJob(job.id, worker.id); navigate('/enviado/' + job.id); }, 600);
+        onClick: async () => {
+          setUI(KEY, { submitting: true, error: null });
+          try {
+            await applyToJob(job.id, worker.id);
+            setUI(KEY, { submitting: false });
+            navigate('/enviado/' + job.id);
+          } catch (error) {
+            setUI(KEY, { submitting: false, error: traduzirErroSupabase(error) });
+          }
         }
       }),
       Button({ label: 'Voltar para a vaga', variant: 'ghost', fullWidth: true, onClick: () => navigate('/vaga/' + job.id) })

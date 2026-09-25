@@ -4,6 +4,7 @@ import { Card } from '../../components/Card.js';
 import { Badge } from '../../components/Badge.js';
 import { Rating } from '../../components/Rating.js';
 import { Button } from '../../components/Button.js';
+import { IconButton } from '../../components/IconButton.js';
 import { Dialog } from '../../components/Modal.js';
 import { Icon } from '../../utils/icons.js';
 import { formatBRL } from '../../utils/format.js';
@@ -13,11 +14,15 @@ import * as store from '../../store.js';
 const KEY = 'job-detail';
 
 export default function renderJobDetail(navigate, params) {
+  store.ensureJobsLoaded();
+  store.ensureMyApplicationsLoaded();
   const job = store.getJob(params.id);
   if (!job) return notFound(navigate);
   const company = store.getCompany(job.companyId);
   const role = store.getRole();
   const worker = store.currentWorker();
+  if (role === 'trabalhador') store.ensureSavedJobsLoaded();
+  const saved = role === 'trabalhador' && store.isJobSaved(job.id);
   const application = role === 'trabalhador' ? store.applicationFor(job.id, worker.id) : null;
   const canCancel = application && (application.status === 'enviada' || application.status === 'em_analise');
   const ui = store.getUI(KEY, { confirmCancel: false });
@@ -43,8 +48,16 @@ export default function renderJobDetail(navigate, params) {
         ),
 
         h('div', { class: 'flex flex-col gap-1.5' },
-          job.urgent ? h('div', { class: 'flex items-center gap-2' }, Badge({ label: 'Urgente', tone: 'danger', icon: 'zap' }), h('span', { class: 'text-xs text-brand-600' }, 'Vaga em destaque')) : null,
-          h('h1', { class: 'font-display font-bold text-2xl text-concrete-900' }, job.role),
+          h('div', { class: 'flex items-start justify-between gap-2' },
+            h('div', { class: 'flex flex-col gap-1.5 min-w-0' },
+              job.urgent ? h('div', { class: 'flex items-center gap-2' }, Badge({ label: 'Urgente', tone: 'danger', icon: 'zap' }), h('span', { class: 'text-xs text-brand-600' }, 'Vaga em destaque')) : null,
+              h('h1', { class: 'font-display font-bold text-2xl text-concrete-900' }, job.role)
+            ),
+            role === 'trabalhador' ? IconButton({
+              icon: saved ? 'bookmark-x' : 'bookmark', label: saved ? 'Remover dos salvos' : 'Salvar vaga', variant: saved ? 'solid' : 'ghost',
+              onClick: () => store.toggleSavedJob(job.id)
+            }) : null
+          ),
           job.description ? h('p', { class: 'text-sm text-concrete-700 leading-relaxed' }, job.description) : null
         ),
 
@@ -89,7 +102,7 @@ export default function renderJobDetail(navigate, params) {
     Dialog({
       open: ui.confirmCancel, tone: 'danger', title: 'Cancelar essa candidatura?',
       description: 'Você sai da lista de candidatos dessa vaga. Se quiser, pode se candidatar de novo depois.',
-      confirmLabel: 'Cancelar candidatura', onConfirm: () => { store.cancelApplication(job.id, worker.id); store.setUI(KEY, { confirmCancel: false }); navigate('/minhas-candidaturas'); },
+      confirmLabel: 'Cancelar candidatura', onConfirm: async () => { await store.cancelApplication(job.id, worker.id); store.setUI(KEY, { confirmCancel: false }); navigate('/minhas-candidaturas'); },
       cancelLabel: 'Voltar', onCancel: () => store.setUI(KEY, { confirmCancel: false })
     })
   );

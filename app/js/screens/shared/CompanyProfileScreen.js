@@ -12,11 +12,15 @@ import { goBack } from '../../router.js';
 import * as store from '../../store.js';
 
 export default function renderCompanyProfile(navigate, params) {
+  store.ensureJobsLoaded();
   const isOwn = !params.id;
+  if (isOwn) store.ensureMyDocumentoLoaded();
+  else store.ensureProfileLoaded(params.id);
+  store.ensureReviewsLoaded(isOwn ? store.currentCompanyId() : params.id);
   const company = isOwn ? store.currentCompany() : store.getCompany(params.id);
   if (!company) return notFound(navigate);
 
-  const ui = store.getUI('company-profile', { capa: null, logo: null, deleteId: null });
+  const ui = store.getUI('company-profile', { deleteId: null });
 
   const openJobs = store.activeJobs().filter((j) => j.companyId === company.id && !j.closed && !store.isJobFull(j));
   const postToDelete = openJobs.find((j) => j.id === ui.deleteId);
@@ -24,14 +28,14 @@ export default function renderCompanyProfile(navigate, params) {
 
   return h('div', { class: 'min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0' },
     h('div', { class: 'relative' },
-      isOwn && ui.capa
-        ? h('img', { src: ui.capa, alt: '', class: 'w-full h-48 object-cover lg:rounded-card' })
+      company.capa_url
+        ? h('img', { src: company.capa_url, alt: '', class: 'w-full h-48 object-cover lg:rounded-card' })
         : h('div', { class: 'h-48 bg-concrete-200 lg:rounded-card' }),
       !isOwn ? h('div', { class: 'absolute top-2 left-2' }, IconButton({ icon: 'arrow-left', label: 'Voltar', variant: 'solid', onClick: () => goBack('/mural') })) : null,
       h('div', { class: 'absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised' },
         h('div', { class: 'w-full h-full rounded-full bg-brand-50 flex items-center justify-center overflow-hidden' },
-          isOwn && ui.logo
-            ? h('img', { src: ui.logo, alt: '', class: 'w-full h-full object-cover' })
+          company.foto_url
+            ? h('img', { src: company.foto_url, alt: '', class: 'w-full h-full object-cover' })
             : Icon('building-2', { size: 26, color: 'var(--brand)' })
         )
       )

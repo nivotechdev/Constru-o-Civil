@@ -5,7 +5,8 @@ import { Tag } from '../../components/Tag.js';
 import { Input } from '../../components/Input.js';
 import { Button } from '../../components/Button.js';
 import { BackBar } from '../../components/TopBar.js';
-import { getUI, setUI, getJob, getCompany, currentWorkerId, markReviewed } from '../../store.js';
+import { getUI, setUI, getJob, getCompany, currentWorkerId, postReview } from '../../store.js';
+import { traduzirErroSupabase } from '../../utils/erros.js';
 import { goBack } from '../../router.js';
 
 const KEY = 'rate-job';
@@ -20,7 +21,7 @@ export default function renderRateJob(navigate, params) {
   const job = getJob(params.id);
   if (!job) return h('div', { class: 'p-6 text-concrete-500' }, 'Vaga não encontrada.');
   const company = getCompany(job.companyId);
-  const ui = getUI(KEY, { rating: 5, selected: ['pagou'], comment: '' });
+  const ui = getUI(KEY, { rating: 5, selected: ['pagou'], comment: '', submitting: false, error: null });
 
   return h('div', { class: 'flex flex-col' },
     BackBar({ title: 'Avaliar a diária', onBack: () => goBack('/minhas-candidaturas') }),
@@ -46,9 +47,20 @@ export default function renderRateJob(navigate, params) {
         id: 'rate-comment', label: 'Quer escrever algo? (opcional)', placeholder: 'Ex.: obra organizada, pagamento em PIX no fim do dia',
         hint: 'Sua avaliação aparece no perfil da construtora.', value: ui.comment, onInput: (v) => setUI(KEY, { comment: v })
       }),
+      ui.error ? h('span', { class: 'text-sm text-danger-500' }, ui.error) : null,
       h('div', { class: 'pt-1' }, Button({
-        label: 'Enviar avaliação', size: 'lg', fullWidth: true,
-        onClick: () => { markReviewed(job.id, currentWorkerId()); navigate('/minhas-candidaturas'); }
+        label: 'Enviar avaliação', size: 'lg', fullWidth: true, loading: ui.submitting,
+        onClick: async () => {
+          setUI(KEY, { submitting: true, error: null });
+          const marcados = OPTIONS.filter((o) => ui.selected.includes(o.id)).map((o) => o.label);
+          const comentario = [marcados.join(' · '), ui.comment.trim()].filter(Boolean).join(' — ');
+          try {
+            await postReview(job.id, currentWorkerId(), { nota: ui.rating, comentario });
+            navigate('/minhas-candidaturas');
+          } catch (error) {
+            setUI(KEY, { submitting: false, error: traduzirErroSupabase(error) });
+          }
+        }
       }))
     )
   );

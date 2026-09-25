@@ -16,7 +16,7 @@ export default function renderChooseProfile(navigate) {
       h('div', { class: 'flex flex-col gap-2.5' },
         h('span', { class: 'text-xs font-bold tracking-[0.08em] uppercase text-concrete-500' }, 'Criar conta'),
         h('h1', { class: 'font-display font-bold text-3xl text-concrete-900' }, 'Como você vai usar o Bicos?'),
-        h('p', { class: 'text-base text-concrete-700' }, 'Dá para trocar depois no seu perfil.')
+        h('p', { class: 'text-base text-concrete-700' }, 'Essa escolha não pode ser trocada depois de criar a conta.')
       ),
       h('div', { class: 'flex flex-col gap-3' },
         RadioCard({

@@ -1,6 +1,7 @@
 import { h, cx } from '../../dom.js';
 import { BackBar } from '../../components/TopBar.js';
 import { Input } from '../../components/Input.js';
+import { Select } from '../../components/Select.js';
 import { Tag } from '../../components/Tag.js';
 import { Switch } from '../../components/Radio.js';
 import { Card } from '../../components/Card.js';
@@ -8,35 +9,41 @@ import { Button } from '../../components/Button.js';
 import { PhotoSlot } from '../../components/PhotoSlot.js';
 import { Icon } from '../../utils/icons.js';
 import { getUI, setUI, resetUI, currentCompanyId, createJob } from '../../store.js';
+import { formatJobDate } from '../../utils/format.js';
+import { traduzirErroSupabase } from '../../utils/erros.js';
 import { goBack } from '../../router.js';
-import { REQUISITOS_OPCOES } from '../../data/seed.js';
+import { REQUISITOS_OPCOES, LOCAIS_BAIRRO } from '../../data/seed.js';
 
 const KEY = 'create-job';
-
-function nextJobId() {
-  return 'BC-' + (5100 + Math.floor(Math.random() * 800));
-}
 
 function digits(v, max) {
   return String(v).replace(/\D/g, '').slice(0, max);
 }
 
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 export default function renderCreateJob(navigate) {
   const ui = getUI(KEY, {
-    step: 1, foto: null, tipo: '', local: '', data: '', periodoInicio: '7', periodoFim: '17', diarias: '1', vagas: '1',
+    step: 1, foto: null, tipo: '', bairro: '', local: '', data: '', periodoInicio: '7', periodoFim: '17', diarias: '1', vagas: '1',
     valor: '', negociavel: false, requisitos: ['Botina e capacete próprios'], detalhe: '', urgente: false,
-    errors: {}, publishing: false
+    errors: {}, publishing: false, serverError: null
   });
 
   const previaRole = ui.tipo.trim() || 'Vaga sem tipo';
   const previaPay = ui.negociavel ? 'A combinar' : (ui.valor ? 'R$ ' + ui.valor : 'R$ —');
-  const previaMeta = `${ui.local || 'Endereço da obra'} · ${ui.data || 'data a definir'}`;
+  const previaData = ui.data ? formatJobDate(ui.data) : 'data a definir';
+  const previaMeta = `${ui.local || 'Endereço da obra'} · ${previaData}`;
 
   function validateStep1() {
     const errors = {};
     if (!ui.tipo.trim()) errors.tipo = 'Escreva o tipo de serviço da vaga.';
+    if (!ui.bairro) errors.bairro = 'Selecione o bairro da obra.';
     if (!ui.local.trim()) errors.local = 'Informe o endereço da obra.';
     if (!ui.data.trim()) errors.data = 'Informe a data da diária.';
+    else if (ui.data < hojeISO()) errors.data = 'A data não pode ser no passado.';
     if (!ui.periodoInicio || !ui.periodoFim) errors.periodo = 'Informe o horário de início e fim.';
     if (!ui.diarias || Number(ui.diarias) < 1) errors.diarias = 'Informe quantas diárias.';
     if (!ui.vagas || Number(ui.vagas) < 1) errors.vagas = 'Informe quantas pessoas a vaga precisa.';
@@ -53,7 +60,7 @@ export default function renderCreateJob(navigate) {
     return errors;
   }
 
-  function advance() {
+  async function advance() {
     if (ui.step === 1) {
       const errors = validateStep1();
       if (Object.keys(errors).length) { setUI(KEY, { errors }); return; }
@@ -62,21 +69,23 @@ export default function renderCreateJob(navigate) {
     }
     const errors = validateStep2();
     if (Object.keys(errors).length) { setUI(KEY, { errors }); return; }
-    setUI(KEY, { publishing: true });
-    setTimeout(() => {
-      const id = nextJobId();
-      const hours = `${ui.periodoInicio}h–${ui.periodoFim}h`;
-      const diariasNum = Number(ui.diarias) || 1;
-      createJob({
-        id, companyId: currentCompanyId(), role: ui.tipo.trim(), pay: ui.negociavel ? null : parseInt(ui.valor, 10),
-        location: 'Tatuapé, SP', address: ui.local, distance: '0 km', date: ui.data, dateLong: `${ui.data} · ${hours}`,
+    setUI(KEY, { publishing: true, serverError: null });
+
+    const hours = `${ui.periodoInicio}h–${ui.periodoFim}h`;
+    const diariasNum = Number(ui.diarias) || 1;
+    try {
+      const id = await createJob({
+        companyId: currentCompanyId(), role: ui.tipo.trim(), pay: ui.negociavel ? null : parseInt(ui.valor, 10),
+        location: ui.bairro, address: ui.local, date: ui.data,
         hours, duration: diariasNum === 1 ? '1 diária' : `${diariasNum} diárias`, urgent: ui.urgente, slots: Number(ui.vagas) || 1, requirements: ui.requisitos,
         description: ui.detalhe.trim(), photo: ui.foto
       });
       setUI(KEY, { publishing: false });
       resetUI(KEY);
       navigate('/vaga-publicada/' + id);
-    }, 700);
+    } catch (error) {
+      setUI(KEY, { publishing: false, serverError: traduzirErroSupabase(error) });
+    }
   }
 
   const step1 = h('div', { class: 'flex flex-col gap-6' },
@@ -89,8 +98,12 @@ export default function renderCreateJob(navigate) {
       id: 'create-job-tipo', label: 'Tipo de serviço', placeholder: 'Ex.: Pedreiro de acabamento', icon: 'hammer',
       value: ui.tipo, error: ui.errors.tipo, onInput: (v) => setUI(KEY, { tipo: v, errors: Object.assign({}, ui.errors, { tipo: null }) })
     }),
-    Input({ id: 'create-job-local', label: 'Endereço da obra', placeholder: 'Rua, número e bairro', icon: 'map-pin', value: ui.local, error: ui.errors.local, onInput: (v) => setUI(KEY, { local: v, errors: Object.assign({}, ui.errors, { local: null }) }) }),
-    Input({ id: 'create-job-data', label: 'Data da diária', placeholder: 'Ex.: 12 set', icon: 'calendar', value: ui.data, error: ui.errors.data, onInput: (v) => setUI(KEY, { data: v, errors: Object.assign({}, ui.errors, { data: null }) }) }),
+    Select({
+      id: 'create-job-bairro', label: 'Bairro da obra', placeholder: 'Selecione o bairro', options: LOCAIS_BAIRRO,
+      value: ui.bairro, error: ui.errors.bairro, onChange: (v) => setUI(KEY, { bairro: v, errors: Object.assign({}, ui.errors, { bairro: null }) })
+    }),
+    Input({ id: 'create-job-local', label: 'Endereço da obra', placeholder: 'Rua, número e complemento', icon: 'map-pin', value: ui.local, error: ui.errors.local, onInput: (v) => setUI(KEY, { local: v, errors: Object.assign({}, ui.errors, { local: null }) }) }),
+    Input({ id: 'create-job-data', label: 'Data da diária', type: 'date', icon: 'calendar', value: ui.data, error: ui.errors.data, onInput: (v) => setUI(KEY, { data: v, errors: Object.assign({}, ui.errors, { data: null }) }) }),
     h('div', { class: 'flex flex-col gap-1.5' },
       h('span', { class: 'text-sm font-semibold text-concrete-900' }, 'Período de trabalho'),
       h('div', { class: 'flex items-end gap-3' },
@@ -172,7 +185,12 @@ export default function renderCreateJob(navigate) {
       h('span', { class: 'flex-1 h-px bg-concrete-200' }),
       stepDot(2, ui.step >= 2), h('span', { class: 'text-sm text-concrete-500' }, 'Valor e requisitos')
     ),
-    h('div', { class: 'px-4 sm:px-0 py-5 lg:max-w-app' }, ui.step === 1 ? step1 : step2),
+    h('div', { class: 'px-4 sm:px-0 py-5 lg:max-w-app flex flex-col gap-4' },
+      ui.serverError ? h('div', { class: 'flex gap-2.5 items-start p-3.5 bg-danger-50 border border-danger-500 rounded-card' },
+        h('span', { class: 'text-sm text-danger-500' }, ui.serverError)
+      ) : null,
+      ui.step === 1 ? step1 : step2
+    ),
     h('div', { class: 'px-4 sm:px-0 py-3 flex flex-col gap-1.5 lg:max-w-app' },
       Button({ label: ui.step === 1 ? 'Continuar' : 'Publicar vaga', size: 'lg', fullWidth: true, loading: ui.publishing, onClick: advance }),
       h('span', { class: 'text-center text-xs text-concrete-500' }, 'Publicar é grátis. Você paga só se impulsionar.')

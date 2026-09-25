@@ -6,18 +6,37 @@ import { Button } from '../../components/Button.js';
 import { Icon } from '../../utils/icons.js';
 import { formatBRL } from '../../utils/format.js';
 import { goBack } from '../../router.js';
+import { traduzirErroSupabase } from '../../utils/erros.js';
 import * as store from '../../store.js';
 
+const KEY = 'job-closed';
+
 export default function renderJobClosed(navigate, params) {
+  store.ensureJobsLoaded();
   const job = store.getJob(params.id);
-  const team = job ? store.applicationsForJob(job.id).filter((a) => a.status === 'pre_selecionado' || a.status === 'contratado').map((a) => store.getWorker(a.workerId)) : [];
+  if (job) store.ensureApplicationsForJobLoaded(job.id);
+  const team = job ? store.applicationsForJob(job.id).filter((a) => a.status === 'pre_selecionado' || a.status === 'contratado').map((a) => ({ app: a, worker: store.getWorker(a.workerId) })) : [];
+  const ui = store.getUI(KEY, { abrindoId: null, erro: null });
+
+  async function abrirWhatsapp(app) {
+    store.setUI(KEY, { abrindoId: app.id, erro: null });
+    try {
+      const numero = await store.getWhatsappContato(app.id);
+      store.setUI(KEY, { abrindoId: null });
+      if (numero) window.open('https://wa.me/' + numero.replace(/\D/g, ''), '_blank');
+      else store.setUI(KEY, { erro: 'Esse trabalhador ainda não cadastrou um WhatsApp de contato.' });
+    } catch (error) {
+      store.setUI(KEY, { abrindoId: null, erro: traduzirErroSupabase(error) });
+    }
+  }
+
   if (!job || team.length === 0) {
     return h('div', { class: 'flex flex-col items-center justify-center min-h-screen gap-3' },
       h('p', { class: 'text-concrete-500' }, 'Esse bico ainda não foi fechado.'),
       Button({ label: 'Voltar ao início', variant: 'secondary', onClick: () => navigate('/mural') })
     );
   }
-  const title = team.length === 1 ? `${team[0].name} está contratado` : `${team.length} trabalhadores contratados`;
+  const title = team.length === 1 ? `${team[0].worker.name} está contratado` : `${team.length} trabalhadores contratados`;
   const total = (job.pay || 0) * Math.max(team.length, 1);
 
   return h('div', { class: 'flex flex-col' },
@@ -35,13 +54,14 @@ export default function renderJobClosed(navigate, params) {
         )
       ),
       h('div', { class: 'text-xs font-bold tracking-[0.08em] uppercase text-concrete-500' }, 'Equipe contratada'),
-      h('div', { class: 'flex flex-col gap-3' }, ...team.map((worker) => Card({ padding: 'md' },
+      ui.erro ? h('span', { class: 'text-sm text-danger-500' }, ui.erro) : null,
+      h('div', { class: 'flex flex-col gap-3' }, ...team.map(({ app, worker }) => Card({ padding: 'md' },
         h('div', { class: 'flex flex-col gap-3.5' },
           h('div', { class: 'flex items-center gap-3' },
             h('span', { class: 'inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-50 text-accent-600 font-bold shrink-0' }, worker.initials),
             h('div', { class: 'flex-1 min-w-0 flex flex-col' }, h('span', { class: 'font-semibold text-concrete-900' }, worker.name), h('span', { class: 'text-sm text-concrete-500' }, `${worker.role} · ${worker.region}`))
           ),
-          Button({ label: 'Falar no WhatsApp', variant: 'accent', fullWidth: true, iconLeft: 'message-circle', onClick: () => {} })
+          Button({ label: 'Falar no WhatsApp', variant: 'accent', fullWidth: true, iconLeft: 'message-circle', loading: ui.abrindoId === app.id, onClick: () => abrirWhatsapp(app) })
         )
       ))),
       Card({ tone: 'sunken', padding: 'md' },
