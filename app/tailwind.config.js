@@ -24,7 +24,11 @@ module.exports = {
         sheet: '0 -8px 24px rgba(16,20,24,.14)',
         bar: '0 -1px 0 #DCE0E5, 0 -6px 16px rgba(16,20,24,.06)'
       },
-      maxWidth: { app: '30rem', panel: '67.5rem' }
+      // `panel` era 67.5rem (1080px) — sobrava muita margem cinza dos lados
+      // em qualquer tela de notebook/monitor comum (1440px+). 90rem preenche
+      // quase toda a largura de um notebook de 1440px e ainda deixa uma
+      // margem razoável (não a tela inteira) em monitores bem largos.
+      maxWidth: { app: '30rem', panel: '90rem' }
     }
   },
   plugins: []
