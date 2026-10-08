@@ -207,3 +207,19 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
   privacidade"); os links abrem as telas e o "voltar" retorna ao passo do cadastro, sem perder o que foi
   digitado. A conta guarda `termsVersion` e `termsAcceptedAt`.
 - **Configurações › Sobre** aponta para as duas telas (os dois botões estavam sem ação).
+
+## B12 — Exclusão de conta real
+
+- **Fluxo:** Configurações › Privacidade e dados › "Excluir minha conta" abre `/configuracoes/excluir-conta`:
+  senha → lista do que acontece com os bicos em andamento → caixa "Entendo e confirmo…" (só quando há
+  bicos pré-selecionados/contratados; com link para resolver antes) → diálogo final → `account.deleteAccount`
+  → sessão encerrada → `/conta-excluida` (tela pública).
+- **Trabalhador:** desiste das diárias pré-selecionadas/contratadas (a construtora é avisada e a vaga
+  reabre) e as candidaturas pendentes são retiradas.
+- **Construtora:** contratações em andamento são canceladas (o trabalhador é avisado) e as vagas abertas
+  são encerradas (candidatos avisados), como no "Encerrar vaga".
+- **Dados:** a conta some (o login deixa de funcionar); posts e notificações da pessoa são apagados; o
+  perfil fica anônimo ("Conta excluída") para que avaliações e históricos do outro lado continuem
+  coerentes, sem nome nem WhatsApp. No back-end, uma RPC faz o mesmo numa transação e apaga o usuário do
+  Auth.
+- **Diárias que já passaram** são concluídas antes de montar a lista (não aparecem como "em andamento").

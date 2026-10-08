@@ -41,6 +41,21 @@ function findAccount(identifier: string): Account | undefined {
   );
 }
 
+/**
+ * Whether `password` is the logged-in account's (before a sensitive action, e.g. deleting the account).
+ * Backend: re-authenticate with Supabase Auth (signInWithPassword on the same e-mail).
+ */
+export async function checkPassword(password: string): Promise<boolean> {
+  await mockLatency(500);
+  const session = getSession();
+  return Boolean(session && passwords.get(session.accountId) === password);
+}
+
+/** Forgets the mock password of a deleted account. */
+export function forgetPassword(accountId: string): void {
+  passwords.delete(accountId);
+}
+
 // ---- sign-in / sign-out ----
 
 export type SignInError = 'conta-inexistente' | 'senha-errada';

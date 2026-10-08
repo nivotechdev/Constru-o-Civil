@@ -53,6 +53,8 @@ const Notifications = screen(() => import('./pages/shared/Notifications'));
 const Settings = screen(() => import('./pages/shared/Settings'));
 const Privacy = screen(() => import('./pages/shared/Privacy'));
 const Terms = screen(() => import('./pages/shared/Terms'));
+const DeleteAccount = screen(() => import('./pages/shared/DeleteAccount'));
+const AccountDeleted = screen(() => import('./pages/shared/AccountDeleted'));
 const PrivacyPolicy = screen(() => import('./pages/shared/PrivacyPolicy'));
 const WorkerProfile = screen(() => import('./pages/shared/WorkerProfileScreen'));
 const EditWorkerProfile = screen(() => import('./pages/shared/EditWorkerProfile'));
@@ -106,6 +108,8 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/notificacoes', app(Notifications)),
   compileRoute('/configuracoes', app(Settings)),
   compileRoute('/configuracoes/privacidade', app(Privacy)),
+  compileRoute('/configuracoes/excluir-conta', app(DeleteAccount)),
+  compileRoute('/conta-excluida', anyone(AccountDeleted)),
 
   compileRoute('/mural', app(Feed)),
   compileRoute('/vaga/:id', app(JobDetail)),
@@ -145,7 +149,8 @@ const AUTH_FLOW = new Set([
   '/esqueci-senha',
   '/redefinir-senha',
   '/termos',
-  '/privacidade'
+  '/privacidade',
+  '/conta-excluida'
 ]);
 
 /** Sign-in/sign-up screens render full-bleed, without the app navigation. */

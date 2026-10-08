@@ -2,7 +2,6 @@ import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons/Icon';
-import { Dialog } from '../../components/Modal';
 import { useUI } from '../../hooks/useStore';
 import { exportMyData } from '../../services/account';
 import { errorMessage } from '../../services/errors';
@@ -12,11 +11,10 @@ import { goBack, navigate } from '../../services/router';
 interface PrivacyUI {
   exporting: boolean;
   exported: boolean;
-  confirmDelete: boolean;
 }
 
 export default function Privacy() {
-  const [ui, setUi] = useUI<PrivacyUI>('privacy', { exporting: false, exported: false, confirmDelete: false });
+  const [ui, setUi] = useUI<PrivacyUI>('privacy', { exporting: false, exported: false });
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 gap-5 pb-8 lg:bg-transparent lg:min-h-0">
@@ -73,20 +71,14 @@ export default function Privacy() {
                 </span>
               </div>
             </div>
-            <Button label="Excluir minha conta" variant="danger" onClick={() => setUi({ confirmDelete: true })} />
+            <Button
+              label="Excluir minha conta"
+              variant="danger"
+              onClick={() => navigate('/configuracoes/excluir-conta')}
+            />
           </div>
         </Card>
       </div>
-      <Dialog
-        open={ui.confirmDelete}
-        tone="danger"
-        title="Excluir sua conta?"
-        description="Isso apaga seu perfil, candidaturas e histórico da Bicos para sempre. Não dá para desfazer."
-        confirmLabel="Sim, excluir conta"
-        onConfirm={() => navigate('/login')}
-        cancelLabel="Cancelar"
-        onCancel={() => setUi({ confirmDelete: false })}
-      />
     </div>
   );
 }

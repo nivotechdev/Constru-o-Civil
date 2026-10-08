@@ -21,6 +21,7 @@ const NARROW_SCREENS = new Set([
   '/empresa/editar',
   '/configuracoes',
   '/configuracoes/privacidade',
+  '/configuracoes/excluir-conta',
   '/notificacoes',
   '/confirmar/:id',
   '/enviado/:id',
