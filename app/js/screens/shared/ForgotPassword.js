@@ -3,10 +3,9 @@ import { Button } from '../../components/Button.js';
 import { Input } from '../../components/Input.js';
 import { IconButton } from '../../components/IconButton.js';
 import { Icon } from '../../utils/icons.js';
-import { getUI, setUI, sendPasswordResetEmail } from '../../store.js';
+import { getUI, setUI } from '../../store.js';
 import { isValidEmail } from '../../utils/format.js';
 import { goBack } from '../../router.js';
-import { traduzirErroSupabase } from '../../utils/erros.js';
 
 const KEY = 'forgot-password';
 
@@ -37,15 +36,10 @@ export default function renderForgotPassword(navigate) {
     !ui.sent ? h('div', { class: 'px-5 sm:px-8 py-3' },
       Button({
         label: 'Enviar link', size: 'lg', fullWidth: true, loading: ui.submitting,
-        onClick: async () => {
+        onClick: () => {
           if (!isValidEmail(ui.email)) { setUI(KEY, { error: 'E-mail inválido. Confira se tem @ e o domínio.' }); return; }
-          setUI(KEY, { submitting: true, error: null });
-          try {
-            await sendPasswordResetEmail(ui.email.trim().toLowerCase());
-            setUI(KEY, { submitting: false, sent: true });
-          } catch (error) {
-            setUI(KEY, { submitting: false, error: traduzirErroSupabase(error) });
-          }
+          setUI(KEY, { submitting: true });
+          setTimeout(() => setUI(KEY, { submitting: false, sent: true }), 600);
         }
       })
     ) : null

@@ -2,6 +2,8 @@
 module.exports = {
   content: ['./index.html', './js/**/*.js'],
   theme: {
+    // `lg` is the desktop/tablet layout (top navbar, rails); below it is the phone layout.
+    screens: { sm: '640px', lg: '770px', xl: '1280px', '2xl': '1536px' },
     extend: {
       colors: {
         brand: { 50: '#EFF3FE', 100: '#DBE4FD', 200: '#B7C8FB', 300: '#8BA5F7', 400: '#587AF3', 500: '#1D4BED', 600: '#163CC2', 700: '#122F97', 800: '#0E2472', 900: '#0A1A54' },
@@ -24,11 +26,7 @@ module.exports = {
         sheet: '0 -8px 24px rgba(16,20,24,.14)',
         bar: '0 -1px 0 #DCE0E5, 0 -6px 16px rgba(16,20,24,.06)'
       },
-      // `panel` era 67.5rem (1080px) — sobrava muita margem cinza dos lados
-      // em qualquer tela de notebook/monitor comum (1440px+). 90rem preenche
-      // quase toda a largura de um notebook de 1440px e ainda deixa uma
-      // margem razoável (não a tela inteira) em monitores bem largos.
-      maxWidth: { app: '30rem', panel: '90rem' }
+      maxWidth: { app: '30rem', panel: '67.5rem' }
     }
   },
   plugins: []

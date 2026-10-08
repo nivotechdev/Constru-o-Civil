@@ -5,9 +5,9 @@ import { Tag } from '../../components/Tag.js';
 import { Input } from '../../components/Input.js';
 import { Button } from '../../components/Button.js';
 import { BackBar } from '../../components/TopBar.js';
-import { getUI, setUI, getJob, getCompany, currentWorkerId, postReview } from '../../store.js';
-import { traduzirErroSupabase } from '../../utils/erros.js';
+import { getUI, setUI, getJob, getCompany, currentWorkerId, markReviewed } from '../../store.js';
 import { goBack } from '../../router.js';
+import { dateText } from '../../utils/jobInfo.js';
 
 const KEY = 'rate-job';
 const OPTIONS = [
@@ -21,14 +21,14 @@ export default function renderRateJob(navigate, params) {
   const job = getJob(params.id);
   if (!job) return h('div', { class: 'p-6 text-concrete-500' }, 'Vaga não encontrada.');
   const company = getCompany(job.companyId);
-  const ui = getUI(KEY, { rating: 5, selected: ['pagou'], comment: '', submitting: false, error: null });
+  const ui = getUI(KEY, { rating: 5, selected: ['pagou'], comment: '' });
 
   return h('div', { class: 'flex flex-col' },
     BackBar({ title: 'Avaliar a diária', onBack: () => goBack('/minhas-candidaturas') }),
-    h('div', { class: 'flex flex-col gap-5 px-4 sm:px-0 py-4 lg:max-w-app' },
+    h('div', { class: 'flex flex-col gap-5 px-4 sm:px-0 py-4' },
       h('div', { class: 'flex flex-col gap-1' },
         h('h1', { class: 'font-display font-bold text-2xl text-concrete-900' }, 'Como foi a diária?'),
-        h('span', { class: 'text-sm text-concrete-500' }, `${job.role} · ${company.name} · ${job.date}`)
+        h('span', { class: 'text-sm text-concrete-500' }, `${job.role} · ${company.name} · ${dateText(job)}`)
       ),
       Card({ padding: 'md' },
         h('div', { class: 'flex flex-col items-center gap-3' },
@@ -47,20 +47,9 @@ export default function renderRateJob(navigate, params) {
         id: 'rate-comment', label: 'Quer escrever algo? (opcional)', placeholder: 'Ex.: obra organizada, pagamento em PIX no fim do dia',
         hint: 'Sua avaliação aparece no perfil da construtora.', value: ui.comment, onInput: (v) => setUI(KEY, { comment: v })
       }),
-      ui.error ? h('span', { class: 'text-sm text-danger-500' }, ui.error) : null,
       h('div', { class: 'pt-1' }, Button({
-        label: 'Enviar avaliação', size: 'lg', fullWidth: true, loading: ui.submitting,
-        onClick: async () => {
-          setUI(KEY, { submitting: true, error: null });
-          const marcados = OPTIONS.filter((o) => ui.selected.includes(o.id)).map((o) => o.label);
-          const comentario = [marcados.join(' · '), ui.comment.trim()].filter(Boolean).join(' — ');
-          try {
-            await postReview(job.id, currentWorkerId(), { nota: ui.rating, comentario });
-            navigate('/minhas-candidaturas');
-          } catch (error) {
-            setUI(KEY, { submitting: false, error: traduzirErroSupabase(error) });
-          }
-        }
+        label: 'Enviar avaliação', size: 'lg', fullWidth: true,
+        onClick: () => { markReviewed(job.id, currentWorkerId()); navigate('/minhas-candidaturas'); }
       }))
     )
   );

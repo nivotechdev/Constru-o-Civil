@@ -1,15 +1,18 @@
-// Traduz erros do Supabase Auth/Postgres para mensagens em PT-BR.
-//
-// Portado quase sem mudanças de utils/erros.js do front antigo (NivoTech):
-// decide sempre pelo campo `code` (estável e documentado no Auth), nunca pelo
-// texto da mensagem — comparar por texto já causou um bug real em produção
-// (mensagem muda, comparação silenciosamente para de bater).
+// Translates Supabase Auth/Postgres errors to pt-BR messages. Ported near-verbatim from the vanilla
+// front's utils/erros.js (already validated end-to-end against the real project): always decide by
+// the stable `code` field, never by matching the message text — comparing by text caused a real
+// production bug once (the message changed and the comparison silently stopped matching).
+interface SupabaseLikeError {
+  code?: string | null;
+  message?: string | null;
+}
+
 const MSG_DOCUMENTO_EM_USO =
   'Não foi possível concluir o cadastro: este CPF/CNPJ já está associado a uma conta ' +
   'confirmada em nossa plataforma. Se você já tem uma conta, tente fazer login ou usar ' +
   '"Esqueci minha senha". Se não foi você, confira o documento digitado.';
 
-export function traduzirErroSupabase(error) {
+export function traduzirErroSupabase(error: SupabaseLikeError | null | undefined): string {
   const codigo = error?.code || '';
   const mensagem = error?.message || '';
 
@@ -32,15 +35,14 @@ export function traduzirErroSupabase(error) {
     case 'session_not_found':
     case 'refresh_token_not_found':
       return 'Sua sessão expirou. Faça login novamente.';
-    // Ver histórico no front antigo: "unexpected_failure"/"database_error_saving_new_user"
-    // é o que o Auth devolve quando o gatilho que grava o profile falha DEPOIS do
-    // e-mail já ter passado na checagem de duplicidade — na prática, quase sempre
-    // o CPF/CNPJ informado já pertence a outra conta (documento é único na plataforma).
+    // O Auth devolve um destes dois quando o gatilho que grava o profile falha DEPOIS do
+    // e-mail já ter passado na checagem de duplicidade — na prática, quase sempre o CPF/CNPJ
+    // informado já pertence a outra conta (documento é único na plataforma).
     case 'unexpected_failure':
     case 'database_error_saving_new_user':
       return MSG_DOCUMENTO_EM_USO;
-    // Códigos abaixo são do Postgres/PostgREST (insert/update/delete em vagas,
-    // candidaturas, profiles etc.), mesma lógica de comparar por código estável.
+    // Códigos abaixo são do Postgres/PostgREST (insert/update/delete em vagas, candidaturas,
+    // profiles etc.), mesma lógica de comparar por código estável.
     case '42501':
       return 'Você não tem permissão para realizar esta ação com esta conta.';
     case '23505':
@@ -61,18 +63,20 @@ export function traduzirErroSupabase(error) {
   }
 }
 
-export function emailNaoConfirmado(error) {
+export function emailNaoConfirmado(error: SupabaseLikeError | null | undefined): boolean {
   return error?.code === 'email_not_confirmed';
 }
 
-export function emailDuplicado(error) {
+export function emailDuplicado(error: SupabaseLikeError | null | undefined): boolean {
   return error?.code === 'user_already_exists';
 }
 
-export function documentoDuplicado(error) {
+export function documentoDuplicado(error: SupabaseLikeError | null | undefined): boolean {
   const codigo = error?.code || '';
   const mensagem = error?.message || '';
-  return codigo === 'unexpected_failure'
-    || codigo === 'database_error_saving_new_user'
-    || /database error saving new user/i.test(mensagem);
+  return (
+    codigo === 'unexpected_failure' ||
+    codigo === 'database_error_saving_new_user' ||
+    /database error saving new user/i.test(mensagem)
+  );
 }

@@ -4,7 +4,7 @@ import { Icon } from '../utils/icons.js';
 /** A clickable chip: filter option, specialty selector, requirement toggle. */
 export function Tag({ label, icon, selected = false, onClick, onRemove, className = '' }) {
   const tag = h('button', {
-    type: 'button',
+    type: 'button', 'aria-pressed': onRemove ? null : (selected ? 'true' : 'false'),
     class: cx(
       'inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-colors duration-150',
       'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',

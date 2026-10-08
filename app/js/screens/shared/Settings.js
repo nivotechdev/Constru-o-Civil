@@ -1,7 +1,7 @@
 import { h } from '../../dom.js';
 import { BackBar } from '../../components/TopBar.js';
 import { Icon } from '../../utils/icons.js';
-import { getRole, signOut } from '../../store.js';
+import { getRole } from '../../store.js';
 import { goBack } from '../../router.js';
 
 function Row({ icon, label, description, onClick, danger = false }) {
@@ -43,7 +43,7 @@ export default function renderSettings(navigate) {
         Row({ icon: 'shield-check', label: 'Política de privacidade', onClick: () => {} })
       ]),
       Section('', [
-        Row({ icon: 'log-out', label: 'Sair da conta', danger: true, onClick: async () => { await signOut(); navigate('/login', { replace: true }); } })
+        Row({ icon: 'log-out', label: 'Sair da conta', danger: true, onClick: () => navigate('/login') })
       ])
     )
   );

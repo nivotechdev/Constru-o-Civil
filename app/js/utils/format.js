@@ -43,27 +43,3 @@ export function formatPostDate(isoDate) {
   if (!y || !m || !d) return isoDate;
   return `${d} de ${MESES[m - 1]} de ${y}`;
 }
-
-const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-function toLocalDate(isoDate) {
-  const [y, m, d] = String(isoDate).split('-').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
-}
-
-function daysBetween(a, b) {
-  const MS_DIA = 24 * 60 * 60 * 1000;
-  const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-  const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-  return Math.round((utcB - utcA) / MS_DIA);
-}
-
-/** '2026-09-10' -> 'Hoje' | 'Amanhã' | 'Qui, 10 set' (relativo a hoje). */
-export function formatJobDate(isoDate) {
-  if (!isoDate) return '';
-  const alvo = toLocalDate(isoDate);
-  const diff = daysBetween(new Date(), alvo);
-  if (diff === 0) return 'Hoje';
-  if (diff === 1) return 'Amanhã';
-  return `${DIAS_SEMANA[alvo.getDay()]}, ${alvo.getDate()} ${MESES[alvo.getMonth()]}`;
-}

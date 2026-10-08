@@ -6,6 +6,7 @@ import { Icon } from '../../utils/icons.js';
 import { formatBRL } from '../../utils/format.js';
 import { getJob, getCompany } from '../../store.js';
 import { goBack } from '../../router.js';
+import { dateText } from '../../utils/jobInfo.js';
 
 export default function renderApplicationSent(navigate, params) {
   const job = getJob(params.id);
@@ -22,7 +23,7 @@ export default function renderApplicationSent(navigate, params) {
       ),
       Card({ tone: 'sunken', padding: 'md', className: 'w-full' },
         h('div', { class: 'flex items-center justify-between gap-3' },
-          h('div', { class: 'flex flex-col gap-0.5 min-w-0' }, h('span', { class: 'font-semibold text-concrete-900' }, job.role), h('span', { class: 'text-sm text-concrete-500' }, `${company.name} · ${job.date}`)),
+          h('div', { class: 'flex flex-col gap-0.5 min-w-0' }, h('span', { class: 'font-semibold text-concrete-900' }, job.role), h('span', { class: 'text-sm text-concrete-500' }, `${company.name} · ${dateText(job)}`)),
           h('span', { class: 'font-mono font-bold text-xl text-concrete-900' }, job.pay == null ? 'A combinar' : formatBRL(job.pay))
         )
       ),

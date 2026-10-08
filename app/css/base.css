@@ -56,3 +56,62 @@ button { -webkit-tap-highlight-color: transparent; }
 /* thin scrollbars for chip rows, kept off the main page scroller */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---- Desktop / tablet (>= 770px) ---- */
+
+/* Page gutters shared by the top navbar and full-width pages, so their edges line up. */
+.page-x { padding-left: 1.5rem; padding-right: 1.5rem; }
+@media (min-width: 1128px) { .page-x { padding-left: 2.5rem; padding-right: 2.5rem; } }
+@media (min-width: 1440px) { .page-x { padding-left: 5rem; padding-right: 5rem; } }
+
+/* Job tiles: one size everywhere in the app. From 640px up every tile is exactly
+   --tile-w wide (same text rows, so the same height too); on phones it's always two equal
+   columns. `.tile-grid` lays tiles out; `.mural-frame` sizes the mural to a whole number of
+   columns (2 up to 6 at most) and centres it, so rows never end in a half-empty gap. */
+:root { --tile-w: 16.75rem; --tile-gap-x: 1.5rem; --tile-gap-y: 2.25rem; }
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--tile-w));
+  justify-content: start;
+  gap: var(--tile-gap-y) var(--tile-gap-x);
+}
+@media (max-width: 639.98px) {
+  .tile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 0.75rem; }
+}
+.mural-frame {
+  --cols: 2;
+  width: min(100%, calc(var(--cols) * var(--tile-w) + (var(--cols) - 1) * var(--tile-gap-x)));
+  margin-inline: auto;
+}
+@media (min-width: 900px) { .mural-frame { --cols: 3; } }
+@media (min-width: 1224px) { .mural-frame { --cols: 4; } }
+@media (min-width: 1596px) { .mural-frame { --cols: 5; } }
+@media (min-width: 1888px) { .mural-frame { --cols: 6; } }
+
+/* Blueprint grid laid over the illustrated covers of jobs without a photo. */
+.job-cover-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+  background-size: 1.375rem 1.375rem;
+}
+
+.app-island {
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0);
+  -webkit-backdrop-filter: blur(0) saturate(1);
+  backdrop-filter: blur(0) saturate(1);
+  box-shadow: 0 0 0 0 rgba(16, 20, 24, 0), 0 0 0 rgba(16, 20, 24, 0);
+  transform: translateY(0);
+  transition: background-color 320ms ease, border-color 320ms ease, box-shadow 320ms ease,
+    backdrop-filter 320ms ease, -webkit-backdrop-filter 320ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-header.is-scrolled .app-island {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(18px) saturate(1.8);
+  backdrop-filter: blur(18px) saturate(1.8);
+  box-shadow: 0 0 0 1px rgba(16, 20, 24, 0.07), 0 12px 36px rgba(16, 20, 24, 0.14);
+  transform: translateY(2px);
+}
+@media (prefers-reduced-motion: reduce) { .app-island { transition: none; } }

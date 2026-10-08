@@ -1,7 +1,9 @@
 import { h, cx } from '../dom.js';
 import { Icon } from '../utils/icons.js';
 import { Card } from './Card.js';
+import { JobCover, SaveFlag, jobPhotos } from './JobCover.js';
 import { formatBRL } from '../utils/format.js';
+import { dateText } from '../utils/jobInfo.js';
 
 function PayBlock({ job, muted }) {
   if (muted) {
@@ -26,12 +28,17 @@ function PayBlock({ job, muted }) {
  * The one job card in the app: same component on the feed, applications, saved jobs
  * and company-profile posts — only `footer` and the overlay `badge` change per screen.
  */
-export function JobCard({ job, companyName, onClick, overlay = null, footer = null, photoLabel = 'Foto do canteiro', muted = false }) {
-  const photo = h('div', { class: cx('relative h-[9.25rem] bg-concrete-200', muted ? 'grayscale' : '') },
-    job.photo
-      ? h('img', { src: job.photo, alt: '', class: 'w-full h-full object-cover' })
-      : h('div', { class: 'w-full h-full flex items-center justify-center text-concrete-400 text-xs' }, photoLabel),
-    overlay
+export function JobCard({ job, companyName, onClick, overlay = null, footer = null, photoLabel = 'Foto do canteiro', muted = false, saved = false, onToggleSave = null }) {
+  const cover = jobPhotos(job)[0];
+  const photo = h('div', { class: cx('relative h-[9.25rem] bg-concrete-200 overflow-hidden', muted ? 'grayscale' : '') },
+    cover
+      ? h('img', { src: cover, alt: '', class: 'w-full h-full object-cover' })
+      : [
+          h('div', { class: 'lg:hidden w-full h-full flex items-center justify-center text-concrete-400 text-xs' }, photoLabel),
+          h('div', { class: 'hidden lg:block absolute inset-0' }, JobCover({ job }))
+        ],
+    overlay,
+    onToggleSave ? SaveFlag({ saved, onToggle: onToggleSave }) : null
   );
 
   const body = h('div', { class: 'flex flex-col gap-3 p-4' },
@@ -41,7 +48,7 @@ export function JobCard({ job, companyName, onClick, overlay = null, footer = nu
     ),
     h('div', { class: 'flex items-center flex-wrap gap-2' },
       h('span', { class: 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-concrete-100 text-sm font-semibold text-concrete-900' },
-        Icon('calendar', { size: 14 }), job.date
+        Icon('calendar', { size: 14 }), dateText(job)
       ),
       h('span', { class: 'inline-flex items-center gap-1.5 text-sm text-concrete-500' },
         Icon('map-pin', { size: 14, color: 'var(--text-subtle)' }), companyName ? `${companyName} · ${job.location}` : job.location
@@ -51,19 +58,6 @@ export function JobCard({ job, companyName, onClick, overlay = null, footer = nu
 
   const card = Card({ padding: 'none', onClick, className: 'flex flex-col' }, photo, body, footer);
   return card;
-}
-
-export function UrgentOverlay({ mine = false }) {
-  return h('div', { class: 'absolute inset-0 pointer-events-none' },
-    h('span', { class: 'absolute top-2.5 left-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-danger-500 text-white text-[0.6875rem] font-bold tracking-wide' },
-      Icon('zap', { size: 14, color: '#fff' }), 'Urgente'
-    ),
-    mine ? h('span', { class: 'absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-white text-xs font-semibold text-brand-600' }, 'Sua vaga') : null
-  );
-}
-
-export function MineOverlay() {
-  return h('span', { class: 'absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-white text-xs font-semibold text-brand-600' }, 'Sua vaga');
 }
 
 export function JobCardFooter({ badgeEl, hint, hintColor = 'var(--text-brand)', extra }) {

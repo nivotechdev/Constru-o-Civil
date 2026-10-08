@@ -9,33 +9,14 @@ import { Dialog, Sheet } from '../../components/Modal.js';
 import { Icon } from '../../utils/icons.js';
 import { formatPostDate } from '../../utils/format.js';
 import { goBack } from '../../router.js';
-import { traduzirErroSupabase } from '../../utils/erros.js';
 import * as store from '../../store.js';
 
 const POSTS_KEY = 'worker-posts';
-const DECISION_KEY = 'worker-profile-decision';
 
 export default function renderWorkerProfile(navigate, params) {
-  store.ensureJobsLoaded();
   const isOwn = !params.id;
-  if (!isOwn) store.ensureProfileLoaded(params.id);
-  store.ensureReviewsLoaded(isOwn ? store.currentWorkerId() : params.id);
   const worker = isOwn ? store.currentWorker() : store.getWorker(params.id);
   if (!worker) return notFound(navigate);
-  if (params.jobId) store.ensureApplicationsForJobLoaded(params.jobId);
-  const decisaoUi = store.getUI(DECISION_KEY, { deciding: false, error: null });
-
-  async function decidir(jobId, decision) {
-    store.setUI(DECISION_KEY, { deciding: true, error: null });
-    try {
-      await store.decideApplication(jobId, worker.id, decision);
-      store.setUI(DECISION_KEY, { deciding: false });
-      if (decision === 'aprovado') navigate(store.isJobClosed(store.getJob(jobId)) ? '/fechado/' + jobId : '/vaga-gerenciar/' + jobId);
-      else if (decision === 'recusado') navigate('/vaga-gerenciar/' + jobId);
-    } catch (error) {
-      store.setUI(DECISION_KEY, { deciding: false, error: traduzirErroSupabase(error) });
-    }
-  }
 
   const jobIdRaw = params.jobId;
   const jobForCtx = jobIdRaw ? store.getJob(jobIdRaw) : null;
@@ -45,10 +26,12 @@ export default function renderWorkerProfile(navigate, params) {
   const decidedForJob = jobId && (decision === 'pre_selecionado' || decision === 'nao_selecionado');
   const jobFull = jobId ? store.isJobClosed(store.getJob(jobId)) : false;
 
+  const ui = store.getUI('worker-profile-photo', { photo: null });
+
   return h('div', { class: 'min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0' },
     h('div', { class: 'relative' },
-      worker.foto_url
-        ? h('img', { src: worker.foto_url, alt: '', class: 'w-full h-52 object-cover lg:rounded-card' })
+      isOwn && ui.photo
+        ? h('img', { src: ui.photo, alt: '', class: 'w-full h-52 object-cover lg:rounded-card' })
         : h('div', { class: 'h-52 bg-concrete-200 lg:rounded-card' }),
       !isOwn ? h('div', { class: 'absolute top-2 left-2' }, IconButton({ icon: 'arrow-left', label: 'Voltar', variant: 'solid', onClick: () => goBack(jobId ? '/vaga-gerenciar/' + jobId : '/mural') })) : null,
       h('div', { class: 'absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised' },
@@ -93,28 +76,26 @@ export default function renderWorkerProfile(navigate, params) {
       !isOwn && jobId ? h('p', { class: 'text-sm text-concrete-500' }, 'O contato por WhatsApp abre depois que você aprovar esse trabalhador para a vaga.') : null
     ),
 
-    !isOwn && jobId ? h('div', { class: 'sticky bottom-0 px-4 sm:px-6 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none' },
-      decisaoUi.error ? h('span', { class: 'text-sm text-danger-500' }, decisaoUi.error) : null,
-      !decidedForJob && !jobFull ? h('div', { class: 'flex flex-col gap-2' },
+    !isOwn && jobId ? h('div', { class: 'sticky bottom-0 px-4 sm:px-6 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none lg:pt-0 lg:pb-6' },
+      !decidedForJob && !jobFull ? h('div', { class: 'flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3' },
         Button({
           label: `Aprovar para a vaga · ${store.approvedCount(jobId) + 1} de ${store.getJob(jobId).slots || 1}`,
-          size: 'lg', fullWidth: true, iconLeft: 'circle-check', loading: decisaoUi.deciding,
-          onClick: () => decidir(jobId, 'aprovado')
+          size: 'lg', fullWidth: true, iconLeft: 'circle-check', className: 'lg:w-auto lg:px-8',
+          onClick: () => { store.decideApplication(jobId, worker.id, 'aprovado'); navigate(store.isJobClosed(store.getJob(jobId)) ? '/fechado/' + jobId : '/vaga-gerenciar/' + jobId); }
         }),
-        Button({ label: 'Recusar candidato', variant: 'ghost', fullWidth: true, loading: decisaoUi.deciding, onClick: () => decidir(jobId, 'recusado') })
+        Button({ label: 'Recusar candidato', variant: 'ghost', fullWidth: true, className: 'lg:w-auto', onClick: () => { store.decideApplication(jobId, worker.id, 'recusado'); navigate('/vaga-gerenciar/' + jobId); } })
       ) : decidedForJob ? h('div', { class: 'flex items-center gap-2.5' },
         Badge({ label: decision === 'pre_selecionado' ? 'Aprovado' : 'Recusado', tone: decision === 'pre_selecionado' ? 'success' : 'danger', icon: decision === 'pre_selecionado' ? 'circle-check' : 'circle-x' }),
         h('span', { class: 'flex-1 text-sm text-concrete-500' }, decision === 'pre_selecionado' ? 'Contato por WhatsApp liberado para os dois lados.' : 'Avisamos que dessa vez não deu certo.'),
-        Button({ label: 'Desfazer', variant: 'secondary', size: 'sm', loading: decisaoUi.deciding, onClick: () => decidir(jobId, null) })
+        Button({ label: 'Desfazer', variant: 'secondary', size: 'sm', onClick: () => { store.decideApplication(jobId, worker.id, null); } })
       ) : h('span', { class: 'text-center text-xs text-concrete-500' }, 'As vagas desse bico já foram preenchidas.')
     ) : null
   );
 }
 
 function postsSection(worker, isOwn) {
-  store.ensurePortfolioLoaded(worker.id);
   const posts = store.postsForWorker(worker.id);
-  const ui = store.getUI(POSTS_KEY, { composing: false, mediaUrl: null, mediaFile: null, mediaType: 'image', caption: '', deleteId: null, publishing: false, error: null });
+  const ui = store.getUI(POSTS_KEY, { composing: false, mediaUrl: null, mediaType: 'image', caption: '', deleteId: null });
   const firstName = worker.name.split(' ')[0];
 
   return h('div', { class: 'flex flex-col gap-2.5' },
@@ -132,12 +113,12 @@ function postsSection(worker, isOwn) {
           actionLabel: isOwn ? 'Publicar primeiro post' : null,
           onAction: isOwn ? () => store.setUI(POSTS_KEY, { composing: true }) : null
         })
-      : h('div', { class: 'flex flex-col gap-4' }, ...posts.map((p) => postCard(p, isOwn))),
+      : h('div', { class: 'flex flex-col gap-4 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5' }, ...posts.map((p) => postCard(p, isOwn))),
     isOwn ? composer(worker, ui) : null,
     isOwn ? Dialog({
       open: Boolean(ui.deleteId), tone: 'danger', title: 'Excluir esse post?',
       description: 'A publicação some do seu perfil imediatamente.',
-      confirmLabel: 'Excluir post', onConfirm: async () => { const id = ui.deleteId; store.setUI(POSTS_KEY, { deleteId: null }); await store.deleteWorkerPost(id); },
+      confirmLabel: 'Excluir post', onConfirm: () => { store.deleteWorkerPost(ui.deleteId); store.setUI(POSTS_KEY, { deleteId: null }); },
       cancelLabel: 'Cancelar', onCancel: () => store.setUI(POSTS_KEY, { deleteId: null })
     }) : null
   );
@@ -148,9 +129,9 @@ function postCard(post, isOwn) {
     h('div', { class: 'relative' },
       post.mediaUrl
         ? (post.mediaType === 'video'
-            ? h('video', { src: post.mediaUrl, controls: true, class: 'w-full h-72 object-cover bg-concrete-900' })
-            : h('img', { src: post.mediaUrl, alt: '', class: 'w-full h-72 object-cover' }))
-        : h('div', { class: 'w-full h-72 bg-concrete-200 flex items-center justify-center' }, Icon('camera', { size: 32, color: 'var(--text-subtle)' })),
+            ? h('video', { src: post.mediaUrl, controls: true, class: 'w-full h-72 lg:h-auto lg:aspect-square object-cover bg-concrete-900' })
+            : h('img', { src: post.mediaUrl, alt: '', class: 'w-full h-72 lg:h-auto lg:aspect-square object-cover' }))
+        : h('div', { class: 'w-full h-72 lg:h-auto lg:aspect-square bg-concrete-200 flex items-center justify-center' }, Icon('camera', { size: 32, color: 'var(--text-subtle)' })),
       post.mediaType === 'video' ? h('span', { class: 'absolute top-2.5 left-2.5' }, Badge({ label: 'Vídeo', tone: 'neutral' })) : null,
       isOwn ? h('span', { class: 'absolute top-2.5 right-2.5' }, IconButton({ icon: 'trash-2', label: 'Excluir post', variant: 'solid', size: 'sm', onClick: () => store.setUI(POSTS_KEY, { deleteId: post.id }) })) : null
     ),
@@ -162,13 +143,13 @@ function postCard(post, isOwn) {
 }
 
 function composer(worker, ui) {
-  const closeAndReset = () => store.setUI(POSTS_KEY, { composing: false, mediaUrl: null, mediaFile: null, mediaType: 'image', caption: '', publishing: false });
+  const closeAndReset = () => store.setUI(POSTS_KEY, { composing: false, mediaUrl: null, mediaType: 'image', caption: '' });
   const fileInput = h('input', {
     type: 'file', accept: 'image/*,video/*', class: 'sr-only',
     onchange: (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
-      store.setUI(POSTS_KEY, { mediaUrl: URL.createObjectURL(file), mediaFile: file, mediaType: file.type.indexOf('video') === 0 ? 'video' : 'image' });
+      store.setUI(POSTS_KEY, { mediaUrl: URL.createObjectURL(file), mediaType: file.type.indexOf('video') === 0 ? 'video' : 'image' });
     }
   });
 
@@ -192,17 +173,11 @@ function composer(worker, ui) {
         oninput: (e) => store.setUI(POSTS_KEY, { caption: e.target.value })
       })
     ),
-    ui.error ? h('span', { class: 'text-sm text-danger-500' }, ui.error) : null,
     Button({
-      label: 'Publicar', size: 'lg', fullWidth: true, disabled: !ui.mediaUrl, loading: ui.publishing,
-      onClick: async () => {
-        store.setUI(POSTS_KEY, { publishing: true, error: null });
-        try {
-          await store.addWorkerPost(worker.id, { file: ui.mediaFile, mediaType: ui.mediaType, caption: ui.caption.trim() });
-          closeAndReset();
-        } catch (error) {
-          store.setUI(POSTS_KEY, { publishing: false, error: traduzirErroSupabase(error) });
-        }
+      label: 'Publicar', size: 'lg', fullWidth: true, disabled: !ui.mediaUrl,
+      onClick: () => {
+        store.addWorkerPost(worker.id, { mediaUrl: ui.mediaUrl, mediaType: ui.mediaType, caption: ui.caption.trim() });
+        closeAndReset();
       }
     })
   );

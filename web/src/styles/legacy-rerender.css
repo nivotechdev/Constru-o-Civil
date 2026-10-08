@@ -1,0 +1,8 @@
+/* Momentarily set on <html> by components/LegacyRerender.tsx while a state change is applied. */
+html.legacy-rerender {
+  overflow-anchor: none;
+}
+html.legacy-rerender #app,
+html.legacy-rerender #app * {
+  transition: none !important;
+}
