@@ -223,3 +223,38 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
   coerentes, sem nome nem WhatsApp. No back-end, uma RPC faz o mesmo numa transação e apaga o usuário do
   Auth.
 - **Diárias que já passaram** são concluídas antes de montar a lista (não aparecem como "em andamento").
+
+## Ligação com o Supabase (front novo no banco do app antigo)
+
+- **Mesmo projeto, tabelas novas ao lado das antigas.** O front novo usa o projeto que o app antigo já
+  usa, com tabelas no formato do contrato (`accounts`, `workers`, `companies`, `jobs`, `applications`…),
+  sem renomear nem alterar as do app antigo — que continua funcionando. Os dois dividem o Auth, o
+  segredo do CPF/CNPJ (Vault) e os buckets. Migrations só acrescentam.
+- **Regras no banco.** Tudo que muda mais de um registro é uma RPC `security definer` que repete as
+  regras do modo de demonstração (mesmas mensagens) numa transação; o cliente só lê pelo RLS e grava
+  diretamente apenas o que é seu e simples (vaga salva, post, lido/não lido, campos do próprio perfil).
+- **WhatsApp privado de verdade.** As colunas de WhatsApp não têm privilégio de leitura; o número só sai
+  pela RPC `get_contact`, para os dois lados do bico, a partir da pré-seleção.
+- **Contagem sem expor candidatos.** O trabalhador não lê candidaturas de outros; o mural sabe se a vaga
+  lotou pela RPC `job_stats` (só números).
+- **Ids de vaga curtos** (`BC-5001`…): aparecem no link e na mensagem pronta do WhatsApp.
+- **Entrar com CPF/CNPJ por Edge Function**, para nunca devolver ao navegador o e-mail de um documento.
+- **Links do e-mail** (confirmação e nova senha) no fluxo `implicit`, tratados antes do roteador — o
+  mesmo jeito comprovado do app antigo (o `#access_token` e o roteador usam o mesmo `#`).
+- **E-mail incorreto ou senha incorreta** viram uma mensagem só ("E-mail ou senha incorretos"): o
+  Supabase Auth não diz qual dos dois, de propósito.
+- **Sem provedor de WhatsApp/pagamento ainda**: o passo do código de WhatsApp sai do cadastro no modo
+  real (o número fica sem confirmação, sem fingir que um código foi enviado); o pagamento do
+  impulsionamento é registrado e confirmado no servidor, com a confirmação do PIX simulada até integrar
+  um provedor. O número do cartão nunca sai do aparelho (só os 4 últimos dígitos).
+- **Exportar dados** no modo real baixa o arquivo no aparelho (não há envio de e-mail configurado); a
+  tela diz isso.
+- **Contas antigas** recebem a conta nova com o perfil a completar; o aceite dos termos só é registrado
+  quando a pessoa aceitou de fato (cadastro no app novo), nunca em nome de quem não viu.
+- **Excluir vaga** também a encerra (quem esperava é avisado), para ninguém ficar com candidatura presa
+  numa vaga que sumiu.
+- **Diária concluída** soma 1 em `jobs_done` do trabalhador (o modo de demonstração não somava).
+- **Ajustes mínimos de tela** (só no modo real, sem mudar o visual): esconder as dicas de demonstração;
+  "Abrir meu e-mail" vira "Já confirmei meu e-mail" e mostra o motivo quando ainda não confirmou;
+  mensagem do login para e-mail/senha incorretos; contagem de candidatos no perfil da construtora
+  vinda do servidor.

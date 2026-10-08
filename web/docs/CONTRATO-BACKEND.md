@@ -5,7 +5,8 @@ demonstração: todas as telas chamam **só** as funções de `src/services/`, q
 memória (`services/store.ts`) depois de uma espera (`mockLatency`). Ligar o back-end é trocar o **corpo**
 dessas funções, mantendo **assinatura, retorno e erros**. Nenhuma tela precisa mudar.
 
-> Situação: Fase 1 (B01–B12) concluída. As fases 2 a 4 acrescentam funções a este documento.
+> Situação: Fase 1 (B01–B12) concluída e **implementada no Supabase** (`src/services/remote/`,
+> `supabase/migrations/`, ver `docs/SUPABASE.md`). As fases 2 a 4 acrescentam funções a este documento.
 
 ## Regras gerais
 
