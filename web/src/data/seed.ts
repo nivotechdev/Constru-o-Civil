@@ -37,6 +37,8 @@ export const ACCOUNTS: Record<string, Account> = {
     whatsappVerifiedAt: '2025-03-02T13:10:00.000Z',
     emailConfirmedAt: '2025-03-02T13:20:00.000Z',
     profileCompletedAt: '2025-03-02T13:30:00.000Z',
+    termsVersion: '1.0',
+    termsAcceptedAt: '2025-03-02T13:30:00.000Z',
     workerId: CURRENT_WORKER_ID,
     companyId: null,
     createdAt: '2025-03-02T13:00:00.000Z'
@@ -50,6 +52,8 @@ export const ACCOUNTS: Record<string, Account> = {
     whatsappVerifiedAt: '2025-03-01T12:10:00.000Z',
     emailConfirmedAt: '2025-03-01T12:20:00.000Z',
     profileCompletedAt: '2025-03-01T12:30:00.000Z',
+    termsVersion: '1.0',
+    termsAcceptedAt: '2025-03-01T12:30:00.000Z',
     workerId: null,
     companyId: CURRENT_COMPANY_ID,
     createdAt: '2025-03-01T12:00:00.000Z'

@@ -195,3 +195,15 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
   com a F11). Confirmar o pagamento gera a notificação "Vaga impulsionada" para a construtora.
 - **Ordem do mural** ainda usa o "urgente"; o impulsionamento ativo no topo e os selos no cartão da vaga
   são a L08.
+
+## B11 — Termos de uso e Política de privacidade
+
+- **`/termos` e `/privacidade`** abrem com ou sem login, em tela cheia, com faixa "Rascunho para revisão
+  jurídica", versão e data. O texto-modelo está em `services/legal.ts` (no back-end, servido de uma tabela
+  para o aceite ficar ligado à versão mostrada).
+- **A política de privacidade (texto) é separada de "Privacidade e dados"** (`/configuracoes/privacidade`,
+  onde a pessoa exporta ou exclui os dados).
+- **No cadastro**, o aceite único cobre os dois documentos ("Li e aceito os Termos de uso e a Política de
+  privacidade"); os links abrem as telas e o "voltar" retorna ao passo do cadastro, sem perder o que foi
+  digitado. A conta guarda `termsVersion` e `termsAcceptedAt`.
+- **Configurações › Sobre** aponta para as duas telas (os dois botões estavam sem ação).

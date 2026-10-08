@@ -52,6 +52,8 @@ const ResetPassword = screen(() => import('./pages/shared/ResetPassword'));
 const Notifications = screen(() => import('./pages/shared/Notifications'));
 const Settings = screen(() => import('./pages/shared/Settings'));
 const Privacy = screen(() => import('./pages/shared/Privacy'));
+const Terms = screen(() => import('./pages/shared/Terms'));
+const PrivacyPolicy = screen(() => import('./pages/shared/PrivacyPolicy'));
 const WorkerProfile = screen(() => import('./pages/shared/WorkerProfileScreen'));
 const EditWorkerProfile = screen(() => import('./pages/shared/EditWorkerProfile'));
 const CompanyProfile = screen(() => import('./pages/shared/CompanyProfileScreen'));
@@ -99,6 +101,8 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/login', guest(Login)),
   compileRoute('/esqueci-senha', anyone(ForgotPassword)),
   compileRoute('/redefinir-senha', anyone(ResetPassword)),
+  compileRoute('/termos', anyone(Terms)),
+  compileRoute('/privacidade', anyone(PrivacyPolicy)),
   compileRoute('/notificacoes', app(Notifications)),
   compileRoute('/configuracoes', app(Settings)),
   compileRoute('/configuracoes/privacidade', app(Privacy)),
@@ -139,7 +143,9 @@ const AUTH_FLOW = new Set([
   '/verificar-email',
   '/login',
   '/esqueci-senha',
-  '/redefinir-senha'
+  '/redefinir-senha',
+  '/termos',
+  '/privacidade'
 ]);
 
 /** Sign-in/sign-up screens render full-bleed, without the app navigation. */

@@ -94,12 +94,15 @@ describe('accounts (mock auth)', () => {
         doc: '123.456.789-09',
         email: 'ana@exemplo.com',
         whatsapp: '(11) 91234-5678',
-        password: 'abcdefgh1'
+        password: 'abcdefgh1',
+        acceptedTermsVersion: '1.0'
       })
     );
     expect(result).toEqual({ ok: true });
     const session = store.getSession();
     expect(session).toMatchObject({ role: 'trabalhador', emailConfirmed: false, profileComplete: false });
+    // The accepted version of the terms is stored with the account (B11).
+    expect(store.getDb().accounts[session!.accountId]).toMatchObject({ termsVersion: '1.0' });
     expect(homeFor(session!)).toBe('/verificar-email');
     expect(sel.currentWorker(store.getDb())).toMatchObject({ name: 'Ana Souza', initials: 'AS' });
 
@@ -124,7 +127,8 @@ describe('accounts (mock auth)', () => {
         doc: '12.345.678/0001-95',
         email: 'ANA@exemplo.com',
         whatsapp: '(11) 91234-5678',
-        password: 'abcdefgh1'
+        password: 'abcdefgh1',
+        acceptedTermsVersion: '1.0'
       })
     );
     expect(again).toEqual({ ok: false, reason: 'email-taken' });

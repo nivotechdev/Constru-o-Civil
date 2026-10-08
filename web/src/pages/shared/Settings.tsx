@@ -79,8 +79,8 @@ export default function Settings() {
           />
         </Section>
         <Section title="Sobre">
-          <Row icon="file-check" label="Termos de uso" onClick={() => {}} />
-          <Row icon="shield-check" label="Política de privacidade" onClick={() => {}} />
+          <Row icon="file-check" label="Termos de uso" onClick={() => navigate('/termos')} />
+          <Row icon="shield-check" label="Política de privacidade" onClick={() => navigate('/privacidade')} />
         </Section>
         <Section title="">
           <Row icon="log-out" label="Sair da conta" danger onClick={() => askSignOut()} />

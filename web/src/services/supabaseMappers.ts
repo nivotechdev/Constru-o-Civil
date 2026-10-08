@@ -52,6 +52,8 @@ export function accountFromRow(row: TableRow<'accounts'>): Account {
     whatsappVerifiedAt: row.whatsapp_verified_at,
     emailConfirmedAt: row.email_confirmed_at,
     profileCompletedAt: row.profile_completed_at,
+    termsVersion: row.terms_version,
+    termsAcceptedAt: row.terms_accepted_at,
     workerId: row.worker_id,
     companyId: row.company_id,
     createdAt: row.created_at
@@ -68,6 +70,8 @@ export function accountToRow(account: Account): TableInsert<'accounts'> {
     whatsapp_verified_at: account.whatsappVerifiedAt,
     email_confirmed_at: account.emailConfirmedAt,
     profile_completed_at: account.profileCompletedAt,
+    terms_version: account.termsVersion,
+    terms_accepted_at: account.termsAcceptedAt,
     worker_id: account.workerId,
     company_id: account.companyId,
     created_at: account.createdAt

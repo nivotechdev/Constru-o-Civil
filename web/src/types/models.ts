@@ -19,6 +19,9 @@ export interface Account {
   emailConfirmedAt: string | null;
   /** When "Completar perfil" was finished. */
   profileCompletedAt: string | null;
+  /** Version of the terms of use and privacy policy accepted at sign-up, and when (B11). */
+  termsVersion: string;
+  termsAcceptedAt: string;
   /** The worker profile this account owns (role trabalhador). */
   workerId: string | null;
   /** The company this account belongs to (role recrutador). */

@@ -79,6 +79,8 @@ export interface SignUpData {
   /** Confirmed by code (see sendWhatsAppCode). */
   whatsapp: string;
   password: string;
+  /** The version of the terms/privacy policy the person accepted (see services/legal.ts). */
+  acceptedTermsVersion: string;
 }
 
 export type SignUpResult = { ok: true } | { ok: false; reason: 'doc-taken' | 'email-taken' };
@@ -117,6 +119,8 @@ export async function signUp(data: SignUpData): Promise<SignUpResult> {
     whatsappVerifiedAt: now,
     emailConfirmedAt: null,
     profileCompletedAt: null,
+    termsVersion: data.acceptedTermsVersion,
+    termsAcceptedAt: now,
     workerId: null,
     companyId: null,
     createdAt: now

@@ -62,7 +62,8 @@ describe('simulated backend calls keep the legacy delays', () => {
       name: 'Ana',
       email: 'ana@x.com',
       whatsapp: '(11) 98842-3310',
-      password: 'abcdefgh1'
+      password: 'abcdefgh1',
+      acceptedTermsVersion: '1.0'
     };
     expect(await settlesAfter(s.auth.signUp({ ...data, doc: '123.456.789-01' }), 700)).toEqual({ ok: true });
     expect(await settlesAfter(s.auth.signUp({ ...data, doc: '111.111.111-11' }), 700)).toEqual({

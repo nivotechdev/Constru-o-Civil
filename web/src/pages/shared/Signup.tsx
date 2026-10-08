@@ -7,6 +7,7 @@ import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
 import { sendWhatsAppCode, signUp, verifyWhatsAppCode } from '../../services/auth';
+import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
 import { goBack as routerGoBack, navigate } from '../../services/router';
 import { resetUI } from '../../services/store';
@@ -318,7 +319,8 @@ export default function Signup({ params }: ScreenProps) {
       doc: ui.values.doc || '',
       email: ui.values.email || '',
       whatsapp: ui.values.whatsapp || '',
-      password: ui.values.senha || ''
+      password: ui.values.senha || '',
+      acceptedTermsVersion: TERMS_VERSION
     })
       .then((result) => {
         if (!result.ok && result.reason === 'email-taken') {
@@ -455,17 +457,25 @@ export default function Signup({ params }: ScreenProps) {
               </div>
               <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
                 <Checkbox
-                  label="Li e aceito as condições de uso da Bicos"
+                  label="Li e aceito os Termos de uso e a Política de privacidade"
                   checked={ui.accepted}
                   onChange={(v) => setUi({ accepted: v, acceptError: false })}
                 />
                 <div className="flex gap-4 pl-9">
-                  <a href="#" className="text-sm text-brand-600 underline">
+                  <button
+                    type="button"
+                    className="text-sm text-brand-600 underline"
+                    onClick={() => navigate('/termos')}
+                  >
                     Termos de uso
-                  </a>
-                  <a href="#" className="text-sm text-brand-600 underline">
+                  </button>
+                  <button
+                    type="button"
+                    className="text-sm text-brand-600 underline"
+                    onClick={() => navigate('/privacidade')}
+                  >
                     Política de privacidade
-                  </a>
+                  </button>
                 </div>
                 {ui.acceptError ? (
                   <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">

@@ -45,6 +45,8 @@ type AccountRow = {
   whatsapp_verified_at: string | null;
   email_confirmed_at: string | null;
   profile_completed_at: string | null;
+  terms_version: string;
+  terms_accepted_at: string;
   worker_id: string | null;
   company_id: string | null;
   created_at: string;
