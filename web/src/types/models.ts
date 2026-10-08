@@ -236,6 +236,7 @@ export type NotificationKind =
   | 'nao_compareceu'
   | 'avaliar_diaria'
   | 'avaliar_trabalhador'
+  | 'vaga_editada'
   | 'bico_urgente'
   | 'bico_fechado';
 

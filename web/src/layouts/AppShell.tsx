@@ -16,6 +16,7 @@ const TAB_ROOTS: Record<Role, Set<string>> = {
 // confirmations) get a narrow centered column, everything else a page column.
 const NARROW_SCREENS = new Set([
   '/criar-vaga',
+  '/vaga-editar/:id',
   '/perfil/editar',
   '/empresa/editar',
   '/configuracoes',

@@ -27,6 +27,7 @@ export const NOTIFICATION_LOOK: Record<NotificationKind, Look> = {
   nao_compareceu: { icon: 'calendar-x', ...DANGER },
   avaliar_diaria: { icon: 'star', ...ACCENT },
   avaliar_trabalhador: { icon: 'star', ...ACCENT },
+  vaga_editada: { icon: 'pencil', ...BRAND },
   bico_urgente: { icon: 'zap', ...DANGER },
   bico_fechado: { icon: 'circle-check', ...SUCCESS }
 };

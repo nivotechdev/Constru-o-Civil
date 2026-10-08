@@ -160,3 +160,16 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
   escolher a nota; comentário em caixa de texto com limite de 300 caracteres e contador (antecipa P02/P03).
 - **Estrelas do trabalhador mostram a quantidade de avaliações** (`reviewCount`), não de bicos feitos
   (antecipa parte da L09).
+
+## B05 — Editar vaga
+
+- **`/vaga-editar/:id` reaproveita o formulário de publicar** (`JobFormScreen` em modo edição), já
+  preenchido. Só o dono edita, e só com a vaga aberta (encerrada ou excluída mostra o motivo).
+- **Data de início no passado** é aceita se for a mesma de antes (vaga em andamento); trocar para outra
+  data passada não.
+- **Pessoas:** não dá para pedir menos que o número de aprovados/contratados. A aprovação também passou
+  a recusar quando a vaga já está cheia (o teste da edição achou esse caso).
+- **Aviso aos candidatos:** mudar valor, data/horário ou endereço com candidatos ativos (pendentes,
+  aprovados ou contratados) mostra "Os candidatos serão avisados da mudança" antes de salvar e envia a
+  notificação "A vaga mudou" a cada um. Mudar só a descrição, fotos ou requisitos não avisa ninguém.
+- **Requisitos próprios** da vaga (fora da lista padrão) aparecem marcados na edição, para não sumirem.

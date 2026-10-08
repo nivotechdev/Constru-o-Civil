@@ -131,7 +131,13 @@ export default function JobManage({ params }: ScreenProps) {
   );
   const actions = () => (
     <>
-      <Button label="Editar vaga" variant="secondary" iconLeft="pencil" className="flex-1" onClick={() => {}} />
+      <Button
+        label="Editar vaga"
+        variant="secondary"
+        iconLeft="pencil"
+        className="flex-1"
+        onClick={() => navigate('/vaga-editar/' + job.id)}
+      />
       <Button label="Encerrar vaga" variant="ghost" className="flex-1" onClick={() => setUi({ confirmClose: true })} />
     </>
   );

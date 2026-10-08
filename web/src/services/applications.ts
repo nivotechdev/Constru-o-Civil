@@ -224,6 +224,8 @@ export async function approve(jobId: string, workerId: string): Promise<void> {
   const job = companyJob(db, jobId);
   const app = findApp(db, jobId, workerId);
   const company = companyOf(db, job);
+  const filled = db.applications.filter((a) => a.jobId === jobId && holdsSlot(a.status)).length;
+  if (filled >= (job.slots || 1)) throw serviceError('conflito', 'As vagas desse bico já foram preenchidas.');
   const at = now();
   store.transact((d) => {
     let next = withNotification(

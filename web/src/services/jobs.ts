@@ -1,8 +1,10 @@
 // Jobs: reading the mural and a job, publishing, saving, closing and deleting. Each function says what
 // the real backend does there (docs/CONTRATO-BACKEND.md); the mock applies the change to the store.
-import type { Job } from '../types/models';
+import type { Database, Job } from '../types/models';
 import { closeJobApplications } from './applications';
-import { holdsSlot } from './applicationMachine';
+import { holdsSlot, isPending } from './applicationMachine';
+import { jobTitle } from './catalog';
+import { withNotification } from './notifications';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { currentCompanyId, getJob, isJobSaved } from './selectors';
@@ -49,6 +51,69 @@ export async function publishJob(draft: JobDraft): Promise<string> {
   const id = nextJobId();
   store.createJob({ ...draft, id, companyId: currentCompanyId() });
   return id;
+}
+
+/** What changed between a job and its edited version that candidates need to hear about. */
+export function significantChanges(job: Job, draft: JobDraft): string[] {
+  const changes: string[] = [];
+  if (job.pay !== draft.pay) changes.push('valor');
+  if (
+    job.dateToArrange !== draft.dateToArrange ||
+    job.startDate !== draft.startDate ||
+    job.endDate !== draft.endDate ||
+    job.startTime !== draft.startTime ||
+    job.endTime !== draft.endTime
+  )
+    changes.push('data');
+  const a = job.address;
+  const b = draft.address;
+  if (a.cep !== b.cep || a.street !== b.street || a.number !== b.number || a.city !== b.city || a.uf !== b.uf)
+    changes.push('endereço');
+  return changes;
+}
+
+/** Candidacies still going on (they are told when the job changes or ends). */
+const activeOn = (db: Database, jobId: string) =>
+  db.applications.filter((a) => a.jobId === jobId && (isPending(a.status) || holdsSlot(a.status)));
+
+/**
+ * Saves the company's changes to an open job. The headcount can't go below who is already approved;
+ * a change of pay, date or address notifies the candidates. Backend: update jobs (own, open) and insert
+ * the notifications, in one transaction.
+ */
+export async function updateJob(jobId: string, draft: JobDraft): Promise<void> {
+  await mockLatency(700);
+  const job = ownJob(jobId);
+  const db = store.getDb();
+  if (job.closed || db.deletedJobIds.includes(jobId))
+    throw serviceError('conflito', 'Essa vaga já foi encerrada e não pode mais ser editada.');
+  const holding = db.applications.filter((a) => a.jobId === jobId && holdsSlot(a.status)).length;
+  if ((draft.slots || 1) < holding)
+    throw serviceError('validacao', `Você já aprovou ${holding} pessoas. Não dá para pedir menos que isso.`);
+  const changes = significantChanges(job, draft);
+  const at = new Date().toISOString();
+  const updated: Job = { ...job, ...draft, id: job.id, companyId: job.companyId };
+  store.transact((d) => {
+    let next: Database = { ...d, jobs: { ...d.jobs, [jobId]: updated } };
+    if (changes.length) {
+      const company = d.companies[job.companyId];
+      for (const app of activeOn(d, jobId)) {
+        next = withNotification(
+          next,
+          {
+            kind: 'vaga_editada',
+            title: 'A vaga mudou',
+            text: `${company.name} mudou ${changes.join(', ')} de ${jobTitle(updated)}. Confira antes de ir.`,
+            workerId: app.workerId,
+            companyId: null,
+            target: '/vaga/' + jobId
+          },
+          at
+        );
+      }
+    }
+    return next;
+  });
 }
 
 /** Replaces the job's photos (the first is the cover). Backend: upload to Storage, update jobs.photos. */

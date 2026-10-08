@@ -15,11 +15,13 @@ import { useDb, useUI } from '../../hooks/useStore';
 import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
 import { OFICIO_OPTIONS, REQUISITOS_OPCOES } from '../../services/catalog';
 import { errorMessage } from '../../services/errors';
-import { publishJob } from '../../services/jobs';
+import { publishJob, significantChanges, updateJob } from '../../services/jobs';
+import { holdsSlot, isPending } from '../../services/applicationMachine';
+import { showToast } from '../../services/toast';
 import { goBack, navigate } from '../../services/router';
-import { currentCompanyId, getCompany } from '../../services/selectors';
+import { applicationsForJob, approvedCount, currentCompanyId, getCompany } from '../../services/selectors';
 import { resetUI } from '../../services/store';
-import type { DiasKey } from '../../types/models';
+import type { DiasKey, Job } from '../../types/models';
 import { cx } from '../../utils/cx';
 import { todayISO } from '../../utils/dates';
 import { DIAS, DIAS_ORDEM, durationText } from '../../utils/jobInfo';
@@ -28,6 +30,7 @@ import {
   draftFromForm,
   emptyForm,
   formDiarias,
+  formFromJob,
   MIN_PAY,
   validateStep1,
   validateStep2,
@@ -35,8 +38,6 @@ import {
   type FormErrors,
   type JobForm
 } from './jobForm';
-
-const KEY = 'create-job';
 
 type CepStatus = 'idle' | 'loading' | 'found' | 'notfound' | 'error';
 
@@ -57,11 +58,27 @@ function digits(v: string, max: number) {
 
 const hasErrors = (e: FormErrors) => Object.values(e).some(Boolean);
 
+/** Publishing a new job. */
 export default function CreateJob() {
+  return <JobFormScreen />;
+}
+
+/**
+ * The job form: publishing a new job, or editing `job` (B05). Editing keeps the start date if it is
+ * already in the past, can't go below the people already approved, and warns when candidates will be
+ * told about a change.
+ */
+export function JobFormScreen({ job }: { job?: Job }) {
   const db = useDb();
+  const KEY = job ? 'edit-job:' + job.id : 'create-job';
+  const holding = job ? approvedCount(db, job.id) : 0;
+  const candidates = job
+    ? applicationsForJob(db, job.id).filter((a) => isPending(a.status) || holdsSlot(a.status))
+    : [];
+  const limits = job ? { originalStartDate: job.startDate, minSlots: holding } : {};
   const [ui, setUi] = useUI<CreateJobUI>(KEY, () => ({
     step: 1,
-    form: emptyForm(),
+    form: job ? formFromJob(job) : emptyForm(),
     errors: {},
     cepStatus: 'idle',
     cepError: null,
@@ -115,7 +132,7 @@ export default function CreateJob() {
 
   function advance() {
     if (ui.step === 1) {
-      const errors = validateStep1(f);
+      const errors = validateStep1(f, new Date(), limits);
       if (hasErrors(errors)) {
         setUi({ errors });
         return;
@@ -130,15 +147,26 @@ export default function CreateJob() {
     }
     if (ui.publishing) return;
     setUi({ publishing: true, publishError: null });
-    publishJob(draftFromForm(f))
-      .then((id) => {
-        resetUI(KEY);
-        navigate('/vaga-publicada/' + id);
-      })
-      .catch((e: unknown) => setUi({ publishing: false, publishError: errorMessage(e) }));
+    const draft = draftFromForm(f);
+    const saving = job
+      ? updateJob(job.id, draft).then(() => {
+          resetUI(KEY);
+          showToast(warnChanges.length ? 'Vaga atualizada. Avisamos os candidatos.' : 'Vaga atualizada');
+          navigate('/vaga-gerenciar/' + job.id, { replace: true });
+        })
+      : publishJob(draft).then((id) => {
+          resetUI(KEY);
+          navigate('/vaga-publicada/' + id);
+        });
+    saving.catch((e: unknown) => setUi({ publishing: false, publishError: errorMessage(e) }));
   }
 
   const diarias = formDiarias(f);
+  // Editing a job people applied to: a new pay, date or address is told to them.
+  const warnChanges =
+    job && candidates.length && !hasErrors(validateStep1(f, new Date(), limits))
+      ? significantChanges(job, draftFromForm(f))
+      : [];
   const cepHint =
     ui.cepStatus === 'loading'
       ? 'Buscando o endereço…'
@@ -414,7 +442,7 @@ export default function CreateJob() {
           O que o trabalhador precisa levar
         </div>
         <div className="flex flex-wrap gap-2">
-          {REQUISITOS_OPCOES.map((r) => (
+          {[...REQUISITOS_OPCOES, ...f.requisitos.filter((r) => !REQUISITOS_OPCOES.includes(r))].map((r) => (
             <Tag
               key={r}
               label={r}
@@ -476,7 +504,10 @@ export default function CreateJob() {
 
   return (
     <div className="flex flex-col">
-      <BackBar title="Publicar vaga" onBack={() => (ui.step === 2 ? setUi({ step: 1 }) : goBack('/mural'))} />
+      <BackBar
+        title={job ? 'Editar vaga' : 'Publicar vaga'}
+        onBack={() => (ui.step === 2 ? setUi({ step: 1 }) : goBack(job ? '/vaga-gerenciar/' + job.id : '/mural'))}
+      />
       <div className="flex items-center gap-2 px-4 sm:px-0 pt-3">
         <StepDot n={1} active={ui.step >= 1} />
         <span className="text-sm text-concrete-500">Serviço, local e datas</span>
@@ -486,22 +517,30 @@ export default function CreateJob() {
       </div>
       <div className="px-4 sm:px-0 py-5">{ui.step === 1 ? step1 : step2}</div>
       <div className="px-4 sm:px-0 py-3 flex flex-col gap-1.5">
+        {warnChanges.length ? (
+          <div className="flex items-start gap-2.5 p-3 rounded-card bg-warning-50 border border-warning-100 text-sm text-concrete-800">
+            <Icon name="triangle-alert" size={18} color="var(--amber-500)" />
+            <span>{`Você mudou ${warnChanges.join(', ')}. Os candidatos serão avisados da mudança.`}</span>
+          </div>
+        ) : null}
         {hasErrors(ui.errors) ? <FieldError message="Confira os campos marcados em vermelho." /> : null}
         {ui.publishError ? <FieldError message={ui.publishError} /> : null}
         <Button
-          label={ui.step === 1 ? 'Continuar' : 'Publicar vaga'}
+          label={ui.step === 1 ? 'Continuar' : job ? 'Salvar alterações' : 'Publicar vaga'}
           size="lg"
           fullWidth
           loading={ui.publishing}
           onClick={advance}
         />
-        <span className="text-center text-xs text-concrete-500">Publicar é grátis. Você paga só se impulsionar.</span>
+        {job ? null : (
+          <span className="text-center text-xs text-concrete-500">Publicar é grátis. Você paga só se impulsionar.</span>
+        )}
       </div>
       <CityPicker
         open={ui.pickerOpen}
         title="Cidade da obra"
         value={f.city}
-        stateKey="create-job-city"
+        stateKey={KEY + '-city'}
         onChoose={(city) => {
           set({ city }, 'city');
           setUi({ pickerOpen: false });

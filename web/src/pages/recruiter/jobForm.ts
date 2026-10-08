@@ -117,8 +117,16 @@ export function formDiarias(f: Pick<JobForm, 'dateToArrange' | 'startDate' | 'en
   return countDiarias(f.startDate, f.endDate, f.dias);
 }
 
+/** When editing a job: what the form can't go below/before. */
+export interface EditLimits {
+  /** The job's current start date: keeping it is fine even if it is already in the past. */
+  originalStartDate?: string | null;
+  /** People already approved or hired: the headcount can't go below it. */
+  minSlots?: number;
+}
+
 // Step 1: what, where, when and how many.
-export function validateStep1(f: JobForm, now: Date = new Date()): FormErrors {
+export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLimits = {}): FormErrors {
   const e: FormErrors = {};
   if (!getOficio(f.oficioId)) e.oficio = 'Escolha o ofício que a vaga precisa.';
   if (onlyDigits(f.cep).length !== 8) e.cep = 'Digite o CEP da obra (8 números).';
@@ -131,7 +139,8 @@ export function validateStep1(f: JobForm, now: Date = new Date()): FormErrors {
   if (!f.dateToArrange) {
     const today = todayISO(now);
     if (!isValidISODate(f.startDate)) e.startDate = 'Escolha a data de início.';
-    else if (f.startDate < today) e.startDate = 'A data de início não pode ser no passado.';
+    else if (f.startDate < today && f.startDate !== limits.originalStartDate)
+      e.startDate = 'A data de início não pode ser no passado.';
     if (!isValidISODate(f.endDate)) e.endDate = 'Escolha a data de fim.';
     else if (isValidISODate(f.startDate) && f.endDate < f.startDate)
       e.endDate = 'A data de fim tem que ser igual ou depois do início.';
@@ -152,6 +161,8 @@ export function validateStep1(f: JobForm, now: Date = new Date()): FormErrors {
 
   const vagas = Number(f.vagas);
   if (!vagas || vagas < 1 || vagas > 50) e.vagas = 'Informe quantas pessoas a vaga precisa (de 1 a 50).';
+  else if (limits.minSlots && vagas < limits.minSlots)
+    e.vagas = `Você já aprovou ${limits.minSlots} ${limits.minSlots === 1 ? 'pessoa' : 'pessoas'}. Não dá para pedir menos que isso.`;
   return e;
 }
 
