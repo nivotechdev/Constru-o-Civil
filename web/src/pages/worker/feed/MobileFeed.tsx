@@ -137,7 +137,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }:
           <h1 className="inline-flex" aria-label="Bicos">
             <Logo compact />
           </h1>
-          <MobileNotifications role={role} />
+          <MobileNotifications />
         </div>
         <SearchPill id="feed-search" role={role} search={ui.search} compact />
       </div>
@@ -153,9 +153,9 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }:
 }
 
 // The header bell and its panel, which opens across the top of the screen.
-function MobileNotifications({ role }: { role: Role }) {
+function MobileNotifications() {
   const [menus, setMenus] = useUI<MenuUI>(MENU_KEY, MENU_DEFAULTS);
-  const { list, unread, markAllRead } = useNotifications(role);
+  const { list, unread, markAllRead, open } = useNotifications();
   return (
     <>
       <IconButton
@@ -169,6 +169,7 @@ function MobileNotifications({ role }: { role: Role }) {
           list={list}
           unread={unread}
           onMarkAllRead={markAllRead}
+          onOpen={open}
           onSeeAll={() => {
             setMenus({ notificationsOpen: false });
             navigate('/notificacoes');

@@ -13,7 +13,9 @@ import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
 import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
-import { decideApplication, loadJobCandidates } from '../../services/applications';
+import { approve, confirmHire, loadJobCandidates, reject } from '../../services/applications';
+import { isPending } from '../../services/applicationMachine';
+import { candidateBadge } from '../../utils/applicationStatus';
 import { errorMessage } from '../../services/errors';
 import { closeJob, updateJobPhotos } from '../../services/jobs';
 import { showToast } from '../../services/toast';
@@ -40,8 +42,15 @@ import { jobPhotos } from '../../utils/jobPhotos';
 
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
-  const [ui, setUi] = useUI<{ confirmClose: boolean }>('job-manage', { confirmClose: false });
+  const [ui, setUi] = useUI<{ confirmClose: boolean; hireId: string | null }>('job-manage', {
+    confirmClose: false,
+    hireId: null
+  });
   const query = useQuery('candidates:' + params.id, () => loadJobCandidates(params.id));
+  const hire = useAction(confirmHire, () => {
+    setUi({ hireId: null });
+    showToast('Contratação confirmada. Avisamos o trabalhador.');
+  });
   const close = useAction(closeJob, () => {
     setUi({ confirmClose: false });
     showToast('Vaga encerrada');
@@ -66,6 +75,7 @@ export default function JobManage({ params }: ScreenProps) {
   }
 
   const applications = applicationsForJob(db, job.id);
+  const hireName = ui.hireId ? (db.workers[ui.hireId]?.name ?? 'O trabalhador') : '';
   const slots = job.slots || 1;
   const approved = approvedCount(db, job.id);
   const pending = pendingCount(db, job.id);
@@ -181,12 +191,8 @@ export default function JobManage({ params }: ScreenProps) {
               <div className="bg-white border border-concrete-200 rounded-card shadow-card overflow-hidden">
                 {applications.map((a) => {
                   const worker = workerOf(db, a);
-                  const decision =
-                    a.status === 'pre_selecionado' || a.status === 'contratado'
-                      ? 'aprovado'
-                      : a.status === 'nao_selecionado'
-                        ? 'recusado'
-                        : null;
+                  const pending = isPending(a.status);
+                  const quiet = ['nao_selecionado', 'desistiu', 'cancelado_pela_construtora', 'nao_compareceu'];
                   return (
                     <CandidateRow
                       key={a.id}
@@ -194,26 +200,32 @@ export default function JobManage({ params }: ScreenProps) {
                       summary={oficioNome(worker.oficioId) + ' · ' + workerPlace(worker)}
                       distance={workerDistance(worker, job.address)}
                       isNew={worker.novo}
-                      decision={decision}
+                      badge={pending ? null : candidateBadge(a)}
+                      muted={quiet.includes(a.status)}
                       onClick={() => navigate(`/trabalhador/${worker.id}/${job.id}`)}
+                      action={
+                        a.status === 'pre_selecionado'
+                          ? { label: 'Confirmar contratação', onClick: () => setUi({ hireId: worker.id }) }
+                          : null
+                      }
                       onApprove={
-                        !decision && !closed
+                        pending && !closed
                           ? (e) => {
                               e.stopPropagation();
-                              decideApplication(job.id, worker.id, 'aprovado')
+                              approve(job.id, worker.id)
                                 .then(() => {
                                   if (isJobClosed(getDb(), job)) navigate('/fechado/' + job.id);
-                                  else showToast(`${worker.name.split(' ')[0]} aprovado`);
+                                  else showToast(`${worker.name.split(' ')[0]} aprovado. O WhatsApp está liberado.`);
                                 })
                                 .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
                             }
                           : null
                       }
                       onReject={
-                        !decision && !closed
+                        pending && !closed
                           ? (e) => {
                               e.stopPropagation();
-                              decideApplication(job.id, worker.id, 'recusado')
+                              reject(job.id, worker.id)
                                 .then(() => showToast('Candidato recusado'))
                                 .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
                             }
@@ -256,6 +268,22 @@ export default function JobManage({ params }: ScreenProps) {
         onCancel={() => {
           close.reset();
           setUi({ confirmClose: false });
+        }}
+      />
+      <Dialog
+        open={Boolean(ui.hireId)}
+        title="Confirmar contratação?"
+        description={`${hireName} fica confirmado para essa diária e recebe um aviso. Combine os detalhes pelo WhatsApp.`}
+        confirmLabel="Confirmar contratação"
+        loading={hire.loading}
+        error={hire.error}
+        onConfirm={() => {
+          if (ui.hireId) void hire.run(job.id, ui.hireId);
+        }}
+        cancelLabel="Voltar"
+        onCancel={() => {
+          hire.reset();
+          setUi({ hireId: null });
         }}
       />
     </div>

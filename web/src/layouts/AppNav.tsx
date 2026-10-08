@@ -239,7 +239,7 @@ function TopBar({ role, items, active, account }: TopBarProps) {
     setMenu({ menuOpen: false, notificationsOpen: false });
     navigate(path);
   };
-  const notifications = useNotifications(role);
+  const notifications = useNotifications();
   const [indicatorStyle] = useState(() =>
     lastIndicator ? { transform: `translateX(${lastIndicator.x}px)`, width: `${lastIndicator.w}px` } : { opacity: '0' }
   );
@@ -345,6 +345,7 @@ function TopBar({ role, items, active, account }: TopBarProps) {
                 list={notifications.list}
                 unread={notifications.unread}
                 onMarkAllRead={notifications.markAllRead}
+                onOpen={notifications.open}
                 onSeeAll={() => go('/notificacoes')}
                 onClose={() => setMenu({ notificationsOpen: false })}
                 className="absolute right-0 top-full mt-3 w-[24rem]"

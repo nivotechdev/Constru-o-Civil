@@ -6,26 +6,15 @@ import { IconButton } from '../../components/IconButton';
 import { NotFound } from '../../components/NotFound';
 import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
-import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
-import { decideApplication } from '../../services/applications';
-import { FieldError } from '../../components/FieldError';
 import { loadWorkerProfile } from '../../services/profiles';
 import { Rating } from '../../components/Rating';
 import { useDb, useRole, useUI } from '../../hooks/useStore';
 import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI } from '../../services/sharedUI';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import {
-  applicationFor,
-  approvedCount,
-  currentCompanyId,
-  currentWorker,
-  getJob,
-  getWorker,
-  isJobClosed
-} from '../../services/selectors';
-import { getDb } from '../../services/store';
+import { currentCompanyId, currentWorker, getJob, getWorker } from '../../services/selectors';
+import { CandidateActions } from '../recruiter/CandidateActions';
 import { oficioNome } from '../../services/catalog';
 import { workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
@@ -38,7 +27,6 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
   const isOwn = !params.id;
   const workerId = isOwn ? currentWorker(db).id : params.id;
   const query = useQuery('worker:' + workerId, () => loadWorkerProfile(workerId));
-  const decide = useAction(decideApplication);
   if (query.status !== 'ready')
     return (
       <ScreenLoading
@@ -56,9 +44,6 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
   // Only the recruiter who owns this job may see candidate-review context (approve/reject, slots left).
   const jobId = jobForCtx && role === 'recrutador' && jobForCtx.companyId === currentCompanyId() ? jobIdRaw : null;
   const job = jobId ? getJob(db, jobId) : undefined;
-  const decision = jobId ? (applicationFor(db, jobId, worker.id) || { status: undefined }).status : null;
-  const decidedForJob = jobId && (decision === 'pre_selecionado' || decision === 'nao_selecionado');
-  const jobFull = job ? isJobClosed(db, job) : false;
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
@@ -165,67 +150,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
         ) : null}
       </div>
 
-      {!isOwn && jobId && job ? (
-        <div className="sticky bottom-0 px-4 sm:px-6 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none lg:pt-0 lg:pb-6">
-          {decide.error ? <FieldError message={decide.error} /> : null}
-          {!decidedForJob && !jobFull ? (
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
-              <Button
-                label={`Aprovar para a vaga · ${approvedCount(db, jobId) + 1} de ${job.slots || 1}`}
-                size="lg"
-                fullWidth
-                iconLeft="circle-check"
-                className="lg:w-auto lg:px-8"
-                loading={decide.loading}
-                onClick={() =>
-                  void decide.run(jobId, worker.id, 'aprovado').then((ok) => {
-                    if (!ok) return;
-                    const fresh = getDb();
-                    const freshJob = getJob(fresh, jobId);
-                    navigate(
-                      freshJob && isJobClosed(fresh, freshJob) ? '/fechado/' + jobId : '/vaga-gerenciar/' + jobId
-                    );
-                  })
-                }
-              />
-              <Button
-                label="Recusar candidato"
-                variant="ghost"
-                fullWidth
-                className="lg:w-auto"
-                disabled={decide.loading}
-                onClick={() =>
-                  void decide.run(jobId, worker.id, 'recusado').then((ok) => {
-                    if (ok) navigate('/vaga-gerenciar/' + jobId);
-                  })
-                }
-              />
-            </div>
-          ) : decidedForJob ? (
-            <div className="flex items-center gap-2.5">
-              <Badge
-                label={decision === 'pre_selecionado' ? 'Aprovado' : 'Recusado'}
-                tone={decision === 'pre_selecionado' ? 'success' : 'danger'}
-                icon={decision === 'pre_selecionado' ? 'circle-check' : 'circle-x'}
-              />
-              <span className="flex-1 text-sm text-concrete-500">
-                {decision === 'pre_selecionado'
-                  ? 'Contato por WhatsApp liberado para os dois lados.'
-                  : 'Avisamos que dessa vez não deu certo.'}
-              </span>
-              <Button
-                label="Desfazer"
-                variant="secondary"
-                size="sm"
-                loading={decide.loading}
-                onClick={() => void decide.run(jobId, worker.id, null)}
-              />
-            </div>
-          ) : (
-            <span className="text-center text-xs text-concrete-500">As vagas desse bico já foram preenchidas.</span>
-          )}
-        </div>
-      ) : null}
+      {!isOwn && job ? <CandidateActions job={job} worker={worker} /> : null}
     </div>
   );
 }

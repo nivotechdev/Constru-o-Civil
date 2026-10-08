@@ -5,8 +5,7 @@
 // immutable, so React components subscribe to just the slice they read (see hooks/useStore.ts) and
 // re-render only when that slice changes.
 import * as seed from '../data/seed';
-import type { Account, Application, Database, Decision, Job, Role, Session, WorkerPost } from '../types/models';
-import { applicationFor, applicationsForJob, approvedCount } from './selectors';
+import type { Account, Database, Job, Role, Session, WorkerPost } from '../types/models';
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T;
@@ -53,7 +52,8 @@ let state: State = {
     applications: clone(seed.APPLICATIONS),
     savedJobIds: [...seed.SAVED_JOB_IDS],
     deletedJobIds: [],
-    workerPosts: clone(seed.WORKER_POSTS)
+    workerPosts: clone(seed.WORKER_POSTS),
+    notifications: clone(seed.NOTIFICATIONS)
   },
   ui: {}
 };
@@ -196,64 +196,12 @@ export function updateWorker(workerId: string, patch: Partial<Database['workers'
   if (worker) updateDb((db) => ({ ...db, workers: { ...db.workers, [workerId]: { ...worker, ...patch } } }));
 }
 
-const isPending = (a: Application) => a.status === 'enviada' || a.status === 'em_analise';
-
-export function closeJob(jobId: string): void {
-  const job = state.db.jobs[jobId];
-  if (!job) return;
-  const hired = approvedCount(state.db, jobId) > 0;
-  const closedJob: Job = { ...job, closed: true, ...(hired ? {} : { semContratacao: true }) };
-  updateDb((db) => ({
-    ...db,
-    jobs: { ...db.jobs, [jobId]: closedJob },
-    applications: db.applications.map((a) =>
-      a.jobId === jobId && isPending(a) ? { ...a, status: 'nao_selecionado' } : a
-    )
-  }));
-}
-
-export function applyToJob(jobId: string, workerId: string): void {
-  updateDb((db) =>
-    applicationFor(db, jobId, workerId)
-      ? db
-      : { ...db, applications: [...db.applications, { id: 'a' + Date.now(), jobId, workerId, status: 'enviada' }] }
-  );
-}
-
-export function cancelApplication(jobId: string, workerId: string): void {
-  const i = state.db.applications.findIndex((a) => a.jobId === jobId && a.workerId === workerId);
-  if (i >= 0) updateDb((db) => ({ ...db, applications: db.applications.filter((_, k) => k !== i) }));
-}
-
-export function decideApplication(jobId: string, workerId: string, decision: Decision): void {
-  const app = applicationFor(state.db, jobId, workerId);
-  if (!app) return;
-  const status =
-    decision === 'aprovado' ? 'pre_selecionado' : decision === 'recusado' ? 'nao_selecionado' : 'em_analise';
-  let db: Database = {
-    ...state.db,
-    applications: state.db.applications.map((a) => (a === app ? { ...a, status } : a))
-  };
-  const job = db.jobs[jobId];
-  // Filling the last slot turns every still-pending candidate down.
-  if (decision === 'aprovado' && job && approvedCount(db, jobId) >= (job.slots || 1)) {
-    const pending = new Set(applicationsForJob(db, jobId).filter(isPending));
-    db = {
-      ...db,
-      applications: db.applications.map((a) => (pending.has(a) ? { ...a, status: 'nao_selecionado' } : a))
-    };
-  }
-  updateDb(() => db);
-}
-
-export function markReviewed(jobId: string, workerId: string): void {
-  const app = applicationFor(state.db, jobId, workerId);
-  if (app) {
-    updateDb((db) => ({
-      ...db,
-      applications: db.applications.map((a) => (a === app ? { ...a, status: 'avaliada' } : a))
-    }));
-  }
+/**
+ * Applies several changes at once (a status change, the candidacies it affects and the notifications
+ * it sends): the services build the next snapshot, the store swaps it in and notifies once.
+ */
+export function transact(recipe: (db: Database) => Database): void {
+  updateDb(recipe);
 }
 
 export function toggleSavedJob(jobId: string): void {

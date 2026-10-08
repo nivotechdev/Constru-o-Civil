@@ -11,7 +11,7 @@ import { loadMyApplications } from '../../services/applications';
 import { navigate } from '../../services/router';
 import { applicationsForWorker, companyOf, currentWorker, getJob, savedJobs } from '../../services/selectors';
 import type { Application } from '../../types/models';
-import { CLOSED, IN_PROGRESS, statusInfo } from '../../utils/applicationStatus';
+import { isInProgress, statusInfo } from '../../utils/applicationStatus';
 import { workerToCompanyUrl } from '../../utils/whatsapp';
 
 export default function MyApplications() {
@@ -19,15 +19,15 @@ export default function MyApplications() {
   const query = useQuery('my-applications', loadMyApplications);
   const worker = currentWorker(db);
   const apps = applicationsForWorker(db, worker.id);
-  const inProgress = apps.filter((a) => IN_PROGRESS.has(a.status));
-  const closed = apps.filter((a) => CLOSED.has(a.status));
+  const inProgress = apps.filter((a) => isInProgress(a));
+  const closed = apps.filter((a) => !isInProgress(a));
   const savedCount = savedJobs(db).length;
 
   function appCard(app: Application, muted: boolean) {
     const job = getJob(db, app.jobId);
     if (!job) return null;
     const company = companyOf(db, job);
-    const info = statusInfo(app.status, job.id);
+    const info = statusInfo(app);
     return (
       <JobTile
         key={app.id}

@@ -4,6 +4,7 @@ import { useQuery } from '../hooks/useQuery';
 import { loadNotifications } from '../services/notifications';
 import type { AppNotification } from '../types/models';
 import { cx } from '../utils/cx';
+import { relativeTime } from '../utils/dates';
 import { Icon } from './icons/Icon';
 import { NOTIFICATION_LOOK } from './notificationLook';
 import { QueryView } from './QueryView';
@@ -13,6 +14,8 @@ interface NotificationsPanelProps {
   list: AppNotification[];
   unread: number;
   onMarkAllRead: () => void;
+  /** Opens what a notification is about. */
+  onOpen: (n: AppNotification) => void;
   onSeeAll: () => void;
   onClose: () => void;
   /** Where the panel sits: under the bell (desktop) or across the top of the screen (phone). */
@@ -23,6 +26,7 @@ export function NotificationsPanel({
   list,
   unread,
   onMarkAllRead,
+  onOpen,
   onSeeAll,
   onClose,
   className
@@ -86,14 +90,14 @@ export function NotificationsPanel({
                 {list.map((n) => {
                   const look = NOTIFICATION_LOOK[n.kind];
                   return (
-                    <li key={n.title}>
+                    <li key={n.id}>
                       <button
                         type="button"
                         className={cx(
                           'relative w-full flex gap-3 px-4 py-3.5 text-left transition-colors hover:bg-concrete-50',
-                          n.read ? '' : 'bg-brand-50/40'
+                          n.readAt ? '' : 'bg-brand-50/40'
                         )}
-                        onClick={onSeeAll}
+                        onClick={() => onOpen(n)}
                       >
                         <span
                           className={cx(
@@ -104,13 +108,13 @@ export function NotificationsPanel({
                           <Icon name={look.icon} size={18} color={look.fg} />
                         </span>
                         <span className="flex-1 min-w-0 flex flex-col gap-0.5 pr-3">
-                          <span className={cx('text-sm text-concrete-900', n.read ? 'font-medium' : 'font-semibold')}>
+                          <span className={cx('text-sm text-concrete-900', n.readAt ? 'font-medium' : 'font-semibold')}>
                             {n.title}
                           </span>
                           <span className="text-sm text-concrete-600 line-clamp-2">{n.text}</span>
-                          <span className="text-xs text-concrete-400">{n.time}</span>
+                          <span className="text-xs text-concrete-400">{relativeTime(n.createdAt)}</span>
                         </span>
-                        {n.read ? null : (
+                        {n.readAt ? null : (
                           <span
                             className="absolute right-4 top-4 w-2 h-2 rounded-full bg-brand-500"
                             aria-label="Não lida"

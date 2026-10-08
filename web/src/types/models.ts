@@ -150,22 +150,50 @@ export interface Job {
 }
 
 /**
- * One worker's candidacy on one job. Worker-facing funnel:
- * enviada -> em_analise -> pre_selecionado -> contratado -> concluida (needs review) | avaliada.
- * nao_selecionado is a terminal rejection at any point.
+ * Where a worker's candidacy on a job stands. Only the status machine in services/applications.ts
+ * changes it (see docs/CONTRATO-BACKEND.md for the table of transitions and who may run each one).
+ * A candidacy the worker withdraws while pending is deleted, so it has no status of its own.
  */
 export type ApplicationStatus =
-  'enviada' | 'em_analise' | 'pre_selecionado' | 'contratado' | 'concluida' | 'avaliada' | 'nao_selecionado';
+  | 'enviada'
+  | 'em_analise'
+  | 'pre_selecionado'
+  | 'contratado'
+  | 'concluida'
+  | 'nao_selecionado'
+  | 'desistiu'
+  | 'cancelado_pela_construtora'
+  | 'nao_compareceu';
+
+/** Who made a change: the worker, the company, or the system (automatic rules). */
+export type Actor = 'trabalhador' | 'construtora' | 'sistema';
+
+/** One step in a candidacy's history. */
+export interface ApplicationEvent {
+  status: ApplicationStatus;
+  /** ISO timestamp. */
+  at: string;
+  by: Actor;
+  /** Why (desistência, cancelamento, recusa automática…), when there is a reason. */
+  reason: string | null;
+}
 
 export interface Application {
   id: string;
   jobId: string;
   workerId: string;
   status: ApplicationStatus;
+  /** ISO timestamps. */
+  createdAt: string;
+  statusChangedAt: string;
+  /** Oldest first; the last one is the current status. */
+  events: ApplicationEvent[];
+  /** Turned down automatically because the last slot was filled (undone if that approval is undone). */
+  autoRejected: boolean;
+  /** Each side reviews the other once the diária is concluded. */
+  workerReviewed: boolean;
+  companyReviewed: boolean;
 }
-
-/** Recruiter's decision on a candidate; `null` puts the candidate back "em análise". */
-export type Decision = 'aprovado' | 'recusado' | null;
 
 export interface WorkerPost {
   id: string;
@@ -179,21 +207,32 @@ export interface WorkerPost {
 
 /** What a notification is about; the screen picks its icon and colour from it. */
 export type NotificationKind =
-  | 'pre_selecionado'
-  | 'bico_urgente'
-  | 'avaliar_diaria'
-  | 'candidatura_em_analise'
   | 'novos_candidatos'
-  | 'bico_fechado'
-  | 'avaliar_trabalhador';
+  | 'candidatura_em_analise'
+  | 'pre_selecionado'
+  | 'nao_selecionado'
+  | 'contratado'
+  | 'desistencia'
+  | 'contratacao_cancelada'
+  | 'nao_compareceu'
+  | 'avaliar_diaria'
+  | 'avaliar_trabalhador'
+  | 'bico_urgente'
+  | 'bico_fechado';
 
+/** A notice for one worker or one company (exactly one of `workerId`/`companyId` is set). */
 export interface AppNotification {
+  id: string;
   kind: NotificationKind;
   title: string;
   text: string;
-  /** Relative time as shown ("Há 12 min", "Ontem"). */
-  time: string;
-  read: boolean;
+  workerId: string | null;
+  companyId: string | null;
+  /** The screen it opens ("/selecionado/BC-4821"); `null` opens the list. */
+  target: string | null;
+  /** ISO timestamps. */
+  createdAt: string;
+  readAt: string | null;
 }
 
 export type BoostPlanId = '24h' | '3d' | 'whats';
@@ -227,4 +266,5 @@ export interface Database {
   savedJobIds: string[];
   deletedJobIds: string[];
   workerPosts: WorkerPost[];
+  notifications: AppNotification[];
 }

@@ -10,14 +10,15 @@
 //   companies     – Company (reviews live in `reviews`)
 //   workers       – Worker (reviews live in `reviews`)
 //   jobs          – Job; deleted_at replaces Database.deletedJobIds
-//   applications  – Application
+//   applications  – Application (status changed only by the status machine)
+//   application_events – Application.events (history of each candidacy)
 //   saved_jobs    – Database.savedJobIds (per worker)
 //   reviews       – Company.reviews and Worker.reviews
 //   worker_posts  – WorkerPost
-//   notifications – services/notifications.ts
+//   notifications – AppNotification (for one worker or one company)
 //   job_boosts    – a paid boost ("Impulsionar vaga")
 // The enums reuse the domain types, so the schema and the app can't drift apart silently.
-import type { ApplicationStatus, BoostPlanId, DiasKey, NotificationKind, Role, WorkerPost } from './models';
+import type { Actor, ApplicationStatus, BoostPlanId, DiasKey, NotificationKind, Role, WorkerPost } from './models';
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -124,7 +125,19 @@ type ApplicationRow = {
   worker_id: string;
   status: ApplicationStatus;
   created_at: string;
-  updated_at: string;
+  status_changed_at: string;
+  auto_rejected: boolean;
+  worker_reviewed: boolean;
+  company_reviewed: boolean;
+};
+
+type ApplicationEventRow = {
+  id: number;
+  application_id: string;
+  status: ApplicationStatus;
+  at: string;
+  by: Actor;
+  reason: string | null;
 };
 
 type SavedJobRow = {
@@ -157,11 +170,13 @@ type WorkerPostRow = {
 };
 
 type NotificationRow = {
-  id: number;
-  account_id: string;
+  id: string;
+  worker_id: string | null;
+  company_id: string | null;
   kind: NotificationKind;
   title: string;
   body: string;
+  target: string | null;
   created_at: string;
   read_at: string | null;
 };
@@ -216,7 +231,8 @@ export const RELATIONSHIPS = {
     fk('reviews', 'job_id', 'jobs')
   ],
   worker_posts: [fk('worker_posts', 'worker_id', 'workers')],
-  notifications: [fk('notifications', 'account_id', 'accounts')],
+  application_events: [fk('application_events', 'application_id', 'applications')],
+  notifications: [fk('notifications', 'worker_id', 'workers'), fk('notifications', 'company_id', 'companies')],
   job_boosts: [fk('job_boosts', 'job_id', 'jobs')]
 };
 
@@ -243,7 +259,11 @@ export interface SupabaseDatabase {
         | 'requirements'
         | 'created_at'
       >;
-      applications: Table<ApplicationRow, 'id' | 'status' | 'created_at' | 'updated_at'>;
+      applications: Table<
+        ApplicationRow,
+        'id' | 'status' | 'created_at' | 'status_changed_at' | 'auto_rejected' | 'worker_reviewed' | 'company_reviewed'
+      >;
+      application_events: Table<ApplicationEventRow, 'id'>;
       saved_jobs: Table<SavedJobRow, 'saved_at'>;
       reviews: Table<ReviewRow, 'id' | 'text' | 'created_at'>;
       worker_posts: Table<WorkerPostRow, 'id' | 'media_type' | 'caption' | 'created_at'>;
@@ -256,6 +276,7 @@ export interface SupabaseDatabase {
       app_role: Role;
       dias_semana: DiasKey;
       application_status: ApplicationStatus;
+      application_actor: Actor;
       media_type: WorkerPost['mediaType'];
       review_direction: ReviewDirection;
       notification_kind: NotificationKind;

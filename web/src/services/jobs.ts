@@ -1,6 +1,8 @@
 // Jobs: reading the mural and a job, publishing, saving, closing and deleting. Each function says what
 // the real backend does there (docs/CONTRATO-BACKEND.md); the mock applies the change to the store.
 import type { Job } from '../types/models';
+import { closeJobApplications } from './applications';
+import { holdsSlot } from './applicationMachine';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { currentCompanyId, getJob, isJobSaved } from './selectors';
@@ -62,8 +64,13 @@ export async function updateJobPhotos(jobId: string, photos: string[]): Promise<
  */
 export async function closeJob(jobId: string): Promise<void> {
   await mockLatency(500);
-  ownJob(jobId);
-  store.closeJob(jobId);
+  const job = ownJob(jobId);
+  const at = new Date().toISOString();
+  store.transact((db) => {
+    const hired = db.applications.some((a) => a.jobId === jobId && (holdsSlot(a.status) || a.status === 'concluida'));
+    const closed: Job = { ...job, closed: true, ...(hired ? {} : { semContratacao: true }) };
+    return closeJobApplications({ ...db, jobs: { ...db.jobs, [jobId]: closed } }, closed, at);
+  });
 }
 
 /** Deletes the job post. Backend: set jobs.deleted_at (soft delete). */

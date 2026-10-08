@@ -1,12 +1,9 @@
 // Pure helpers: every legacy function and its TypeScript port must return the same thing.
 import { describe, expect, it } from 'vitest';
-import * as legacyStatus from '../../../app/js/utils/applicationStatus.js';
 import * as legacyCidades from '../../../app/js/utils/cidades.js';
 import * as legacyFormat from '../../../app/js/utils/format.js';
 import * as legacyWhatsapp from '../../../app/js/utils/whatsapp.js';
 import { nearestCity, popularCities, searchCities } from '../services/cities';
-import type { ApplicationStatus } from '../types/models';
-import { statusInfo } from '../utils/applicationStatus';
 import { formatBRL, formatPostDate, isValidEmail, maskCNPJ, maskCPF, passwordStrength } from '../utils/format';
 import { whatsappUrl } from '../utils/whatsapp';
 
@@ -53,22 +50,6 @@ describe('format', () => {
     for (const n of [0, 80, 150.4, 150.5, 1234, 12345.6, -3, NaN]) expect(formatBRL(n)).toBe(legacyFormat.formatBRL(n));
     for (const d of ['2026-09-10', '2026-01-01', 'x', '2026-13'])
       expect(formatPostDate(d)).toBe(legacyFormat.formatPostDate(d));
-  });
-});
-
-describe('application status', () => {
-  it('maps every status to the same badge and next step', () => {
-    const all: ApplicationStatus[] = [
-      'enviada',
-      'em_analise',
-      'pre_selecionado',
-      'contratado',
-      'concluida',
-      'avaliada',
-      'nao_selecionado'
-    ];
-    for (const s of all) expect(statusInfo(s, 'BC-1')).toEqual(legacyStatus.statusInfo(s, 'BC-1'));
-    expect(statusInfo('outro' as ApplicationStatus, 'BC-1')).toEqual(legacyStatus.statusInfo('outro', 'BC-1'));
   });
 });
 

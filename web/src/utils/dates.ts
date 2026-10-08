@@ -68,3 +68,13 @@ export function dateTimeLabel(isoTimestamp: string, now: Date = new Date()): str
   const day = dayLabel(toISODate(d), now);
   return `${day}, ${d.getHours()}h${pad(d.getMinutes())}`;
 }
+
+/** "Há 12 min", "Há 2h", "Ontem", "3 dias atrás" — how long ago something happened. */
+export function relativeTime(isoTimestamp: string, now: Date = new Date()): string {
+  const minutes = Math.max(0, Math.floor((now.getTime() - new Date(isoTimestamp).getTime()) / 60000));
+  if (minutes < 60) return `Há ${Math.max(1, minutes)} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Há ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? 'Ontem' : `${days} dias atrás`;
+}

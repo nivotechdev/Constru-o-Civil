@@ -1,90 +1,66 @@
-// The logged-in side's notifications. Demo data, as in the legacy app: a fixed list per side, the
-// newest first; the navigation's bell counts the unread ones.
-import type { AppNotification, Role } from '../types/models';
+// Notifications: each one is for one worker or one company and is created by the change it tells about
+// (see `withNotification`, used by the status machine). Each function says what the real backend does.
+import type { AppNotification, Database, Session } from '../types/models';
+import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
-import { setUI } from './store';
+import { getDb, getSession, transact } from './store';
 
-/** The logged-in account's notifications. Backend: select notifications where account = me, newest first. */
+export type NotificationInput = Omit<AppNotification, 'id' | 'createdAt' | 'readAt'>;
+
+let seq = 0;
+
+/**
+ * The snapshot with one more notification, created now. Pure, so a service adds it in the same
+ * transaction as the change it is about. Backend: inserted by the same RPC/trigger that makes the change.
+ */
+export function withNotification(db: Database, n: NotificationInput, at: string): Database {
+  const notification: AppNotification = {
+    ...n,
+    id: `n${Date.now().toString(36)}${++seq}`,
+    createdAt: at,
+    readAt: null
+  };
+  return { ...db, notifications: [notification, ...db.notifications] };
+}
+
+/** The logged-in account's notifications, newest first. */
+export function notificationsFor(db: Database, session: Session | null): AppNotification[] {
+  if (!session) return [];
+  return db.notifications
+    .filter((n) =>
+      session.role === 'trabalhador' ? n.workerId === session.workerId : n.companyId === session.companyId
+    )
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** The bell's badge. */
+export function unreadCount(db: Database, session: Session | null): number {
+  return notificationsFor(db, session).filter((n) => !n.readAt).length;
+}
+
+/** The logged-in account's notifications. Backend: select notifications for me, newest first. */
 export async function loadNotifications(): Promise<void> {
   await mockLatency(350);
 }
 
-const WORKER: AppNotification[] = [
-  {
-    kind: 'pre_selecionado',
-    title: 'Você foi pré-selecionado',
-    text: 'Construtora Meridiano quer falar com você sobre Pedreiro de acabamento.',
-    time: 'Há 12 min',
-    read: false
-  },
-  {
-    kind: 'bico_urgente',
-    title: 'Bico urgente perto de você',
-    text: 'Pintor em Mooca, hoje às 8h. A combinar.',
-    time: 'Há 2h',
-    read: false
-  },
-  {
-    kind: 'avaliar_diaria',
-    title: 'Avalie sua última diária',
-    text: 'Obra Cangaíba · Servente de obra, 30 ago.',
-    time: 'Ontem',
-    read: true
-  },
-  {
-    kind: 'candidatura_em_analise',
-    title: 'Candidatura em análise',
-    text: 'Reforma Serra de Bragança está avaliando seu perfil.',
-    time: '2 dias atrás',
-    read: true
-  }
-];
-
-const RECRUITER: AppNotification[] = [
-  {
-    kind: 'novos_candidatos',
-    title: '2 novos candidatos',
-    text: 'Pedreiro de acabamento · Tatuapé recebeu novas candidaturas.',
-    time: 'Há 30 min',
-    read: false
-  },
-  {
-    kind: 'bico_fechado',
-    title: 'Bico fechado',
-    text: 'Todas as vagas de Servente de obra foram preenchidas.',
-    time: 'Há 3h',
-    read: false
-  },
-  {
-    kind: 'avaliar_trabalhador',
-    title: 'Avalie o trabalhador',
-    text: 'Marcos Aurélio concluiu a diária em 21 ago.',
-    time: 'Ontem',
-    read: false
-  }
-];
-
-// Which side has marked everything as read ("Marcar todas como lidas"); lives in the store like the rest
-// of the session, so the bell's badge follows it everywhere.
-export const NOTIFICATIONS_READ_KEY = 'notifications-read';
-export type NotificationsReadUI = Record<Role, boolean>;
-export const NOTIFICATIONS_READ_DEFAULTS: NotificationsReadUI = { trabalhador: false, recrutador: false };
-
-export function notificationsFor(role: Role, allRead = false): AppNotification[] {
-  const list = role === 'recrutador' ? RECRUITER : WORKER;
-  return allRead ? list.map((n) => ({ ...n, read: true })) : list;
-}
-
-/** The bell's badge. */
-export function unreadCount(role: Role, allRead = false): number {
-  return notificationsFor(role, allRead).filter((n) => !n.read).length;
-}
-
-/** Marks every notification as read. Backend: update notifications set read_at = now() where account = me. */
-export async function markAllNotificationsRead(role: Role): Promise<void> {
+/** Marks every notification as read. Backend: update notifications set read_at = now() for me. */
+export async function markAllNotificationsRead(): Promise<void> {
   await mockLatency(300);
-  setUI<NotificationsReadUI>(
-    NOTIFICATIONS_READ_KEY,
-    role === 'recrutador' ? { recrutador: true } : { trabalhador: true }
-  );
+  const session = getSession();
+  const mine = new Set(notificationsFor(getDb(), session).map((n) => n.id));
+  const now = new Date().toISOString();
+  transact((db) => ({
+    ...db,
+    notifications: db.notifications.map((n) => (mine.has(n.id) && !n.readAt ? { ...n, readAt: now } : n))
+  }));
+}
+
+/** Marks one notification as read (opening it). Backend: update read_at of that one (if it is mine). */
+export async function markNotificationRead(id: string): Promise<void> {
+  await mockLatency(150);
+  const mine = notificationsFor(getDb(), getSession()).find((n) => n.id === id);
+  if (!mine) throw serviceError('nao_encontrado', 'Essa notificação não existe mais.');
+  if (mine.readAt) return;
+  const now = new Date().toISOString();
+  transact((db) => ({ ...db, notifications: db.notifications.map((n) => (n.id === id ? { ...n, readAt: now } : n)) }));
 }

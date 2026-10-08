@@ -3,19 +3,9 @@ import { describe, expect, it } from 'vitest';
 import * as seed from '../data/seed';
 import { getOficio, jobTitle, OFICIOS, oficioNome, searchOficios } from '../services/catalog';
 import { passesFilters, searchMatches } from '../pages/worker/feed/feedUI';
-import type { Database } from '../types/models';
+import { seedDatabase } from './helpers';
 
-const db = (): Database =>
-  structuredClone({
-    accounts: seed.ACCOUNTS,
-    companies: seed.COMPANIES,
-    workers: seed.WORKERS,
-    jobs: seed.JOBS,
-    applications: seed.APPLICATIONS,
-    savedJobIds: seed.SAVED_JOB_IDS,
-    deletedJobIds: [],
-    workerPosts: seed.WORKER_POSTS
-  });
+const db = seedDatabase;
 
 describe('ofícios catalog', () => {
   it('has unique ids and every seed job and worker points into it', () => {

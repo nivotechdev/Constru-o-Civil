@@ -1,6 +1,8 @@
 import type { MouseEvent } from 'react';
 import type { Worker } from '../types/models';
+import type { StatusBadge } from '../types/ui';
 import { cx } from '../utils/cx';
+import { Badge } from './Badge';
 import { IconButton } from './IconButton';
 import { Rating } from './Rating';
 
@@ -9,10 +11,15 @@ interface CandidateRowProps {
   summary: string;
   distance: string;
   isNew?: boolean;
-  decision: 'aprovado' | 'recusado' | null;
+  /** Where the candidate stands; `null` while the company still has to decide (approve/reject show). */
+  badge: StatusBadge | null;
+  /** Greyed out (turned down, gave up…). */
+  muted?: boolean;
   onClick: () => void;
   onApprove?: ((e: MouseEvent) => void) | null;
   onReject?: ((e: MouseEvent) => void) | null;
+  /** A next step for this candidate (e.g. "Confirmar contratação"), under the badge. */
+  action?: { label: string; onClick: () => void } | null;
 }
 
 /** Compact clickable row for a job's candidate list — the recruiter's decision unit. */
@@ -21,17 +28,18 @@ export function CandidateRow({
   summary,
   distance,
   isNew,
-  decision,
+  badge,
+  muted = false,
   onClick,
   onApprove,
-  onReject
+  onReject,
+  action = null
 }: CandidateRowProps) {
-  const decided = decision === 'aprovado' || decision === 'recusado';
   return (
     <div
       className={cx(
         'flex items-center gap-3 p-4 border-b border-concrete-200 last:border-0 cursor-pointer hover:bg-concrete-50',
-        decision === 'recusado' ? 'opacity-60' : ''
+        muted ? 'opacity-60' : ''
       )}
       onClick={() => onClick()}
     >
@@ -54,14 +62,18 @@ export function CandidateRow({
         </div>
         {!isNew ? <Rating value={worker.rating} count={worker.jobsDone} size={12} /> : null}
       </div>
-      {decided ? (
-        <span
-          className={cx(
-            'shrink-0 px-2.5 h-6 inline-flex items-center rounded-full text-xs font-bold',
-            decision === 'aprovado' ? 'bg-success-50 text-success-500' : 'bg-danger-50 text-danger-500'
-          )}
-        >
-          {decision === 'aprovado' ? 'Aprovado' : 'Recusado'}
+      {badge ? (
+        <span className="shrink-0 flex flex-col items-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Badge label={badge.label} tone={badge.tone} icon={badge.icon} />
+          {action ? (
+            <button
+              type="button"
+              className="h-8 px-3 rounded-full text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100"
+              onClick={action.onClick}
+            >
+              {action.label}
+            </button>
+          ) : null}
         </span>
       ) : (
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>

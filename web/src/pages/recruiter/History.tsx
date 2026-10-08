@@ -11,16 +11,20 @@ import { useDb } from '../../hooks/useStore';
 import { goBack, navigate } from '../../services/router';
 import { allJobs, applicationsForJob, currentCompanyId, getWorker } from '../../services/selectors';
 import type { ApplicationStatus } from '../../types/models';
-import type { StatusBadge } from '../../types/ui';
+import { candidateBadge } from '../../utils/applicationStatus';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 
-const STATUS: Partial<Record<ApplicationStatus, StatusBadge & { hint: string }>> = {
-  concluida: { label: 'Avaliar o trabalhador', tone: 'accent', icon: 'star', hint: 'Avaliar' },
-  avaliada: { label: 'Diária concluída', tone: 'success', icon: 'circle-check', hint: 'Ver o bico' },
-  contratado: { label: 'Diária concluída', tone: 'success', icon: 'circle-check', hint: 'Ver o bico' }
-};
+// Who worked (or was picked) on the company's closed jobs; pending and turned-down candidates aren't listed.
+const LISTED = new Set<ApplicationStatus>([
+  'pre_selecionado',
+  'contratado',
+  'concluida',
+  'desistiu',
+  'cancelado_pela_construtora',
+  'nao_compareceu'
+]);
 
 export default function History() {
   const db = useDb();
@@ -30,9 +34,10 @@ export default function History() {
     .filter((j) => j.companyId === companyId && j.closed)
     .flatMap((job) =>
       applicationsForJob(db, job.id).flatMap((app) => {
-        const status = STATUS[app.status];
         const worker = getWorker(db, app.workerId);
-        return status && worker ? [{ job, app, worker, status }] : [];
+        if (!worker || !LISTED.has(app.status)) return [];
+        const status = { ...candidateBadge(app), hint: 'Ver o bico' };
+        return [{ job, app, worker, status }];
       })
     );
 

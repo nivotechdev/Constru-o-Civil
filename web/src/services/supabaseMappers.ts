@@ -264,12 +264,43 @@ export function jobToRow(job: Job, deletedAt: string | null = null): TableInsert
 
 // ---- applications, saved jobs, posts ----
 
-export function applicationFromRow(row: TableRow<'applications'>): Application {
-  return { id: row.id, jobId: row.job_id, workerId: row.worker_id, status: row.status };
+export function applicationFromRow(
+  row: TableRow<'applications'>,
+  events: TableRow<'application_events'>[] = []
+): Application {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    workerId: row.worker_id,
+    status: row.status,
+    createdAt: row.created_at,
+    statusChangedAt: row.status_changed_at,
+    events: events
+      .filter((e) => e.application_id === row.id)
+      .sort((a, b) => a.at.localeCompare(b.at) || a.id - b.id)
+      .map((e) => ({ status: e.status, at: e.at, by: e.by, reason: e.reason })),
+    autoRejected: row.auto_rejected,
+    workerReviewed: row.worker_reviewed,
+    companyReviewed: row.company_reviewed
+  };
 }
 
 export function applicationToRow(app: Application): TableInsert<'applications'> {
-  return { id: app.id, job_id: app.jobId, worker_id: app.workerId, status: app.status };
+  return {
+    id: app.id,
+    job_id: app.jobId,
+    worker_id: app.workerId,
+    status: app.status,
+    created_at: app.createdAt,
+    status_changed_at: app.statusChangedAt,
+    auto_rejected: app.autoRejected,
+    worker_reviewed: app.workerReviewed,
+    company_reviewed: app.companyReviewed
+  };
+}
+
+export function applicationEventsToRows(app: Application): TableInsert<'application_events'>[] {
+  return app.events.map((e) => ({ application_id: app.id, status: e.status, at: e.at, by: e.by, reason: e.reason }));
 }
 
 export function postFromRow(row: TableRow<'worker_posts'>): WorkerPost {
@@ -296,23 +327,33 @@ export function postToRow(post: WorkerPost): TableInsert<'worker_posts'> {
 
 // ---- notifications ----
 
-/** "Há 12 min", "Há 2h", "Ontem", "3 dias atrás" — how the app shows when something happened. */
-export function relativeTime(iso: string, now: Date = new Date()): string {
-  const minutes = Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 60000));
-  if (minutes < 60) return `Há ${Math.max(1, minutes)} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Há ${hours}h`;
-  const days = Math.floor(hours / 24);
-  return days === 1 ? 'Ontem' : `${days} dias atrás`;
-}
+export { relativeTime } from '../utils/dates';
 
-export function notificationFromRow(row: TableRow<'notifications'>, now?: Date): AppNotification {
+export function notificationFromRow(row: TableRow<'notifications'>): AppNotification {
   return {
+    id: row.id,
     kind: row.kind,
     title: row.title,
     text: row.body,
-    time: relativeTime(row.created_at, now),
-    read: row.read_at !== null
+    workerId: row.worker_id,
+    companyId: row.company_id,
+    target: row.target,
+    createdAt: row.created_at,
+    readAt: row.read_at
+  };
+}
+
+export function notificationToRow(n: AppNotification): TableInsert<'notifications'> {
+  return {
+    id: n.id,
+    worker_id: n.workerId,
+    company_id: n.companyId,
+    kind: n.kind,
+    title: n.title,
+    body: n.text,
+    target: n.target,
+    created_at: n.createdAt,
+    read_at: n.readAt
   };
 }
 
@@ -326,11 +367,13 @@ export interface DatabaseRows {
   /** Deleted posts included (deleted_at set), oldest deletion first. */
   jobs: TableRow<'jobs'>[];
   applications: TableRow<'applications'>[];
+  applicationEvents: TableRow<'application_events'>[];
   /** The logged-in worker's saved jobs, in the order they were saved. */
   savedJobs: Pick<TableRow<'saved_jobs'>, 'job_id'>[];
   /** In the order each list shows them. */
   reviews: ReviewRow[];
   workerPosts: TableRow<'worker_posts'>[];
+  notifications: TableRow<'notifications'>[];
 }
 
 const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
@@ -343,13 +386,14 @@ export function databaseFromRows(rows: DatabaseRows): Database {
     companies: byId(rows.companies.map((row) => companyFromRow(row, rows.reviews))),
     workers: byId(rows.workers.map((row) => workerFromRow(row, rows.reviews))),
     jobs: byId(rows.jobs.map(jobFromRow)),
-    applications: rows.applications.map(applicationFromRow),
+    applications: rows.applications.map((row) => applicationFromRow(row, rows.applicationEvents)),
     savedJobIds: rows.savedJobs.map((s) => s.job_id),
     deletedJobIds: rows.jobs
       .filter((j) => j.deleted_at !== null)
       .sort((a, b) => (a.deleted_at ?? '').localeCompare(b.deleted_at ?? ''))
       .map((j) => j.id),
-    workerPosts: rows.workerPosts.map(postFromRow)
+    workerPosts: rows.workerPosts.map(postFromRow),
+    notifications: rows.notifications.map(notificationFromRow)
   };
 }
 
@@ -362,11 +406,13 @@ export function databaseToInserts(db: Database, savedBy: string) {
     workers: Object.values(db.workers).map(workerToRow),
     jobs: Object.values(db.jobs).map((job) => jobToRow(job, deleted.get(job.id) ?? null)),
     applications: db.applications.map(applicationToRow),
+    application_events: db.applications.flatMap(applicationEventsToRows),
     saved_jobs: db.savedJobIds.map((job_id): TableInsert<'saved_jobs'> => ({ worker_id: savedBy, job_id })),
     reviews: [
       ...Object.values(db.companies).flatMap(companyReviewsToRows),
       ...Object.values(db.workers).flatMap(workerReviewsToRows)
     ],
-    worker_posts: db.workerPosts.map(postToRow)
+    worker_posts: db.workerPosts.map(postToRow),
+    notifications: db.notifications.map(notificationToRow)
   };
 }

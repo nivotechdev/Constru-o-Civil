@@ -10,20 +10,9 @@ import {
   relativeTime,
   type DatabaseRows
 } from '../services/supabaseMappers';
-import type { Database, DiasKey } from '../types/models';
+import type { DiasKey } from '../types/models';
+import { seedDatabase } from './helpers';
 import type { TableInsert, TableRow } from '../types/supabase';
-
-const seedDatabase = (): Database =>
-  structuredClone({
-    accounts: seed.ACCOUNTS,
-    companies: seed.COMPANIES,
-    workers: seed.WORKERS,
-    jobs: seed.JOBS,
-    applications: seed.APPLICATIONS,
-    savedJobIds: seed.SAVED_JOB_IDS,
-    deletedJobIds: [],
-    workerPosts: seed.WORKER_POSTS
-  });
 
 const CREATED = '2026-09-25T12:00:00.000Z';
 
@@ -95,9 +84,17 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
     applications: inserts.applications.map((r): TableRow<'applications'> => ({
       status: 'enviada',
       created_at: CREATED,
-      updated_at: CREATED,
+      status_changed_at: CREATED,
+      auto_rejected: false,
+      worker_reviewed: false,
+      company_reviewed: false,
       ...r,
       id: r.id ?? ''
+    })),
+    applicationEvents: inserts.application_events.map((r, i): TableRow<'application_events'> => ({
+      reason: null,
+      ...r,
+      id: i + 1
     })),
     savedJobs: inserts.saved_jobs,
     reviews: inserts.reviews.map((r: TableInsert<'reviews'>) => ({
@@ -110,6 +107,15 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       media_url: null,
       media_type: 'image',
       caption: '',
+      created_at: CREATED,
+      ...r,
+      id: r.id ?? ''
+    })),
+    notifications: inserts.notifications.map((r): TableRow<'notifications'> => ({
+      worker_id: null,
+      company_id: null,
+      target: null,
+      read_at: null,
       created_at: CREATED,
       ...r,
       id: r.id ?? ''
@@ -192,20 +198,26 @@ describe('table <-> domain mappers', () => {
     expect(relativeTime('2026-09-24T09:00:00Z', now)).toBe('Ontem');
     expect(relativeTime('2026-09-23T09:00:00Z', now)).toBe('2 dias atrás');
     const row: TableRow<'notifications'> = {
-      id: 1,
-      account_id: 'conta-jorge',
+      id: 'n9',
+      worker_id: null,
+      company_id: 'meridiano',
       kind: 'bico_fechado',
       title: 'Bico fechado',
-      body: 'Todas as vagas de Servente de obra foram preenchidas.',
+      body: 'Todas as vagas de Servente foram preenchidas.',
+      target: '/historico',
       created_at: '2026-09-25T09:00:00Z',
       read_at: null
     };
-    expect(notificationFromRow(row, now)).toEqual({
+    expect(notificationFromRow(row)).toEqual({
+      id: 'n9',
       kind: 'bico_fechado',
       title: 'Bico fechado',
-      text: 'Todas as vagas de Servente de obra foram preenchidas.',
-      time: 'Há 3h',
-      read: false
+      text: 'Todas as vagas de Servente foram preenchidas.',
+      workerId: null,
+      companyId: 'meridiano',
+      target: '/historico',
+      createdAt: '2026-09-25T09:00:00Z',
+      readAt: null
     });
   });
 });

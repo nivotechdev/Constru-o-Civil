@@ -16,6 +16,10 @@ interface DialogProps {
   loading?: boolean;
   /** Why the confirm action failed (the dialog stays open to try again). */
   error?: string | null;
+  /** Extra content between the text and the buttons (e.g. a list of reasons). */
+  children?: ReactNode;
+  /** The confirm button waits for something (e.g. a reason to be chosen). */
+  confirmDisabled?: boolean;
 }
 
 /** Centered confirm/cancel dialog over a scrim. Used for destructive confirmations. */
@@ -29,7 +33,9 @@ export function Dialog({
   cancelLabel = 'Cancelar',
   onCancel,
   loading = false,
-  error = null
+  error = null,
+  children,
+  confirmDisabled = false
 }: DialogProps) {
   if (!open) return null;
   return (
@@ -49,6 +55,7 @@ export function Dialog({
           <h3 className="text-lg font-bold text-concrete-900">{title}</h3>
           {description ? <p className="text-sm text-concrete-600">{description}</p> : null}
         </div>
+        {children}
         {error ? <FieldError message={error} /> : null}
         <div className="flex gap-3 pt-1">
           <Button
@@ -63,6 +70,7 @@ export function Dialog({
             variant={tone === 'danger' ? 'danger' : 'primary'}
             className="flex-1"
             loading={loading}
+            disabled={confirmDisabled}
             onClick={() => onConfirm()}
           />
         </div>

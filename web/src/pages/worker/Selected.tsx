@@ -1,4 +1,11 @@
+import { useState } from 'react';
 import { BackBar } from '../../components/BackBar';
+import { EmptyState } from '../../components/EmptyState';
+import { ReasonDialog } from '../../components/ReasonDialog';
+import { useAction } from '../../hooks/useAction';
+import { contactOpen, lastEventAt } from '../../services/applicationMachine';
+import { showToast } from '../../services/toast';
+import { dateTimeLabel } from '../../utils/dates';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -10,7 +17,7 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { WhatsAppButton } from '../../components/WhatsAppButton';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
-import { loadMyApplications } from '../../services/applications';
+import { giveUp, loadMyApplications } from '../../services/applications';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
@@ -19,9 +26,17 @@ import { dateText, placeText } from '../../utils/jobInfo';
 import { jobTitle } from '../../services/catalog';
 import { workerToCompanyUrl } from '../../utils/whatsapp';
 
+const GIVE_UP_REASONS = ['Fiquei doente', 'Peguei outro serviço', 'Problema de transporte', 'Imprevisto na família'];
+
 export default function Selected({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('my-applications', loadMyApplications);
+  const [asking, setAsking] = useState(false);
+  const quit = useAction(giveUp, () => {
+    setAsking(false);
+    showToast('Avisamos a construtora. Obrigado por avisar com antecedência.');
+    navigate('/minhas-candidaturas');
+  });
   if (query.status !== 'ready')
     return (
       <ScreenLoading
@@ -35,7 +50,23 @@ export default function Selected({ params }: ScreenProps) {
   if (!job) return <JobNotFound />;
   const company = companyOf(db, job);
   const hired = applicationFor(db, job.id, currentWorkerId());
-  const isHired = Boolean(hired && hired.status === 'contratado');
+  // Only a picked or hired worker has a contact to show here.
+  if (!hired || !contactOpen(hired.status)) {
+    return (
+      <div className="flex flex-col">
+        <BackBar title="Você avançou" onBack={() => goBack('/minhas-candidaturas')} />
+        <EmptyState
+          icon="lock"
+          title="Essa tela não está disponível"
+          description="O contato com a construtora aparece aqui quando ela aprova sua candidatura."
+          actionLabel="Ver minhas candidaturas"
+          onAction={() => navigate('/minhas-candidaturas')}
+        />
+      </div>
+    );
+  }
+  const isHired = hired.status === 'contratado';
+  const openedAt = lastEventAt(hired, 'pre_selecionado');
   const title = isHired ? `Você foi contratado pela ${company.name}` : `A ${company.name} quer falar com você`;
 
   return (
@@ -69,11 +100,26 @@ export default function Selected({ params }: ScreenProps) {
           <div className="flex flex-col gap-3">
             <KeyValue label="Diária combinada" value={formatPay(job.pay)} />
             <KeyValue label="Local" value={placeText(job)} />
-            <KeyValue label="Contato liberado" value="Hoje · 9h10" />
+            {openedAt ? <KeyValue label="Contato liberado" value={dateTimeLabel(openedAt)} /> : null}
           </div>
         </Card>
         <Button label="Ver a vaga de novo" variant="secondary" fullWidth onClick={() => navigate('/vaga/' + job.id)} />
+        <Button label="Não vou poder ir" variant="ghost" fullWidth onClick={() => setAsking(true)} />
       </div>
+      <ReasonDialog
+        open={asking}
+        title="Não vai poder ir?"
+        description={`Avisamos a ${company.name} na hora, e sua vaga volta a ficar aberta para outra pessoa.`}
+        reasons={GIVE_UP_REASONS}
+        confirmLabel="Avisar que não vou"
+        loading={quit.loading}
+        error={quit.error}
+        onConfirm={(reason) => void quit.run(job.id, reason)}
+        onCancel={() => {
+          quit.reset();
+          setAsking(false);
+        }}
+      />
     </div>
   );
 }

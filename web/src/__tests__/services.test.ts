@@ -12,6 +12,8 @@ type Services = {
   applications: typeof import('../services/applications');
 };
 
+const SESSION = { accountId: 'x', email: 'x@x', emailConfirmed: true, profileComplete: true };
+
 async function fresh(): Promise<Services> {
   vi.resetModules();
   return {
@@ -131,17 +133,21 @@ describe('simulated backend calls keep the legacy delays', () => {
 });
 
 describe('reference data served by services', () => {
-  it('counts the unread notifications the navigation always showed (worker 2, recruiter 3)', async () => {
+  it('lists each account its own notifications, newest first, with the unread count', async () => {
     const { notificationsFor, unreadCount } = await import('../services/notifications');
-    expect(unreadCount('trabalhador')).toBe(2);
-    expect(unreadCount('recrutador')).toBe(3);
-    expect(notificationsFor('trabalhador').map((n) => n.title)).toEqual([
+    const store = await import('../services/store');
+    const db = store.getDb();
+    const worker = { ...SESSION, role: 'trabalhador' as const, workerId: 'jorge', companyId: null };
+    const company = { ...SESSION, role: 'recrutador' as const, workerId: null, companyId: 'meridiano' };
+    expect(unreadCount(db, worker)).toBe(2);
+    expect(unreadCount(db, company)).toBe(3);
+    expect(notificationsFor(db, worker).map((n) => n.title)).toEqual([
       'Você foi pré-selecionado',
       'Bico urgente perto de você',
-      'Avalie sua última diária',
+      'Avalie sua diária',
       'Candidatura em análise'
     ]);
-    expect(notificationsFor('recrutador')).toHaveLength(3);
+    expect(notificationsFor(db, null)).toEqual([]);
   });
 
   it('offers the seed option lists and the three boost plans', async () => {

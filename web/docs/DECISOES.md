@@ -96,3 +96,26 @@ para quem usa o app. Cada item diz de qual ID do plano veio.
   "Amanhã" e na semana que vem, e um histórico no passado.
 - **Tela carregada sob demanda:** o carregamento das telas marca a promessa do código como resolvida e
   sempre chama `use()`, removendo um aviso do React sobre `use()` condicional.
+
+## B02 — Máquina de status da candidatura
+
+- **Uma tabela única** (`services/applicationMachine.ts`) diz de qual status para qual, e quem pode
+  (trabalhador, construtora ou sistema). Só ela muda o status; o back-end deve aplicar a mesma tabela (está
+  em `docs/CONTRATO-BACKEND.md`).
+- **"Avaliada" deixou de ser status.** A candidatura fica "concluída" e cada lado tem seu indicador
+  (`workerReviewed`, `companyReviewed`).
+- **Histórico:** cada candidatura guarda `events[]` (status, quando, quem, motivo) e `statusChangedAt`.
+  "Contato liberado em" mostra a data real em que a construtora aprovou.
+- **Abrir o perfil de um candidato novo** muda "enviada" para "em análise" e avisa o trabalhador.
+- **Recusa automática ao preencher a última vaga** fica marcada (`autoRejected`). Se a construtora desfizer
+  aquela aprovação, os recusados automaticamente voltam para "em análise" (antecipa parte da L01). Ao
+  encerrar a vaga, a recusa vira definitiva.
+- **Desfazer aprovação** retira o aviso "Você foi pré-selecionado" se o trabalhador ainda não o viu.
+- **Conclusão automática:** uma contratação cuja vaga já passou da data final vira "concluída" sozinha
+  (no mock, sempre que as candidaturas são lidas; no back-end, uma rotina diária) e os dois lados recebem o
+  pedido de avaliação.
+- **Desistir e cancelar pedem motivo** (lista curta + "Outro motivo" escrito); o motivo vai na notificação
+  para o outro lado. Marcar falta pede só confirmação.
+- **Notificações agora são dados**: cada uma é de um trabalhador ou de uma construtora, nasce na mesma
+  transação da mudança que avisa, tem destino (abre a tela certa) e é marcada como lida ao abrir.
+- **Testes de paridade dos rótulos de status** com o app antigo foram aposentados (há status novos).

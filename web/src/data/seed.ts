@@ -1,4 +1,17 @@
-import type { Account, Application, Company, DiasKey, Job, JobAddress, Worker, WorkerPost } from '../types/models';
+import type {
+  Account,
+  Actor,
+  Application,
+  ApplicationEvent,
+  ApplicationStatus,
+  AppNotification,
+  Company,
+  DiasKey,
+  Job,
+  JobAddress,
+  Worker,
+  WorkerPost
+} from '../types/models';
 import { addDays, todayISO, weekday } from '../utils/dates';
 export { OFICIOS } from './oficios';
 
@@ -992,29 +1005,170 @@ export const JOBS: Record<string, Job> = {
   }
 };
 
-// One application = one worker's candidacy on one job. Status funnel (worker-facing):
-// enviada -> em_analise -> pre_selecionado -> contratado -> concluida (needs review) | avaliada
-// nao_selecionado is a terminal rejection at any point.
+// One application = one worker's candidacy on one job, with the history of its status (the status
+// machine is in services/applicationMachine.ts). Times are relative to when the app opens.
+const HOUR = 3600000;
+const ago = (hours: number) => new Date(Date.now() - hours * HOUR).toISOString();
+
+const PATH: Record<ApplicationStatus, ApplicationStatus[]> = {
+  enviada: ['enviada'],
+  em_analise: ['enviada', 'em_analise'],
+  pre_selecionado: ['enviada', 'em_analise', 'pre_selecionado'],
+  contratado: ['enviada', 'em_analise', 'pre_selecionado', 'contratado'],
+  concluida: ['enviada', 'em_analise', 'pre_selecionado', 'contratado', 'concluida'],
+  nao_selecionado: ['enviada', 'em_analise', 'nao_selecionado'],
+  desistiu: ['enviada', 'em_analise', 'pre_selecionado', 'desistiu'],
+  cancelado_pela_construtora: ['enviada', 'em_analise', 'pre_selecionado', 'cancelado_pela_construtora'],
+  nao_compareceu: ['enviada', 'em_analise', 'pre_selecionado', 'contratado', 'nao_compareceu']
+};
+const BY: Record<ApplicationStatus, Actor> = {
+  enviada: 'trabalhador',
+  em_analise: 'construtora',
+  pre_selecionado: 'construtora',
+  contratado: 'construtora',
+  concluida: 'construtora',
+  nao_selecionado: 'construtora',
+  desistiu: 'trabalhador',
+  cancelado_pela_construtora: 'construtora',
+  nao_compareceu: 'construtora'
+};
+
+/** A candidacy sent `sentHoursAgo` hours ago that reached `status` (one step every `stepHours`). */
+function application(
+  id: string,
+  jobId: string,
+  workerId: string,
+  status: ApplicationStatus,
+  sentHoursAgo: number,
+  { stepHours = 2, workerReviewed = false, companyReviewed = false } = {}
+): Application {
+  const events: ApplicationEvent[] = PATH[status].map((st, i) => ({
+    status: st,
+    at: ago(Math.max(0.2, sentHoursAgo - i * stepHours)),
+    by: BY[st],
+    reason: null
+  }));
+  const last = events[events.length - 1];
+  return {
+    id,
+    jobId,
+    workerId,
+    status,
+    createdAt: events[0].at,
+    statusChangedAt: last.at,
+    events,
+    autoRejected: false,
+    workerReviewed,
+    companyReviewed
+  };
+}
+
 export const APPLICATIONS: Application[] = [
-  { id: 'a1', jobId: 'BC-4821', workerId: 'jorge', status: 'pre_selecionado' },
-  { id: 'a2', jobId: 'BC-4821', workerId: 'edson', status: 'em_analise' },
-  { id: 'a3', jobId: 'BC-4821', workerId: 'marcos', status: 'em_analise' },
-  { id: 'a4', jobId: 'BC-4821', workerId: 'vitor', status: 'em_analise' },
-  { id: 'a5', jobId: 'BC-4821', workerId: 'caio', status: 'em_analise' },
-  { id: 'a6', jobId: 'BC-4830', workerId: 'jorge', status: 'em_analise' },
-  { id: 'a7', jobId: 'BC-4835', workerId: 'jorge', status: 'enviada' },
-  { id: 'a8', jobId: 'BC-4712', workerId: 'jorge', status: 'contratado' },
-  { id: 'a9', jobId: 'BC-4703', workerId: 'jorge', status: 'concluida' },
-  { id: 'a10', jobId: 'BC-4698', workerId: 'jorge', status: 'nao_selecionado' },
-  { id: 'a11', jobId: 'BC-4998', workerId: 'rafael', status: 'em_analise' },
-  { id: 'a12', jobId: 'BC-4998', workerId: 'bruno', status: 'em_analise' },
-  { id: 'a13', jobId: 'BC-4998', workerId: 'joel', status: 'em_analise' },
-  { id: 'a14', jobId: 'BC-4995', workerId: 'nelson', status: 'em_analise' },
-  { id: 'a15', jobId: 'BC-4995', workerId: 'silas', status: 'em_analise' },
-  { id: 'a16', jobId: 'BC-4960', workerId: 'marcos', status: 'concluida' },
-  { id: 'a17', jobId: 'BC-4918', workerId: 'edson', status: 'concluida' },
-  { id: 'a18', jobId: 'BC-4899', workerId: 'jorge', status: 'concluida' },
-  { id: 'a19', jobId: 'BC-4870', workerId: 'antonio', status: 'concluida' }
+  application('a1', 'BC-4821', 'jorge', 'pre_selecionado', 6, { stepHours: 2.9 }),
+  application('a2', 'BC-4821', 'edson', 'em_analise', 20),
+  application('a3', 'BC-4821', 'marcos', 'em_analise', 18),
+  application('a4', 'BC-4821', 'vitor', 'em_analise', 9),
+  application('a5', 'BC-4821', 'caio', 'em_analise', 3),
+  application('a6', 'BC-4830', 'jorge', 'em_analise', 30),
+  application('a7', 'BC-4835', 'jorge', 'enviada', 26),
+  // Hired for a job whose last day has passed: concluded automatically on the first load.
+  application('a8', 'BC-4712', 'jorge', 'contratado', 24 * 33, { stepHours: 20 }),
+  application('a9', 'BC-4703', 'jorge', 'concluida', 24 * 29, { stepHours: 24 }),
+  application('a10', 'BC-4698', 'jorge', 'nao_selecionado', 24 * 38),
+  application('a11', 'BC-4998', 'rafael', 'em_analise', 28),
+  application('a12', 'BC-4998', 'bruno', 'em_analise', 22),
+  application('a13', 'BC-4998', 'joel', 'em_analise', 14),
+  application('a14', 'BC-4995', 'nelson', 'em_analise', 40),
+  application('a15', 'BC-4995', 'silas', 'em_analise', 8),
+  application('a16', 'BC-4960', 'marcos', 'concluida', 24 * 38, { stepHours: 24 }),
+  application('a17', 'BC-4918', 'edson', 'concluida', 24 * 41, { stepHours: 24, companyReviewed: true }),
+  application('a18', 'BC-4899', 'jorge', 'concluida', 24 * 45, {
+    stepHours: 24,
+    workerReviewed: true,
+    companyReviewed: true
+  }),
+  application('a19', 'BC-4870', 'antonio', 'concluida', 24 * 50, { stepHours: 24 })
+];
+
+// Notices already there when the demo opens (the rest are created by what happens in it).
+export const NOTIFICATIONS: AppNotification[] = [
+  {
+    id: 'n1',
+    kind: 'pre_selecionado',
+    title: 'Você foi pré-selecionado',
+    text: 'Construtora Meridiano quer falar com você sobre Pedreiro de acabamento. O WhatsApp está liberado.',
+    workerId: CURRENT_WORKER_ID,
+    companyId: null,
+    target: '/selecionado/BC-4821',
+    createdAt: ago(0.2),
+    readAt: null
+  },
+  {
+    id: 'n2',
+    kind: 'bico_urgente',
+    title: 'Bico urgente perto de você',
+    text: 'Pintor na Mooca, hoje às 8h. Valor a combinar.',
+    workerId: CURRENT_WORKER_ID,
+    companyId: null,
+    target: '/vaga/BC-4822',
+    createdAt: ago(2),
+    readAt: null
+  },
+  {
+    id: 'n3',
+    kind: 'avaliar_diaria',
+    title: 'Avalie sua diária',
+    text: 'Obra Cangaíba · Servente. Conte como foi.',
+    workerId: CURRENT_WORKER_ID,
+    companyId: null,
+    target: '/avaliar/BC-4703',
+    createdAt: ago(26),
+    readAt: ago(20)
+  },
+  {
+    id: 'n4',
+    kind: 'candidatura_em_analise',
+    title: 'Candidatura em análise',
+    text: 'Obra Vila Prudente está avaliando seu perfil para Servente.',
+    workerId: CURRENT_WORKER_ID,
+    companyId: null,
+    target: '/vaga/BC-4830',
+    createdAt: ago(28),
+    readAt: ago(27)
+  },
+  {
+    id: 'n5',
+    kind: 'novos_candidatos',
+    title: '2 novos candidatos',
+    text: 'Pedreiro de acabamento · Tatuapé recebeu novas candidaturas.',
+    workerId: null,
+    companyId: CURRENT_COMPANY_ID,
+    target: '/vaga-gerenciar/BC-4821',
+    createdAt: ago(0.5),
+    readAt: null
+  },
+  {
+    id: 'n6',
+    kind: 'novos_candidatos',
+    title: 'Nova candidatura',
+    text: 'Joel Ribeiro se candidatou para Servente.',
+    workerId: null,
+    companyId: CURRENT_COMPANY_ID,
+    target: '/vaga-gerenciar/BC-4998',
+    createdAt: ago(14),
+    readAt: null
+  },
+  {
+    id: 'n7',
+    kind: 'avaliar_trabalhador',
+    title: 'Avalie o trabalhador',
+    text: 'Marcos Aurélio concluiu a diária de Pintor.',
+    workerId: null,
+    companyId: CURRENT_COMPANY_ID,
+    target: '/avaliar-trabalhador/BC-4960/marcos',
+    createdAt: ago(30),
+    readAt: null
+  }
 ];
 
 export const SAVED_JOB_IDS: string[] = ['BC-4841', 'BC-4848', 'BC-4712', 'BC-4698'];
