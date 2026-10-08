@@ -1,7 +1,11 @@
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Icon } from '../../components/icons/Icon';
+import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
+import { useAction } from '../../hooks/useAction';
+import { updateMyCompanyProfile } from '../../services/profiles';
+import { showToast } from '../../services/toast';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
 import { useDb, useUI } from '../../hooks/useStore';
@@ -14,7 +18,6 @@ import {
   type CompanyProfileUI,
   askSignOut
 } from '../../services/sharedUI';
-import { updateCompany } from '../../services/store';
 
 interface EditCompanyUI {
   name: string;
@@ -33,6 +36,10 @@ export default function EditCompanyProfile() {
     whatsapp: company.whatsapp
   }));
   const [banner, setBanner] = useUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, COMPANY_PROFILE_DEFAULTS);
+  const save = useAction(updateMyCompanyProfile, () => {
+    showToast('Dados da empresa atualizados');
+    navigate('/empresa');
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
@@ -99,16 +106,17 @@ export default function EditCompanyProfile() {
           <Button label="Sair da conta" variant="danger" fullWidth iconLeft="log-out" onClick={askSignOut} />
         </div>
       </div>
-      <div className="px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex gap-3 lg:static lg:bg-transparent lg:shadow-none">
-        <Button label="Cancelar" variant="secondary" className="flex-1" onClick={() => navigate('/empresa')} />
-        <Button
-          label="Salvar alterações"
-          className="flex-[1.4]"
-          onClick={() => {
-            updateCompany(company.id, ui);
-            navigate('/empresa');
-          }}
-        />
+      <div className="px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+        {save.error ? <FieldError message={save.error} /> : null}
+        <div className="flex gap-3">
+          <Button label="Cancelar" variant="secondary" className="flex-1" onClick={() => navigate('/empresa')} />
+          <Button
+            label="Salvar alterações"
+            className="flex-[1.4]"
+            loading={save.loading}
+            onClick={() => void save.run(ui)}
+          />
+        </div>
       </div>
     </div>
   );

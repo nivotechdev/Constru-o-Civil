@@ -9,7 +9,8 @@ import { Tag } from '../../components/Tag';
 import { TextArea } from '../../components/TextArea';
 import { useDb, useUI } from '../../hooks/useStore';
 import { REQUISITOS_OPCOES } from '../../services/catalog';
-import { publishJob } from '../../services/marketplace';
+import { errorMessage } from '../../services/errors';
+import { publishJob } from '../../services/jobs';
 import { goBack, navigate } from '../../services/router';
 import { currentCompanyId, getCompany } from '../../services/selectors';
 import { resetUI } from '../../services/store';
@@ -40,6 +41,7 @@ interface CreateJobUI {
   detalhe: string;
   errors: Errors;
   publishing: boolean;
+  publishError: string | null;
 }
 
 function digits(v: string, max: number) {
@@ -89,7 +91,8 @@ export default function CreateJob() {
     requisitos: ['Botina e capacete próprios'],
     detalhe: '',
     errors: {},
-    publishing: false
+    publishing: false,
+    publishError: null
   }));
 
   const clearError = (field: ErrorKey) => ({ ...ui.errors, [field]: null });
@@ -113,7 +116,8 @@ export default function CreateJob() {
       setUi({ errors });
       return;
     }
-    setUi({ publishing: true });
+    if (ui.publishing) return;
+    setUi({ publishing: true, publishError: null });
     const diariasNum = Number(ui.diarias) || 1;
     publishJob({
       role: ui.tipo.trim(),
@@ -127,11 +131,13 @@ export default function CreateJob() {
       requirements: ui.requisitos,
       description: ui.detalhe.trim(),
       photos: ui.fotos
-    }).then((id) => {
-      setUi({ publishing: false });
-      resetUI(KEY);
-      navigate('/vaga-publicada/' + id);
-    });
+    })
+      .then((id) => {
+        setUi({ publishing: false });
+        resetUI(KEY);
+        navigate('/vaga-publicada/' + id);
+      })
+      .catch((e: unknown) => setUi({ publishing: false, publishError: errorMessage(e) }));
   }
 
   const step1 = (
@@ -374,6 +380,7 @@ export default function CreateJob() {
       </div>
       <div className="px-4 sm:px-0 py-5">{ui.step === 1 ? step1 : step2}</div>
       <div className="px-4 sm:px-0 py-3 flex flex-col gap-1.5">
+        {ui.publishError ? <FieldError message={ui.publishError} /> : null}
         <Button
           label={ui.step === 1 ? 'Continuar' : 'Publicar vaga'}
           size="lg"

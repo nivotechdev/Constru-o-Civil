@@ -5,6 +5,8 @@ import { Icon } from '../../components/icons/Icon';
 import { Dialog } from '../../components/Modal';
 import { useUI } from '../../hooks/useStore';
 import { exportMyData } from '../../services/account';
+import { errorMessage } from '../../services/errors';
+import { showToast } from '../../services/toast';
 import { goBack, navigate } from '../../services/router';
 
 interface PrivacyUI {
@@ -48,7 +50,12 @@ export default function Privacy() {
                 loading={ui.exporting}
                 onClick={() => {
                   setUi({ exporting: true });
-                  exportMyData().then(() => setUi({ exporting: false, exported: true }));
+                  exportMyData()
+                    .then(() => setUi({ exporting: false, exported: true }))
+                    .catch((e: unknown) => {
+                      setUi({ exporting: false });
+                      showToast(errorMessage(e), { tone: 'error' });
+                    });
                 }}
               />
             )}

@@ -3,6 +3,9 @@ import { EmptyState } from '../../../components/EmptyState';
 import { Icon } from '../../../components/icons/Icon';
 import { IconButton } from '../../../components/IconButton';
 import { Logo } from '../../../components/Logo';
+import { QueryView } from '../../../components/QueryView';
+import { TileGridSkeleton } from '../../../components/Skeleton';
+import type { Query } from '../../../hooks/useQuery';
 import { NotificationsPanel } from '../../../components/NotificationsPanel';
 import { Rating } from '../../../components/Rating';
 import { Tag } from '../../../components/Tag';
@@ -23,10 +26,12 @@ export interface FeedLayoutProps {
   /** What the search finds; `null` while nothing is typed. */
   found: SearchMatches | null;
   chips: ActiveFilter[];
+  /** The mural's first load (skeleton, then the jobs or an error). */
+  query: Query;
 }
 
 /** The mural below 770px: search pill, filter chips, sort control and the grid of tiles. */
-export function MobileFeed({ db, role, ui, ordered, found, chips }: FeedLayoutProps) {
+export function MobileFeed({ db, role, ui, ordered, found, chips, query }: FeedLayoutProps) {
   const noResults =
     found !== null && found.jobs.length === 0 && found.companies.length === 0 && found.workers.length === 0;
   const activeCount = chips.length;
@@ -129,7 +134,11 @@ export function MobileFeed({ db, role, ui, ordered, found, chips }: FeedLayoutPr
         <SearchPill id="feed-search" role={role} search={ui.search} compact />
       </div>
       <div className="px-4 pt-4 pb-6">
-        <div className="mural-frame flex flex-col gap-5">{searchResults ?? browseResults}</div>
+        <div className="mural-frame flex flex-col gap-5">
+          <QueryView query={query} skeleton={<TileGridSkeleton count={4} />}>
+            {() => searchResults ?? browseResults}
+          </QueryView>
+        </div>
       </div>
     </div>
   );

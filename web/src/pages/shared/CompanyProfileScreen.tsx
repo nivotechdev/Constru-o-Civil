@@ -7,6 +7,14 @@ import { IconButton } from '../../components/IconButton';
 import { JobTile, TileGrid } from '../../components/JobTile';
 import { Dialog } from '../../components/Modal';
 import { NotFound } from '../../components/NotFound';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useAction } from '../../hooks/useAction';
+import { useQuery } from '../../hooks/useQuery';
+import { toggleSaved } from '../../services/feedback';
+import { deleteJob } from '../../services/jobs';
+import { loadCompanyProfile } from '../../services/profiles';
+import { showToast } from '../../services/toast';
 import { Rating } from '../../components/Rating';
 import { useDb, useRole, useUI } from '../../hooks/useStore';
 import { COMPANY_PROFILE_DEFAULTS, COMPANY_PROFILE_KEY, type CompanyProfileUI } from '../../services/sharedUI';
@@ -24,7 +32,6 @@ import {
   pendingCount,
   successfulJobsForCompany
 } from '../../services/selectors';
-import { deleteJobPost, toggleSavedJob } from '../../services/store';
 import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 
@@ -34,6 +41,21 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
   const [ui, setUi] = useUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, COMPANY_PROFILE_DEFAULTS);
 
   const isOwn = !params.id;
+  const companyId = isOwn ? currentCompany(db).id : params.id;
+  const query = useQuery('company:' + companyId, () => loadCompanyProfile(companyId));
+  const remove = useAction(deleteJob, () => {
+    setUi({ deleteId: null });
+    showToast('Vaga excluída');
+  });
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading
+        title={isOwn ? 'Sua empresa' : 'Construtora'}
+        onBack={() => goBack('/mural')}
+        query={query}
+        skeleton={<PageSkeleton />}
+      />
+    );
   const company = isOwn ? currentCompany(db) : getCompany(db, params.id);
   if (!company) return <NotFound message="Construtora não encontrada." />;
 
@@ -201,7 +223,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                     company={company}
                     onClick={() => navigate('/vaga/' + job.id)}
                     saved={role === 'trabalhador' && isJobSaved(db, job.id)}
-                    onToggleSave={role === 'trabalhador' ? () => toggleSavedJob(job.id) : null}
+                    onToggleSave={role === 'trabalhador' ? () => toggleSaved(job.id) : null}
                   />
                 ))}
               </TileGrid>
@@ -216,11 +238,15 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
         description="A vaga sai do mural imediatamente. Candidatos já enviados não são avisados."
         confirmLabel="Excluir post"
         onConfirm={() => {
-          if (ui.deleteId) deleteJobPost(ui.deleteId);
+          if (ui.deleteId) void remove.run(ui.deleteId);
+        }}
+        loading={remove.loading}
+        error={remove.error}
+        cancelLabel="Cancelar"
+        onCancel={() => {
+          remove.reset();
           setUi({ deleteId: null });
         }}
-        cancelLabel="Cancelar"
-        onCancel={() => setUi({ deleteId: null })}
       />
     </div>
   );

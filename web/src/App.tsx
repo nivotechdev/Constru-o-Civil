@@ -2,8 +2,10 @@ import { startTransition, Suspense, useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Button } from './components/Button';
 import { LegacyRerender } from './components/LegacyRerender';
+import { OfflineBanner } from './components/OfflineBanner';
 import { ResultIcon } from './components/ResultIcon';
 import { SignOutDialog } from './components/SignOutDialog';
+import { ToastHost } from './components/ToastHost';
 import { useSession } from './hooks/useStore';
 import { AppShell } from './layouts/AppShell';
 import { isAuthFlow, preloadAllScreens, ROUTES } from './routes';
@@ -84,6 +86,16 @@ function useLocation() {
 }
 
 export function App() {
+  return (
+    <>
+      <OfflineBanner />
+      <Routes />
+      <ToastHost />
+    </>
+  );
+}
+
+function Routes() {
   const location = useLocation();
   const session = useSession();
 

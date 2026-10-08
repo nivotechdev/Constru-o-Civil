@@ -5,6 +5,7 @@ import { ResultIcon } from '../../components/ResultIcon';
 import { useUI } from '../../hooks/useStore';
 import { resetPassword } from '../../services/auth';
 import { goBack, navigate } from '../../services/router';
+import { errorMessage } from '../../services/errors';
 import { passwordStrength, STRENGTH_LABEL, strengthBarColor } from '../../utils/format';
 
 interface ResetUI {
@@ -93,8 +94,11 @@ export default function ResetPassword() {
               setUi({ error: 'As senhas não são iguais. Confira os dois campos.' });
               return;
             }
-            setUi({ submitting: true });
-            resetPassword(ui.senha).then(() => setUi({ submitting: false, done: true }));
+            if (ui.submitting) return;
+            setUi({ submitting: true, error: null });
+            resetPassword(ui.senha)
+              .then(() => setUi({ submitting: false, done: true }))
+              .catch((e: unknown) => setUi({ submitting: false, error: errorMessage(e) }));
           }}
         />
       </div>

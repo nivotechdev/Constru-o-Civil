@@ -6,6 +6,8 @@ import {
   unreadCount,
   type NotificationsReadUI
 } from '../services/notifications';
+import { errorMessage } from '../services/errors';
+import { showToast } from '../services/toast';
 import type { Role } from '../types/models';
 import { useUI } from './useStore';
 
@@ -16,6 +18,8 @@ export function useNotifications(role: Role) {
   return {
     list: notificationsFor(role, allRead),
     unread: unreadCount(role, allRead),
-    markAllRead: () => markAllNotificationsRead(role)
+    markAllRead: () => {
+      markAllNotificationsRead(role).catch((e: unknown) => showToast(errorMessage(e), { tone: 'error' }));
+    }
   };
 }

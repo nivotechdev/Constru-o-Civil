@@ -4,6 +4,10 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons/Icon';
 import { KeyValue } from '../../components/KeyValue';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useQuery } from '../../hooks/useQuery';
+import { loadJobCandidates } from '../../services/applications';
 import { useDb } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
@@ -14,6 +18,11 @@ import { dateText } from '../../utils/jobInfo';
 
 export default function JobClosed({ params }: ScreenProps) {
   const db = useDb();
+  const query = useQuery('candidates:' + params.id, () => loadJobCandidates(params.id));
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading title="Bico fechado" onBack={() => goBack('/mural')} query={query} skeleton={<PageSkeleton />} />
+    );
   const job = getJob(db, params.id);
   const team = job
     ? applicationsForJob(db, job.id)

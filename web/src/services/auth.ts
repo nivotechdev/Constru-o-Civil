@@ -4,7 +4,8 @@
 // replaces their bodies, not the screens.
 import { ACCOUNTS, DEMO_PASSWORD } from '../data/seed';
 import type { Account, Company, Role, Worker } from '../types/models';
-import { mockLatency } from './mockLatency';
+import { localLatency, mockLatency } from './mockLatency';
+import { clearQueries } from './queries';
 import { resetHistory } from './router';
 import {
   getDb,
@@ -60,8 +61,9 @@ export async function signIn(identifier: string, password: string): Promise<Sign
 
 /** Ends the session and forgets every screen's state. Backend: Supabase Auth `signOut`. */
 export async function signOut(): Promise<void> {
-  await mockLatency(300);
+  await localLatency(300); // signing out works offline too: the session is dropped on the device
   setSessionAccount(null);
+  clearQueries();
   resetHistory();
 }
 

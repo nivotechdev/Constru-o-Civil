@@ -8,7 +8,8 @@ type Services = {
   sel: typeof import('../services/selectors');
   auth: typeof import('../services/auth');
   account: typeof import('../services/account');
-  marketplace: typeof import('../services/marketplace');
+  jobs: typeof import('../services/jobs');
+  applications: typeof import('../services/applications');
 };
 
 async function fresh(): Promise<Services> {
@@ -18,7 +19,8 @@ async function fresh(): Promise<Services> {
     sel: await import('../services/selectors'),
     auth: await import('../services/auth'),
     account: await import('../services/account'),
-    marketplace: await import('../services/marketplace')
+    jobs: await import('../services/jobs'),
+    applications: await import('../services/applications')
   };
 }
 
@@ -84,16 +86,16 @@ describe('simulated backend calls keep the legacy delays', () => {
   });
 
   it('sends an application after 600 ms', async () => {
-    const { store, sel, marketplace } = s;
+    const { store, sel, applications } = s;
     expect(sel.applicationFor(store.getDb(), 'BC-4855', 'jorge')).toBeNull();
-    const sent = marketplace.submitApplication('BC-4855', 'jorge');
+    const sent = applications.submitApplication('BC-4855');
     expect(sel.applicationFor(store.getDb(), 'BC-4855', 'jorge')).toBeNull();
     await settlesAfter(sent, 600);
     expect(sel.applicationFor(store.getDb(), 'BC-4855', 'jorge')?.status).toBe('enviada');
   });
 
   it('publishes a job after 700 ms with the demo id, company and place', async () => {
-    const { store, sel, marketplace } = s;
+    const { store, sel, jobs } = s;
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const draft = {
       role: 'Pintor',
@@ -108,7 +110,7 @@ describe('simulated backend calls keep the legacy delays', () => {
       description: 'Pintura interna.',
       photos: []
     };
-    const id = await settlesAfter(marketplace.publishJob(draft), 700);
+    const id = await settlesAfter(jobs.publishJob(draft), 700);
     expect(id).toBe('BC-5500');
     expect(sel.getJob(store.getDb(), id)).toEqual({
       ...draft,

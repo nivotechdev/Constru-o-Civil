@@ -1,7 +1,13 @@
 // The logged-in side's notifications. Demo data, as in the legacy app: a fixed list per side, the
 // newest first; the navigation's bell counts the unread ones.
 import type { AppNotification, Role } from '../types/models';
+import { mockLatency } from './mockLatency';
 import { setUI } from './store';
+
+/** The logged-in account's notifications. Backend: select notifications where account = me, newest first. */
+export async function loadNotifications(): Promise<void> {
+  await mockLatency(350);
+}
 
 const WORKER: AppNotification[] = [
   {
@@ -74,7 +80,9 @@ export function unreadCount(role: Role, allRead = false): number {
   return notificationsFor(role, allRead).filter((n) => !n.read).length;
 }
 
-export function markAllNotificationsRead(role: Role): void {
+/** Marks every notification as read. Backend: update notifications set read_at = now() where account = me. */
+export async function markAllNotificationsRead(role: Role): Promise<void> {
+  await mockLatency(300);
   setUI<NotificationsReadUI>(
     NOTIFICATIONS_READ_KEY,
     role === 'recrutador' ? { recrutador: true } : { trabalhador: true }

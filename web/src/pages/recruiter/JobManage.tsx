@@ -9,6 +9,14 @@ import { InfoRow } from '../../components/InfoRow';
 import { Dialog } from '../../components/Modal';
 import { JobNotFound } from '../../components/NotFound';
 import { PhotoManager } from '../../components/PhotoManager';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useAction } from '../../hooks/useAction';
+import { useQuery } from '../../hooks/useQuery';
+import { decideApplication, loadJobCandidates } from '../../services/applications';
+import { errorMessage } from '../../services/errors';
+import { closeJob, updateJobPhotos } from '../../services/jobs';
+import { showToast } from '../../services/toast';
 import { useDb, useUI } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
@@ -21,7 +29,7 @@ import {
   pendingCount,
   workerOf
 } from '../../services/selectors';
-import { closeJob, decideApplication, getDb, updateJob } from '../../services/store';
+import { getDb } from '../../services/store';
 import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
@@ -31,6 +39,14 @@ import { jobPhotos } from '../../utils/jobPhotos';
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
   const [ui, setUi] = useUI<{ confirmClose: boolean }>('job-manage', { confirmClose: false });
+  const query = useQuery('candidates:' + params.id, () => loadJobCandidates(params.id));
+  const close = useAction(closeJob, () => {
+    setUi({ confirmClose: false });
+    showToast('Vaga encerrada');
+    navigate('/mural');
+  });
+  if (query.status !== 'ready')
+    return <ScreenLoading title="Sua vaga" onBack={() => goBack('/mural')} query={query} skeleton={<PageSkeleton />} />;
   const job = getJob(db, params.id);
   if (!job) return <JobNotFound />;
 
@@ -114,7 +130,12 @@ export default function JobManage({ params }: ScreenProps) {
         <div className="flex flex-col gap-4 lg:gap-6">
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Fotos da vaga</span>
-            <PhotoManager photos={jobPhotos(job)} onChange={(photos) => updateJob(job.id, { photos })} />
+            <PhotoManager
+              photos={jobPhotos(job)}
+              onChange={(photos) =>
+                updateJobPhotos(job.id, photos).catch((e: unknown) => showToast(errorMessage(e), { tone: 'error' }))
+              }
+            />
             <span className="text-xs text-concrete-500">Até 6 fotos. A primeira é a capa do bico no mural.</span>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -177,8 +198,12 @@ export default function JobManage({ params }: ScreenProps) {
                         !decision && !closed
                           ? (e) => {
                               e.stopPropagation();
-                              decideApplication(job.id, worker.id, 'aprovado');
-                              if (isJobClosed(getDb(), job)) navigate('/fechado/' + job.id);
+                              decideApplication(job.id, worker.id, 'aprovado')
+                                .then(() => {
+                                  if (isJobClosed(getDb(), job)) navigate('/fechado/' + job.id);
+                                  else showToast(`${worker.name.split(' ')[0]} aprovado`);
+                                })
+                                .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
                             }
                           : null
                       }
@@ -186,7 +211,9 @@ export default function JobManage({ params }: ScreenProps) {
                         !decision && !closed
                           ? (e) => {
                               e.stopPropagation();
-                              decideApplication(job.id, worker.id, 'recusado');
+                              decideApplication(job.id, worker.id, 'recusado')
+                                .then(() => showToast('Candidato recusado'))
+                                .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
                             }
                           : null
                       }
@@ -220,13 +247,14 @@ export default function JobManage({ params }: ScreenProps) {
         title="Encerrar essa vaga?"
         description="A vaga sai do mural imediatamente e para de receber candidaturas. Isso não pode ser desfeito."
         confirmLabel="Encerrar vaga"
-        onConfirm={() => {
-          closeJob(job.id);
-          setUi({ confirmClose: false });
-          navigate('/mural');
-        }}
+        onConfirm={() => void close.run(job.id)}
+        loading={close.loading}
+        error={close.error}
         cancelLabel="Cancelar"
-        onCancel={() => setUi({ confirmClose: false })}
+        onCancel={() => {
+          close.reset();
+          setUi({ confirmClose: false });
+        }}
       />
     </div>
   );

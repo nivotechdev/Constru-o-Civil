@@ -5,6 +5,7 @@ import { ResultIcon } from '../../components/ResultIcon';
 import { useUI } from '../../hooks/useStore';
 import { requestPasswordReset } from '../../services/auth';
 import { goBack, navigate } from '../../services/router';
+import { errorMessage } from '../../services/errors';
 import { isValidEmail } from '../../utils/format';
 
 interface ForgotUI {
@@ -64,8 +65,11 @@ export default function ForgotPassword() {
                 setUi({ error: 'E-mail inválido. Confira se tem @ e o domínio.' });
                 return;
               }
-              setUi({ submitting: true });
-              requestPasswordReset(ui.email).then(() => setUi({ submitting: false, sent: true }));
+              if (ui.submitting) return;
+              setUi({ submitting: true, error: null });
+              requestPasswordReset(ui.email)
+                .then(() => setUi({ submitting: false, sent: true }))
+                .catch((e: unknown) => setUi({ submitting: false, error: errorMessage(e) }));
             }}
           />
         </div>

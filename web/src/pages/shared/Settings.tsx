@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react';
+import { useSyncExternalStore, type ReactNode } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Icon, type IconName } from '../../components/icons/Icon';
+import { Switch } from '../../components/Switch';
 import { useRole } from '../../hooks/useStore';
+import { isFailureMode, setFailureMode, subscribeFailureMode } from '../../services/demo';
 import { goBack, navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
 
@@ -49,6 +51,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 export default function Settings() {
   const role = useRole();
+  const failing = useSyncExternalStore(subscribeFailureMode, isFailureMode);
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 gap-6 pb-8 lg:bg-transparent lg:min-h-0">
       <BackBar title="Configurações" onBack={() => goBack(role === 'recrutador' ? '/empresa' : '/perfil')} />
@@ -81,6 +84,16 @@ export default function Settings() {
         </Section>
         <Section title="">
           <Row icon="log-out" label="Sair da conta" danger onClick={() => askSignOut()} />
+        </Section>
+        <Section title="Demonstração">
+          <div className="px-4 py-1 bg-white">
+            <Switch
+              label="Simular falhas de conexão"
+              description="Para testar: toda ação e carregamento passa a dar erro, com a opção de tentar de novo."
+              checked={failing}
+              onChange={setFailureMode}
+            />
+          </div>
         </Section>
       </div>
     </div>

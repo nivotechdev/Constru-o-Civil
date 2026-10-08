@@ -3,14 +3,20 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import type { IconName } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
+import { FieldError } from '../../components/FieldError';
 import { JobNotFound } from '../../components/NotFound';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useAction } from '../../hooks/useAction';
+import { useQuery } from '../../hooks/useQuery';
+import { loadMyApplications, markJobReviewed } from '../../services/applications';
+import { showToast } from '../../services/toast';
 import { Rating } from '../../components/Rating';
 import { Tag } from '../../components/Tag';
 import { useDb, useUI } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import { companyOf, currentWorkerId, getJob } from '../../services/selectors';
-import { markReviewed } from '../../services/store';
+import { companyOf, getJob } from '../../services/selectors';
 import { dateText } from '../../utils/jobInfo';
 import { toggleItem } from '../../utils/list';
 
@@ -30,6 +36,20 @@ interface RateUI {
 export default function RateJob({ params }: ScreenProps) {
   const db = useDb();
   const [ui, setUi] = useUI<RateUI>('rate-job', { rating: 5, selected: ['pagou'], comment: '' });
+  const query = useQuery('my-applications', loadMyApplications);
+  const send = useAction(markJobReviewed, () => {
+    showToast('Avaliação enviada. Obrigado!');
+    navigate('/minhas-candidaturas');
+  });
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading
+        title="Avaliar a diária"
+        onBack={() => goBack('/minhas-candidaturas')}
+        query={query}
+        skeleton={<PageSkeleton />}
+      />
+    );
   const job = getJob(db, params.id);
   if (!job) return <JobNotFound />;
   const company = companyOf(db, job);
@@ -74,15 +94,14 @@ export default function RateJob({ params }: ScreenProps) {
           value={ui.comment}
           onInput={(v) => setUi({ comment: v })}
         />
-        <div className="pt-1">
+        <div className="pt-1 flex flex-col gap-2">
+          {send.error ? <FieldError message={send.error} /> : null}
           <Button
             label="Enviar avaliação"
             size="lg"
             fullWidth
-            onClick={() => {
-              markReviewed(job.id, currentWorkerId());
-              navigate('/minhas-candidaturas');
-            }}
+            loading={send.loading}
+            onClick={() => void send.run(job.id)}
           />
         </div>
       </div>

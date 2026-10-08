@@ -6,7 +6,7 @@ import { Icon } from '../../../components/icons/Icon';
 import { JobTile } from '../../../components/JobTile';
 import { navigate } from '../../../services/router';
 import { getCompany, isJobSaved, isMine } from '../../../services/selectors';
-import { toggleSavedJob } from '../../../services/store';
+import { toggleSaved } from '../../../services/feedback';
 import type { Company, Database, Job, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
 import { DEFAULT_CITY, NO_FILTERS, setFeed, type FeedUI } from './feedUI';
@@ -29,7 +29,7 @@ const FeedTile = memo(function FeedTile({ job, company, role, saved }: FeedTileP
       onClick={() => navigate(mine ? '/vaga-gerenciar/' + job.id : '/vaga/' + job.id)}
       mine={mine}
       saved={saved}
-      onToggleSave={role === 'trabalhador' ? () => toggleSavedJob(job.id) : null}
+      onToggleSave={role === 'trabalhador' ? () => toggleSaved(job.id) : null}
     />
   );
 });

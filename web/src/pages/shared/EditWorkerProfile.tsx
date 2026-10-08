@@ -1,6 +1,10 @@
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
+import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
+import { useAction } from '../../hooks/useAction';
+import { updateMyWorkerProfile } from '../../services/profiles';
+import { showToast } from '../../services/toast';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
 import { Tag } from '../../components/Tag';
@@ -9,7 +13,6 @@ import { CARGOS_TRABALHADOR, ESPECIALIDADES, REGIOES_TRABALHADOR } from '../../s
 import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
 import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI, askSignOut } from '../../services/sharedUI';
-import { updateWorker } from '../../services/store';
 import { toggleItem } from '../../utils/list';
 
 interface EditWorkerUI {
@@ -31,6 +34,10 @@ export default function EditWorkerProfile() {
     photo: null
   }));
   const [banner, setBanner] = useUI<WorkerPhotoUI>(WORKER_PHOTO_KEY, WORKER_PHOTO_DEFAULTS);
+  const save = useAction(updateMyWorkerProfile, () => {
+    showToast('Perfil atualizado');
+    navigate('/perfil');
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
@@ -95,16 +102,19 @@ export default function EditWorkerProfile() {
           <Button label="Sair da conta" variant="danger" fullWidth iconLeft="log-out" onClick={askSignOut} />
         </div>
       </div>
-      <div className="px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex gap-3 lg:static lg:bg-transparent lg:shadow-none">
-        <Button label="Cancelar" variant="secondary" className="flex-1" onClick={() => navigate('/perfil')} />
-        <Button
-          label="Salvar alterações"
-          className="flex-[1.4]"
-          onClick={() => {
-            updateWorker(worker.id, { name: ui.name, role: ui.role, region: ui.region, specialties: ui.specialties });
-            navigate('/perfil');
-          }}
-        />
+      <div className="px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+        {save.error ? <FieldError message={save.error} /> : null}
+        <div className="flex gap-3">
+          <Button label="Cancelar" variant="secondary" className="flex-1" onClick={() => navigate('/perfil')} />
+          <Button
+            label="Salvar alterações"
+            className="flex-[1.4]"
+            loading={save.loading}
+            onClick={() =>
+              void save.run({ name: ui.name, role: ui.role, region: ui.region, specialties: ui.specialties })
+            }
+          />
+        </div>
       </div>
     </div>
   );

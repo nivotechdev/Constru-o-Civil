@@ -2,6 +2,10 @@ import { BackBar } from '../../components/BackBar';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
 import { NotFound } from '../../components/NotFound';
+import { ScreenLoading } from '../../components/QueryView';
+import { ListSkeleton } from '../../components/Skeleton';
+import { useQuery } from '../../hooks/useQuery';
+import { loadCompanyProfile, loadWorkerProfile } from '../../services/profiles';
 import { Rating } from '../../components/Rating';
 import { useDb, useRole } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
@@ -12,6 +16,14 @@ export default function ReviewsScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
   const type = params.type === 'construtora' ? 'construtora' : 'trabalhador';
+  const backTarget = type === 'trabalhador' ? '/trabalhador/' + params.id : '/construtora/' + params.id;
+  const query = useQuery(type === 'trabalhador' ? 'worker:' + params.id : 'company:' + params.id, () =>
+    type === 'trabalhador' ? loadWorkerProfile(params.id) : loadCompanyProfile(params.id)
+  );
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading title="Avaliações" onBack={() => goBack(backTarget)} query={query} skeleton={<ListSkeleton />} />
+    );
   const worker = type === 'trabalhador' ? getWorker(db, params.id) : undefined;
   const company = type === 'construtora' ? getCompany(db, params.id) : undefined;
   const subject = worker || company;
@@ -19,7 +31,6 @@ export default function ReviewsScreen({ params }: ScreenProps) {
 
   // Only companies see a worker's reviews, and only workers see a company's.
   const allowed = type === 'trabalhador' ? role === 'recrutador' : role === 'trabalhador';
-  const backTarget = type === 'trabalhador' ? '/trabalhador/' + params.id : '/construtora/' + params.id;
 
   if (!allowed) {
     return (

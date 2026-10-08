@@ -33,3 +33,22 @@ para quem usa o app. Cada item diz de qual ID do plano veio.
   datas de confirmação. O arquivo de tipos agora declara cada linha uma vez e deriva insert/update. O SQL
   em `web/supabase/` é o rascunho anterior e **não** foi atualizado (o pedido proíbe migrations nesta
   etapa); o back-end escreve as migrations a partir de `docs/CONTRATO-BACKEND.md` e de `types/supabase.ts`.
+
+## B10 — Carregamento, erro, vazio e offline
+
+- **Interruptor de falha da demonstração:** abrir o app com `?falhar=1` antes do `#` (ex.:
+  `index.html?falhar=1#/mural`) ou ligar **Configurações › Demonstração › Simular falhas de conexão**. Com
+  ele ligado, toda chamada de serviço do mock é rejeitada. "Sair da conta" continua funcionando (a sessão
+  é encerrada no aparelho mesmo sem rede).
+- **Sem internet** (`navigator.onLine` falso), as chamadas também falham, com a mensagem de offline, e uma
+  faixa no topo avisa enquanto durar.
+- **Leituras passam por serviço com cache por sessão:** cada tela pede o que mostra com uma chave
+  (`feed`, `job:ID`, `worker:ID`…). O primeiro acesso mostra esqueleto; os seguintes abrem na hora (o
+  store já tem os dados). Em erro, a tela mostra "Tentar de novo" e, em telas cheias, "Voltar ao início".
+  Sair da conta limpa o cache.
+- **Salvar vaga é otimista:** a bandeirinha muda na hora e volta se a chamada falhar, com um aviso.
+- **Erros de ação** aparecem junto do botão (ou dentro do diálogo, que continua aberto); avisos curtos de
+  sucesso aparecem num toast no rodapé, anunciado a leitores de tela.
+- **Erros de serviço têm código** (`offline`, `falha_demo`, `nao_autorizado`, `nao_encontrado`,
+  `conflito`, `validacao`) e mensagem pronta em português; o back-end real deve mapear seus erros para
+  esses códigos (ver `services/errors.ts`).

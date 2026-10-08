@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { Icon } from '../../../components/icons/Icon';
+import { QueryView } from '../../../components/QueryView';
+import { TileGridSkeleton } from '../../../components/Skeleton';
 import { Rating } from '../../../components/Rating';
 import { Tag } from '../../../components/Tag';
 import { navigate } from '../../../services/router';
@@ -12,7 +14,7 @@ import { NO_FILTERS, setFeed, type SearchMatches } from './feedUI';
 import type { FeedLayoutProps } from './MobileFeed';
 
 /** The mural from 770px up (tablet and desktop): a wide search bar, the filters button and the grid. */
-export function DesktopFeed({ db, role, ui, ordered, found, chips }: FeedLayoutProps) {
+export function DesktopFeed({ db, role, ui, ordered, found, chips, query }: FeedLayoutProps) {
   const count = chips.length;
   const browse = (
     <div className="flex flex-col gap-6">
@@ -59,7 +61,9 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips }: FeedLayoutP
       </div>
       <div className="page-x pt-8 pb-20">
         <div className="mural-frame">
-          {found ? <SearchResults db={db} role={role} search={ui.search} found={found} /> : browse}
+          <QueryView query={query} skeleton={<TileGridSkeleton count={8} />}>
+            {() => (found ? <SearchResults db={db} role={role} search={ui.search} found={found} /> : browse)}
+          </QueryView>
         </div>
       </div>
     </div>

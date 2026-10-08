@@ -5,8 +5,12 @@ import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons/Icon';
 import { KeyValue } from '../../components/KeyValue';
 import { JobNotFound } from '../../components/NotFound';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
 import { WhatsAppButton } from '../../components/WhatsAppButton';
+import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
+import { loadMyApplications } from '../../services/applications';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
@@ -16,6 +20,16 @@ import { workerToCompanyUrl } from '../../utils/whatsapp';
 
 export default function Selected({ params }: ScreenProps) {
   const db = useDb();
+  const query = useQuery('my-applications', loadMyApplications);
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading
+        title="Você avançou"
+        onBack={() => goBack('/minhas-candidaturas')}
+        query={query}
+        skeleton={<PageSkeleton />}
+      />
+    );
   const job = getJob(db, params.id);
   if (!job) return <JobNotFound />;
   const company = companyOf(db, job);

@@ -88,6 +88,22 @@ button {
   animation: bicos-fade-in var(--dur-normal) var(--ease-standard);
 }
 
+@keyframes bicos-shine {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+/* Placeholder block while a screen's data loads (components/Skeleton.tsx). */
+.skeleton {
+  display: block;
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 37%, var(--skeleton-base) 63%);
+  background-size: 400% 100%;
+  animation: bicos-shine 1.4s ease infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

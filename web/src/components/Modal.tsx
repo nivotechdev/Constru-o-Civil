@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button } from './Button';
+import { FieldError } from './FieldError';
 import { Icon } from './icons/Icon';
 
 interface DialogProps {
@@ -13,6 +14,8 @@ interface DialogProps {
   onCancel: () => void;
   /** The confirm action is running: its button spins and nothing can be pressed twice. */
   loading?: boolean;
+  /** Why the confirm action failed (the dialog stays open to try again). */
+  error?: string | null;
 }
 
 /** Centered confirm/cancel dialog over a scrim. Used for destructive confirmations. */
@@ -25,7 +28,8 @@ export function Dialog({
   onConfirm,
   cancelLabel = 'Cancelar',
   onCancel,
-  loading = false
+  loading = false,
+  error = null
 }: DialogProps) {
   if (!open) return null;
   return (
@@ -45,6 +49,7 @@ export function Dialog({
           <h3 className="text-lg font-bold text-concrete-900">{title}</h3>
           {description ? <p className="text-sm text-concrete-600">{description}</p> : null}
         </div>
+        {error ? <FieldError message={error} /> : null}
         <div className="flex gap-3 pt-1">
           <Button
             label={cancelLabel}

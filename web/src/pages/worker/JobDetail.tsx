@@ -7,12 +7,18 @@ import { InfoRow } from '../../components/InfoRow';
 import { Dialog } from '../../components/Modal';
 import { NotFound } from '../../components/NotFound';
 import { PhotoCarousel } from '../../components/PhotoCarousel';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
 import { Rating } from '../../components/Rating';
+import { useAction } from '../../hooks/useAction';
+import { useQuery } from '../../hooks/useQuery';
 import { useDb, useRole, useUI } from '../../hooks/useStore';
+import { withdrawApplication } from '../../services/applications';
+import { loadJob } from '../../services/jobs';
+import { showToast } from '../../services/toast';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorker, getJob } from '../../services/selectors';
-import { cancelApplication } from '../../services/store';
 import { formatPay } from '../../utils/format';
 import { diasInfo, hoursText, whenText } from '../../utils/jobInfo';
 
@@ -20,6 +26,21 @@ export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
   const [ui, setUi] = useUI<{ confirmCancel: boolean }>('job-detail', { confirmCancel: false });
+  const query = useQuery('job:' + params.id, () => loadJob(params.id));
+  const withdraw = useAction(withdrawApplication, () => {
+    setUi({ confirmCancel: false });
+    showToast('Candidatura cancelada');
+    navigate('/minhas-candidaturas');
+  });
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading
+        title="Detalhe da vaga"
+        onBack={() => goBack('/mural')}
+        query={query}
+        skeleton={<PageSkeleton />}
+      />
+    );
   const job = getJob(db, params.id);
   if (!job) return <NotFound message="Vaga não encontrada ou encerrada." />;
   const company = companyOf(db, job);
@@ -178,13 +199,14 @@ export default function JobDetail({ params }: ScreenProps) {
         title="Cancelar essa candidatura?"
         description="Você sai da lista de candidatos dessa vaga. Se quiser, pode se candidatar de novo depois."
         confirmLabel="Cancelar candidatura"
-        onConfirm={() => {
-          cancelApplication(job.id, worker.id);
-          setUi({ confirmCancel: false });
-          navigate('/minhas-candidaturas');
-        }}
+        onConfirm={() => void withdraw.run(job.id)}
+        loading={withdraw.loading}
+        error={withdraw.error}
         cancelLabel="Voltar"
-        onCancel={() => setUi({ confirmCancel: false })}
+        onCancel={() => {
+          withdraw.reset();
+          setUi({ confirmCancel: false });
+        }}
       />
     </div>
   );

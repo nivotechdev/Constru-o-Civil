@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { CityPicker } from '../../../components/CityPicker';
+import { useQuery } from '../../../hooks/useQuery';
 import { useDb, useRole, useUI } from '../../../hooks/useStore';
+import { loadFeed } from '../../../services/jobs';
 import { activeJobs, isJobClosed } from '../../../services/selectors';
 import { DesktopFeed } from './DesktopFeed';
 import { FiltersSheet } from './FeedSheets';
@@ -24,6 +26,7 @@ export default function Feed() {
   const db = useDb();
   const role = useRole();
   const [ui] = useUI<FeedUI>(FEED_KEY, FEED_DEFAULTS);
+  const query = useQuery('feed', loadFeed);
   const { location, tipo, dist, quando, sort } = ui;
   const q = ui.search.trim().toLowerCase();
 
@@ -40,7 +43,7 @@ export default function Feed() {
   const found = useMemo(() => (q ? searchMatches(db, open, q, role) : null), [db, open, q, role]);
   const chips = useMemo(() => activeFilters({ location, tipo, dist, quando }), [location, tipo, dist, quando]);
 
-  const layout = { db, role, ui, ordered, found, chips };
+  const layout = { db, role, ui, ordered, found, chips, query };
   return (
     <div>
       <MobileFeed {...layout} />

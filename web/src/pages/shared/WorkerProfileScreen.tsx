@@ -4,6 +4,13 @@ import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/IconButton';
 import { NotFound } from '../../components/NotFound';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useAction } from '../../hooks/useAction';
+import { useQuery } from '../../hooks/useQuery';
+import { decideApplication } from '../../services/applications';
+import { FieldError } from '../../components/FieldError';
+import { loadWorkerProfile } from '../../services/profiles';
 import { Rating } from '../../components/Rating';
 import { useDb, useRole, useUI } from '../../hooks/useStore';
 import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI } from '../../services/sharedUI';
@@ -18,7 +25,7 @@ import {
   getWorker,
   isJobClosed
 } from '../../services/selectors';
-import { decideApplication, getDb } from '../../services/store';
+import { getDb } from '../../services/store';
 import { WorkerPosts } from './WorkerPosts';
 
 export default function WorkerProfileScreen({ params }: ScreenProps) {
@@ -27,6 +34,18 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
   const [ui] = useUI<WorkerPhotoUI>(WORKER_PHOTO_KEY, WORKER_PHOTO_DEFAULTS);
 
   const isOwn = !params.id;
+  const workerId = isOwn ? currentWorker(db).id : params.id;
+  const query = useQuery('worker:' + workerId, () => loadWorkerProfile(workerId));
+  const decide = useAction(decideApplication);
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading
+        title={isOwn ? 'Seu perfil' : 'Perfil'}
+        onBack={() => goBack(params.jobId ? '/vaga-gerenciar/' + params.jobId : '/mural')}
+        query={query}
+        skeleton={<PageSkeleton />}
+      />
+    );
   const worker = isOwn ? currentWorker(db) : getWorker(db, params.id);
   if (!worker) return <NotFound message="Trabalhador não encontrado." />;
 
@@ -146,6 +165,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
 
       {!isOwn && jobId && job ? (
         <div className="sticky bottom-0 px-4 sm:px-6 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none lg:pt-0 lg:pb-6">
+          {decide.error ? <FieldError message={decide.error} /> : null}
           {!decidedForJob && !jobFull ? (
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
               <Button
@@ -154,22 +174,29 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
                 fullWidth
                 iconLeft="circle-check"
                 className="lg:w-auto lg:px-8"
-                onClick={() => {
-                  decideApplication(jobId, worker.id, 'aprovado');
-                  const fresh = getDb();
-                  const freshJob = getJob(fresh, jobId);
-                  navigate(freshJob && isJobClosed(fresh, freshJob) ? '/fechado/' + jobId : '/vaga-gerenciar/' + jobId);
-                }}
+                loading={decide.loading}
+                onClick={() =>
+                  void decide.run(jobId, worker.id, 'aprovado').then((ok) => {
+                    if (!ok) return;
+                    const fresh = getDb();
+                    const freshJob = getJob(fresh, jobId);
+                    navigate(
+                      freshJob && isJobClosed(fresh, freshJob) ? '/fechado/' + jobId : '/vaga-gerenciar/' + jobId
+                    );
+                  })
+                }
               />
               <Button
                 label="Recusar candidato"
                 variant="ghost"
                 fullWidth
                 className="lg:w-auto"
-                onClick={() => {
-                  decideApplication(jobId, worker.id, 'recusado');
-                  navigate('/vaga-gerenciar/' + jobId);
-                }}
+                disabled={decide.loading}
+                onClick={() =>
+                  void decide.run(jobId, worker.id, 'recusado').then((ok) => {
+                    if (ok) navigate('/vaga-gerenciar/' + jobId);
+                  })
+                }
               />
             </div>
           ) : decidedForJob ? (
@@ -188,7 +215,8 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
                 label="Desfazer"
                 variant="secondary"
                 size="sm"
-                onClick={() => decideApplication(jobId, worker.id, null)}
+                loading={decide.loading}
+                onClick={() => void decide.run(jobId, worker.id, null)}
               />
             </div>
           ) : (

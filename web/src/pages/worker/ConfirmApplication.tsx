@@ -1,9 +1,15 @@
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { FieldError } from '../../components/FieldError';
 import { JobNotFound } from '../../components/NotFound';
-import { useDb, useUI } from '../../hooks/useStore';
-import { submitApplication } from '../../services/marketplace';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useAction } from '../../hooks/useAction';
+import { useQuery } from '../../hooks/useQuery';
+import { useDb } from '../../hooks/useStore';
+import { submitApplication } from '../../services/applications';
+import { loadJob } from '../../services/jobs';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { companyOf, currentWorker, getJob } from '../../services/selectors';
@@ -12,7 +18,17 @@ import { dateText } from '../../utils/jobInfo';
 
 export default function ConfirmApplication({ params }: ScreenProps) {
   const db = useDb();
-  const [ui, setUi] = useUI<{ submitting: boolean }>('confirm-application', { submitting: false });
+  const query = useQuery('job:' + params.id, () => loadJob(params.id));
+  const submit = useAction(submitApplication, () => navigate('/enviado/' + params.id));
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading
+        title="Confirmar candidatura"
+        onBack={() => goBack('/vaga/' + params.id)}
+        query={query}
+        skeleton={<PageSkeleton />}
+      />
+    );
   const job = getJob(db, params.id);
   if (!job) return <JobNotFound />;
   const company = companyOf(db, job);
@@ -56,18 +72,13 @@ export default function ConfirmApplication({ params }: ScreenProps) {
         </span>
       </div>
       <div className="px-4 sm:px-0 py-3 flex flex-col gap-2">
+        {submit.error ? <FieldError message={submit.error} /> : null}
         <Button
           label="Sim, quero esse bico"
           size="lg"
           fullWidth
-          loading={ui.submitting}
-          onClick={() => {
-            setUi({ submitting: true });
-            submitApplication(job.id, worker.id).then(() => {
-              setUi({ submitting: false });
-              navigate('/enviado/' + job.id);
-            });
-          }}
+          loading={submit.loading}
+          onClick={() => void submit.run(job.id)}
         />
         <Button label="Voltar para a vaga" variant="ghost" fullWidth onClick={() => navigate('/vaga/' + job.id)} />
       </div>

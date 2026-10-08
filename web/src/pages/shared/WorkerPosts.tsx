@@ -6,11 +6,14 @@ import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/IconButton';
 import { Dialog, Sheet } from '../../components/Modal';
+import { FieldError } from '../../components/FieldError';
 import { TextArea } from '../../components/TextArea';
+import { useAction } from '../../hooks/useAction';
+import { addPortfolioPost, deletePortfolioPost } from '../../services/profiles';
+import { showToast } from '../../services/toast';
 import { useDb, useUI } from '../../hooks/useStore';
 import { mediaUrl } from '../../services/media';
 import { postsForWorker } from '../../services/selectors';
-import { addWorkerPost, deleteWorkerPost } from '../../services/store';
 import type { Worker, WorkerPost } from '../../types/models';
 import { resetFileInput } from '../../utils/fileInput';
 import { formatPostDate } from '../../utils/format';
@@ -30,6 +33,10 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
   const db = useDb();
   const [ui, setUi] = useUI<PostsUI>(POSTS_KEY, POSTS_DEFAULTS);
   const posts = postsForWorker(db, worker.id);
+  const remove = useAction(deletePortfolioPost, () => {
+    setUi({ deleteId: null });
+    showToast('Post excluído');
+  });
   const firstName = worker.name.split(' ')[0];
 
   return (
@@ -67,7 +74,7 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
           ))}
         </div>
       )}
-      {isOwn ? <Composer worker={worker} ui={ui} setUi={setUi} /> : null}
+      {isOwn ? <Composer ui={ui} setUi={setUi} /> : null}
       {isOwn ? (
         <Dialog
           open={Boolean(ui.deleteId)}
@@ -76,11 +83,15 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
           description="A publicação some do seu perfil imediatamente."
           confirmLabel="Excluir post"
           onConfirm={() => {
-            if (ui.deleteId) deleteWorkerPost(ui.deleteId);
+            if (ui.deleteId) void remove.run(ui.deleteId);
+          }}
+          loading={remove.loading}
+          error={remove.error}
+          cancelLabel="Cancelar"
+          onCancel={() => {
+            remove.reset();
             setUi({ deleteId: null });
           }}
-          cancelLabel="Cancelar"
-          onCancel={() => setUi({ deleteId: null })}
         />
       ) : null}
     </div>
@@ -126,13 +137,16 @@ function PostCard({ post, isOwn, onDelete }: { post: WorkerPost; isOwn: boolean;
 }
 
 interface ComposerProps {
-  worker: Worker;
   ui: PostsUI;
   setUi: (patch: Partial<PostsUI>) => void;
 }
 
-function Composer({ worker, ui, setUi }: ComposerProps) {
+function Composer({ ui, setUi }: ComposerProps) {
   const closeAndReset = () => setUi({ composing: false, mediaUrl: null, mediaType: 'image', caption: '' });
+  const publish = useAction(addPortfolioPost, () => {
+    closeAndReset();
+    showToast('Post publicado');
+  });
 
   return (
     <Sheet open={ui.composing} title="Publicar trabalho" onClose={closeAndReset}>
@@ -180,15 +194,14 @@ function Composer({ worker, ui, setUi }: ComposerProps) {
           onInput={(v) => setUi({ caption: v })}
         />
       </div>
+      {publish.error ? <FieldError message={publish.error} /> : null}
       <Button
         label="Publicar"
         size="lg"
         fullWidth
         disabled={!ui.mediaUrl}
-        onClick={() => {
-          addWorkerPost(worker.id, { mediaUrl: ui.mediaUrl, mediaType: ui.mediaType, caption: ui.caption.trim() });
-          closeAndReset();
-        }}
+        loading={publish.loading}
+        onClick={() => void publish.run({ mediaUrl: ui.mediaUrl, mediaType: ui.mediaType, caption: ui.caption.trim() })}
       />
     </Sheet>
   );
