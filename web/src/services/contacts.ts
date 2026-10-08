@@ -6,6 +6,8 @@ import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { getDb, getSession } from './store';
 import { companyToWorkerUrl, workerToCompanyUrl } from '../utils/whatsapp';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/actions';
 
 export interface Contact {
   /** Who is on the other side ("Construtora Meridiano", "Jorge Mendes"). */
@@ -21,6 +23,7 @@ export interface Contact {
  * definer) that checks the same thing before reading the private phone column.
  */
 export async function getContact(applicationId: string): Promise<Contact> {
+  if (!IS_DEMO) return remote.getContact(applicationId);
   await mockLatency(250);
   const db = getDb();
   const session = getSession();

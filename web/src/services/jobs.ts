@@ -9,21 +9,27 @@ import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { currentCompanyId, getJob, isJobSaved } from './selectors';
 import * as store from './store';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/jobs';
+import * as remoteData from './remote/data';
 
 // ---- reads ----
 
 /** The mural's open jobs. Backend: select open jobs (+ companies) near the worker; put them in the store. */
 export async function loadFeed(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadFeed();
   await mockLatency(450);
 }
 
 /** One job with its company. Backend: select the job by id (+ company, + my application). */
 export async function loadJob(_jobId: string): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadJob(_jobId);
   await mockLatency(300);
 }
 
 /** The worker's saved jobs. Backend: select saved_jobs join jobs for the logged-in worker. */
 export async function loadSavedJobs(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadSavedJobs();
   await mockLatency(300);
 }
 
@@ -47,6 +53,7 @@ function ownJob(jobId: string): Job {
 
 /** Publishes the company's job; resolves to its id. Backend: insert into jobs (company from the session). */
 export async function publishJob(draft: JobDraft): Promise<string> {
+  if (!IS_DEMO) return remote.publishJob(draft);
   await mockLatency(700);
   const id = nextJobId();
   store.createJob({ ...draft, id, companyId: currentCompanyId() });
@@ -82,6 +89,7 @@ const activeOn = (db: Database, jobId: string) =>
  * the notifications, in one transaction.
  */
 export async function updateJob(jobId: string, draft: JobDraft): Promise<void> {
+  if (!IS_DEMO) return remote.updateJob(jobId, draft);
   await mockLatency(700);
   const job = ownJob(jobId);
   const db = store.getDb();
@@ -118,6 +126,7 @@ export async function updateJob(jobId: string, draft: JobDraft): Promise<void> {
 
 /** Replaces the job's photos (the first is the cover). Backend: upload to Storage, update jobs.photos. */
 export async function updateJobPhotos(jobId: string, photos: string[]): Promise<void> {
+  if (!IS_DEMO) return remote.updateJobPhotos(jobId, photos);
   await mockLatency(400);
   ownJob(jobId);
   store.updateJob(jobId, { photos });
@@ -128,6 +137,7 @@ export async function updateJobPhotos(jobId: string, photos: string[]): Promise<
  * applications in one transaction, notify the candidates.
  */
 export async function closeJob(jobId: string): Promise<void> {
+  if (!IS_DEMO) return remote.closeJob(jobId);
   await mockLatency(500);
   const job = ownJob(jobId);
   const at = new Date().toISOString();
@@ -140,6 +150,7 @@ export async function closeJob(jobId: string): Promise<void> {
 
 /** Deletes the job post. Backend: set jobs.deleted_at (soft delete). */
 export async function deleteJob(jobId: string): Promise<void> {
+  if (!IS_DEMO) return remote.deleteJob(jobId);
   await mockLatency(500);
   ownJob(jobId);
   store.deleteJobPost(jobId);
@@ -152,6 +163,7 @@ export async function deleteJob(jobId: string): Promise<void> {
  * Backend: insert into / delete from saved_jobs.
  */
 export async function toggleSavedJob(jobId: string): Promise<boolean> {
+  if (!IS_DEMO) return remote.toggleSavedJob(jobId);
   const wasSaved = isJobSaved(store.getDb(), jobId);
   store.toggleSavedJob(jobId);
   try {

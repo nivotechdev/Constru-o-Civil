@@ -48,14 +48,33 @@ export const applicationsForWorker = (db: Database, workerId: string): Applicati
 export const applicationFor = (db: Database, jobId: string, workerId: string): Application | null =>
   db.applications.find((a) => a.jobId === jobId && a.workerId === workerId) || null;
 
+/**
+ * Counted from the server (db.jobStats) for jobs whose candidacies the session can't read — with the
+ * real backend, any job that isn't the company's own. The company's own jobs (and every job in demo
+ * mode) are counted from the candidacies themselves, which are always current.
+ */
+function statsOf(db: Database, jobId: string) {
+  const stats = db.jobStats?.[jobId];
+  return stats && db.jobs[jobId]?.companyId !== getSession()?.companyId ? stats : null;
+}
+
 export function approvedCount(db: Database, jobId: string): number {
+  const stats = statsOf(db, jobId);
+  if (stats) return stats.holding;
   return db.applications.filter(
     (a) => a.jobId === jobId && (a.status === 'pre_selecionado' || a.status === 'contratado')
   ).length;
 }
 export function pendingCount(db: Database, jobId: string): number {
+  const stats = statsOf(db, jobId);
+  if (stats) return stats.pending;
   return db.applications.filter((a) => a.jobId === jobId && (a.status === 'enviada' || a.status === 'em_analise'))
     .length;
+}
+/** How many candidates a job has had (any status). */
+export function candidateCount(db: Database, jobId: string): number {
+  const stats = statsOf(db, jobId);
+  return stats ? stats.total : db.applications.filter((a) => a.jobId === jobId).length;
 }
 export const isJobFull = (db: Database, job: Job): boolean => approvedCount(db, job.id) >= (job.slots || 1);
 export const isJobClosed = (db: Database, job: Job): boolean => Boolean(job.closed) || isJobFull(db, job);

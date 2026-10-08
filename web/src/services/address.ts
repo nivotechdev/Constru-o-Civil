@@ -4,6 +4,8 @@ import type { GeoPoint } from '../types/models';
 import { cityByLabel } from './cities';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
+import { IS_DEMO } from './mode';
+import { lookupCepOnline } from './remote/address';
 
 export interface CepResult {
   cep: string;
@@ -72,9 +74,17 @@ export const EXAMPLE_CEPS = CEPS.map((c) => c.cep);
 export async function lookupCep(cep: string): Promise<CepResult | null> {
   const digits = onlyDigits(cep);
   if (digits.length !== 8) throw serviceError('validacao', 'O CEP tem 8 números.');
+  if (!IS_DEMO) {
+    const found = await lookupCepOnline(digits);
+    if (found) looked.set(digits, found);
+    return found;
+  }
   await mockLatency(450);
   return CEPS.find((c) => onlyDigits(c.cep) === digits) ?? null;
 }
+
+/** CEPs found online in this session: their point places the address (see locate). */
+const looked = new Map<string, CepResult>();
 
 /** Small fixed offset from a text, so two addresses in the same city don't sit on the same point. */
 function offset(seed: string): number {
@@ -88,6 +98,9 @@ function offset(seed: string): number {
  * plus a small offset. Backend: geocode the full address (and keep the CEP's point as the fallback).
  */
 export function locate(input: { cep: string; street: string; number: string; city: string }): GeoPoint | null {
+  // Online, the CEP's own point is used as it is (it is already the street's).
+  const online = looked.get(onlyDigits(input.cep));
+  if (online && online.city === input.city) return online.point;
   const known = CEPS.find((c) => onlyDigits(c.cep) === onlyDigits(input.cep));
   const base = known?.point ?? cityByLabel(input.city);
   if (!base) return null;

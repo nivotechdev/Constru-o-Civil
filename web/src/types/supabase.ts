@@ -212,6 +212,16 @@ type BoostPaymentRow = {
   boost_ends_at: string | null;
 };
 
+/** How many candidates a job has, without who they are (RPC job_stats). */
+export type JobStatsRow = {
+  job_id: string;
+  /** Picked or hired: they hold a slot. */
+  holding: number;
+  /** Waiting for the company's decision. */
+  pending: number;
+  total: number;
+};
+
 // ---- table shapes supabase-js expects ----
 
 /** Columns that accept null (optional on insert). */
@@ -287,12 +297,53 @@ export interface SupabaseDatabase {
       application_events: Table<ApplicationEventRow, 'id'>;
       saved_jobs: Table<SavedJobRow, 'saved_at'>;
       reviews: Table<ReviewRow, 'id' | 'tags' | 'comment' | 'created_at'>;
-      worker_posts: Table<WorkerPostRow, 'id' | 'media_type' | 'caption' | 'created_at'>;
+      worker_posts: Table<WorkerPostRow, 'id' | 'media_type' | 'caption' | 'posted_on' | 'created_at'>;
       notifications: Table<NotificationRow, 'id' | 'created_at'>;
       boost_payments: Table<BoostPaymentRow, 'id' | 'status' | 'created_at'>;
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
+    Functions: {
+      ensure_my_account: { Args: never; Returns: undefined };
+      document_available: { Args: { p_document: string }; Returns: boolean };
+      finish_sign_up: { Args: { p: Json }; Returns: undefined };
+      conclude_my_finished_jobs: { Args: never; Returns: number };
+      job_stats: { Args: { p_job_ids: string[] }; Returns: JobStatsRow[] };
+      submit_application: { Args: { p_job_id: string }; Returns: undefined };
+      withdraw_application: { Args: { p_job_id: string }; Returns: undefined };
+      transition_application: {
+        Args: { p_job_id: string; p_worker_id: string; p_action: string; p_reason?: string | null };
+        Returns: undefined;
+      };
+      publish_job: { Args: { p: Json }; Returns: string };
+      update_job: { Args: { p_job_id: string; p: Json }; Returns: undefined };
+      set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
+      close_job: { Args: { p_job_id: string }; Returns: undefined };
+      delete_job: { Args: { p_job_id: string }; Returns: undefined };
+      submit_review: {
+        Args: {
+          p_application_id: string;
+          p_direction: ReviewDirection;
+          p_value: number;
+          p_tags: string[];
+          p_comment: string;
+        };
+        Returns: undefined;
+      };
+      get_contact: { Args: { p_application_id: string }; Returns: { name: string; phone: string }[] };
+      start_pix_payment: { Args: { p_job_id: string; p_plan: BoostPlanId }; Returns: BoostPaymentRow };
+      get_payment: { Args: { p_payment_id: string }; Returns: BoostPaymentRow };
+      simulate_pix_paid: { Args: { p_payment_id: string }; Returns: BoostPaymentRow };
+      pay_with_card: {
+        Args: { p_job_id: string; p_plan: BoostPlanId; p_card_last4: string };
+        Returns: BoostPaymentRow;
+      };
+      export_my_data: { Args: never; Returns: Json };
+      delete_my_account: { Args: { p_confirm_commitments: boolean }; Returns: undefined };
+      // From the legacy app's schema: free an e-mail/document stuck in a sign-up never confirmed.
+      reiniciar_cadastro_pendente_email: { Args: { p_email: string }; Returns: boolean };
+      reiniciar_cadastro_pendente_documento: { Args: { p_documento: string }; Returns: boolean };
+    };
     Enums: {
       app_role: Role;
       dias_semana: DiasKey;

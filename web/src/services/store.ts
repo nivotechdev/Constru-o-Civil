@@ -6,6 +6,7 @@
 // re-render only when that slice changes.
 import * as seed from '../data/seed';
 import type { Account, Database, Job, Role, Session, WorkerPost } from '../types/models';
+import { IS_DEMO } from './mode';
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T;
@@ -40,11 +41,25 @@ function storeAccountId(id: string | null): void {
   }
 }
 
-const storedAccountId = readStoredAccountId();
+/** Nothing loaded yet: how the store starts with the real backend (the rows come from Supabase). */
+export function emptyDatabase(): Database {
+  return {
+    accounts: {},
+    companies: {},
+    workers: {},
+    jobs: {},
+    applications: [],
+    savedJobIds: [],
+    deletedJobIds: [],
+    workerPosts: [],
+    notifications: [],
+    boostPayments: [],
+    jobStats: {}
+  };
+}
 
-let state: State = {
-  accountId: storedAccountId && storedAccountId in seed.ACCOUNTS ? storedAccountId : null,
-  db: {
+function demoDatabase(): Database {
+  return {
     accounts: clone(seed.ACCOUNTS),
     companies: clone(seed.COMPANIES),
     workers: clone(seed.WORKERS),
@@ -55,7 +70,15 @@ let state: State = {
     workerPosts: clone(seed.WORKER_POSTS),
     notifications: clone(seed.NOTIFICATIONS),
     boostPayments: clone(seed.BOOST_PAYMENTS)
-  },
+  };
+}
+
+// With the real backend the session is Supabase Auth's (services/remote/session.ts restores it).
+const storedAccountId = IS_DEMO ? readStoredAccountId() : null;
+
+let state: State = {
+  accountId: storedAccountId && storedAccountId in seed.ACCOUNTS ? storedAccountId : null,
+  db: IS_DEMO ? demoDatabase() : emptyDatabase(),
   ui: {}
 };
 
@@ -116,8 +139,17 @@ export function getRole(): Role {
 
 /** Starts (`id`) or ends (`null`) the session. Ending it also forgets every screen's UI state. */
 export function setSessionAccount(id: string | null): void {
-  storeAccountId(id);
+  if (IS_DEMO) storeAccountId(id);
   state = { ...state, accountId: id, ui: id ? state.ui : {} };
+  notify();
+}
+
+/**
+ * Real backend: ends the session and forgets everything loaded, so the next account starts from a
+ * clean store (nothing of the previous one shows up for a moment).
+ */
+export function clearSessionData(): void {
+  state = { accountId: null, db: emptyDatabase(), ui: {} };
   notify();
 }
 

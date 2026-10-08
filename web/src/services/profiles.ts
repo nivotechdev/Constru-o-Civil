@@ -7,14 +7,19 @@ import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { currentCompanyId, currentWorkerId } from './selectors';
 import * as store from './store';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/profiles';
+import * as remoteData from './remote/data';
 
 /** A worker's public profile (+ reviews, posts). Backend: select the worker by id. */
 export async function loadWorkerProfile(_workerId: string): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadWorkerProfile(_workerId);
   await mockLatency(350);
 }
 
 /** A company's public profile (+ reviews, open jobs). Backend: select the company by id. */
 export async function loadCompanyProfile(_companyId: string): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadCompanyProfile(_companyId);
   await mockLatency(350);
 }
 
@@ -22,6 +27,7 @@ export type WorkerProfilePatch = Partial<Pick<Worker, 'name' | 'oficioId' | 'cit
 
 /** Saves the logged-in worker's profile. Backend: update workers where id = my worker. */
 export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<void> {
+  if (!IS_DEMO) return remote.updateMyWorkerProfile(patch);
   await mockLatency(600);
   if (patch.name !== undefined && patch.name.trim().length < 3)
     throw serviceError('validacao', 'Informe seu nome completo.');
@@ -42,6 +48,7 @@ export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'tipoObra' | 'l
 
 /** Saves the logged-in company's profile. Backend: update companies where id = my company. */
 export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promise<void> {
+  if (!IS_DEMO) return remote.updateMyCompanyProfile(patch);
   await mockLatency(600);
   if (patch.name !== undefined && patch.name.trim().length < 3)
     throw serviceError('validacao', 'Informe o nome da empresa.');
@@ -50,12 +57,14 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
 
 /** Publishes a photo/video on the worker's portfolio. Backend: upload to Storage, insert worker_posts. */
 export async function addPortfolioPost(post: Pick<WorkerPost, 'mediaUrl' | 'mediaType' | 'caption'>): Promise<void> {
+  if (!IS_DEMO) return remote.addPortfolioPost(post);
   await mockLatency(800);
   store.addWorkerPost(currentWorkerId(), post);
 }
 
 /** Removes one of the worker's posts. Backend: delete from worker_posts (own posts only). */
 export async function deletePortfolioPost(postId: string): Promise<void> {
+  if (!IS_DEMO) return remote.deletePortfolioPost(postId);
   await mockLatency(400);
   const post = store.getDb().workerPosts.find((p) => p.id === postId);
   if (!post) throw serviceError('nao_encontrado', 'Esse post não existe mais.');

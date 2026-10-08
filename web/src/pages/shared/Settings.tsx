@@ -4,6 +4,7 @@ import { Icon, type IconName } from '../../components/icons/Icon';
 import { Switch } from '../../components/Switch';
 import { useRole } from '../../hooks/useStore';
 import { isFailureMode, setFailureMode, subscribeFailureMode } from '../../services/demo';
+import { IS_DEMO } from '../../services/mode';
 import { goBack, navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
 
@@ -85,16 +86,18 @@ export default function Settings() {
         <Section title="">
           <Row icon="log-out" label="Sair da conta" danger onClick={() => askSignOut()} />
         </Section>
-        <Section title="Demonstração">
-          <div className="px-4 py-1 bg-white">
-            <Switch
-              label="Simular falhas de conexão"
-              description="Para testar: toda ação e carregamento passa a dar erro, com a opção de tentar de novo."
-              checked={failing}
-              onChange={setFailureMode}
-            />
-          </div>
-        </Section>
+        {IS_DEMO ? (
+          <Section title="Demonstração">
+            <div className="px-4 py-1 bg-white">
+              <Switch
+                label="Simular falhas de conexão"
+                description="Para testar: toda ação e carregamento passa a dar erro, com a opção de tentar de novo."
+                checked={failing}
+                onChange={setFailureMode}
+              />
+            </div>
+          </Section>
+        ) : null}
       </div>
     </div>
   );

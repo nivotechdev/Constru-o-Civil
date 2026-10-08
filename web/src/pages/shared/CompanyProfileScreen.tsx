@@ -22,7 +22,7 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import {
   activeJobs,
-  applicationsForJob,
+  candidateCount,
   approvedCount,
   currentCompany,
   getCompany,
@@ -262,7 +262,7 @@ function statusBadge(db: Database, job: Job): StatusBadge {
   if (isJobClosed(db, job))
     return { label: `Fechado · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
   if (pending) return { label: `${pending} em análise`, tone: 'warning', icon: 'clock' };
-  const total = applicationsForJob(db, job.id).length;
+  const total = candidateCount(db, job.id);
   if (total) return { label: total === 1 ? '1 candidato' : `${total} candidatos`, tone: 'brand', icon: 'users' };
   return { label: 'Sem candidatos', tone: 'neutral', icon: 'search-x' };
 }

@@ -322,4 +322,18 @@ export interface Database {
   workerPosts: WorkerPost[];
   notifications: AppNotification[];
   boostPayments: BoostPayment[];
+  /**
+   * With the real backend, a worker can't read other people's candidacies: how many candidates each
+   * job has comes from here instead (services/selectors.ts uses it for jobs that aren't the session's).
+   */
+  jobStats?: Record<string, JobStats>;
+}
+
+/** A job's candidates, counted (who they are stays private). */
+export interface JobStats {
+  /** Picked or hired (holding a slot). */
+  holding: number;
+  /** Waiting for the company's decision. */
+  pending: number;
+  total: number;
 }

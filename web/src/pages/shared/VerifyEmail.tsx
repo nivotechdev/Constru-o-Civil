@@ -5,6 +5,8 @@ import { Icon } from '../../components/icons/Icon';
 import { ResultIcon } from '../../components/ResultIcon';
 import { useSession, useUI } from '../../hooks/useStore';
 import { confirmEmail, resendConfirmationEmail } from '../../services/auth';
+import { errorMessage } from '../../services/errors';
+import { IS_DEMO } from '../../services/mode';
 import { homeFor } from '../../services/guards';
 import { navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
@@ -24,7 +26,8 @@ export default function VerifyEmail() {
   const session = useSession();
   const [ui, setUi] = useUI<VerifyEmailUI>('verificar-email', DEFAULTS);
 
-  // Demo: there is no inbox, so "Abrir meu e-mail" stands for opening the link that was sent.
+  // Demo: there is no inbox, so "Abrir meu e-mail" stands for opening the link that was sent. With the
+  // real backend the link confirms the account; the button checks it (opened in another tab or device).
   function open() {
     if (ui.confirming) return;
     setUi({ confirming: true, error: null });
@@ -34,7 +37,7 @@ export default function VerifyEmail() {
         const next = getSession();
         if (next) navigate(homeFor(next), { replace: true });
       })
-      .catch(() => setUi({ confirming: false, error: NETWORK_ERROR }));
+      .catch((e: unknown) => setUi({ confirming: false, error: IS_DEMO ? NETWORK_ERROR : errorMessage(e) }));
   }
 
   function resend() {
@@ -42,7 +45,7 @@ export default function VerifyEmail() {
     setUi({ resending: true, resent: false, error: null });
     resendConfirmationEmail()
       .then(() => setUi({ resending: false, resent: true }))
-      .catch(() => setUi({ resending: false, error: NETWORK_ERROR }));
+      .catch((e: unknown) => setUi({ resending: false, error: IS_DEMO ? NETWORK_ERROR : errorMessage(e) }));
   }
 
   return (
@@ -78,10 +81,19 @@ export default function VerifyEmail() {
         {ui.error ? <FieldError message={ui.error} /> : null}
       </div>
       <div className="px-6 pb-8 flex flex-col gap-2">
-        <Button label="Abrir meu e-mail" size="lg" fullWidth iconLeft="mail" loading={ui.confirming} onClick={open} />
-        <span className="text-xs text-center text-concrete-400">
-          Demonstração: este botão faz o papel do link enviado por e-mail.
-        </span>
+        <Button
+          label={IS_DEMO ? 'Abrir meu e-mail' : 'Já confirmei meu e-mail'}
+          size="lg"
+          fullWidth
+          iconLeft="mail"
+          loading={ui.confirming}
+          onClick={open}
+        />
+        {IS_DEMO ? (
+          <span className="text-xs text-center text-concrete-400">
+            Demonstração: este botão faz o papel do link enviado por e-mail.
+          </span>
+        ) : null}
         <Button label="Reenviar o link" variant="ghost" fullWidth loading={ui.resending} onClick={resend} />
         <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
       </div>

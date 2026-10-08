@@ -10,6 +10,8 @@ import { currentCompanyId, isJobClosed } from './selectors';
 import * as store from './store';
 import { isExpired } from '../utils/jobInfo';
 import { validateCard, type CardInput } from '../utils/card';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/actions';
 
 /** How long a PIX code can be paid. */
 export const PIX_MINUTES = 30;
@@ -65,6 +67,7 @@ function expireStale(db: Database, now: Date): Database {
 
 /** One payment, as it stands now (an unpaid PIX code may have expired). Backend: select the payment (own). */
 export async function getPayment(paymentId: string): Promise<BoostPayment> {
+  if (!IS_DEMO) return remote.getPayment(paymentId);
   await mockLatency(200);
   store.transact((db) => expireStale(db, new Date()));
   const p = store.getDb().boostPayments.find((x) => x.id === paymentId);
@@ -77,6 +80,7 @@ export async function getPayment(paymentId: string): Promise<BoostPayment> {
  * Backend: create the charge with the payment provider; its webhook confirms it (see confirmPayment).
  */
 export async function startPixPayment(jobId: string, planId: BoostPlanId): Promise<BoostPayment> {
+  if (!IS_DEMO) return remote.startPixPayment(jobId, planId);
   await mockLatency(700);
   const job = checkJob(jobId);
   const p = plan(planId);
@@ -132,6 +136,7 @@ function confirm(db: Database, paymentId: string, now: Date): Database {
  * edge function) confirms the charge and sets jobs.boost_ends_at; the app only re-reads the payment.
  */
 export async function simulatePixPaid(paymentId: string): Promise<BoostPayment> {
+  if (!IS_DEMO) return remote.simulatePixPaid(paymentId);
   await mockLatency(800);
   const now = new Date();
   store.transact((db) => expireStale(db, now));
@@ -150,6 +155,7 @@ export async function simulatePixPaid(paymentId: string): Promise<BoostPayment> 
  * charge it in an edge function, and confirm like the PIX webhook.
  */
 export async function payWithCard(jobId: string, planId: BoostPlanId, card: CardInput): Promise<BoostPayment> {
+  if (!IS_DEMO) return remote.payWithCard(jobId, planId, card);
   const errors = validateCard(card);
   if (Object.keys(errors).length) throw serviceError('validacao', 'Confira os dados do cartão.');
   await mockLatency(1200);

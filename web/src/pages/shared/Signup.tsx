@@ -6,7 +6,7 @@ import { IconButton } from '../../components/IconButton';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
-import { sendWhatsAppCode, signUp, verifyWhatsAppCode } from '../../services/auth';
+import { sendWhatsAppCode, signUp, verifyWhatsAppCode, WHATSAPP_CODE_AVAILABLE } from '../../services/auth';
 import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
 import { goBack as routerGoBack, navigate } from '../../services/router';
@@ -190,10 +190,27 @@ function validateField(field: SignupField, values: Values, role: Role): string |
   return null;
 }
 
+/**
+ * The steps of the form. Without a WhatsApp provider to send the code (see WHATSAPP_CODE_AVAILABLE), the
+ * code step is left out and the number is kept as typed (not marked as confirmed).
+ */
+function signupSteps(role: Role): { overline: string; fields: SignupField[] } {
+  const cfg = PERFIS[role];
+  if (WHATSAPP_CODE_AVAILABLE) return cfg;
+  return {
+    ...cfg,
+    fields: cfg.fields
+      .filter((f) => f.id !== 'codigo')
+      .map((f) =>
+        f.id === 'whatsapp' && f.help ? { ...f, help: f.help.replace(/ Vamos mandar um código[^.]*\./, '') } : f
+      )
+  };
+}
+
 export default function Signup({ params }: ScreenProps) {
   const role: Role = params.role === 'recrutador' ? 'recrutador' : 'trabalhador';
   const key = 'cadastro-' + role;
-  const cfg = PERFIS[role];
+  const cfg = signupSteps(role);
   const [ui, setUi] = useUI<SignupUI>(key, () => ({
     step: 0,
     values: {},
@@ -268,7 +285,7 @@ export default function Signup({ params }: ScreenProps) {
       setUi((s) => ({ errors: { ...s.errors, [field.id]: err } }));
       return;
     }
-    if (field.id === 'whatsapp') {
+    if (field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE) {
       setUi({ submitting: true, submitError: null });
       sendWhatsAppCode(ui.values.whatsapp || '')
         .then(() =>
@@ -511,7 +528,7 @@ export default function Signup({ params }: ScreenProps) {
           label={
             isLast
               ? 'Criar minha conta'
-              : field.id === 'whatsapp'
+              : field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE
                 ? 'Enviar código'
                 : field.isCode
                   ? 'Confirmar número'

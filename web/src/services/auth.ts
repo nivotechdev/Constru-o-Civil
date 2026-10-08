@@ -1,7 +1,7 @@
 // Accounts and the session: sign-in, sign-up, e-mail confirmation, the end of onboarding and sign-out.
-// There is no auth backend yet: every flow is simulated in memory, with realistic delays and outcomes.
-// Screens only call these functions, so a real provider (Supabase Auth — see docs/CONTRATO-BACKEND.md)
-// replaces their bodies, not the screens.
+// With the real backend each function hands over to services/remote/auth.ts (Supabase Auth); in demo
+// mode (services/mode.ts) every flow is simulated in memory, with realistic delays and outcomes.
+// Screens only call these functions, the same in both modes.
 import { ACCOUNTS, DEMO_PASSWORD } from '../data/seed';
 import type { Account, Company, Role, Worker } from '../types/models';
 import { localLatency, mockLatency } from './mockLatency';
@@ -19,17 +19,17 @@ import {
   upsertWorker
 } from './store';
 import { DEFAULT_CITY, DEFAULT_POINT } from './defaults';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/auth';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
 const passwords = new Map<string, string>(Object.keys(ACCOUNTS).map((id) => [id, DEMO_PASSWORD]));
 
-/** The demo accounts listed on the login screen. */
-export const DEMO_ACCOUNTS: { role: Role; email: string; password: string }[] = Object.values(ACCOUNTS).map((a) => ({
-  role: a.role,
-  email: a.email,
-  password: DEMO_PASSWORD
-}));
+/** The demo accounts listed on the login screen (none with the real backend). */
+export const DEMO_ACCOUNTS: { role: Role; email: string; password: string }[] = IS_DEMO
+  ? Object.values(ACCOUNTS).map((a) => ({ role: a.role, email: a.email, password: DEMO_PASSWORD }))
+  : [];
 
 const digits = (s: string) => s.replace(/\D/g, '');
 
@@ -46,6 +46,7 @@ function findAccount(identifier: string): Account | undefined {
  * Backend: re-authenticate with Supabase Auth (signInWithPassword on the same e-mail).
  */
 export async function checkPassword(password: string): Promise<boolean> {
+  if (!IS_DEMO) return remote.checkPassword(password);
   await mockLatency(500);
   const session = getSession();
   return Boolean(session && passwords.get(session.accountId) === password);
@@ -58,7 +59,11 @@ export function forgetPassword(accountId: string): void {
 
 // ---- sign-in / sign-out ----
 
-export type SignInError = 'conta-inexistente' | 'senha-errada';
+/**
+ * Why signing in failed. With the real backend an e-mail sign-in can't tell an unknown e-mail from a
+ * wrong password (Supabase Auth hides it on purpose): that is `credenciais`.
+ */
+export type SignInError = 'conta-inexistente' | 'senha-errada' | 'credenciais';
 export type SignInResult = { ok: true; role: Role } | { ok: false; reason: SignInError };
 
 /**
@@ -66,6 +71,7 @@ export type SignInResult = { ok: true; role: Role } | { ok: false; reason: SignI
  * Backend: Supabase Auth `signInWithPassword` (resolving a CPF/CNPJ to the account's e-mail first).
  */
 export async function signIn(identifier: string, password: string): Promise<SignInResult> {
+  if (!IS_DEMO) return remote.signIn(identifier, password);
   await mockLatency(500);
   const account = findAccount(identifier);
   if (!account) return { ok: false, reason: 'conta-inexistente' };
@@ -76,6 +82,7 @@ export async function signIn(identifier: string, password: string): Promise<Sign
 
 /** Ends the session and forgets every screen's state. Backend: Supabase Auth `signOut`. */
 export async function signOut(): Promise<void> {
+  if (!IS_DEMO) return remote.signOut();
   await localLatency(300); // signing out works offline too: the session is dropped on the device
   setSessionAccount(null);
   clearQueries();
@@ -116,6 +123,7 @@ function initialsOf(name: string): string {
  * creates the `accounts` row and the worker/company row.
  */
 export async function signUp(data: SignUpData): Promise<SignUpResult> {
+  if (!IS_DEMO) return remote.signUp(data);
   await mockLatency(700);
   const accounts = Object.values(getDb().accounts);
   if (TAKEN_DOCS.includes(data.doc) || accounts.some((a) => digits(a.document) === digits(data.doc)))
@@ -187,6 +195,7 @@ export async function signUp(data: SignUpData): Promise<SignUpResult> {
  * Backend: Supabase Auth confirms it when the link is opened; the app only re-reads the session.
  */
 export async function confirmEmail(): Promise<void> {
+  if (!IS_DEMO) return remote.confirmEmail();
   await mockLatency(500);
   const session = getSession();
   if (session) updateAccount(session.accountId, { emailConfirmedAt: new Date().toISOString() });
@@ -194,6 +203,7 @@ export async function confirmEmail(): Promise<void> {
 
 /** Sends the confirmation link again. Backend: Supabase Auth `resend({ type: 'signup' })`. */
 export async function resendConfirmationEmail(): Promise<void> {
+  if (!IS_DEMO) return remote.resendConfirmationEmail();
   await mockLatency(600);
 }
 
@@ -203,6 +213,7 @@ export type ProfileData =
 
 /** Last step of sign-up: saves "Completar perfil" and lets the account into the app. Backend: update the profile row. */
 export async function finishSignUp(profile: ProfileData): Promise<void> {
+  if (!IS_DEMO) return remote.finishSignUp(profile);
   await mockLatency(500);
   const session = getSession();
   if (!session) return;
@@ -228,11 +239,13 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
 
 /** Sends the "reset your password" link. Demo: nothing is sent. */
 export async function requestPasswordReset(_email: string): Promise<void> {
+  if (!IS_DEMO) return remote.requestPasswordReset(_email);
   await mockLatency(600);
 }
 
 /** Sets the new password chosen from the reset link. Demo: nothing is stored. */
 export async function resetPassword(_newPassword: string): Promise<void> {
+  if (!IS_DEMO) return remote.resetPassword(_newPassword);
   await mockLatency(600);
 }
 
@@ -248,6 +261,13 @@ export async function verifyWhatsAppCode(_phone: string, code: string): Promise<
   await mockLatency(600);
   return /^\d{6}$/.test(code) && code !== '000000';
 }
+
+/**
+ * Whether the sign-up can confirm the WhatsApp number by code. It needs a WhatsApp/SMS provider (e.g.
+ * Twilio or the Meta API), not integrated yet: with the real backend the code step is left out and the
+ * number is stored unconfirmed (accounts.whatsapp_verified_at stays empty). The demo simulates it.
+ */
+export const WHATSAPP_CODE_AVAILABLE = IS_DEMO;
 
 /** Seconds before the code can be sent again. */
 export const WHATSAPP_RESEND_SECONDS = 15;

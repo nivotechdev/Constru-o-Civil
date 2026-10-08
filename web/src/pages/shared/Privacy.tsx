@@ -4,6 +4,7 @@ import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons/Icon';
 import { useUI } from '../../hooks/useStore';
 import { exportMyData } from '../../services/account';
+import { IS_DEMO } from '../../services/mode';
 import { errorMessage } from '../../services/errors';
 import { showToast } from '../../services/toast';
 import { goBack, navigate } from '../../services/router';
@@ -39,7 +40,7 @@ export default function Privacy() {
             {ui.exported ? (
               <span className="flex items-center gap-2 text-sm text-success-500 font-semibold">
                 <Icon name="circle-check" size={16} color="var(--green-500)" />
-                Arquivo enviado para o seu e-mail.
+                {IS_DEMO ? 'Arquivo enviado para o seu e-mail.' : 'Arquivo baixado no seu aparelho.'}
               </span>
             ) : (
               <Button

@@ -4,6 +4,7 @@ import { GoogleIcon, Icon } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
 import { DEMO_ACCOUNTS, signIn, type SignInError } from '../../services/auth';
+import { ServiceError } from '../../services/errors';
 import { RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { navigate } from '../../services/router';
 import { getUI, resetUI } from '../../services/store';
@@ -32,10 +33,13 @@ const LOGIN_DEFAULTS: LoginUI = {
 
 const SIGN_IN_ERRORS: Record<SignInError, string> = {
   'conta-inexistente': 'Não achamos uma conta com esse e-mail, CPF ou CNPJ. Confira ou crie sua conta.',
-  'senha-errada': 'Senha incorreta. Confira e tente de novo, ou toque em "Esqueci minha senha".'
+  'senha-errada': 'Senha incorreta. Confira e tente de novo, ou toque em "Esqueci minha senha".',
+  credenciais: 'E-mail ou senha incorretos. Confira e tente de novo, ou toque em "Esqueci minha senha".'
 };
 
-const UNAVAILABLE = 'Na demonstração, entre com e-mail e senha. Use uma das contas de teste abaixo.';
+const UNAVAILABLE = DEMO_ACCOUNTS.length
+  ? 'Na demonstração, entre com e-mail e senha. Use uma das contas de teste abaixo.'
+  : 'Por enquanto, entre com seu e-mail (ou CPF/CNPJ) e senha.';
 
 export default function Login() {
   const [ui, setUi] = useUI<LoginUI>('login', LOGIN_DEFAULTS);
@@ -61,8 +65,16 @@ export default function Login() {
         resetUI('login');
         navigate(back || '/mural', { replace: true });
       })
-      .catch(() =>
-        setUi({ submitting: false, error: 'Não deu para entrar agora. Confira sua internet e tente de novo.' })
+      .catch((e: unknown) =>
+        setUi({
+          submitting: false,
+          // A refusal the server explains (e.g. too many attempts) is shown as it is; anything else is the
+          // connection.
+          error:
+            e instanceof ServiceError && e.code !== 'offline' && e.code !== 'falha_demo'
+              ? e.message
+              : 'Não deu para entrar agora. Confira sua internet e tente de novo.'
+        })
       );
   }
 
@@ -122,32 +134,34 @@ export default function Login() {
           <Button label="Esqueci minha senha" variant="ghost" onClick={() => navigate('/esqueci-senha')} />
           <Button label="Criar minha conta" variant="ghost" onClick={() => navigate('/escolha-perfil')} />
         </div>
-        <div className="flex flex-col gap-2 p-4 rounded-card bg-concrete-50 border border-concrete-200 text-sm text-concrete-600">
-          <span className="font-semibold text-concrete-800">Contas de demonstração</span>
-          {DEMO_ACCOUNTS.map((a) => (
-            <button
-              key={a.email}
-              type="button"
-              className="flex flex-wrap items-baseline gap-x-2 text-left hover:text-brand-600"
-              onClick={() =>
-                setUi({
-                  identifier: a.email,
-                  password: a.password,
-                  identifierError: null,
-                  passwordError: null,
-                  error: null
-                })
-              }
-            >
-              <span className="font-semibold">{a.role === 'recrutador' ? 'Construtora:' : 'Trabalhador:'}</span>
-              <span className="font-mono">{a.email}</span>
-            </button>
-          ))}
-          <span>
-            Senha das duas: <span className="font-mono">{DEMO_ACCOUNTS[0]?.password}</span>. Toque numa conta para
-            preencher.
-          </span>
-        </div>
+        {DEMO_ACCOUNTS.length ? (
+          <div className="flex flex-col gap-2 p-4 rounded-card bg-concrete-50 border border-concrete-200 text-sm text-concrete-600">
+            <span className="font-semibold text-concrete-800">Contas de demonstração</span>
+            {DEMO_ACCOUNTS.map((a) => (
+              <button
+                key={a.email}
+                type="button"
+                className="flex flex-wrap items-baseline gap-x-2 text-left hover:text-brand-600"
+                onClick={() =>
+                  setUi({
+                    identifier: a.email,
+                    password: a.password,
+                    identifierError: null,
+                    passwordError: null,
+                    error: null
+                  })
+                }
+              >
+                <span className="font-semibold">{a.role === 'recrutador' ? 'Construtora:' : 'Trabalhador:'}</span>
+                <span className="font-mono">{a.email}</span>
+              </button>
+            ))}
+            <span>
+              Senha das duas: <span className="font-mono">{DEMO_ACCOUNTS[0]?.password}</span>. Toque numa conta para
+              preencher.
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

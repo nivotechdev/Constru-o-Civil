@@ -7,6 +7,8 @@ import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { applicationFor, currentCompanyId, currentWorkerId } from './selectors';
 import * as store from './store';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/actions';
 
 export const MAX_COMMENT = 300;
 
@@ -57,6 +59,7 @@ export function reviewableApplication(
  * profile's rating/review_count + the application's flag, in one transaction (RPC).
  */
 export async function submitReview(input: ReviewInput): Promise<void> {
+  if (!IS_DEMO) return remote.submitReview(input);
   await mockLatency(600);
   const db = store.getDb();
   const app = db.applications.find((a) => a.id === input.applicationId);

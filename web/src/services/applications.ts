@@ -10,6 +10,9 @@ import { applicationFor, companyOf, currentCompanyId, currentWorkerId, getJob } 
 import * as store from './store';
 import type { Actor, Application, Database, Job } from '../types/models';
 import { todayISO } from '../utils/dates';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/applications';
+import * as remoteData from './remote/data';
 
 const now = () => new Date().toISOString();
 const firstName = (name: string) => name.split(' ')[0];
@@ -37,18 +40,21 @@ export function concludeFinishedJobs(at: Date = new Date()): void {
 
 /** The worker's applications (+ their jobs). Backend: select applications where worker = me. */
 export async function loadMyApplications(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadMyApplications();
   await mockLatency(400);
   concludeFinishedJobs();
 }
 
 /** A job's candidates (+ their profiles), for the company. Backend: select applications where job = id. */
 export async function loadJobCandidates(_jobId: string): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadJobCandidates(_jobId);
   await mockLatency(400);
   concludeFinishedJobs();
 }
 
 /** The company's closed jobs and their teams. Backend: select the company's closed jobs + applications. */
 export async function loadHistory(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadHistory();
   await mockLatency(400);
   concludeFinishedJobs();
 }
@@ -130,6 +136,7 @@ function conclude(db: Database, appId: string, by: Actor, at: string): Database 
  * checking the job is still open; notifies the company.
  */
 export async function submitApplication(jobId: string): Promise<void> {
+  if (!IS_DEMO) return remote.submitApplication(jobId);
   await mockLatency(600);
   const db = store.getDb();
   const job = getJob(db, jobId);
@@ -154,6 +161,7 @@ export async function submitApplication(jobId: string): Promise<void> {
 
 /** Withdraws the worker's application while the company hasn't decided. Backend: delete it (own, pending). */
 export async function withdrawApplication(jobId: string): Promise<void> {
+  if (!IS_DEMO) return remote.withdrawApplication(jobId);
   await mockLatency(500);
   const app = findApp(store.getDb(), jobId, currentWorkerId());
   if (!isPending(app.status))
@@ -166,6 +174,7 @@ export async function withdrawApplication(jobId: string): Promise<void> {
  * Backend: transition desistir (worker = me); notifies the company.
  */
 export async function giveUp(jobId: string, reason: string): Promise<void> {
+  if (!IS_DEMO) return remote.giveUp(jobId, reason);
   await mockLatency(500);
   const db = store.getDb();
   const app = findApp(db, jobId, currentWorkerId());
@@ -193,6 +202,7 @@ export async function giveUp(jobId: string, reason: string): Promise<void> {
  * Silent when there is nothing to change. Backend: transition analisar (on reading the profile).
  */
 export async function markInReview(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.markInReview(jobId, workerId);
   await mockLatency(200);
   const db = store.getDb();
   const app = applicationFor(db, jobId, workerId);
@@ -219,6 +229,7 @@ export async function markInReview(jobId: string, workerId: string): Promise<voi
  * Backend: transition aprovar + the automatic recusar, in one transaction; notifies the workers.
  */
 export async function approve(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.approve(jobId, workerId);
   await mockLatency(400);
   const db = store.getDb();
   const job = companyJob(db, jobId);
@@ -260,6 +271,7 @@ export async function approve(jobId: string, workerId: string): Promise<void> {
 
 /** Turns a candidate down. Backend: transition recusar; notifies the worker. */
 export async function reject(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.reject(jobId, workerId);
   await mockLatency(400);
   const db = store.getDb();
   const job = companyJob(db, jobId);
@@ -285,6 +297,7 @@ export async function reject(jobId: string, workerId: string): Promise<void> {
  * + revert the automatic refusals of that job, in one transaction.
  */
 export async function undoApproval(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.undoApproval(jobId, workerId);
   await mockLatency(400);
   const db = store.getDb();
   const job = companyJob(db, jobId);
@@ -326,6 +339,7 @@ export async function undoApproval(jobId: string, workerId: string): Promise<voi
 
 /** Confirms the hire of a picked candidate. Backend: transition contratar; notifies the worker. */
 export async function confirmHire(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.confirmHire(jobId, workerId);
   await mockLatency(500);
   const db = store.getDb();
   const job = companyJob(db, jobId);
@@ -347,6 +361,7 @@ export async function confirmHire(jobId: string, workerId: string): Promise<void
 
 /** Cancels a pick or a hire. The slot opens again. Backend: transition cancelar_contratacao; notifies. */
 export async function cancelHire(jobId: string, workerId: string, reason: string): Promise<void> {
+  if (!IS_DEMO) return remote.cancelHire(jobId, workerId, reason);
   await mockLatency(500);
   const db = store.getDb();
   const job = companyJob(db, jobId);
@@ -368,6 +383,7 @@ export async function cancelHire(jobId: string, workerId: string, reason: string
 
 /** Marks the hired diária as done; both sides are asked to review. Backend: transition concluir. */
 export async function completeWorkday(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.completeWorkday(jobId, workerId);
   await mockLatency(500);
   const db = store.getDb();
   companyJob(db, jobId);
@@ -378,6 +394,7 @@ export async function completeWorkday(jobId: string, workerId: string): Promise<
 
 /** The hired worker didn't show up. Backend: transition marcar_falta; notifies the worker. */
 export async function markNoShow(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.markNoShow(jobId, workerId);
   await mockLatency(500);
   const db = store.getDb();
   const job = companyJob(db, jobId);

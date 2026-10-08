@@ -114,6 +114,7 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       caption: '',
       created_at: CREATED,
       ...r,
+      posted_on: r.posted_on ?? '',
       id: r.id ?? ''
     })),
     boostPayments: inserts.boost_payments.map((r): TableRow<'boost_payments'> => ({

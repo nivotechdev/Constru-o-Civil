@@ -4,6 +4,9 @@ import type { AppNotification, Database, Session } from '../types/models';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { getDb, getSession, transact } from './store';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/actions';
+import * as remoteData from './remote/data';
 
 export type NotificationInput = Omit<AppNotification, 'id' | 'createdAt' | 'readAt'>;
 
@@ -40,11 +43,13 @@ export function unreadCount(db: Database, session: Session | null): number {
 
 /** The logged-in account's notifications. Backend: select notifications for me, newest first. */
 export async function loadNotifications(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadNotifications();
   await mockLatency(350);
 }
 
 /** Marks every notification as read. Backend: update notifications set read_at = now() for me. */
 export async function markAllNotificationsRead(): Promise<void> {
+  if (!IS_DEMO) return remote.markAllNotificationsRead();
   await mockLatency(300);
   const session = getSession();
   const mine = new Set(notificationsFor(getDb(), session).map((n) => n.id));
@@ -57,6 +62,7 @@ export async function markAllNotificationsRead(): Promise<void> {
 
 /** Marks one notification as read (opening it). Backend: update read_at of that one (if it is mine). */
 export async function markNotificationRead(id: string): Promise<void> {
+  if (!IS_DEMO) return remote.markNotificationRead(id);
   await mockLatency(150);
   const mine = notificationsFor(getDb(), getSession()).find((n) => n.id === id);
   if (!mine) throw serviceError('nao_encontrado', 'Essa notificação não existe mais.');

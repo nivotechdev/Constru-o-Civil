@@ -13,6 +13,7 @@ import { Tag } from '../../components/Tag';
 import { TextArea } from '../../components/TextArea';
 import { useDb, useUI } from '../../hooks/useStore';
 import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
+import { IS_DEMO } from '../../services/mode';
 import { OFICIO_OPTIONS, REQUISITOS_OPCOES } from '../../services/catalog';
 import { errorMessage } from '../../services/errors';
 import { publishJob, significantChanges, updateJob } from '../../services/jobs';
@@ -174,7 +175,9 @@ export function JobFormScreen({ job }: { job?: Job }) {
         ? 'Endereço encontrado. Confira e complete com o número.'
         : ui.cepStatus === 'notfound'
           ? 'Não achamos esse CEP. Preencha o endereço abaixo.'
-          : `Demonstração: ${EXAMPLE_CEPS.slice(0, 3).join(', ')} são encontrados.`;
+          : IS_DEMO
+            ? `Demonstração: ${EXAMPLE_CEPS.slice(0, 3).join(', ')} são encontrados.`
+            : 'Digite o CEP e a gente preenche o endereço.';
 
   const step1 = (
     <div className="flex flex-col gap-6">

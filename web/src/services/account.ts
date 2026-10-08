@@ -9,9 +9,13 @@ import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { withNotification } from './notifications';
 import { getSession, getDb, transact } from './store';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/actions';
+import * as remoteData from './remote/data';
 
 /** Sends a copy of the account's data to its e-mail. Backend: an edge function builds and e-mails it. */
 export async function exportMyData(): Promise<void> {
+  if (!IS_DEMO) return remote.exportMyData();
   await mockLatency(900);
 }
 
@@ -20,6 +24,7 @@ export async function exportMyData(): Promise<void> {
  * Backend: select the account's candidacies/jobs in progress.
  */
 export async function loadDeletionImpact(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadDeletionImpact();
   await mockLatency(300);
   concludeFinishedJobs();
 }
@@ -63,6 +68,7 @@ export function deletionImpact(db: Database = getDb()): DeletionImpact {
  * Backend: re-authenticate, then an RPC does the same in one transaction and deletes the Auth user.
  */
 export async function deleteAccount(password: string, confirmCommitments: boolean): Promise<void> {
+  if (!IS_DEMO) return remote.deleteAccount(password, confirmCommitments);
   if (!(await checkPassword(password))) throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
   const session = getSession();
   if (!session) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
