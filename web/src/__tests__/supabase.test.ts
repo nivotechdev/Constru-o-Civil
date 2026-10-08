@@ -71,7 +71,7 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       diarias: 1,
       dias: null,
       urgent: false,
-      boosted: false,
+      boost_ends_at: null,
       photos: null,
       slots: 1,
       closed: false,
@@ -112,6 +112,17 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       media_url: null,
       media_type: 'image',
       caption: '',
+      created_at: CREATED,
+      ...r,
+      id: r.id ?? ''
+    })),
+    boostPayments: inserts.boost_payments.map((r): TableRow<'boost_payments'> => ({
+      status: 'aguardando',
+      pix_code: null,
+      card_last4: null,
+      expires_at: null,
+      confirmed_at: null,
+      boost_ends_at: null,
       created_at: CREATED,
       ...r,
       id: r.id ?? ''

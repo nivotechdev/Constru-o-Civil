@@ -173,3 +173,25 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
   aprovados ou contratados) mostra "Os candidatos serão avisados da mudança" antes de salvar e envia a
   notificação "A vaga mudou" a cada um. Mudar só a descrição, fotos ou requisitos não avisa ninguém.
 - **Requisitos próprios** da vaga (fora da lista padrão) aparecem marcados na edição, para não sumirem.
+
+## B08 — Impulsionamento com pagamento (simulado)
+
+- **Fluxo:** escolher o plano → `/impulsionar/:id/:plano` → PIX ou cartão. A vaga só fica impulsionada
+  com o pagamento **confirmado**, até `boostEndsAt` (24h ou 3 dias, conforme o plano). `boosted` deixou de
+  existir: "impulsionada" é `boostEndsAt` no futuro, e acaba sozinho.
+- **PIX:** código "copia e cola" e QR fictícios (marcados como demonstração), válidos por 30 minutos, com
+  contagem; "Simular pagamento confirmado" faz o papel do banco. Código vencido vira "expirado" e a tela
+  oferece gerar outro. No back-end, a confirmação vem do webhook do provedor de pagamento.
+- **Cartão:** número, nome, validade e código com máscara e validação (dígito verificador, validade
+  futura). Na demonstração qualquer cartão válido é aprovado e um número terminado em 0000 é recusado,
+  com a mensagem do banco. No back-end, o cartão é tokenizado no navegador pelo provedor (o número nunca
+  passa pelo nosso servidor).
+- **Pagamentos são registros** (`BoostPayment`: plano, forma, valor, status aguardando/confirmado/
+  recusado/expirado, datas) — base para a tela de cobranças (F11).
+- **Gerenciar vaga:** selo "Impulsionada até {data, hora}" e botão "Impulsionar vaga" sempre que a vaga
+  estiver aberta e não impulsionada. Vaga encerrada, cheia, vencida ou já impulsionada não pode ser
+  impulsionada (a tela explica).
+- **Textos:** saiu "cartão cadastrado" e a promessa de reembolso (não há tela de reembolso ainda; volta
+  com a F11). Confirmar o pagamento gera a notificação "Vaga impulsionada" para a construtora.
+- **Ordem do mural** ainda usa o "urgente"; o impulsionamento ativo no topo e os selos no cartão da vaga
+  são a L08.

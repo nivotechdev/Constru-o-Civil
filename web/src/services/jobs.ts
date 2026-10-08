@@ -145,13 +145,6 @@ export async function deleteJob(jobId: string): Promise<void> {
   store.deleteJobPost(jobId);
 }
 
-/** Puts the job at the top of the mural. Temporary: B08 adds the payment before this. */
-export async function boostJob(jobId: string): Promise<void> {
-  await mockLatency(600);
-  ownJob(jobId);
-  store.updateJob(jobId, { boosted: true, urgent: true });
-}
-
 // ---- worker actions ----
 
 /**

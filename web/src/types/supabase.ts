@@ -16,7 +16,7 @@
 //   reviews       – Company.reviews and Worker.reviews
 //   worker_posts  – WorkerPost
 //   notifications – AppNotification (for one worker or one company)
-//   job_boosts    – a paid boost ("Impulsionar vaga")
+//   boost_payments – BoostPayment (PIX/cartão); only a confirmed one sets jobs.boost_ends_at
 // The enums reuse the domain types, so the schema and the app can't drift apart silently.
 import type {
   Actor,
@@ -25,6 +25,8 @@ import type {
   BoostPlanId,
   DiasKey,
   NotificationKind,
+  PaymentMethod,
+  PaymentStatus,
   Role,
   WorkerPost
 } from './models';
@@ -119,7 +121,7 @@ type JobRow = {
   diarias: number;
   dias: DiasKey | null;
   urgent: boolean;
-  boosted: boolean;
+  boost_ends_at: string | null;
   photos: string[] | null;
   slots: number;
   closed: boolean;
@@ -192,13 +194,20 @@ type NotificationRow = {
   read_at: string | null;
 };
 
-type JobBoostRow = {
-  id: number;
+type BoostPaymentRow = {
+  id: string;
   job_id: string;
+  company_id: string;
   plan: BoostPlanId;
-  price_cents: number;
+  method: PaymentMethod;
+  amount_cents: number;
+  status: PaymentStatus;
+  pix_code: string | null;
+  card_last4: string | null;
   created_at: string;
-  ends_at: string;
+  expires_at: string | null;
+  confirmed_at: string | null;
+  boost_ends_at: string | null;
 };
 
 // ---- table shapes supabase-js expects ----
@@ -244,7 +253,7 @@ export const RELATIONSHIPS = {
   worker_posts: [fk('worker_posts', 'worker_id', 'workers')],
   application_events: [fk('application_events', 'application_id', 'applications')],
   notifications: [fk('notifications', 'worker_id', 'workers'), fk('notifications', 'company_id', 'companies')],
-  job_boosts: [fk('job_boosts', 'job_id', 'jobs')]
+  boost_payments: [fk('boost_payments', 'job_id', 'jobs'), fk('boost_payments', 'company_id', 'companies')]
 };
 
 export interface SupabaseDatabase {
@@ -263,7 +272,6 @@ export interface SupabaseDatabase {
         | 'date_to_arrange'
         | 'diarias'
         | 'urgent'
-        | 'boosted'
         | 'slots'
         | 'closed'
         | 'sem_contratacao'
@@ -279,7 +287,7 @@ export interface SupabaseDatabase {
       reviews: Table<ReviewRow, 'id' | 'tags' | 'comment' | 'created_at'>;
       worker_posts: Table<WorkerPostRow, 'id' | 'media_type' | 'caption' | 'created_at'>;
       notifications: Table<NotificationRow, 'id' | 'created_at'>;
-      job_boosts: Table<JobBoostRow, 'id' | 'created_at'>;
+      boost_payments: Table<BoostPaymentRow, 'id' | 'status' | 'created_at'>;
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -292,6 +300,8 @@ export interface SupabaseDatabase {
       review_direction: ReviewDirection;
       notification_kind: NotificationKind;
       boost_plan: BoostPlanId;
+      payment_method: PaymentMethod;
+      payment_status: PaymentStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

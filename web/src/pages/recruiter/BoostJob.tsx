@@ -2,14 +2,14 @@ import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon, type IconName } from '../../components/icons/Icon';
-import { FieldError } from '../../components/FieldError';
 import { JobNotFound } from '../../components/NotFound';
 import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
-import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
-import { boostJob, loadJob } from '../../services/jobs';
-import { showToast } from '../../services/toast';
+import { loadJob } from '../../services/jobs';
+import { boostBlocker, isBoosted } from '../../services/payments';
+import { EmptyState } from '../../components/EmptyState';
+import { dateTimeLabel } from '../../utils/dates';
 import { useDb, useUI } from '../../hooks/useStore';
 import { BOOST_PLANS, jobTitle } from '../../services/catalog';
 import type { BoostPlanId } from '../../types/models';
@@ -22,10 +22,6 @@ export default function BoostJob({ params }: ScreenProps) {
   const db = useDb();
   const [ui, setUi] = useUI<{ plan: BoostPlanId }>('boost-job', { plan: '24h' });
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
-  const boost = useAction(boostJob, () => {
-    showToast('Vaga impulsionada');
-    navigate('/vaga-gerenciar/' + params.id);
-  });
   if (query.status !== 'ready')
     return (
       <ScreenLoading
@@ -38,6 +34,25 @@ export default function BoostJob({ params }: ScreenProps) {
   const job = getJob(db, params.id);
   if (!job) return <JobNotFound />;
   const chosen = BOOST_PLANS.find((p) => p.id === ui.plan) ?? BOOST_PLANS[0];
+  const blocker = boostBlocker(db, job);
+  if (blocker) {
+    return (
+      <div className="flex flex-col">
+        <BackBar title="Impulsionar vaga" onBack={() => goBack('/vaga-gerenciar/' + job.id)} />
+        <EmptyState
+          icon="rocket"
+          title={blocker}
+          description={
+            job.boostEndsAt && isBoosted(job)
+              ? `Ela fica no topo do mural até ${dateTimeLabel(job.boostEndsAt)}.`
+              : 'Vagas encerradas, cheias ou vencidas não aparecem no mural.'
+          }
+          actionLabel="Voltar para a vaga"
+          onAction={() => navigate('/vaga-gerenciar/' + job.id)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">
@@ -57,12 +72,12 @@ export default function BoostJob({ params }: ScreenProps) {
             <Fact
               icon="users"
               color="var(--text-subtle)"
-              text="Vagas impulsionadas na região recebem em média 4 candidatos a mais."
+              text="O destaque vale pelo tempo do plano e acaba sozinho, sem renovação."
             />
             <Fact
               icon="triangle-alert"
               color="var(--amber-500)"
-              text="Impulsionar não garante candidato. Se ninguém se candidatar, devolvemos o valor em 3 dias."
+              text="Impulsionar não garante candidato: aumenta quantas pessoas veem a vaga."
             />
           </div>
         </Card>
@@ -94,17 +109,16 @@ export default function BoostJob({ params }: ScreenProps) {
           </div>
         </div>
         <span className="text-sm text-concrete-500">
-          Cobrança única no cartão cadastrado. Sem renovação automática. O trabalhador nunca paga nada.
+          Pagamento único, por PIX ou cartão. Sem renovação automática. O trabalhador nunca paga nada.
         </span>
       </div>
       <div className="px-4 sm:px-0 py-3 flex flex-col gap-2">
-        {boost.error ? <FieldError message={boost.error} /> : null}
         <Button
-          label={`Impulsionar por ${chosen.price}`}
+          label={`Continuar · ${chosen.price}`}
           size="lg"
           fullWidth
-          loading={boost.loading}
-          onClick={() => void boost.run(job.id)}
+          iconRight="arrow-right"
+          onClick={() => navigate(`/impulsionar/${job.id}/${chosen.id}`)}
         />
         <Button label="Agora não" variant="ghost" fullWidth onClick={() => navigate('/vaga-gerenciar/' + job.id)} />
       </div>

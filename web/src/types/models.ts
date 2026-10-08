@@ -157,8 +157,10 @@ export interface Job {
   /** How many diárias (work days) the job has. */
   diarias: number;
   dias?: DiasKey | null;
+  /** Marked urgent by the company when publishing (free). */
   urgent?: boolean;
-  boosted?: boolean;
+  /** Paid boost: at the top of the mural until then (ISO); `null`/absent = not boosted (B08). */
+  boostEndsAt?: string | null;
   photos?: string[];
   /** Headcount; defaults to 1. */
   slots?: number;
@@ -237,6 +239,7 @@ export type NotificationKind =
   | 'avaliar_diaria'
   | 'avaliar_trabalhador'
   | 'vaga_editada'
+  | 'impulsionamento'
   | 'bico_urgente'
   | 'bico_fechado';
 
@@ -264,6 +267,34 @@ export interface BoostPlan {
   desc: string;
   /** As shown ("R$ 12"). */
   price: string;
+  priceCents: number;
+  /** How long the job stays at the top. */
+  hours: number;
+}
+
+export type PaymentMethod = 'pix' | 'cartao';
+export type PaymentStatus = 'aguardando' | 'confirmado' | 'recusado' | 'expirado';
+
+/** One payment for a boost. Only a confirmed one puts the job at the top (B08). */
+export interface BoostPayment {
+  id: string;
+  jobId: string;
+  companyId: string;
+  plan: BoostPlanId;
+  method: PaymentMethod;
+  amountCents: number;
+  status: PaymentStatus;
+  /** PIX "copia e cola" (fictitious in the demo). */
+  pixCode: string | null;
+  /** Last 4 digits of the card used. */
+  cardLast4: string | null;
+  /** ISO timestamps. */
+  createdAt: string;
+  /** A PIX code is valid until then. */
+  expiresAt: string | null;
+  confirmedAt: string | null;
+  /** When the boost bought by this payment ends. */
+  boostEndsAt: string | null;
 }
 
 /** A Brazilian municipality in the city picker. */
@@ -287,4 +318,5 @@ export interface Database {
   deletedJobIds: string[];
   workerPosts: WorkerPost[];
   notifications: AppNotification[];
+  boostPayments: BoostPayment[];
 }

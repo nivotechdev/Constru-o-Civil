@@ -3,12 +3,13 @@
 // the store the same `Database` snapshot it holds today, so no screen changes.
 //
 // Conventions: snake_case columns ↔ camelCase fields; optional flags the mock only ever sets to `true`
-// (urgent, boosted, closed, semContratacao, novo) are `boolean not null default false` columns and are
+// (urgent, closed, semContratacao, novo) are `boolean not null default false` columns and are
 // left out of the record when false; other optional fields are nullable columns, left out when null.
 import type {
   Account,
   Application,
   AppNotification,
+  BoostPayment,
   Company,
   Database,
   Job,
@@ -230,7 +231,7 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
     requirements: row.requirements
   };
   setIf(job, 'urgent', row.urgent);
-  setIf(job, 'boosted', row.boosted);
+  setIf(job, 'boostEndsAt', row.boost_ends_at);
   setIf(job, 'photos', row.photos);
   setIf(job, 'closed', row.closed);
   setIf(job, 'semContratacao', row.sem_contratacao);
@@ -263,7 +264,7 @@ export function jobToRow(job: Job, deletedAt: string | null = null): TableInsert
     diarias: job.diarias,
     dias: job.dias ?? null,
     urgent: Boolean(job.urgent),
-    boosted: Boolean(job.boosted),
+    boost_ends_at: job.boostEndsAt ?? null,
     photos: job.photos ?? null,
     slots: job.slots ?? 1,
     closed: Boolean(job.closed),
@@ -369,6 +370,44 @@ export function notificationToRow(n: AppNotification): TableInsert<'notification
   };
 }
 
+// ---- boost payments ----
+
+export function boostPaymentFromRow(r: TableRow<'boost_payments'>): BoostPayment {
+  return {
+    id: r.id,
+    jobId: r.job_id,
+    companyId: r.company_id,
+    plan: r.plan,
+    method: r.method,
+    amountCents: r.amount_cents,
+    status: r.status,
+    pixCode: r.pix_code,
+    cardLast4: r.card_last4,
+    createdAt: r.created_at,
+    expiresAt: r.expires_at,
+    confirmedAt: r.confirmed_at,
+    boostEndsAt: r.boost_ends_at
+  };
+}
+
+export function boostPaymentToRow(p: BoostPayment): TableInsert<'boost_payments'> {
+  return {
+    id: p.id,
+    job_id: p.jobId,
+    company_id: p.companyId,
+    plan: p.plan,
+    method: p.method,
+    amount_cents: p.amountCents,
+    status: p.status,
+    pix_code: p.pixCode,
+    card_last4: p.cardLast4,
+    created_at: p.createdAt,
+    expires_at: p.expiresAt,
+    confirmed_at: p.confirmedAt,
+    boost_ends_at: p.boostEndsAt
+  };
+}
+
 // ---- the whole snapshot ----
 
 /** Every row the app reads at start-up — what a Supabase-backed store would load. */
@@ -386,6 +425,7 @@ export interface DatabaseRows {
   reviews: ReviewRow[];
   workerPosts: TableRow<'worker_posts'>[];
   notifications: TableRow<'notifications'>[];
+  boostPayments: TableRow<'boost_payments'>[];
 }
 
 const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
@@ -405,7 +445,8 @@ export function databaseFromRows(rows: DatabaseRows): Database {
       .sort((a, b) => (a.deleted_at ?? '').localeCompare(b.deleted_at ?? ''))
       .map((j) => j.id),
     workerPosts: rows.workerPosts.map(postFromRow),
-    notifications: rows.notifications.map(notificationFromRow)
+    notifications: rows.notifications.map(notificationFromRow),
+    boostPayments: rows.boostPayments.map(boostPaymentFromRow)
   };
 }
 
@@ -425,6 +466,7 @@ export function databaseToInserts(db: Database, savedBy: string) {
       ...Object.values(db.workers).flatMap(workerReviewsToRows)
     ],
     worker_posts: db.workerPosts.map(postToRow),
-    notifications: db.notifications.map(notificationToRow)
+    notifications: db.notifications.map(notificationToRow),
+    boost_payments: db.boostPayments.map(boostPaymentToRow)
   };
 }

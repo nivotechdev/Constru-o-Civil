@@ -73,6 +73,7 @@ const JobPublished = screen(() => import('./pages/recruiter/JobPublished'));
 const JobManage = screen(() => import('./pages/recruiter/JobManage'));
 const JobClosed = screen(() => import('./pages/recruiter/JobClosed'));
 const BoostJob = screen(() => import('./pages/recruiter/BoostJob'));
+const BoostPayment = screen(() => import('./pages/recruiter/BoostPayment'));
 const History = screen(() => import('./pages/recruiter/History'));
 const RateWorker = screen(() => import('./pages/recruiter/RateWorker'));
 
@@ -127,6 +128,7 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/vaga-gerenciar/:id', company(JobManage)),
   compileRoute('/fechado/:id', company(JobClosed)),
   compileRoute('/impulsionar/:id', company(BoostJob)),
+  compileRoute('/impulsionar/:id/:plan', company(BoostPayment)),
   compileRoute('/historico', company(History)),
   compileRoute('/avaliar-trabalhador/:jobId/:workerId', company(RateWorker))
 ];

@@ -53,7 +53,8 @@ let state: State = {
     savedJobIds: [...seed.SAVED_JOB_IDS],
     deletedJobIds: [],
     workerPosts: clone(seed.WORKER_POSTS),
-    notifications: clone(seed.NOTIFICATIONS)
+    notifications: clone(seed.NOTIFICATIONS),
+    boostPayments: clone(seed.BOOST_PAYMENTS)
   },
   ui: {}
 };

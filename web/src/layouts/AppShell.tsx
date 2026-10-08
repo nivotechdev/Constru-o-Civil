@@ -29,6 +29,7 @@ const NARROW_SCREENS = new Set([
   '/selecionado/:id',
   '/vaga-publicada/:id',
   '/impulsionar/:id',
+  '/impulsionar/:id/:plan',
   '/fechado/:id',
   '/avaliacoes/:type/:id'
 ]);

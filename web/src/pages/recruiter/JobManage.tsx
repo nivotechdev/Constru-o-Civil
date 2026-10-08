@@ -39,6 +39,8 @@ import { diasInfo, durationText, hoursText, placeText, streetText, whenText } fr
 import { jobTitle, oficioNome } from '../../services/catalog';
 import { workerDistance, workerPlace } from '../../utils/workerInfo';
 import { ContactButton } from '../../components/ContactButton';
+import { boostBlocker, isBoosted } from '../../services/payments';
+import { dateTimeLabel } from '../../utils/dates';
 import { jobPhotos } from '../../utils/jobPhotos';
 
 export default function JobManage({ params }: ScreenProps) {
@@ -83,6 +85,7 @@ export default function JobManage({ params }: ScreenProps) {
   const closed = isJobClosed(db, job);
   const status = jobStatus(db, job, approved, pending);
   const dias = diasInfo(job);
+  const boosted = isBoosted(job);
 
   // Pay, headcount and actions are built fresh for each placement: in the page flow on phones, and in
   // the sticky side card on tablet/desktop.
@@ -141,6 +144,19 @@ export default function JobManage({ params }: ScreenProps) {
       <Button label="Encerrar vaga" variant="ghost" className="flex-1" onClick={() => setUi({ confirmClose: true })} />
     </>
   );
+  // Boosting is offered whenever the job is open and not boosted already.
+  const canBoost = !boostBlocker(db, job);
+  const boostButton = (className?: string) =>
+    canBoost ? (
+      <Button
+        label="Impulsionar vaga"
+        variant="accent"
+        iconLeft="rocket"
+        fullWidth
+        className={className}
+        onClick={() => navigate('/impulsionar/' + job.id)}
+      />
+    ) : null;
 
   return (
     <div className="flex flex-col">
@@ -158,8 +174,11 @@ export default function JobManage({ params }: ScreenProps) {
             <span className="text-xs text-concrete-500">Até 6 fotos. A primeira é a capa do bico no mural.</span>
           </div>
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge label={status.label} tone={status.tone} icon={status.icon} />
+              {boosted && job.boostEndsAt ? (
+                <Badge label={`Impulsionada até ${dateTimeLabel(job.boostEndsAt)}`} tone="brand" icon="rocket" />
+              ) : null}
               <span className="font-mono text-xs text-concrete-500">{job.id}</span>
             </div>
             <h1 className="font-display font-bold text-2xl text-concrete-900">{jobTitle(job)}</h1>
@@ -168,6 +187,7 @@ export default function JobManage({ params }: ScreenProps) {
 
           {payCard('lg:hidden')}
           {slotsCard('lg:hidden')}
+          {boostButton('lg:hidden')}
 
           <div className="flex flex-col gap-2">
             <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Onde e como</div>
@@ -257,6 +277,7 @@ export default function JobManage({ params }: ScreenProps) {
         <aside className="hidden lg:flex lg:flex-col lg:gap-4 lg:sticky lg:top-28">
           {payCard()}
           {slotsCard()}
+          {boostButton()}
           {!closed ? <div className="flex gap-3">{actions()}</div> : null}
         </aside>
       </div>

@@ -5,6 +5,7 @@ import type {
   ApplicationEvent,
   ApplicationStatus,
   AppNotification,
+  BoostPayment,
   Company,
   DiasKey,
   Job,
@@ -590,7 +591,7 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'qualquer',
     urgent: true,
-    boosted: true,
+    boostEndsAt: ago(-20),
     photos: ['img/jobs/pedreiro-2.jpg', 'img/jobs/pedreiro-1.jpg', 'img/jobs/pedreiro-3.jpg'],
     slots: 4,
     description:
@@ -1287,6 +1288,25 @@ export const NOTIFICATIONS: AppNotification[] = [
     target: '/avaliar-trabalhador/BC-4960/marcos',
     createdAt: ago(30),
     readAt: null
+  }
+];
+
+// The demo's one boosted job was paid by PIX a few hours ago (24h plan).
+export const BOOST_PAYMENTS: BoostPayment[] = [
+  {
+    id: 'pg1',
+    jobId: 'BC-4821',
+    companyId: CURRENT_COMPANY_ID,
+    plan: '24h',
+    method: 'pix',
+    amountCents: 1200,
+    status: 'confirmado',
+    pixCode: null,
+    cardLast4: null,
+    createdAt: ago(4.1),
+    expiresAt: null,
+    confirmedAt: ago(4),
+    boostEndsAt: ago(-20)
   }
 ];
 

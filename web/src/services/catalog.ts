@@ -44,12 +44,28 @@ export function searchOficios(query: string): Oficio[] {
 
 /** What "Impulsionar vaga" offers, in the order shown. */
 export const BOOST_PLANS: BoostPlan[] = [
-  { id: '24h', label: 'Topo do mural por 24h', desc: 'Aparece antes das outras vagas da região.', price: 'R$ 12' },
-  { id: '3d', label: 'Topo do mural por 3 dias', desc: 'Para vaga com data mais distante.', price: 'R$ 28' },
+  {
+    id: '24h',
+    label: 'Topo do mural por 24h',
+    desc: 'Aparece antes das outras vagas da cidade.',
+    price: 'R$ 12',
+    priceCents: 1200,
+    hours: 24
+  },
+  {
+    id: '3d',
+    label: 'Topo do mural por 3 dias',
+    desc: 'Para vaga com data mais distante.',
+    price: 'R$ 28',
+    priceCents: 2800,
+    hours: 72
+  },
   {
     id: 'whats',
     label: '24h + aviso por WhatsApp',
     desc: 'Avisamos quem tem o perfil da vaga por perto.',
-    price: 'R$ 39'
+    price: 'R$ 39',
+    priceCents: 3900,
+    hours: 24
   }
 ];

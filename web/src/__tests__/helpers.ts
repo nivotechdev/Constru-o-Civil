@@ -12,5 +12,6 @@ export const seedDatabase = (): Database =>
     savedJobIds: seed.SAVED_JOB_IDS,
     deletedJobIds: [],
     workerPosts: seed.WORKER_POSTS,
-    notifications: seed.NOTIFICATIONS
+    notifications: seed.NOTIFICATIONS,
+    boostPayments: seed.BOOST_PAYMENTS
   });
