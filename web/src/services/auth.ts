@@ -18,7 +18,7 @@ import {
   upsertCompany,
   upsertWorker
 } from './store';
-import { DEFAULT_CITY } from './defaults';
+import { DEFAULT_CITY, DEFAULT_POINT } from './defaults';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -127,8 +127,9 @@ export async function signUp(data: SignUpData): Promise<SignUpResult> {
       name: data.name.trim(),
       initials: initialsOf(data.name),
       oficioId: '',
-      region: DEFAULT_CITY,
-      distance: '0 km',
+      city: DEFAULT_CITY,
+      neighborhood: null,
+      ...DEFAULT_POINT,
       rating: 0,
       jobsDone: 0,
       novo: true,
@@ -185,9 +186,15 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
   const session = getSession();
   if (!session) return;
   if (profile.role === 'trabalhador' && session.workerId) {
+    // The city picker's list is big: it loads only here, when it is needed.
+    const { cityByLabel } = await import('./cities');
+    const center = cityByLabel(profile.city) ?? DEFAULT_POINT;
     updateWorker(session.workerId, {
       oficioId: profile.oficioId,
-      region: profile.city,
+      city: profile.city,
+      neighborhood: null,
+      lat: center.lat,
+      lon: center.lon,
       specialties: profile.specialties
     });
   } else if (profile.role === 'recrutador' && session.companyId) {

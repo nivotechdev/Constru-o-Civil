@@ -33,6 +33,7 @@ import {
   successfulJobsForCompany
 } from '../../services/selectors';
 import type { Database, Job } from '../../types/models';
+import { isExpired } from '../../utils/jobInfo';
 import type { StatusBadge } from '../../types/ui';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
@@ -59,7 +60,9 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
   const company = isOwn ? currentCompany(db) : getCompany(db, params.id);
   if (!company) return <NotFound message="Construtora não encontrada." />;
 
-  const openJobs = activeJobs(db).filter((j) => j.companyId === company.id && !j.closed && !isJobFull(db, j));
+  const openJobs = activeJobs(db).filter(
+    (j) => j.companyId === company.id && !j.closed && !isJobFull(db, j) && !isExpired(j)
+  );
   const successfulJobs = successfulJobsForCompany(db, company.id);
 
   return (

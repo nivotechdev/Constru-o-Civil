@@ -33,8 +33,9 @@ import { getDb } from '../../services/store';
 import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
-import { diasInfo, hoursText, whenText } from '../../utils/jobInfo';
+import { diasInfo, durationText, hoursText, placeText, streetText, whenText } from '../../utils/jobInfo';
 import { jobTitle, oficioNome } from '../../services/catalog';
+import { workerDistance, workerPlace } from '../../utils/workerInfo';
 import { jobPhotos } from '../../utils/jobPhotos';
 
 export default function JobManage({ params }: ScreenProps) {
@@ -155,9 +156,9 @@ export default function JobManage({ params }: ScreenProps) {
             <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Onde e como</div>
             <Card padding="md">
               <div className="flex flex-col gap-3.5">
-                <InfoRow icon="map-pin" main={job.address} sub={job.location} />
+                <InfoRow icon="map-pin" main={streetText(job)} sub={`${placeText(job)} · CEP ${job.address.cep}`} />
                 {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
-                <InfoRow icon="clock" main={hoursText(job)} sub={job.duration} />
+                <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
                 <InfoRow
                   icon="hand-coins"
                   main="Pagamento em PIX no fim da diária"
@@ -190,8 +191,8 @@ export default function JobManage({ params }: ScreenProps) {
                     <CandidateRow
                       key={a.id}
                       worker={worker}
-                      summary={oficioNome(worker.oficioId) + ' · ' + worker.region}
-                      distance={worker.distance}
+                      summary={oficioNome(worker.oficioId) + ' · ' + workerPlace(worker)}
+                      distance={workerDistance(worker, job.address)}
                       isNew={worker.novo}
                       decision={decision}
                       onClick={() => navigate(`/trabalhador/${worker.id}/${job.id}`)}

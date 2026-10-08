@@ -70,8 +70,10 @@ type WorkerRow = {
   name: string;
   initials: string;
   oficio_id: string | null;
-  region: string;
-  distance: string;
+  city: string;
+  neighborhood: string | null;
+  lat: number;
+  lon: number;
   rating: number;
   jobs_done: number;
   novo: boolean;
@@ -88,12 +90,21 @@ type JobRow = {
   oficio_id: string;
   title: string | null;
   pay: number | null;
-  location: string;
-  address: string;
-  distance: string;
-  date_label: string | null;
-  hours: string | null;
-  duration: string;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  uf: string;
+  lat: number;
+  lon: number;
+  date_to_arrange: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  diarias: number;
   dias: DiasKey | null;
   urgent: boolean;
   boosted: boolean;
@@ -101,7 +112,6 @@ type JobRow = {
   slots: number;
   closed: boolean;
   sem_contratacao: boolean;
-  city: string | null;
   description: string;
   requirements: string[];
   created_at: string;
@@ -218,12 +228,13 @@ export interface SupabaseDatabase {
       companies: Table<CompanyRow, 'id' | 'rating' | 'review_count' | 'verified' | 'created_at'>;
       workers: Table<
         WorkerRow,
-        'id' | 'distance' | 'rating' | 'jobs_done' | 'novo' | 'verified' | 'specialties' | 'facts' | 'created_at'
+        'id' | 'rating' | 'jobs_done' | 'novo' | 'verified' | 'specialties' | 'facts' | 'created_at'
       >;
       jobs: Table<
         JobRow,
         | 'id'
-        | 'distance'
+        | 'date_to_arrange'
+        | 'diarias'
         | 'urgent'
         | 'boosted'
         | 'slots'

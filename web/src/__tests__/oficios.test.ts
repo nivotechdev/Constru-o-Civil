@@ -38,7 +38,8 @@ describe('ofícios catalog', () => {
 });
 
 describe('mural filter and search by trade', () => {
-  const filters = { location: 'São Paulo, SP', oficio: 'eletricista', dist: 'Toda a cidade', quando: null };
+  const from = { lat: -23.55, lon: -46.63 };
+  const filters = { location: 'São Paulo, SP', oficio: 'eletricista', dist: 'Toda a cidade', quando: null, from };
 
   it('filters by the trade id, not by the text shown', () => {
     const jobs = Object.values(db().jobs);
@@ -50,10 +51,10 @@ describe('mural filter and search by trade', () => {
   it('finds jobs and workers by a synonym of their trade', () => {
     const d = db();
     const open = Object.values(d.jobs).filter((j) => !j.closed);
-    const r = searchMatches(d, open, 'Hidráulica', 'recrutador');
+    const r = searchMatches(d, open, 'Hidráulica', 'recrutador', from);
     expect(r.jobs.length).toBeGreaterThan(0);
     expect(r.jobs.every((j) => j.oficioId === 'encanador')).toBe(true);
-    const tiles = searchMatches(d, open, 'porcelanato', 'recrutador');
+    const tiles = searchMatches(d, open, 'porcelanato', 'recrutador', from);
     expect(tiles.workers.map((w) => w.id).sort()).toEqual(['nelson', 'silas']);
   });
 });

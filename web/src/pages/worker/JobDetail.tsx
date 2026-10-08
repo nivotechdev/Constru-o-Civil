@@ -21,12 +21,15 @@ import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorker, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
-import { diasInfo, hoursText, whenText } from '../../utils/jobInfo';
+import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, type FeedUI } from './feed/feedUI';
+import { formatKm } from '../../utils/geo';
+import { diasInfo, durationText, hoursText, placeText, streetText, whenText } from '../../utils/jobInfo';
 
 export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
   const [ui, setUi] = useUI<{ confirmCancel: boolean }>('job-detail', { confirmCancel: false });
+  const [feed] = useUI<FeedUI>(FEED_KEY, () => feedDefaults(db, role));
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
   const withdraw = useAction(withdrawApplication, () => {
     setUi({ confirmCancel: false });
@@ -49,6 +52,7 @@ export default function JobDetail({ params }: ScreenProps) {
   const application = role === 'trabalhador' ? applicationFor(db, job.id, worker.id) : null;
   const canCancel = application && (application.status === 'enviada' || application.status === 'em_analise');
   const dias = diasInfo(job);
+  const distance = role === 'trabalhador' ? formatKm(jobDistance(job, feedOrigin(feed, db, role))) + ' de você' : null;
 
   // Built fresh for each placement: the phone's sticky bottom bar and the desktop summary card.
   const actions = () =>
@@ -138,9 +142,13 @@ export default function JobDetail({ params }: ScreenProps) {
           <Section title="Onde e como">
             <Card padding="md">
               <div className="flex flex-col gap-3.5">
-                <InfoRow icon="map-pin" main={job.address} sub={`${job.location} · ${job.distance} de você`} />
+                <InfoRow
+                  icon="map-pin"
+                  main={streetText(job)}
+                  sub={[placeText(job), distance].filter(Boolean).join(' · ')}
+                />
                 {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
-                <InfoRow icon="clock" main={hoursText(job)} sub={job.duration} />
+                <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
                 <InfoRow
                   icon="hand-coins"
                   main="Pagamento em PIX no fim da diária"
@@ -176,8 +184,8 @@ export default function JobDetail({ params }: ScreenProps) {
             <div className="flex flex-col rounded-xl border border-concrete-200 divide-y divide-concrete-200">
               <SummaryRow icon="calendar" label="Quando" value={whenText(job)} />
               {dias ? <SummaryRow icon="calendar-days" label="Dias" value={dias.label} /> : null}
-              <SummaryRow icon="clock" label="Duração" value={job.duration} />
-              <SummaryRow icon="map-pin" label="Onde" value={`${job.location} · ${job.distance}`} />
+              <SummaryRow icon="clock" label="Duração" value={durationText(job)} />
+              <SummaryRow icon="map-pin" label="Onde" value={[placeText(job), distance].filter(Boolean).join(' · ')} />
             </div>
             {actions()}
             <div className="flex items-start gap-2 text-sm text-concrete-500">

@@ -15,7 +15,7 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
-import { dateText } from '../../utils/jobInfo';
+import { dateText, placeText } from '../../utils/jobInfo';
 import { jobTitle } from '../../services/catalog';
 import { workerToCompanyUrl } from '../../utils/whatsapp';
 
@@ -68,7 +68,7 @@ export default function Selected({ params }: ScreenProps) {
         <Card tone="sunken" padding="md">
           <div className="flex flex-col gap-3">
             <KeyValue label="Diária combinada" value={formatPay(job.pay)} />
-            <KeyValue label="Local" value={job.location} />
+            <KeyValue label="Local" value={placeText(job)} />
             <KeyValue label="Contato liberado" value="Hoje · 9h10" />
           </div>
         </Card>

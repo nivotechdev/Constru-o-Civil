@@ -7,15 +7,16 @@ import { TileGridSkeleton } from '../../../components/Skeleton';
 import { Rating } from '../../../components/Rating';
 import { Tag } from '../../../components/Tag';
 import { navigate } from '../../../services/router';
+import { workerPlace } from '../../../utils/workerInfo';
 import type { Database, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
 import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
-import { NO_FILTERS, setFeed, type SearchMatches } from './feedUI';
+import { noFilters, setFeed, type SearchMatches } from './feedUI';
 import { oficioNome } from '../../../services/catalog';
 import type { FeedLayoutProps } from './MobileFeed';
 
 /** The mural from 770px up (tablet and desktop): a wide search bar, the filters button and the grid. */
-export function DesktopFeed({ db, role, ui, ordered, found, chips, query }: FeedLayoutProps) {
+export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home }: FeedLayoutProps) {
   const count = chips.length;
   const browse = (
     <div className="flex flex-col gap-6">
@@ -27,10 +28,14 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query }: Feed
           {chips.map((c) => (
             <Tag key={c.label + c.icon} label={c.label} icon={c.icon} selected onRemove={c.remove} />
           ))}
-          <Button label="Limpar filtros" variant="ghost" size="sm" onClick={() => setFeed(NO_FILTERS)} />
+          <Button label="Limpar filtros" variant="ghost" size="sm" onClick={() => setFeed(noFilters(home))} />
         </div>
       ) : null}
-      {ordered.length ? <FeedGrid db={db} role={role} jobs={ordered} /> : <NoJobsState location={ui.location} />}
+      {ordered.length ? (
+        <FeedGrid db={db} role={role} jobs={ordered} />
+      ) : (
+        <NoJobsState location={ui.location} home={home} />
+      )}
     </div>
   );
 
@@ -153,7 +158,7 @@ function SearchResults({ db, role, search, found }: SearchResultsProps) {
                     </span>
                   }
                   name={w.name}
-                  meta={`${oficioNome(w.oficioId)} · ${w.region}`}
+                  meta={`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}
                   rating={<Rating value={w.rating} count={w.jobsDone} />}
                   onClick={role === 'recrutador' ? () => navigate('/trabalhador/' + w.id) : null}
                 />

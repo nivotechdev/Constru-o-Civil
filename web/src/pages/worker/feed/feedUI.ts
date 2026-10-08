@@ -1,12 +1,18 @@
 // The mural's UI state bag and the pure rules on top of it: which jobs pass the filters, in what
-// order, what a search finds and which filter chips are active.
+// order, what a search finds and which filter chips are active. Distances are measured (Haversine)
+// from where the person is looking from: their GPS position when they used it, their home when the
+// mural is on their own city, or the centre of the chosen city.
 import type { IconName } from '../../../components/icons/Icon';
-import { allCompanies, allWorkers, companyOf, isMine } from '../../../services/selectors';
-import { DEFAULT_CITY } from '../../../services/cities';
-import { setUI } from '../../../services/store';
 import { jobTitle, oficioNome, oficioSearchText } from '../../../services/catalog';
+import { cityByLabel, DEFAULT_CITY } from '../../../services/cities';
+import { allCompanies, allWorkers, companyOf, currentWorker, isMine } from '../../../services/selectors';
+import { setUI } from '../../../services/store';
+import type { Company, Database, GeoPoint, Job, Role, Worker } from '../../../types/models';
+import { addDays, todayISO } from '../../../utils/dates';
+import { distanceKm } from '../../../utils/geo';
+import { cityLabel, placeText, runsOn } from '../../../utils/jobInfo';
 import { fold } from '../../../utils/text';
-import type { Company, Database, Job, Role, Worker } from '../../../types/models';
+import { workerPlace } from '../../../utils/workerInfo';
 
 export const FEED_KEY = 'feed';
 
@@ -14,7 +20,10 @@ export type Sort = 'perto' | 'valor' | 'cedo';
 
 export interface FeedUI {
   search: string;
+  /** The city the mural shows ("São Paulo, SP"). */
   location: string;
+  /** Exact position from "Usar minha localização" (in `location`); `null` when the city was typed. */
+  origin: GeoPoint | null;
   filtersOpen: boolean;
   pickerOpen: boolean;
   /** Ofício filter (catalog id). */
@@ -25,75 +34,96 @@ export interface FeedUI {
   notifyUrgent: boolean;
 }
 
-/** The filters that decide which jobs the mural lists. */
-export type FeedFilters = Pick<FeedUI, 'location' | 'oficio' | 'dist' | 'quando'>;
+/** The filters that decide which jobs the mural lists, and the point distances are measured from. */
+export type FeedFilters = Pick<FeedUI, 'location' | 'oficio' | 'dist' | 'quando'> & { from: GeoPoint };
 
-// Every seed job is in the city of São Paulo; a job may name another city in `city`.
 export { DEFAULT_CITY };
-const jobCity = (job: Job) => job.city || DEFAULT_CITY;
-export const NO_FILTERS: Partial<FeedUI> = {
-  oficio: null,
-  dist: 'Toda a cidade',
-  quando: null,
-  location: DEFAULT_CITY
-};
+export const ALL_CITY = 'Toda a cidade';
 export const SORTS: { id: Sort; label: string }[] = [
   { id: 'perto', label: 'Mais perto' },
   { id: 'valor', label: 'Maior valor' },
   { id: 'cedo', label: 'Mais cedo' }
 ];
-export const FEED_DEFAULTS: FeedUI = {
-  search: '',
-  location: DEFAULT_CITY,
-  filtersOpen: false,
-  pickerOpen: false,
-  oficio: null,
-  dist: 'Toda a cidade',
-  quando: null,
-  sort: 'perto',
-  notifyUrgent: true
-};
+
+/** The city the mural opens on: the worker's own city; for companies, the demo's default city. */
+export function homeCity(db: Database, role: Role): string {
+  if (role === 'trabalhador') return currentWorker(db)?.city || DEFAULT_CITY;
+  return DEFAULT_CITY;
+}
+
+export function feedDefaults(db: Database, role: Role): FeedUI {
+  return {
+    search: '',
+    location: homeCity(db, role),
+    origin: null,
+    filtersOpen: false,
+    pickerOpen: false,
+    oficio: null,
+    dist: ALL_CITY,
+    quando: null,
+    sort: 'perto',
+    notifyUrgent: true
+  };
+}
+
+/** "Limpar filtros": back to the home city and no filter. */
+export function noFilters(home: string): Partial<FeedUI> {
+  return { oficio: null, dist: ALL_CITY, quando: null, location: home, origin: null };
+}
 
 export const setFeed = (patch: Partial<FeedUI>) => setUI<FeedUI>(FEED_KEY, patch);
 
-function km(distance: string | undefined) {
-  return parseFloat(String(distance || '0').replace(',', '.')) || 0;
+const SAO_PAULO: GeoPoint = { lat: -23.5505, lon: -46.6333 };
+
+/** Where distances are measured from (see the top of this file). */
+export function feedOrigin(ui: Pick<FeedUI, 'location' | 'origin'>, db: Database, role: Role): GeoPoint {
+  if (ui.origin) return ui.origin;
+  if (role === 'trabalhador') {
+    const w = currentWorker(db);
+    if (w && w.city === ui.location) return { lat: w.lat, lon: w.lon };
+  }
+  return cityByLabel(ui.location) ?? SAO_PAULO;
 }
+
+export const jobDistance = (job: Job, from: GeoPoint) => distanceKm(from, job.address);
+
 function payNum(job: Job) {
   return job.pay == null ? -1 : job.pay;
 }
-// Earliest first: today, tomorrow, any other date, then jobs whose date is still open.
-function soon(job: Job) {
-  return job.date === 'Hoje' ? 0 : job.date === 'Amanhã' ? 1 : job.date ? 2 : 3;
-}
-
-// The "Quando" filter: a specific day matches the date; a part of the week matches the days the job
-// can happen on.
-function matchesQuando(job: Job, quando: string | null) {
-  if (!quando) return true;
-  if (quando === 'Durante a semana') return job.dias === 'semana' || job.dias === 'qualquer';
-  if (quando === 'Fim de semana') return job.dias === 'fimdesemana' || job.dias === 'qualquer';
-  return job.date === quando;
-}
 
 // Recruiters see their own jobs first, then boosted jobs, then the rest in the chosen order.
-export function orderJobs(jobs: Job[], role: Role, sort: Sort = 'perto') {
+export function orderJobs(jobs: Job[], role: Role, sort: Sort, from: GeoPoint) {
   const rank = (j: Job) => (role === 'recrutador' && isMine(j) ? 0 : j.urgent ? 1 : 2);
+  const near = (a: Job, b: Job) => jobDistance(a, from) - jobDistance(b, from);
+  // Earliest first; jobs whose date is still to be arranged go last.
+  const start = (j: Job) => (j.dateToArrange || !j.startDate ? '9999-12-31' : j.startDate);
   const by =
     sort === 'valor'
       ? (a: Job, b: Job) => payNum(b) - payNum(a)
       : sort === 'cedo'
-        ? (a: Job, b: Job) => soon(a) - soon(b) || km(a.distance) - km(b.distance)
-        : (a: Job, b: Job) => km(a.distance) - km(b.distance);
+        ? (a: Job, b: Job) => start(a).localeCompare(start(b)) || near(a, b)
+        : near;
   return jobs.slice().sort((a, b) => rank(a) - rank(b) || by(a, b));
 }
 
-export function passesFilters(j: Job, filters: FeedFilters) {
+// The "Quando" filter: a specific day matches the job's real dates; a part of the week matches the
+// days the job can happen on.
+function matchesQuando(job: Job, quando: string | null, now: Date) {
+  if (!quando) return true;
+  if (quando === 'Durante a semana') return job.dias === 'semana' || job.dias === 'qualquer';
+  if (quando === 'Fim de semana') return job.dias === 'fimdesemana' || job.dias === 'qualquer';
+  const today = todayISO(now);
+  if (quando === 'Hoje') return runsOn(job, today);
+  if (quando === 'Amanhã') return runsOn(job, addDays(today, 1));
+  return true;
+}
+
+export function passesFilters(j: Job, filters: FeedFilters, now: Date = new Date()) {
   return (
-    jobCity(j) === filters.location &&
+    cityLabel(j) === filters.location &&
     (!filters.oficio || j.oficioId === filters.oficio) &&
-    (filters.dist === 'Toda a cidade' || km(j.distance) <= parseInt(filters.dist.replace(/\D/g, ''), 10)) &&
-    matchesQuando(j, filters.quando)
+    (filters.dist === ALL_CITY || jobDistance(j, filters.from) <= parseInt(filters.dist.replace(/\D/g, ''), 10)) &&
+    matchesQuando(j, filters.quando, now)
   );
 }
 
@@ -103,16 +133,16 @@ export interface ActiveFilter {
   remove: () => void;
 }
 
-export function activeFilters(filters: FeedFilters): ActiveFilter[] {
+export function activeFilters(filters: Omit<FeedFilters, 'from'>, home: string): ActiveFilter[] {
   return [
-    filters.location !== DEFAULT_CITY
-      ? { label: filters.location, icon: 'map-pin', remove: () => setFeed({ location: DEFAULT_CITY }) }
+    filters.location !== home
+      ? { label: filters.location, icon: 'map-pin', remove: () => setFeed({ location: home, origin: null }) }
       : null,
     filters.oficio
       ? { label: oficioNome(filters.oficio), icon: 'hard-hat', remove: () => setFeed({ oficio: null }) }
       : null,
-    filters.dist !== 'Toda a cidade'
-      ? { label: filters.dist, icon: 'map-pin', remove: () => setFeed({ dist: 'Toda a cidade' }) }
+    filters.dist !== ALL_CITY
+      ? { label: filters.dist, icon: 'map-pin', remove: () => setFeed({ dist: ALL_CITY }) }
       : null,
     filters.quando ? { label: filters.quando, icon: 'calendar', remove: () => setFeed({ quando: null }) } : null
   ].filter((f): f is ActiveFilter => Boolean(f));
@@ -129,17 +159,19 @@ export interface SearchMatches {
  * What a search finds among the open jobs, the companies and the workers. Accents and case are ignored,
  * and a trade is found by its name or any synonym ("hidráulica" finds the encanador jobs).
  */
-export function searchMatches(db: Database, open: Job[], query: string, role: Role): SearchMatches {
+export function searchMatches(db: Database, open: Job[], query: string, role: Role, from: GeoPoint): SearchMatches {
   const q = fold(query.trim());
   const has = (...parts: string[]) => fold(parts.join(' ')).includes(q);
   return {
     jobs: orderJobs(
       open.filter(
-        (j) => has(jobTitle(j), companyOf(db, j).name, j.location) || oficioSearchText(j.oficioId).includes(q)
+        (j) => has(jobTitle(j), companyOf(db, j).name, placeText(j)) || oficioSearchText(j.oficioId).includes(q)
       ),
-      role
+      role,
+      'perto',
+      from
     ),
     companies: allCompanies(db).filter((c) => has(c.name, c.location)),
-    workers: allWorkers(db).filter((w) => has(w.name, w.region) || oficioSearchText(w.oficioId).includes(q))
+    workers: allWorkers(db).filter((w) => has(w.name, workerPlace(w)) || oficioSearchText(w.oficioId).includes(q))
   };
 }

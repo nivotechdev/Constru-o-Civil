@@ -112,7 +112,7 @@ describe('accounts (mock auth)', () => {
     expect(homeFor(store.getSession()!)).toBe('/mural');
     expect(sel.currentWorker(store.getDb())).toMatchObject({
       oficioId: 'pintor',
-      region: 'Campinas, SP',
+      city: 'Campinas, SP',
       specialties: ['Textura']
     });
 

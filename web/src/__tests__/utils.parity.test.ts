@@ -3,14 +3,11 @@ import { describe, expect, it } from 'vitest';
 import * as legacyStatus from '../../../app/js/utils/applicationStatus.js';
 import * as legacyCidades from '../../../app/js/utils/cidades.js';
 import * as legacyFormat from '../../../app/js/utils/format.js';
-import * as legacyJobInfo from '../../../app/js/utils/jobInfo.js';
 import * as legacyWhatsapp from '../../../app/js/utils/whatsapp.js';
-import { JOBS } from '../data/seed';
 import { nearestCity, popularCities, searchCities } from '../services/cities';
 import type { ApplicationStatus } from '../types/models';
 import { statusInfo } from '../utils/applicationStatus';
 import { formatBRL, formatPostDate, isValidEmail, maskCNPJ, maskCPF, passwordStrength } from '../utils/format';
-import { dateText, diasInfo, hoursText, whenText } from '../utils/jobInfo';
 import { whatsappUrl } from '../utils/whatsapp';
 
 const TEXTS = [
@@ -56,23 +53,6 @@ describe('format', () => {
     for (const n of [0, 80, 150.4, 150.5, 1234, 12345.6, -3, NaN]) expect(formatBRL(n)).toBe(legacyFormat.formatBRL(n));
     for (const d of ['2026-09-10', '2026-01-01', 'x', '2026-13'])
       expect(formatPostDate(d)).toBe(legacyFormat.formatPostDate(d));
-  });
-});
-
-describe('job schedule texts', () => {
-  it('match the legacy texts for every seed job and every date/hours combination', () => {
-    const cases = [
-      ...Object.values(JOBS),
-      { date: null, hours: null, dias: null },
-      { date: 'Hoje', hours: null, dias: 'fimdesemana' as const },
-      { date: null, hours: '7h–17h', dias: 'qualquer' as const }
-    ];
-    for (const job of cases) {
-      expect(dateText(job)).toBe(legacyJobInfo.dateText(job));
-      expect(whenText(job)).toBe(legacyJobInfo.whenText(job));
-      expect(hoursText(job)).toBe(legacyJobInfo.hoursText(job));
-      expect(diasInfo(job)).toEqual(legacyJobInfo.diasInfo(job));
-    }
   });
 });
 

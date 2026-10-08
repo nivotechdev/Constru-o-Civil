@@ -9,7 +9,7 @@ import { getCompany, isJobSaved, isMine } from '../../../services/selectors';
 import { toggleSaved } from '../../../services/feedback';
 import type { Company, Database, Job, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
-import { DEFAULT_CITY, NO_FILTERS, setFeed, type FeedUI } from './feedUI';
+import { noFilters, setFeed, type FeedUI } from './feedUI';
 
 interface FeedTileProps {
   job: Job;
@@ -51,15 +51,15 @@ export function FeedGrid({ db, role, jobs }: { db: Database; role: Role; jobs: J
   );
 }
 
-export function NoJobsState({ location }: { location: string }) {
-  if (location !== DEFAULT_CITY) {
+export function NoJobsState({ location, home }: { location: string; home: string }) {
+  if (location !== home) {
     return (
       <EmptyState
         icon="map-pin"
         title={`Ainda não tem bico em ${location.split(',')[0]}`}
         description="Assim que uma construtora publicar uma vaga nessa cidade, ela aparece aqui."
-        actionLabel={`Ver bicos em ${DEFAULT_CITY.split(',')[0]}`}
-        onAction={() => setFeed({ location: DEFAULT_CITY })}
+        actionLabel={`Ver bicos em ${home.split(',')[0]}`}
+        onAction={() => setFeed({ location: home, origin: null })}
       />
     );
   }
@@ -69,7 +69,7 @@ export function NoJobsState({ location }: { location: string }) {
       title="Nenhuma vaga com esse filtro"
       description="Tire um filtro ou aumente a distância para ver mais bicos."
       actionLabel="Limpar filtros"
-      onAction={() => setFeed(NO_FILTERS)}
+      onAction={() => setFeed(noFilters(home))}
     />
   );
 }

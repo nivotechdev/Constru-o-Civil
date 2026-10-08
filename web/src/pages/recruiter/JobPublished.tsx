@@ -9,7 +9,7 @@ import { goBack, navigate } from '../../services/router';
 import { getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
-import { dateText } from '../../utils/jobInfo';
+import { dateText, placeText } from '../../utils/jobInfo';
 
 export default function JobPublished({ params }: ScreenProps) {
   const job = getJob(useDb(), params.id);
@@ -30,7 +30,7 @@ export default function JobPublished({ params }: ScreenProps) {
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-col gap-0.5 min-w-0">
               <span className="font-semibold text-concrete-900">{jobTitle(job)}</span>
-              <span className="text-sm text-concrete-500">{`${job.address} · ${dateText(job)}`}</span>
+              <span className="text-sm text-concrete-500">{`${placeText(job)} · ${dateText(job)}`}</span>
             </div>
             <span className="font-mono font-bold text-xl text-concrete-900">{formatPay(job.pay)}</span>
           </div>

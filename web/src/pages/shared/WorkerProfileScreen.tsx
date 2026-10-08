@@ -27,6 +27,7 @@ import {
 } from '../../services/selectors';
 import { getDb } from '../../services/store';
 import { oficioNome } from '../../services/catalog';
+import { workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
 
 export default function WorkerProfileScreen({ params }: ScreenProps) {
@@ -94,7 +95,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1.5 min-w-0">
             <span className="font-display font-bold text-2xl text-concrete-900">{worker.name}</span>
-            <span className="text-sm text-concrete-700">{`${oficioNome(worker.oficioId)} · ${worker.region}`}</span>
+            <span className="text-sm text-concrete-700">{`${oficioNome(worker.oficioId) || 'Ofício não informado'} · ${workerPlace(worker)}`}</span>
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-concrete-700">
               <Icon name="hammer" size={15} color="var(--text-subtle)" />
               {`${worker.jobsDone} ${worker.jobsDone === 1 ? 'bico realizado' : 'bicos realizados'}`}

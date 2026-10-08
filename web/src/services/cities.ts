@@ -59,3 +59,9 @@ export function nearestCity(lat: number, lon: number): City | null {
   }
   return best;
 }
+
+/** The municipality with that label ("São Paulo, SP"), if it exists. */
+export function cityByLabel(label: string): City | null {
+  const key = fold(label.replace(/,/g, ' ')).replace(/\s+/g, ' ').trim();
+  return all().find((c) => c.key === key) ?? null;
+}

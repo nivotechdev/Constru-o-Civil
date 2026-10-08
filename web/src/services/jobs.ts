@@ -25,8 +25,8 @@ export async function loadSavedJobs(): Promise<void> {
 
 // ---- company actions ----
 
-/** What the publish form sends; the backend fills in the id, the company and where the job is. */
-export type JobDraft = Omit<Job, 'id' | 'companyId' | 'location' | 'distance'>;
+/** What the publish form sends; the backend fills in the id and the company. */
+export type JobDraft = Omit<Job, 'id' | 'companyId'>;
 
 // Demo ids: "BC-" + a number, like the seed jobs'.
 function nextJobId(): string {
@@ -45,8 +45,7 @@ function ownJob(jobId: string): Job {
 export async function publishJob(draft: JobDraft): Promise<string> {
   await mockLatency(700);
   const id = nextJobId();
-  // Demo: every job the logged-in company publishes is in Tatuapé, where it is.
-  store.createJob({ ...draft, id, companyId: currentCompanyId(), location: 'Tatuapé, SP', distance: '0 km' });
+  store.createJob({ ...draft, id, companyId: currentCompanyId() });
   return id;
 }
 

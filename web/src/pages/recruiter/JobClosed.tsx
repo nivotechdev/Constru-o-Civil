@@ -15,7 +15,8 @@ import { applicationsForJob, getJob, getWorker } from '../../services/selectors'
 import type { Worker } from '../../types/models';
 import { formatBRL, formatPay } from '../../utils/format';
 import { jobTitle, oficioNome } from '../../services/catalog';
-import { dateText } from '../../utils/jobInfo';
+import { workerPlace } from '../../utils/workerInfo';
+import { dateText, placeText } from '../../utils/jobInfo';
 
 export default function JobClosed({ params }: ScreenProps) {
   const db = useDb();
@@ -69,7 +70,7 @@ export default function JobClosed({ params }: ScreenProps) {
                   </span>
                   <div className="flex-1 min-w-0 flex flex-col">
                     <span className="font-semibold text-concrete-900">{worker.name}</span>
-                    <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${worker.region}`}</span>
+                    <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${workerPlace(worker)}`}</span>
                   </div>
                 </div>
                 <Button
@@ -86,7 +87,7 @@ export default function JobClosed({ params }: ScreenProps) {
         <Card tone="sunken" padding="md">
           <div className="flex flex-col gap-3">
             <KeyValue label="Diária combinada" value={formatPay(job.pay)} />
-            <KeyValue label="Local" value={job.location} />
+            <KeyValue label="Local" value={placeText(job)} />
             <KeyValue label="Total do bico" value={formatBRL(total)} />
           </div>
         </Card>

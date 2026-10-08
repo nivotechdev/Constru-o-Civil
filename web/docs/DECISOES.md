@@ -68,3 +68,31 @@ para quem usa o app. Cada item diz de qual ID do plano veio.
   aposentados: o modelo mudou de propósito (ids de catálogo, e nas próximas etapas datas reais e status
   explícitos). As regras passaram a ser testadas diretamente (`store.test.ts`, `oficios.test.ts`). Os
   testes de paridade das máscaras, textos de status e busca de cidades continuam.
+
+## B06 — Endereço, cidade, localização e datas reais
+
+- **Vaga guarda o endereço inteiro** (CEP, rua, número, complemento, bairro, cidade, UF, latitude e
+  longitude) e as **datas reais** (início e fim em `YYYY-MM-DD`, horários `HH:MM`). "Hoje", "Amanhã",
+  "Sex, 25 set" e "Hoje até 27 set" são calculados na hora de mostrar (`utils/jobInfo.ts`).
+- **CEP na demonstração:** uma tabela pequena de CEPs reais (`services/address.ts`: 03307-000, 03104-000,
+  01310-100, 13010-111, 20040-002). Outro CEP válido aparece como "não encontrado" e a pessoa preenche rua
+  e bairro e escolhe a cidade no seletor. No back-end, a busca vai para ViaCEP/BrasilAPI por uma função.
+- **Coordenadas no mock:** o ponto do CEP conhecido, ou o centro da cidade escolhida, mais um pequeno
+  deslocamento fixo por rua e número (para duas vagas da mesma cidade não ficarem no mesmo ponto).
+- **Datas:** início não pode ser no passado; fim igual ou depois do início; uma vaga cobre no máximo 60
+  dias. "Data a combinar" é um interruptor; ligado, a construtora informa quantas diárias.
+- **Diárias** são contadas pelas datas e pelos dias escolhidos (semana, fim de semana ou qualquer dia). Se
+  nenhum dia do período cair nos dias escolhidos, o formulário avisa.
+- **Horário** continua opcional, agora com minutos (início antes do fim).
+- **Distância** é calculada em linha reta (Haversine) a partir de: (1) a posição do GPS, quando a pessoa
+  usou "Usar minha localização"; (2) a casa do trabalhador, quando o mural está na cidade dele; (3) o
+  centro da cidade escolhida. O filtro "Até X km" e a ordem "Mais perto" usam esse cálculo.
+- **O mural abre na cidade do trabalhador** (a do perfil). "Limpar filtros" volta para ela. Para a
+  construtora, abre em São Paulo (cidade das vagas de demonstração).
+- **Vaga com data final passada sai do mural** sozinha (e da lista de vagas abertas da construtora).
+- **Trabalhador** guarda cidade (rótulo do seletor), bairro (quando conhecido) e coordenadas; o texto
+  "Tatuapé, SP" é montado na hora. Mudar de cidade no perfil move o ponto para o centro da nova cidade.
+- **Datas do seed são relativas ao dia em que o app abre**, para a demonstração sempre ter vagas "Hoje",
+  "Amanhã" e na semana que vem, e um histórico no passado.
+- **Tela carregada sob demanda:** o carregamento das telas marca a promessa do código como resolvida e
+  sempre chama `use()`, removendo um aviso do React sobre `use()` condicional.

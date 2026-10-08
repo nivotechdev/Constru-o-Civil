@@ -22,15 +22,20 @@ function screen(load: Loader): Screen {
   let promise: Promise<ScreenModule> | null = null;
   const preload = () => {
     if (!promise) {
-      promise = load().then((m) => {
+      const p = load().then((m) => {
         loaded = m;
+        // Marked the way React's use() reads a settled promise, so a screen whose chunk is already
+        // here renders synchronously instead of suspending for a tick.
+        Object.assign(p, { status: 'fulfilled', value: m });
         return m;
       });
+      promise = p;
     }
     return promise;
   };
   function Component(props: ScreenProps) {
-    const mod = loaded ?? use(preload());
+    // Always called (never conditionally): use() returns at once for a chunk that is already loaded.
+    const mod = use(preload());
     return createElement(mod.default, props);
   }
   return { Component, preload, isLoaded: () => loaded !== null };

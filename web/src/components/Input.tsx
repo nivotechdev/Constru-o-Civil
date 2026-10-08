@@ -22,6 +22,11 @@ interface InputProps {
   invalid?: boolean;
   /** Called when Enter is pressed in the field (e.g. to go to the next step of a form). */
   onEnter?: () => void;
+  /** Bounds for date/time/number fields. */
+  min?: string;
+  max?: string;
+  /** What the person typed is cut at this many characters. */
+  maxLength?: number;
 }
 
 // Enter (outside an IME composition) runs `onEnter`.
@@ -51,7 +56,10 @@ export function Input({
   suffix,
   autoFocus = false,
   invalid = false,
-  onEnter
+  onEnter,
+  min,
+  max,
+  maxLength
 }: InputProps) {
   const autoId = useId();
   const fieldId = id || autoId;
@@ -85,6 +93,9 @@ export function Input({
             mono ? 'font-mono' : ''
           )}
           value={value}
+          min={min}
+          max={max}
+          maxLength={maxLength}
           onChange={handleChange}
           onKeyDown={enterHandler(onEnter)}
         />

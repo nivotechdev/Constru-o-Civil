@@ -94,18 +94,31 @@ describe('simulated backend calls keep the legacy delays', () => {
     expect(sel.applicationFor(store.getDb(), 'BC-4855', 'jorge')?.status).toBe('enviada');
   });
 
-  it('publishes a job after 700 ms with the demo id, company and place', async () => {
+  it('publishes a job after 700 ms with the demo id and the company', async () => {
     const { store, sel, jobs } = s;
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const draft = {
       oficioId: 'pintor',
       title: null,
       pay: 180,
-      address: 'Rua A, 10',
-      date: 'Amanhã',
-      hours: '7h–17h',
+      address: {
+        cep: '03307-000',
+        street: 'Rua A',
+        number: '10',
+        complement: null,
+        neighborhood: 'Tatuapé',
+        city: 'São Paulo',
+        uf: 'SP',
+        lat: -23.54,
+        lon: -46.57
+      },
+      dateToArrange: false,
+      startDate: '2026-10-09',
+      endDate: '2026-10-12',
+      startTime: '07:00',
+      endTime: '17:00',
+      diarias: 2,
       dias: 'semana' as const,
-      duration: '2 diárias',
       slots: 2,
       requirements: ['EPI'],
       description: 'Pintura interna.',
@@ -113,13 +126,7 @@ describe('simulated backend calls keep the legacy delays', () => {
     };
     const id = await settlesAfter(jobs.publishJob(draft), 700);
     expect(id).toBe('BC-5500');
-    expect(sel.getJob(store.getDb(), id)).toEqual({
-      ...draft,
-      id: 'BC-5500',
-      companyId: seed.CURRENT_COMPANY_ID,
-      location: 'Tatuapé, SP',
-      distance: '0 km'
-    });
+    expect(sel.getJob(store.getDb(), id)).toEqual({ ...draft, id: 'BC-5500', companyId: seed.CURRENT_COMPANY_ID });
   });
 });
 

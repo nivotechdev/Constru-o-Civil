@@ -1,5 +1,6 @@
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
+import { CityPicker, LocationButton } from '../../components/CityPicker';
 import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
 import { useAction } from '../../hooks/useAction';
@@ -9,7 +10,7 @@ import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
 import { Tag } from '../../components/Tag';
 import { useDb, useUI } from '../../hooks/useStore';
-import { ESPECIALIDADES, OFICIO_OPTIONS, REGIOES_TRABALHADOR } from '../../services/catalog';
+import { ESPECIALIDADES, OFICIO_OPTIONS } from '../../services/catalog';
 import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
 import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI, askSignOut } from '../../services/sharedUI';
@@ -18,7 +19,8 @@ import { toggleItem } from '../../utils/list';
 interface EditWorkerUI {
   name: string;
   oficioId: string;
-  region: string;
+  city: string;
+  pickerOpen: boolean;
   specialties: string[];
   photo: string | null;
 }
@@ -29,7 +31,8 @@ export default function EditWorkerProfile() {
   const [ui, setUi] = useUI<EditWorkerUI>('edit-worker-profile', () => ({
     name: worker.name,
     oficioId: worker.oficioId,
-    region: worker.region,
+    city: worker.city,
+    pickerOpen: false,
     specialties: [...worker.specialties],
     photo: null
   }));
@@ -76,11 +79,18 @@ export default function EditWorkerProfile() {
           value={ui.oficioId}
           onChange={(v) => setUi({ oficioId: v })}
         />
-        <Select
-          label="Região de atuação"
-          options={REGIOES_TRABALHADOR}
-          value={ui.region}
-          onChange={(v) => setUi({ region: v })}
+        <LocationButton
+          title="Onde você quer trabalhar"
+          location={ui.city}
+          onClick={() => setUi({ pickerOpen: true })}
+        />
+        <CityPicker
+          open={ui.pickerOpen}
+          title="Onde você quer trabalhar"
+          value={ui.city}
+          stateKey="edit-worker-city"
+          onChoose={(city) => setUi({ city, pickerOpen: false })}
+          onClose={() => setUi({ pickerOpen: false })}
         />
         <div className="flex flex-col gap-2.5">
           <span className="text-sm font-semibold text-concrete-900">Especialidades</span>
@@ -112,7 +122,7 @@ export default function EditWorkerProfile() {
             className="flex-[1.4]"
             loading={save.loading}
             onClick={() =>
-              void save.run({ name: ui.name, oficioId: ui.oficioId, region: ui.region, specialties: ui.specialties })
+              void save.run({ name: ui.name, oficioId: ui.oficioId, city: ui.city, specialties: ui.specialties })
             }
           />
         </div>

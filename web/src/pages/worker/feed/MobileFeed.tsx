@@ -12,6 +12,7 @@ import { Tag } from '../../../components/Tag';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { useUI } from '../../../hooks/useStore';
 import { navigate } from '../../../services/router';
+import { workerPlace } from '../../../utils/workerInfo';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
 import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
@@ -29,10 +30,12 @@ export interface FeedLayoutProps {
   chips: ActiveFilter[];
   /** The mural's first load (skeleton, then the jobs or an error). */
   query: Query;
+  /** The city the mural opens on (filters reset to it). */
+  home: string;
 }
 
 /** The mural below 770px: search pill, filter chips, sort control and the grid of tiles. */
-export function MobileFeed({ db, role, ui, ordered, found, chips, query }: FeedLayoutProps) {
+export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }: FeedLayoutProps) {
   const noResults =
     found !== null && found.jobs.length === 0 && found.companies.length === 0 && found.workers.length === 0;
   const activeCount = chips.length;
@@ -75,7 +78,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query }: FeedL
                 </span>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-concrete-900 truncate">{w.name}</span>
-                  <span className="text-sm text-concrete-500 truncate">{`${oficioNome(w.oficioId)} · ${w.region}`}</span>
+                  <span className="text-sm text-concrete-500 truncate">{`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}</span>
                 </div>
                 <Rating value={w.rating} count={w.jobsDone} />
               </div>
@@ -119,7 +122,11 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query }: FeedL
           </button>
         ))}
       </div>
-      {ordered.length ? <FeedGrid db={db} role={role} jobs={ordered} /> : <NoJobsState location={ui.location} />}
+      {ordered.length ? (
+        <FeedGrid db={db} role={role} jobs={ordered} />
+      ) : (
+        <NoJobsState location={ui.location} home={home} />
+      )}
     </div>
   );
 

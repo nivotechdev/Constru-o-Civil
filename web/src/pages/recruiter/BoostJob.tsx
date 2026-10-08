@@ -15,6 +15,7 @@ import { BOOST_PLANS, jobTitle } from '../../services/catalog';
 import type { BoostPlanId } from '../../types/models';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
+import { placeText } from '../../utils/jobInfo';
 import { getJob } from '../../services/selectors';
 
 export default function BoostJob({ params }: ScreenProps) {
@@ -44,7 +45,7 @@ export default function BoostJob({ params }: ScreenProps) {
       <div className="flex flex-col gap-5 px-4 sm:px-0 py-4">
         <div className="flex flex-col gap-1">
           <h1 className="font-display font-bold text-2xl text-concrete-900">Sua vaga no topo do mural</h1>
-          <span className="text-sm text-concrete-700">{`${jobTitle(job)} · ${job.location}`}</span>
+          <span className="text-sm text-concrete-700">{`${jobTitle(job)} · ${placeText(job)}`}</span>
         </div>
         <Card padding="md">
           <div className="flex flex-col gap-3.5">

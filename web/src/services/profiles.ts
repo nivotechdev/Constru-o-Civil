@@ -2,6 +2,7 @@
 // says what the real backend does there (docs/CONTRATO-BACKEND.md).
 import type { Company, Worker, WorkerPost } from '../types/models';
 import { getOficio } from './catalog';
+import { cityByLabel } from './cities';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { currentCompanyId, currentWorkerId } from './selectors';
@@ -17,7 +18,7 @@ export async function loadCompanyProfile(_companyId: string): Promise<void> {
   await mockLatency(350);
 }
 
-export type WorkerProfilePatch = Partial<Pick<Worker, 'name' | 'oficioId' | 'region' | 'specialties'>>;
+export type WorkerProfilePatch = Partial<Pick<Worker, 'name' | 'oficioId' | 'city' | 'specialties'>>;
 
 /** Saves the logged-in worker's profile. Backend: update workers where id = my worker. */
 export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<void> {
@@ -26,6 +27,14 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
     throw serviceError('validacao', 'Informe seu nome completo.');
   if (patch.oficioId !== undefined && !getOficio(patch.oficioId))
     throw serviceError('validacao', 'Escolha seu ofício na lista.');
+  const worker = store.getDb().workers[currentWorkerId()];
+  // A new city moves the worker's base to its centre (the neighbourhood is no longer known).
+  if (patch.city !== undefined && worker && patch.city !== worker.city) {
+    const center = cityByLabel(patch.city);
+    if (!center) throw serviceError('validacao', 'Escolha a cidade na lista.');
+    store.updateWorker(worker.id, { ...patch, neighborhood: null, lat: center.lat, lon: center.lon });
+    return;
+  }
   store.updateWorker(currentWorkerId(), patch);
 }
 

@@ -5,7 +5,7 @@ import { Sheet } from '../../../components/Modal';
 import { Switch } from '../../../components/Switch';
 import { Tag } from '../../../components/Tag';
 import { OFICIO_OPTIONS } from '../../../services/catalog';
-import { NO_FILTERS, setFeed, SORTS, type FeedUI } from './feedUI';
+import { noFilters, setFeed, SORTS, type FeedUI } from './feedUI';
 
 function FilterGroup({
   title,
@@ -33,7 +33,7 @@ function FilterGroup({
 }
 
 /** One filter panel for both layouts: a bottom sheet on phones, a dialog on desktop. */
-export function FiltersSheet({ ui, count }: { ui: FeedUI; count: number }) {
+export function FiltersSheet({ ui, count, home }: { ui: FeedUI; count: number; home: string }) {
   return (
     <Sheet open={ui.filtersOpen} title="Filtros" onClose={() => setFeed({ filtersOpen: false })}>
       <LocationButton
@@ -57,7 +57,7 @@ export function FiltersSheet({ ui, count }: { ui: FeedUI; count: number }) {
         onSelect={(v) => setFeed({ oficio: ui.oficio === v ? null : v })}
       />
       <FilterGroup
-        title={'Distância do centro de ' + ui.location.split(',')[0]}
+        title={ui.origin ? 'Distância de onde você está' : 'Distância'}
         options={['5', '10', '20', 'Toda a cidade'].map((d) => (d === 'Toda a cidade' ? d : `Até ${d} km`))}
         active={ui.dist}
         onSelect={(v) => setFeed({ dist: v })}
@@ -77,7 +77,7 @@ export function FiltersSheet({ ui, count }: { ui: FeedUI; count: number }) {
         />
       </div>
       <div className="flex gap-3 pt-1">
-        <Button label="Limpar" variant="secondary" className="flex-1" onClick={() => setFeed(NO_FILTERS)} />
+        <Button label="Limpar" variant="secondary" className="flex-1" onClick={() => setFeed(noFilters(home))} />
         <Button
           label={`Ver ${count === 1 ? '1 vaga' : count + ' vagas'}`}
           className="flex-[1.4]"

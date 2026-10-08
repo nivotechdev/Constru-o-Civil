@@ -82,8 +82,13 @@ export interface Worker {
   initials: string;
   /** Main trade (catalog id); '' until the profile is completed. */
   oficioId: string;
-  region: string;
-  distance: string;
+  /** Municipality the worker is based in ("São Paulo, SP"), from the city picker. */
+  city: string;
+  /** Neighbourhood, when known ("Tatuapé"). */
+  neighborhood: string | null;
+  /** Where distances to jobs are measured from (the neighbourhood, or the city centre). */
+  lat: number;
+  lon: number;
   rating: number;
   jobsDone: number;
   novo?: boolean;
@@ -91,6 +96,25 @@ export interface Worker {
   specialties: string[];
   facts: string[];
   reviews: Review[];
+}
+
+/** A point on the map (WGS84 degrees). */
+export interface GeoPoint {
+  lat: number;
+  lon: number;
+}
+
+/** Where the job is. Before approval the worker sees only the neighbourhood and city (L19). */
+export interface JobAddress extends GeoPoint {
+  /** "03307-000" */
+  cep: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  /** "SP" */
+  uf: string;
 }
 
 export interface Job {
@@ -102,14 +126,17 @@ export interface Job {
   title: string | null;
   /** Fixed R$ per diária; `null` means "A combinar". */
   pay: number | null;
-  location: string;
-  address: string;
-  distance: string;
-  /** Free text ("Hoje", "Amanhã", "12 set"); `null` means "Data a combinar". */
-  date: string | null;
-  /** "7h–17h"; `null` means "Horário a combinar". */
-  hours: string | null;
-  duration: string;
+  address: JobAddress;
+  /** Days are to be arranged with the worker: no start/end date. */
+  dateToArrange: boolean;
+  /** First and last day, ISO "YYYY-MM-DD" (local); `null` when the date is to be arranged. */
+  startDate: string | null;
+  endDate: string | null;
+  /** "07:00"–"17:00"; both `null` means "Horário a combinar". */
+  startTime: string | null;
+  endTime: string | null;
+  /** How many diárias (work days) the job has. */
+  diarias: number;
   dias?: DiasKey | null;
   urgent?: boolean;
   boosted?: boolean;
@@ -118,8 +145,6 @@ export interface Job {
   slots?: number;
   closed?: boolean;
   semContratacao?: boolean;
-  /** City the job is in; defaults to "São Paulo, SP". */
-  city?: string;
   description: string;
   requirements: string[];
 }
@@ -183,11 +208,9 @@ export interface BoostPlan {
 }
 
 /** A Brazilian municipality in the city picker. */
-export interface City {
+export interface City extends GeoPoint {
   name: string;
   uf: string;
-  lat: number;
-  lon: number;
   /** "Name, UF" */
   label: string;
   /** Accent/case-free search key. */

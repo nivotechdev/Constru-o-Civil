@@ -20,8 +20,10 @@ const TONE_COLOR: Partial<Record<Tone, string>> = {
 };
 
 /** The fields a tile reads (the publish form's preview passes a partial job). */
-type TileJob = Pick<Job, 'id' | 'oficioId' | 'title' | 'location' | 'date' | 'hours' | 'pay' | 'photos'> &
-  Partial<Pick<Job, 'dias'>>;
+type TileJob = Pick<
+  Job,
+  'id' | 'oficioId' | 'title' | 'pay' | 'photos' | 'dateToArrange' | 'startDate' | 'endDate' | 'startTime' | 'endTime'
+> & { address: Pick<Job['address'], 'neighborhood'> } & Partial<Pick<Job, 'dias'>>;
 
 interface JobTileProps {
   job: TileJob;
@@ -56,7 +58,7 @@ export function JobTile({
   onToggleSave = null,
   corner = null
 }: JobTileProps) {
-  const bairro = String(job.location || '').split(',')[0];
+  const bairro = job.address.neighborhood;
   const dias = diasInfo(job);
   const where = [bairro, dias && dias.short].filter(Boolean).join(' · ');
   const when = whenText(job);
