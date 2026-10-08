@@ -56,6 +56,9 @@ export const ACCOUNTS: Record<string, Account> = {
 };
 
 // ---- places and dates ----
+const HOUR = 3600000;
+const ago = (hours: number) => new Date(Date.now() - hours * HOUR).toISOString();
+
 // Jobs and workers of the demo are in the east zone of São Paulo. Coordinates are the neighbourhood's
 // centre plus a small fixed offset per record, so distances differ like they would in real life.
 const NEIGHBORHOODS: Record<string, { cep: string; lat: number; lon: number }> = {
@@ -146,22 +149,34 @@ export const COMPANIES: Record<string, Company> = {
     paidCount: 128,
     reviews: [
       {
-        author: 'Marcos A. · servente',
+        id: 'r1',
+        applicationId: null,
+        direction: 'para_construtora',
+        authorLabel: 'Marcos A. · servente',
         value: 5,
-        text: 'Pagou em PIX no fim da diária, como combinado.',
-        date: '2 set'
+        tags: [],
+        comment: 'Pagou em PIX no fim da diária, como combinado.',
+        createdAt: ago(24 * 23)
       },
       {
-        author: 'Jorge M. · pedreiro',
+        id: 'r2',
+        applicationId: null,
+        direction: 'para_construtora',
+        authorLabel: 'Jorge M. · pedreiro',
         value: 4,
-        text: 'Obra organizada e EPI no local. Começou 30 min atrasado.',
-        date: '25 ago'
+        tags: [],
+        comment: 'Obra organizada e EPI no local. Começou 30 min atrasado.',
+        createdAt: ago(24 * 31)
       },
       {
-        author: 'Edson B. · pedreiro',
+        id: 'r3',
+        applicationId: null,
+        direction: 'para_construtora',
+        authorLabel: 'Edson B. · pedreiro',
         value: 5,
-        text: 'Já trabalhei com eles três vezes. Sempre no horário certo.',
-        date: '18 ago'
+        tags: [],
+        comment: 'Já trabalhei com eles três vezes. Sempre no horário certo.',
+        createdAt: ago(24 * 38)
       }
     ]
   },
@@ -174,7 +189,16 @@ export const COMPANIES: Record<string, Company> = {
     reviewCount: 18,
     verified: true,
     reviews: [
-      { author: 'Caio N. · pedreiro', value: 4, text: 'Bom acabamento, chegou 20 min atrasado.', date: '30 jul' }
+      {
+        id: 'r4',
+        applicationId: null,
+        direction: 'para_construtora',
+        authorLabel: 'Caio N. · pedreiro',
+        value: 4,
+        tags: [],
+        comment: 'Bom acabamento, chegou 20 min atrasado.',
+        createdAt: ago(24 * 57)
+      }
     ]
   },
   'vila-formosa': {
@@ -196,7 +220,16 @@ export const COMPANIES: Record<string, Company> = {
     reviewCount: 14,
     verified: true,
     reviews: [
-      { author: 'Nelson A. · azulejista', value: 5, text: 'Assentamento impecável, obra organizada.', date: '22 ago' }
+      {
+        id: 'r5',
+        applicationId: null,
+        direction: 'para_construtora',
+        authorLabel: 'Nelson A. · azulejista',
+        value: 5,
+        tags: [],
+        comment: 'Assentamento impecável, obra organizada.',
+        createdAt: ago(24 * 34)
+      }
     ]
   },
   'vila-prudente': {
@@ -209,10 +242,14 @@ export const COMPANIES: Record<string, Company> = {
     verified: false,
     reviews: [
       {
-        author: 'Bruno T. · servente',
+        id: 'r6',
+        applicationId: null,
+        direction: 'para_construtora',
+        authorLabel: 'Bruno T. · servente',
         value: 5,
-        text: 'Trabalhador de confiança. Já chamei três vezes.',
-        date: '27 ago'
+        tags: [],
+        comment: 'Trabalhador de confiança. Já chamei três vezes.',
+        createdAt: ago(24 * 29)
       }
     ]
   },
@@ -257,6 +294,7 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 97412-5580',
     ...home('Tatuapé', 'jorge'),
     rating: 4.8,
+    reviewCount: 23,
     jobsDone: 23,
     verified: true,
     specialties: ['Acabamento', 'Alvenaria', 'Reboco', 'Assentamento'],
@@ -268,22 +306,34 @@ export const WORKERS: Record<string, Worker> = {
     ],
     reviews: [
       {
-        company: 'Obra Vila Prudente',
+        id: 'r7',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Obra Vila Prudente',
         value: 5,
-        text: 'Trabalhou o dia todo sem reclamar. Deixou a área limpa.',
-        date: '14 ago'
+        tags: [],
+        comment: 'Trabalhou o dia todo sem reclamar. Deixou a área limpa.',
+        createdAt: ago(24 * 42)
       },
       {
-        company: 'Reforma Serra de Bragança',
+        id: 'r8',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Reforma Serra de Bragança',
         value: 5,
-        text: 'Chegou no horário, acabamento bem feito.',
-        date: '2 ago'
+        tags: [],
+        comment: 'Chegou no horário, acabamento bem feito.',
+        createdAt: ago(24 * 54)
       },
       {
-        company: 'Construtora Meridiano',
+        id: 'r9',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Construtora Meridiano',
         value: 5,
-        text: 'Chegou no horário, acabamento bem feito. Chamo de novo.',
-        date: '28 ago'
+        tags: [],
+        comment: 'Chegou no horário, acabamento bem feito. Chamo de novo.',
+        createdAt: ago(24 * 28)
       }
     ]
   },
@@ -295,12 +345,22 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 96630-1147',
     ...home('Vila Prudente', 'rafael'),
     rating: 4.5,
+    reviewCount: 17,
     jobsDone: 17,
     verified: true,
     specialties: ['Carga de material', 'Limpeza de obra'],
     facts: ['17 diárias pagas pela plataforma', 'RG e CPF conferidos em 5 ago', 'Responde em 55 min, em média'],
     reviews: [
-      { company: 'Obra Belém', value: 4, text: 'Fez o serviço direito. Saiu 20 min mais cedo.', date: '19 ago' }
+      {
+        id: 'r10',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Obra Belém',
+        value: 4,
+        tags: [],
+        comment: 'Fez o serviço direito. Saiu 20 min mais cedo.',
+        createdAt: ago(24 * 37)
+      }
     ]
   },
   nelson: {
@@ -311,16 +371,21 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 98215-4402',
     ...home('Tatuapé', 'nelson'),
     rating: 4.9,
+    reviewCount: 52,
     jobsDone: 52,
     verified: true,
     specialties: ['Porcelanato 60x60', 'Rejunte', 'Nivelamento'],
     facts: ['52 diárias pagas pela plataforma', 'RG e CPF conferidos em 8 abr', 'Responde em 15 min, em média'],
     reviews: [
       {
-        company: 'Reforma Serra de Bragança',
+        id: 'r11',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Reforma Serra de Bragança',
         value: 5,
-        text: 'Assentamento impecável. Levou as próprias ferramentas.',
-        date: '22 ago'
+        tags: [],
+        comment: 'Assentamento impecável. Levou as próprias ferramentas.',
+        createdAt: ago(24 * 34)
       }
     ]
   },
@@ -332,16 +397,21 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 95508-7731',
     ...home('Vila Prudente', 'bruno'),
     rating: 4.8,
+    reviewCount: 28,
     jobsDone: 28,
     verified: true,
     specialties: ['Carga de material', 'Massa'],
     facts: ['28 diárias pagas pela plataforma', 'RG e CPF conferidos em 15 jun', 'Nunca faltou a uma diária combinada'],
     reviews: [
       {
-        company: 'Obra Vila Prudente',
+        id: 'r12',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Obra Vila Prudente',
         value: 5,
-        text: 'Trabalhador de confiança. Já chamei três vezes.',
-        date: '27 ago'
+        tags: [],
+        comment: 'Trabalhador de confiança. Já chamei três vezes.',
+        createdAt: ago(24 * 29)
       }
     ]
   },
@@ -353,12 +423,22 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 94471-2265',
     ...home('Penha', 'marcos'),
     rating: 4.6,
+    reviewCount: 41,
     jobsDone: 41,
     verified: true,
     specialties: ['Carga de material', 'Limpeza de obra', 'Massa'],
     facts: ['41 diárias pagas pela plataforma', 'RG e CPF conferidos em 30 jul', 'Responde em 1h10, em média'],
     reviews: [
-      { company: 'Construtora Alvorada', value: 5, text: 'Pegou no pesado o dia todo. Chamo de novo.', date: '21 ago' }
+      {
+        id: 'r13',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Construtora Alvorada',
+        value: 5,
+        tags: [],
+        comment: 'Pegou no pesado o dia todo. Chamo de novo.',
+        createdAt: ago(24 * 35)
+      }
     ]
   },
   silas: {
@@ -369,6 +449,7 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 99183-0456',
     ...home('Mooca', 'silas'),
     rating: 0,
+    reviewCount: 0,
     jobsDone: 0,
     novo: true,
     verified: false,
@@ -388,11 +469,23 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 97726-3398',
     ...home('Tatuapé', 'vitor'),
     rating: 4.7,
+    reviewCount: 31,
     jobsDone: 31,
     verified: true,
     specialties: ['Reboco', 'Contrapiso'],
     facts: ['31 diárias pagas pela plataforma', 'RG e CPF conferidos em 21 jul', 'Responde em 35 min, em média'],
-    reviews: [{ company: 'Obra Belém', value: 5, text: 'Serviço limpo e no prazo combinado.', date: '12 ago' }]
+    reviews: [
+      {
+        id: 'r14',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Obra Belém',
+        value: 5,
+        tags: [],
+        comment: 'Serviço limpo e no prazo combinado.',
+        createdAt: ago(24 * 44)
+      }
+    ]
   },
   caio: {
     id: 'caio',
@@ -402,12 +495,22 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 96052-8814',
     ...home('Penha', 'caio'),
     rating: 4.2,
+    reviewCount: 9,
     jobsDone: 9,
     verified: true,
     specialties: ['Massa corrida', 'Acabamento'],
     facts: ['9 diárias pagas pela plataforma', 'RG e CPF conferidos em 2 set', 'Faltou a 1 diária combinada em julho'],
     reviews: [
-      { company: 'Construtora Alvorada', value: 4, text: 'Bom acabamento, chegou 20 min atrasado.', date: '30 jul' }
+      {
+        id: 'r15',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Construtora Alvorada',
+        value: 4,
+        tags: [],
+        comment: 'Bom acabamento, chegou 20 min atrasado.',
+        createdAt: ago(24 * 57)
+      }
     ]
   },
   edson: {
@@ -418,16 +521,21 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 98840-1173',
     ...home('Belém', 'edson'),
     rating: 4.9,
+    reviewCount: 64,
     jobsDone: 64,
     verified: true,
     specialties: ['Alvenaria estrutural', 'Contrapiso', 'Reboco'],
     facts: ['64 diárias pagas pela plataforma', 'RG e CPF conferidos em 4 mar', 'Responde em 25 min, em média'],
     reviews: [
       {
-        company: 'Construtora Meridiano',
+        id: 'r16',
+        applicationId: null,
+        direction: 'para_trabalhador',
+        authorLabel: 'Construtora Meridiano',
         value: 5,
-        text: 'Já trabalhou com a gente três vezes. Sempre pontual.',
-        date: '18 ago'
+        tags: [],
+        comment: 'Já trabalhou com a gente três vezes. Sempre pontual.',
+        createdAt: ago(24 * 38)
       }
     ]
   },
@@ -439,6 +547,7 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 95317-6629',
     ...home('Belém', 'joel'),
     rating: 0,
+    reviewCount: 0,
     jobsDone: 0,
     novo: true,
     verified: false,
@@ -458,6 +567,7 @@ export const WORKERS: Record<string, Worker> = {
     whatsapp: '(11) 94208-5590',
     ...home('Vila Prudente', 'antonio'),
     rating: 4.6,
+    reviewCount: 19,
     jobsDone: 19,
     verified: true,
     specialties: ['Carga de material', 'Limpeza de obra'],
@@ -1018,8 +1128,6 @@ export const JOBS: Record<string, Job> = {
 
 // One application = one worker's candidacy on one job, with the history of its status (the status
 // machine is in services/applicationMachine.ts). Times are relative to when the app opens.
-const HOUR = 3600000;
-const ago = (hours: number) => new Date(Date.now() - hours * HOUR).toISOString();
 
 const PATH: Record<ApplicationStatus, ApplicationStatus[]> = {
   enviada: ['enviada'],

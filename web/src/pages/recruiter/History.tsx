@@ -36,7 +36,12 @@ export default function History() {
       applicationsForJob(db, job.id).flatMap((app) => {
         const worker = getWorker(db, app.workerId);
         if (!worker || !LISTED.has(app.status)) return [];
-        const status = { ...candidateBadge(app), hint: 'Ver o bico' };
+        const toReview = app.status === 'concluida' && !app.companyReviewed;
+        const status = {
+          ...candidateBadge(app),
+          hint: toReview ? 'Avaliar' : 'Ver o bico',
+          to: toReview ? `/avaliar-trabalhador/${job.id}/${worker.id}` : '/vaga-gerenciar/' + job.id
+        };
         return [{ job, app, worker, status }];
       })
     );
@@ -58,7 +63,7 @@ export default function History() {
             ) : (
               <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5">
                 {items.map(({ job, app, worker, status }) => (
-                  <Card key={app.id} padding="sm" onClick={() => navigate('/vaga-gerenciar/' + job.id)}>
+                  <Card key={app.id} padding="sm" onClick={() => navigate(status.to)}>
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-3">
                         <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent-50 text-accent-600 font-bold text-sm shrink-0">

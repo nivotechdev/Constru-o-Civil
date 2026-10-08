@@ -10,6 +10,7 @@ import { Rating } from '../../components/Rating';
 import { useDb, useRole } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack } from '../../services/router';
+import { dayLabel, toISODate } from '../../utils/dates';
 import { getCompany, getWorker } from '../../services/selectors';
 
 export default function ReviewsScreen({ params }: ScreenProps) {
@@ -50,7 +51,7 @@ export default function ReviewsScreen({ params }: ScreenProps) {
   }
 
   const reviews = subject.reviews || [];
-  const count = worker?.jobsDone ?? company?.reviewCount;
+  const count = subject.reviewCount;
 
   return (
     <div className="flex flex-col">
@@ -68,15 +69,27 @@ export default function ReviewsScreen({ params }: ScreenProps) {
           />
         ) : (
           <div className="flex flex-col gap-3">
-            {reviews.map((r, i) => (
-              <Card key={i} padding="md">
+            {reviews.map((r) => (
+              <Card key={r.id} padding="md">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-concrete-900">{r.company || r.author}</span>
+                    <span className="font-semibold text-concrete-900">{r.authorLabel}</span>
                     <Rating value={r.value} showValue={false} size={13} />
                   </div>
-                  <span className="text-sm text-concrete-700">{r.text}</span>
-                  <span className="text-xs text-concrete-400">{r.date}</span>
+                  {r.tags.length ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {r.tags.map((t) => (
+                        <span
+                          key={t}
+                          className="inline-flex items-center h-7 px-2.5 rounded-full bg-concrete-100 text-xs font-semibold text-concrete-700"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {r.comment ? <span className="text-sm text-concrete-700">{r.comment}</span> : null}
+                  <span className="text-xs text-concrete-400">{dayLabel(toISODate(new Date(r.createdAt)))}</span>
                 </div>
               </Card>
             ))}

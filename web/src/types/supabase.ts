@@ -18,11 +18,18 @@
 //   notifications – AppNotification (for one worker or one company)
 //   job_boosts    – a paid boost ("Impulsionar vaga")
 // The enums reuse the domain types, so the schema and the app can't drift apart silently.
-import type { Actor, ApplicationStatus, BoostPlanId, DiasKey, NotificationKind, Role, WorkerPost } from './models';
+import type {
+  Actor,
+  ApplicationStatus,
+  ReviewDirection,
+  BoostPlanId,
+  DiasKey,
+  NotificationKind,
+  Role,
+  WorkerPost
+} from './models';
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
-type ReviewDirection = 'para_construtora' | 'para_trabalhador';
 
 // ---- rows ----
 // (Type aliases, not interfaces: supabase-js checks rows against Record<string, unknown>.)
@@ -79,6 +86,7 @@ type WorkerRow = {
   lat: number;
   lon: number;
   rating: number;
+  review_count: number;
   jobs_done: number;
   novo: boolean;
   verified: boolean;
@@ -150,15 +158,15 @@ type SavedJobRow = {
 };
 
 type ReviewRow = {
-  id: number;
+  id: string;
+  application_id: string | null;
   direction: ReviewDirection;
   company_id: string | null;
   worker_id: string | null;
-  job_id: string | null;
   author_label: string;
   value: number;
-  text: string;
-  date_label: string;
+  tags: string[];
+  comment: string;
   created_at: string;
 };
 
@@ -247,7 +255,7 @@ export interface SupabaseDatabase {
       companies: Table<CompanyRow, 'id' | 'rating' | 'review_count' | 'verified' | 'created_at'>;
       workers: Table<
         WorkerRow,
-        'id' | 'rating' | 'jobs_done' | 'novo' | 'verified' | 'specialties' | 'facts' | 'created_at'
+        'id' | 'rating' | 'review_count' | 'jobs_done' | 'novo' | 'verified' | 'specialties' | 'facts' | 'created_at'
       >;
       jobs: Table<
         JobRow,
@@ -268,7 +276,7 @@ export interface SupabaseDatabase {
       >;
       application_events: Table<ApplicationEventRow, 'id'>;
       saved_jobs: Table<SavedJobRow, 'saved_at'>;
-      reviews: Table<ReviewRow, 'id' | 'text' | 'created_at'>;
+      reviews: Table<ReviewRow, 'id' | 'tags' | 'comment' | 'created_at'>;
       worker_posts: Table<WorkerPostRow, 'id' | 'media_type' | 'caption' | 'created_at'>;
       notifications: Table<NotificationRow, 'id' | 'created_at'>;
       job_boosts: Table<JobBoostRow, 'id' | 'created_at'>;

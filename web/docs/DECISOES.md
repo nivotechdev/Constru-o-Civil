@@ -135,3 +135,16 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
 - **Mensagens prontas** usam o nome do ofício (não o título) e o código da vaga: "Olá! Vi sua vaga de
   {ofício} ({código}) na Bicos e fui aprovado…" e "Olá, {primeiro nome}! Aqui é da {construtora}, sobre a
   vaga de {ofício} ({código}) na Bicos…".
+
+## B03 — Construtora avalia o trabalhador
+
+- **Nova rota** `/avaliar-trabalhador/:jobId/:workerId` (só construtora), espelho de "Avaliar a diária":
+  nota de 1 a 5 (nenhuma estrela marcada no início), pontos prontos ("Chegou no horário", "Trabalho
+  caprichado", "Usou EPI", "Respeitou a equipe", "Deixou o local limpo") e comentário de até 300
+  caracteres. Só abre com a diária concluída e se a construtora ainda não avaliou; senão mostra "Essa
+  avaliação não está disponível".
+- **Entradas:** Histórico (item "Avaliar"), notificação "Avalie o trabalhador", perfil do candidato
+  (botão "Avaliar {nome}") e tela da equipe do bico.
+- **Avaliação vira registro** (`Review`: candidatura, direção, autor, nota, pontos, comentário, data) e o
+  trabalhador ganha `reviewCount`. A nota nova entra na média com uma casa decimal. As avaliações antigas
+  do seed foram convertidas (sem candidatura ligada).

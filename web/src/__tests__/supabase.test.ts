@@ -48,6 +48,7 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       oficio_id: null,
       neighborhood: null,
       rating: 0,
+      review_count: 0,
       jobs_done: 0,
       novo: false,
       verified: false,
@@ -97,11 +98,15 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       id: i + 1
     })),
     savedJobs: inserts.saved_jobs,
-    reviews: inserts.reviews.map((r: TableInsert<'reviews'>) => ({
+    reviews: inserts.reviews.map((r: TableInsert<'reviews'>): TableRow<'reviews'> => ({
+      application_id: null,
       company_id: null,
       worker_id: null,
-      text: '',
-      ...r
+      tags: [],
+      comment: '',
+      created_at: CREATED,
+      ...r,
+      id: r.id ?? ''
     })),
     workerPosts: inserts.worker_posts.map((r): TableRow<'worker_posts'> => ({
       media_url: null,

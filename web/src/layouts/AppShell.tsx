@@ -24,6 +24,7 @@ const NARROW_SCREENS = new Set([
   '/confirmar/:id',
   '/enviado/:id',
   '/avaliar/:id',
+  '/avaliar-trabalhador/:jobId/:workerId',
   '/selecionado/:id',
   '/vaga-publicada/:id',
   '/impulsionar/:id',

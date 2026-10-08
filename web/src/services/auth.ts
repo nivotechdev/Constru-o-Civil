@@ -132,6 +132,7 @@ export async function signUp(data: SignUpData): Promise<SignUpResult> {
       neighborhood: null,
       ...DEFAULT_POINT,
       rating: 0,
+      reviewCount: 0,
       jobsDone: 0,
       novo: true,
       verified: false,

@@ -168,6 +168,23 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
         </div>
       </div>
     );
+  } else if (app.status === 'concluida' && !app.companyReviewed) {
+    body = (
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center gap-2.5">
+          <Badge label="Diária concluída" tone="neutral" icon="circle-check" />
+          <span className="flex-1 text-sm text-concrete-500">Falta a sua avaliação.</span>
+        </div>
+        <Button
+          label={`Avaliar ${first}`}
+          size="lg"
+          fullWidth
+          iconLeft="star"
+          className="lg:w-auto lg:px-8"
+          onClick={() => navigate(`/avaliar-trabalhador/${job.id}/${worker.id}`)}
+        />
+      </div>
+    );
   } else {
     body = (
       <div className="flex items-center gap-2.5">

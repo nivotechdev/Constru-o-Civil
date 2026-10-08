@@ -49,14 +49,25 @@ export interface Oficio {
 /** Days of the week a job can happen on (see utils/jobInfo.ts). */
 export type DiasKey = 'semana' | 'fimdesemana' | 'qualquer';
 
+/** Which side a review is about (who wrote it is the other side). */
+export type ReviewDirection = 'para_construtora' | 'para_trabalhador';
+
+/** One side's review of the other after a concluded diária (B03/B04). */
 export interface Review {
-  /** Set on reviews a company received (written by a worker). */
-  author?: string;
-  /** Set on reviews a worker received (written by a company). */
-  company?: string;
+  id: string;
+  /** The candidacy it reviews (`null` on reviews imported from before the app tracked them). */
+  applicationId: string | null;
+  direction: ReviewDirection;
+  /** Who wrote it, as shown ("Construtora Meridiano", "Jorge M. · pedreiro"). */
+  authorLabel: string;
+  /** 1 to 5. */
   value: number;
-  text: string;
-  date: string;
+  /** Ready-made points ("Pagou no dia", "Chegou no horário"…). */
+  tags: string[];
+  /** Up to 300 characters; may be empty. */
+  comment: string;
+  /** ISO timestamp. */
+  createdAt: string;
 }
 
 export interface Company {
@@ -96,6 +107,8 @@ export interface Worker {
   lat: number;
   lon: number;
   rating: number;
+  /** How many reviews `rating` averages. */
+  reviewCount: number;
   jobsDone: number;
   novo?: boolean;
   verified: boolean;

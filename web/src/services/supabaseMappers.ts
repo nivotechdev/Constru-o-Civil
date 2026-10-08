@@ -19,10 +19,20 @@ import type {
 } from '../types/models';
 import type { TableInsert, TableRow } from '../types/supabase';
 
-type ReviewRow = Pick<
-  TableRow<'reviews'>,
-  'direction' | 'company_id' | 'worker_id' | 'author_label' | 'value' | 'text' | 'date_label'
->;
+type ReviewRow = TableRow<'reviews'>;
+
+export function reviewFromRow(r: ReviewRow): Review {
+  return {
+    id: r.id,
+    applicationId: r.application_id,
+    direction: r.direction,
+    authorLabel: r.author_label,
+    value: r.value,
+    tags: r.tags,
+    comment: r.comment,
+    createdAt: r.created_at
+  };
+}
 
 /** Copies `value` onto `target[key]` unless it is null/undefined (or false, for flags). */
 function setIf<T, K extends keyof T>(target: T, key: K, value: T[K] | null | undefined | false): void {
@@ -84,9 +94,7 @@ export function companyFromRow(row: TableRow<'companies'>, reviews: ReviewRow[] 
     rating: row.rating,
     reviewCount: row.review_count,
     verified: row.verified,
-    reviews: reviews
-      .filter((r) => r.direction === 'para_construtora' && r.company_id === row.id)
-      .map((r) => ({ author: r.author_label, value: r.value, text: r.text, date: r.date_label }))
+    reviews: reviews.filter((r) => r.direction === 'para_construtora' && r.company_id === row.id).map(reviewFromRow)
   };
   setIf(company, 'cnpj', row.cnpj);
   setIf(company, 'tipoObra', row.tipo_obra);
@@ -129,13 +137,12 @@ export function workerFromRow(row: TableRow<'workers'>, reviews: ReviewRow[] = [
     lat: row.lat,
     lon: row.lon,
     rating: row.rating,
+    reviewCount: row.review_count,
     jobsDone: row.jobs_done,
     verified: row.verified,
     specialties: row.specialties,
     facts: row.facts,
-    reviews: reviews
-      .filter((r) => r.direction === 'para_trabalhador' && r.worker_id === row.id)
-      .map((r) => ({ company: r.author_label, value: r.value, text: r.text, date: r.date_label }))
+    reviews: reviews.filter((r) => r.direction === 'para_trabalhador' && r.worker_id === row.id).map(reviewFromRow)
   };
   setIf(worker, 'novo', row.novo);
   return worker;
@@ -153,6 +160,7 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
     lat: worker.lat,
     lon: worker.lon,
     rating: worker.rating,
+    review_count: worker.reviewCount,
     jobs_done: worker.jobsDone,
     novo: Boolean(worker.novo),
     verified: worker.verified,
@@ -165,27 +173,29 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
 
 function reviewRow(
   review: Review,
-  direction: ReviewRow['direction'],
   ids: { company_id: string | null; worker_id: string | null }
 ): TableInsert<'reviews'> {
   return {
-    direction,
+    id: review.id,
+    application_id: review.applicationId,
+    direction: review.direction,
     ...ids,
-    author_label: (direction === 'para_construtora' ? review.author : review.company) ?? '',
+    author_label: review.authorLabel,
     value: review.value,
-    text: review.text,
-    date_label: review.date
+    tags: review.tags,
+    comment: review.comment,
+    created_at: review.createdAt
   };
 }
 
 /** A company's reviews (written by workers), in the order they are shown. */
 export function companyReviewsToRows(company: Company): TableInsert<'reviews'>[] {
-  return company.reviews.map((r) => reviewRow(r, 'para_construtora', { company_id: company.id, worker_id: null }));
+  return company.reviews.map((r) => reviewRow(r, { company_id: company.id, worker_id: null }));
 }
 
 /** A worker's reviews (written by companies), in the order they are shown. */
 export function workerReviewsToRows(worker: Worker): TableInsert<'reviews'>[] {
-  return worker.reviews.map((r) => reviewRow(r, 'para_trabalhador', { company_id: null, worker_id: worker.id }));
+  return worker.reviews.map((r) => reviewRow(r, { company_id: null, worker_id: worker.id }));
 }
 
 // ---- jobs ----

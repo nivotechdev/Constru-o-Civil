@@ -30,7 +30,7 @@ export default function JobClosed({ params }: ScreenProps) {
   const job = getJob(db, params.id);
   const team = job
     ? applicationsForJob(db, job.id)
-        .filter((a) => contactOpen(a.status))
+        .filter((a) => contactOpen(a.status) || a.status === 'concluida')
         .map((a) => ({ app: a, worker: getWorker(db, a.workerId) as Worker }))
     : [];
   if (!job || team.length === 0) {
@@ -76,7 +76,18 @@ export default function JobClosed({ params }: ScreenProps) {
                     <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${workerPlace(worker)}`}</span>
                   </div>
                 </div>
-                <ContactButton applicationId={app.id} fullWidth />
+                {contactOpen(app.status) ? (
+                  <ContactButton applicationId={app.id} fullWidth />
+                ) : !app.companyReviewed ? (
+                  <Button
+                    label={`Avaliar ${worker.name.split(' ')[0]}`}
+                    fullWidth
+                    iconLeft="star"
+                    onClick={() => navigate(`/avaliar-trabalhador/${job.id}/${worker.id}`)}
+                  />
+                ) : (
+                  <span className="text-sm text-concrete-500">Diária concluída e avaliada.</span>
+                )}
               </div>
             </Card>
           ))}

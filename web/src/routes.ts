@@ -73,6 +73,7 @@ const JobManage = screen(() => import('./pages/recruiter/JobManage'));
 const JobClosed = screen(() => import('./pages/recruiter/JobClosed'));
 const BoostJob = screen(() => import('./pages/recruiter/BoostJob'));
 const History = screen(() => import('./pages/recruiter/History'));
+const RateWorker = screen(() => import('./pages/recruiter/RateWorker'));
 
 export interface RouteDef extends Screen {
   /** Who may open it (see services/guards.ts). */
@@ -124,7 +125,8 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/vaga-gerenciar/:id', company(JobManage)),
   compileRoute('/fechado/:id', company(JobClosed)),
   compileRoute('/impulsionar/:id', company(BoostJob)),
-  compileRoute('/historico', company(History))
+  compileRoute('/historico', company(History)),
+  compileRoute('/avaliar-trabalhador/:jobId/:workerId', company(RateWorker))
 ];
 
 const AUTH_FLOW = new Set([
