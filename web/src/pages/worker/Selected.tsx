@@ -16,6 +16,7 @@ import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { dateText } from '../../utils/jobInfo';
+import { jobTitle } from '../../services/catalog';
 import { workerToCompanyUrl } from '../../utils/whatsapp';
 
 export default function Selected({ params }: ScreenProps) {
@@ -43,7 +44,7 @@ export default function Selected({ params }: ScreenProps) {
       <div className="bg-brand-500 text-white px-4 sm:px-6 py-7 flex flex-col gap-3 lg:rounded-card">
         <Badge label={isHired ? 'Contratado' : 'Pré-selecionado'} tone="inverse" icon="circle-check" />
         <h1 className="font-display font-bold text-3xl leading-tight text-white">{title}</h1>
-        <p className="text-white/85">{`${job.role} · ${dateText(job)}`}</p>
+        <p className="text-white/85">{`${jobTitle(job)} · ${dateText(job)}`}</p>
       </div>
       <div className="flex flex-col gap-4 px-4 sm:px-0 py-4">
         <Card padding="md">

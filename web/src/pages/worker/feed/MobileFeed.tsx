@@ -15,6 +15,7 @@ import { navigate } from '../../../services/router';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
 import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
+import { oficioNome } from '../../../services/catalog';
 import { setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
 
 export interface FeedLayoutProps {
@@ -74,7 +75,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query }: FeedL
                 </span>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-concrete-900 truncate">{w.name}</span>
-                  <span className="text-sm text-concrete-500 truncate">{`${w.role} · ${w.region}`}</span>
+                  <span className="text-sm text-concrete-500 truncate">{`${oficioNome(w.oficioId)} · ${w.region}`}</span>
                 </div>
                 <Rating value={w.rating} count={w.jobsDone} />
               </div>

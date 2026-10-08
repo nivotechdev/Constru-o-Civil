@@ -4,6 +4,8 @@ import type { IconName } from '../../../components/icons/Icon';
 import { allCompanies, allWorkers, companyOf, isMine } from '../../../services/selectors';
 import { DEFAULT_CITY } from '../../../services/cities';
 import { setUI } from '../../../services/store';
+import { jobTitle, oficioNome, oficioSearchText } from '../../../services/catalog';
+import { fold } from '../../../utils/text';
 import type { Company, Database, Job, Role, Worker } from '../../../types/models';
 
 export const FEED_KEY = 'feed';
@@ -15,7 +17,8 @@ export interface FeedUI {
   location: string;
   filtersOpen: boolean;
   pickerOpen: boolean;
-  tipo: string | null;
+  /** Ofício filter (catalog id). */
+  oficio: string | null;
   dist: string;
   quando: string | null;
   sort: Sort;
@@ -23,12 +26,17 @@ export interface FeedUI {
 }
 
 /** The filters that decide which jobs the mural lists. */
-export type FeedFilters = Pick<FeedUI, 'location' | 'tipo' | 'dist' | 'quando'>;
+export type FeedFilters = Pick<FeedUI, 'location' | 'oficio' | 'dist' | 'quando'>;
 
 // Every seed job is in the city of São Paulo; a job may name another city in `city`.
 export { DEFAULT_CITY };
 const jobCity = (job: Job) => job.city || DEFAULT_CITY;
-export const NO_FILTERS: Partial<FeedUI> = { tipo: null, dist: 'Toda a cidade', quando: null, location: DEFAULT_CITY };
+export const NO_FILTERS: Partial<FeedUI> = {
+  oficio: null,
+  dist: 'Toda a cidade',
+  quando: null,
+  location: DEFAULT_CITY
+};
 export const SORTS: { id: Sort; label: string }[] = [
   { id: 'perto', label: 'Mais perto' },
   { id: 'valor', label: 'Maior valor' },
@@ -39,7 +47,7 @@ export const FEED_DEFAULTS: FeedUI = {
   location: DEFAULT_CITY,
   filtersOpen: false,
   pickerOpen: false,
-  tipo: null,
+  oficio: null,
   dist: 'Toda a cidade',
   quando: null,
   sort: 'perto',
@@ -83,7 +91,7 @@ export function orderJobs(jobs: Job[], role: Role, sort: Sort = 'perto') {
 export function passesFilters(j: Job, filters: FeedFilters) {
   return (
     jobCity(j) === filters.location &&
-    (!filters.tipo || j.role === filters.tipo) &&
+    (!filters.oficio || j.oficioId === filters.oficio) &&
     (filters.dist === 'Toda a cidade' || km(j.distance) <= parseInt(filters.dist.replace(/\D/g, ''), 10)) &&
     matchesQuando(j, filters.quando)
   );
@@ -100,7 +108,9 @@ export function activeFilters(filters: FeedFilters): ActiveFilter[] {
     filters.location !== DEFAULT_CITY
       ? { label: filters.location, icon: 'map-pin', remove: () => setFeed({ location: DEFAULT_CITY }) }
       : null,
-    filters.tipo ? { label: filters.tipo, icon: 'hard-hat', remove: () => setFeed({ tipo: null }) } : null,
+    filters.oficio
+      ? { label: oficioNome(filters.oficio), icon: 'hard-hat', remove: () => setFeed({ oficio: null }) }
+      : null,
     filters.dist !== 'Toda a cidade'
       ? { label: filters.dist, icon: 'map-pin', remove: () => setFeed({ dist: 'Toda a cidade' }) }
       : null,
@@ -115,14 +125,21 @@ export interface SearchMatches {
   workers: Worker[];
 }
 
-/** What a search (`q`, lowercased) finds among the open jobs, the companies and the workers. */
-export function searchMatches(db: Database, open: Job[], q: string, role: Role): SearchMatches {
+/**
+ * What a search finds among the open jobs, the companies and the workers. Accents and case are ignored,
+ * and a trade is found by its name or any synonym ("hidráulica" finds the encanador jobs).
+ */
+export function searchMatches(db: Database, open: Job[], query: string, role: Role): SearchMatches {
+  const q = fold(query.trim());
+  const has = (...parts: string[]) => fold(parts.join(' ')).includes(q);
   return {
     jobs: orderJobs(
-      open.filter((j) => (j.role + ' ' + companyOf(db, j).name + ' ' + j.location).toLowerCase().includes(q)),
+      open.filter(
+        (j) => has(jobTitle(j), companyOf(db, j).name, j.location) || oficioSearchText(j.oficioId).includes(q)
+      ),
       role
     ),
-    companies: allCompanies(db).filter((c) => (c.name + ' ' + c.location).toLowerCase().includes(q)),
-    workers: allWorkers(db).filter((w) => (w.name + ' ' + w.role + ' ' + w.region).toLowerCase().includes(q))
+    companies: allCompanies(db).filter((c) => has(c.name, c.location)),
+    workers: allWorkers(db).filter((w) => has(w.name, w.region) || oficioSearchText(w.oficioId).includes(q))
   };
 }

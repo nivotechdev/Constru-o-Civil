@@ -5,10 +5,11 @@ import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { JobTile } from '../../components/JobTile';
 import { PhotoManager } from '../../components/PhotoManager';
+import { Select } from '../../components/Select';
 import { Tag } from '../../components/Tag';
 import { TextArea } from '../../components/TextArea';
 import { useDb, useUI } from '../../hooks/useStore';
-import { REQUISITOS_OPCOES } from '../../services/catalog';
+import { OFICIO_OPTIONS, REQUISITOS_OPCOES } from '../../services/catalog';
 import { errorMessage } from '../../services/errors';
 import { publishJob } from '../../services/jobs';
 import { goBack, navigate } from '../../services/router';
@@ -21,13 +22,15 @@ import { toggleItem } from '../../utils/list';
 
 const KEY = 'create-job';
 
-type ErrorKey = 'tipo' | 'local' | 'dias' | 'periodo' | 'diarias' | 'vagas' | 'valor' | 'detalhe';
+type ErrorKey = 'oficio' | 'local' | 'dias' | 'periodo' | 'diarias' | 'vagas' | 'valor' | 'detalhe';
 type Errors = Partial<Record<ErrorKey, string | null>>;
 
 interface CreateJobUI {
   step: 1 | 2;
   fotos: string[];
-  tipo: string;
+  oficioId: string;
+  /** Optional heading; without it the trade's name is shown. */
+  titulo: string;
   local: string;
   dias: DiasKey | null;
   data: string;
@@ -51,7 +54,7 @@ function digits(v: string, max: number) {
 // Step 1: what, where, when and how many. Hours are optional, but if one end is filled in, so must the other.
 function validateStep1(ui: CreateJobUI): Errors {
   const errors: Errors = {};
-  if (!ui.tipo.trim()) errors.tipo = 'Escreva o tipo de serviço da vaga.';
+  if (!ui.oficioId) errors.oficio = 'Escolha o ofício que a vaga precisa.';
   if (!ui.local.trim()) errors.local = 'Informe o endereço da obra.';
   if (!ui.dias) errors.dias = 'Escolha em que dias o bico pode acontecer.';
   if (Boolean(ui.periodoInicio) !== Boolean(ui.periodoFim))
@@ -78,7 +81,8 @@ export default function CreateJob() {
   const [ui, setUi] = useUI<CreateJobUI>(KEY, () => ({
     step: 1,
     fotos: [],
-    tipo: '',
+    oficioId: '',
+    titulo: '',
     local: '',
     dias: null,
     data: '',
@@ -120,7 +124,8 @@ export default function CreateJob() {
     setUi({ publishing: true, publishError: null });
     const diariasNum = Number(ui.diarias) || 1;
     publishJob({
-      role: ui.tipo.trim(),
+      oficioId: ui.oficioId,
+      title: ui.titulo.trim() || null,
       pay: ui.negociavel ? null : parseInt(ui.valor, 10),
       address: ui.local,
       date: ui.data.trim() || null,
@@ -149,14 +154,22 @@ export default function CreateJob() {
           Até 6 fotos do canteiro. A primeira vira a capa do bico no mural.
         </span>
       </div>
+      <Select
+        label="Ofício"
+        placeholder="Escolha o ofício da vaga"
+        options={OFICIO_OPTIONS}
+        value={ui.oficioId}
+        error={ui.errors.oficio}
+        onChange={(v) => setUi({ oficioId: v, errors: { ...ui.errors, oficio: null } })}
+      />
       <Input
-        id="create-job-tipo"
-        label="Tipo de serviço"
-        placeholder="Ex.: Pedreiro de acabamento"
-        icon="hammer"
-        value={ui.tipo}
-        error={ui.errors.tipo}
-        onInput={(v) => setUi({ tipo: v, errors: { ...ui.errors, tipo: null } })}
+        id="create-job-titulo"
+        label="Título (opcional)"
+        placeholder="Ex.: Pedreiro para reboco de fachada"
+        icon="pencil"
+        hint="Sem título, a vaga aparece com o nome do ofício."
+        value={ui.titulo}
+        onInput={(v) => setUi({ titulo: v.slice(0, 60) })}
       />
       <Input
         id="create-job-local"
@@ -352,7 +365,8 @@ export default function CreateJob() {
           <JobTile
             job={{
               id: 'previa',
-              role: ui.tipo.trim() || 'Tipo de serviço',
+              oficioId: ui.oficioId,
+              title: ui.titulo.trim() || (ui.oficioId ? null : 'Ofício da vaga'),
               location: 'Tatuapé, SP',
               dias: ui.dias,
               date: ui.data.trim() || null,
@@ -361,7 +375,6 @@ export default function CreateJob() {
               photos: ui.fotos
             }}
             company={getCompany(db, currentCompanyId())}
-            onClick={() => {}}
           />
         </div>
       </div>

@@ -126,7 +126,7 @@ export async function signUp(data: SignUpData): Promise<SignUpResult> {
       id: 't-' + stamp,
       name: data.name.trim(),
       initials: initialsOf(data.name),
-      role: '',
+      oficioId: '',
       region: DEFAULT_CITY,
       distance: '0 km',
       rating: 0,
@@ -176,7 +176,7 @@ export async function resendConfirmationEmail(): Promise<void> {
 }
 
 export type ProfileData =
-  | { role: 'trabalhador'; cargo: string; city: string; specialties: string[] }
+  | { role: 'trabalhador'; oficioId: string; city: string; specialties: string[] }
   | { role: 'recrutador'; tipoObra: string; city: string };
 
 /** Last step of sign-up: saves "Completar perfil" and lets the account into the app. Backend: update the profile row. */
@@ -185,7 +185,11 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
   const session = getSession();
   if (!session) return;
   if (profile.role === 'trabalhador' && session.workerId) {
-    updateWorker(session.workerId, { role: profile.cargo, region: profile.city, specialties: profile.specialties });
+    updateWorker(session.workerId, {
+      oficioId: profile.oficioId,
+      region: profile.city,
+      specialties: profile.specialties
+    });
   } else if (profile.role === 'recrutador' && session.companyId) {
     updateCompany(session.companyId, { tipoObra: profile.tipoObra, location: profile.city });
   }

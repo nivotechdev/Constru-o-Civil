@@ -18,6 +18,7 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { companyOf, getJob } from '../../services/selectors';
 import { dateText } from '../../utils/jobInfo';
+import { jobTitle } from '../../services/catalog';
 import { toggleItem } from '../../utils/list';
 
 const OPTIONS: { id: string; label: string; icon: IconName }[] = [
@@ -60,7 +61,7 @@ export default function RateJob({ params }: ScreenProps) {
       <div className="flex flex-col gap-5 px-4 sm:px-0 py-4">
         <div className="flex flex-col gap-1">
           <h1 className="font-display font-bold text-2xl text-concrete-900">Como foi a diária?</h1>
-          <span className="text-sm text-concrete-500">{`${job.role} · ${company.name} · ${dateText(job)}`}</span>
+          <span className="text-sm text-concrete-500">{`${jobTitle(job)} · ${company.name} · ${dateText(job)}`}</span>
         </div>
         <Card padding="md">
           <div className="flex flex-col items-center gap-3">

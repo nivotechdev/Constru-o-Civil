@@ -98,7 +98,8 @@ describe('simulated backend calls keep the legacy delays', () => {
     const { store, sel, jobs } = s;
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const draft = {
-      role: 'Pintor',
+      oficioId: 'pintor',
+      title: null,
       pay: 180,
       address: 'Rua A, 10',
       date: 'Amanhã',
@@ -138,7 +139,7 @@ describe('reference data served by services', () => {
 
   it('offers the seed option lists and the three boost plans', async () => {
     const catalog = await import('../services/catalog');
-    expect(catalog.TIPOS_SERVICO).toEqual(seed.TIPOS_SERVICO);
+    expect(catalog.OFICIOS).toEqual(seed.OFICIOS);
     expect(catalog.REQUISITOS_OPCOES).toEqual(seed.REQUISITOS_OPCOES);
     expect(catalog.BOOST_PLANS.map((p) => `${p.id} ${p.price}`)).toEqual(['24h R$ 12', '3d R$ 28', 'whats R$ 39']);
   });

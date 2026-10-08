@@ -37,6 +37,15 @@ export interface Session {
   profileComplete: boolean;
 }
 
+/** A trade from the one catalog (services/catalog.ts): what a job asks for and what a worker does. */
+export interface Oficio {
+  /** Stable id, stored on jobs and workers ("pedreiro-acabamento"). */
+  id: string;
+  nome: string;
+  /** Other words for the trade; the search finds it by any of them. */
+  sinonimos: string[];
+}
+
 /** Days of the week a job can happen on (see utils/jobInfo.ts). */
 export type DiasKey = 'semana' | 'fimdesemana' | 'qualquer';
 
@@ -71,7 +80,8 @@ export interface Worker {
   id: string;
   name: string;
   initials: string;
-  role: string;
+  /** Main trade (catalog id); '' until the profile is completed. */
+  oficioId: string;
   region: string;
   distance: string;
   rating: number;
@@ -86,7 +96,10 @@ export interface Worker {
 export interface Job {
   id: string;
   companyId: string;
-  role: string;
+  /** The trade the job asks for (catalog id). */
+  oficioId: string;
+  /** Optional heading ("Pedreiro para reboco de fachada"); without it the trade's name is shown. */
+  title: string | null;
   /** Fixed R$ per diária; `null` means "A combinar". */
   pay: number | null;
   location: string;

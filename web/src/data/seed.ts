@@ -1,4 +1,5 @@
 import type { Account, Application, Company, Job, Worker, WorkerPost } from '../types/models';
+export { OFICIOS } from './oficios';
 
 // Mock marketplace data. In production this is an API — here it seeds the in-memory
 // store (see services/store.ts), which is the single source of truth every screen reads from,
@@ -164,7 +165,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'jorge',
     name: 'Jorge Mendes',
     initials: 'JM',
-    role: 'Pedreiro de acabamento',
+    oficioId: 'pedreiro-acabamento',
     region: 'Tatuapé, SP',
     distance: '3,2 km',
     rating: 4.8,
@@ -202,7 +203,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'rafael',
     name: 'Rafael Duarte',
     initials: 'RD',
-    role: 'Servente de obra',
+    oficioId: 'servente',
     region: 'Vila Prudente, SP',
     distance: '1,8 km',
     rating: 4.5,
@@ -218,7 +219,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'nelson',
     name: 'Nelson Aquino',
     initials: 'NA',
-    role: 'Azulejista',
+    oficioId: 'azulejista',
     region: 'Tatuapé, SP',
     distance: '1,6 km',
     rating: 4.9,
@@ -239,7 +240,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'bruno',
     name: 'Bruno Tavares',
     initials: 'BT',
-    role: 'Servente de obra',
+    oficioId: 'servente',
     region: 'Vila Prudente, SP',
     distance: '2,9 km',
     rating: 4.8,
@@ -260,7 +261,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'marcos',
     name: 'Marcos Aurélio',
     initials: 'MA',
-    role: 'Servente e ajudante',
+    oficioId: 'servente',
     region: 'Penha, SP',
     distance: '5,1 km',
     rating: 4.6,
@@ -276,7 +277,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'silas',
     name: 'Silas Pereira',
     initials: 'SP',
-    role: 'Azulejista',
+    oficioId: 'azulejista',
     region: 'Mooca, SP',
     distance: '2,4 km',
     rating: 0,
@@ -295,7 +296,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'vitor',
     name: 'Vitor Camargo',
     initials: 'VC',
-    role: 'Pedreiro',
+    oficioId: 'pedreiro',
     region: 'Tatuapé, SP',
     distance: '2,1 km',
     rating: 4.7,
@@ -309,7 +310,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'caio',
     name: 'Caio Nogueira',
     initials: 'CN',
-    role: 'Pedreiro de acabamento',
+    oficioId: 'pedreiro-acabamento',
     region: 'Penha, SP',
     distance: '7,4 km',
     rating: 4.2,
@@ -325,7 +326,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'edson',
     name: 'Edson Batista',
     initials: 'EB',
-    role: 'Pedreiro',
+    oficioId: 'pedreiro',
     region: 'Belém, SP',
     distance: '6,8 km',
     rating: 4.9,
@@ -346,7 +347,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'joel',
     name: 'Joel Ribeiro',
     initials: 'JR',
-    role: 'Ajudante geral',
+    oficioId: 'ajudante-geral',
     region: 'Belém, SP',
     distance: '6,1 km',
     rating: 0,
@@ -365,7 +366,7 @@ export const WORKERS: Record<string, Worker> = {
     id: 'antonio',
     name: 'Antônio Ferraz',
     initials: 'AF',
-    role: 'Servente de obra',
+    oficioId: 'servente',
     region: 'Vila Prudente, SP',
     distance: '4,0 km',
     rating: 4.6,
@@ -382,7 +383,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4821': {
     id: 'BC-4821',
     companyId: 'meridiano',
-    role: 'Pedreiro de acabamento',
+    oficioId: 'pedreiro-acabamento',
+    title: null,
     pay: 220,
     location: 'Tatuapé, SP',
     address: 'Rua Serra de Bragança, 1240',
@@ -402,7 +404,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4822': {
     id: 'BC-4822',
     companyId: 'alvorada',
-    role: 'Pintor',
+    oficioId: 'pintor',
+    title: null,
     pay: null,
     location: 'Mooca, SP',
     address: 'Rua da Mooca, 3180',
@@ -420,7 +423,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4855': {
     id: 'BC-4855',
     companyId: 'vila-formosa',
-    role: 'Eletricista',
+    oficioId: 'eletricista',
+    title: null,
     pay: null,
     location: 'Vila Formosa, SP',
     address: 'Rua Vila Formosa, 210',
@@ -441,7 +445,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4830': {
     id: 'BC-4830',
     companyId: 'vila-prudente',
-    role: 'Servente de obra',
+    oficioId: 'servente',
+    title: null,
     pay: 150,
     location: 'Vila Prudente, SP',
     address: 'Av. Vila Ema, 2790',
@@ -458,7 +463,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4835': {
     id: 'BC-4835',
     companyId: 'serra-braganca',
-    role: 'Azulejista',
+    oficioId: 'azulejista',
+    title: null,
     pay: 260,
     location: 'Tatuapé, SP',
     address: 'Rua Serra de Bragança, 640',
@@ -478,7 +484,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4841': {
     id: 'BC-4841',
     companyId: 'meridiano',
-    role: 'Armador',
+    oficioId: 'armador',
+    title: null,
     pay: 240,
     location: 'Penha, SP',
     address: 'Rua Cantagalo, 890',
@@ -495,7 +502,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4848': {
     id: 'BC-4848',
     companyId: 'belem',
-    role: 'Ajudante geral',
+    oficioId: 'ajudante-geral',
+    title: null,
     pay: 140,
     location: 'Belém, SP',
     address: 'Rua Padre Adelino, 410',
@@ -511,7 +519,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4998': {
     id: 'BC-4998',
     companyId: 'meridiano',
-    role: 'Servente de obra',
+    oficioId: 'servente',
+    title: null,
     pay: 150,
     location: 'Vila Prudente, SP',
     address: 'Av. Vila Ema, 2790',
@@ -528,7 +537,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4995': {
     id: 'BC-4995',
     companyId: 'meridiano',
-    role: 'Azulejista',
+    oficioId: 'azulejista',
+    title: null,
     pay: 260,
     location: 'Tatuapé, SP',
     address: 'Rua Serra de Bragança, 640',
@@ -544,7 +554,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5010': {
     id: 'BC-5010',
     companyId: 'alvorada',
-    role: 'Eletricista',
+    oficioId: 'eletricista',
+    title: null,
     pay: 250,
     location: 'Mooca, SP',
     address: 'Rua Taquari, 1180',
@@ -562,7 +573,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5011': {
     id: 'BC-5011',
     companyId: 'serra-braganca',
-    role: 'Pintor',
+    oficioId: 'pintor',
+    title: 'Pintor de fachada',
     pay: 200,
     location: 'Tatuapé, SP',
     address: 'Rua Tuiuti, 2210',
@@ -578,7 +590,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5012': {
     id: 'BC-5012',
     companyId: 'vila-prudente',
-    role: 'Encanador',
+    oficioId: 'encanador',
+    title: null,
     pay: null,
     location: 'Vila Prudente, SP',
     address: 'Rua Ibitirama, 845',
@@ -595,7 +608,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5013': {
     id: 'BC-5013',
     companyId: 'belem',
-    role: 'Servente de obra',
+    oficioId: 'servente',
+    title: null,
     pay: 150,
     location: 'Belém, SP',
     address: 'Rua Siqueira Bueno, 1320',
@@ -611,7 +625,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5014': {
     id: 'BC-5014',
     companyId: 'alvorada',
-    role: 'Azulejista',
+    oficioId: 'azulejista',
+    title: null,
     pay: 280,
     location: 'Mooca, SP',
     address: 'Rua Javari, 540',
@@ -628,7 +643,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5015': {
     id: 'BC-5015',
     companyId: 'vila-formosa',
-    role: 'Carpinteiro',
+    oficioId: 'carpinteiro',
+    title: null,
     pay: 260,
     location: 'Vila Formosa, SP',
     address: 'Av. Renata, 910',
@@ -644,7 +660,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5016': {
     id: 'BC-5016',
     companyId: 'cangaiba',
-    role: 'Pedreiro',
+    oficioId: 'pedreiro',
+    title: 'Pedreiro para muro de divisa',
     pay: 230,
     location: 'Cangaíba, SP',
     address: 'Rua Pedro Álvares, 77',
@@ -661,7 +678,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5017': {
     id: 'BC-5017',
     companyId: 'aricanduva',
-    role: 'Ajudante geral',
+    oficioId: 'ajudante-geral',
+    title: null,
     pay: 130,
     location: 'Aricanduva, SP',
     address: 'Rua Olga Fadel Abarca, 300',
@@ -678,7 +696,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5018': {
     id: 'BC-5018',
     companyId: 'serra-braganca',
-    role: 'Gesseiro',
+    oficioId: 'gesseiro',
+    title: null,
     pay: 240,
     location: 'Tatuapé, SP',
     address: 'Rua Apucarana, 1450',
@@ -694,7 +713,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5019': {
     id: 'BC-5019',
     companyId: 'vila-prudente',
-    role: 'Pintor',
+    oficioId: 'pintor',
+    title: null,
     pay: 190,
     location: 'Vila Prudente, SP',
     address: 'Av. Paes de Barros, 3100',
@@ -710,7 +730,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5020': {
     id: 'BC-5020',
     companyId: 'belem',
-    role: 'Eletricista',
+    oficioId: 'eletricista',
+    title: null,
     pay: null,
     location: 'Belém, SP',
     address: 'Av. Álvaro Ramos, 890',
@@ -726,7 +747,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5021': {
     id: 'BC-5021',
     companyId: 'alvorada',
-    role: 'Mestre de obras',
+    oficioId: 'mestre-de-obras',
+    title: null,
     pay: 380,
     location: 'Mooca, SP',
     address: 'Rua dos Trilhos, 1600',
@@ -742,7 +764,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5022': {
     id: 'BC-5022',
     companyId: 'cangaiba',
-    role: 'Servente de obra',
+    oficioId: 'servente',
+    title: null,
     pay: 140,
     location: 'Cangaíba, SP',
     address: 'Rua Dr. Assis Ribeiro, 2200',
@@ -759,7 +782,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5023': {
     id: 'BC-5023',
     companyId: 'vila-formosa',
-    role: 'Encanador',
+    oficioId: 'encanador',
+    title: null,
     pay: 220,
     location: 'Vila Formosa, SP',
     address: 'Rua Itapeti, 60',
@@ -775,7 +799,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5024': {
     id: 'BC-5024',
     companyId: 'serra-braganca',
-    role: 'Pedreiro de acabamento',
+    oficioId: 'pedreiro-acabamento',
+    title: null,
     pay: 240,
     location: 'Tatuapé, SP',
     address: 'Rua Cantagalo, 1220',
@@ -791,7 +816,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5025': {
     id: 'BC-5025',
     companyId: 'meridiano',
-    role: 'Telhadista',
+    oficioId: 'telhadista',
+    title: null,
     pay: 250,
     location: 'Penha, SP',
     address: 'Rua Padre João, 480',
@@ -807,7 +833,8 @@ export const JOBS: Record<string, Job> = {
   'BC-5026': {
     id: 'BC-5026',
     companyId: 'meridiano',
-    role: 'Pintor',
+    oficioId: 'pintor',
+    title: null,
     pay: 210,
     location: 'Tatuapé, SP',
     address: 'Rua Itapura, 900',
@@ -824,7 +851,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4712': {
     id: 'BC-4712',
     companyId: 'aricanduva',
-    role: 'Ajudante geral',
+    oficioId: 'ajudante-geral',
+    title: null,
     pay: 140,
     location: 'Aricanduva, SP',
     address: 'Av. Aricanduva, 5200',
@@ -841,7 +869,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4703': {
     id: 'BC-4703',
     companyId: 'cangaiba',
-    role: 'Servente de obra',
+    oficioId: 'servente',
+    title: null,
     pay: 150,
     location: 'Cangaíba, SP',
     address: 'Rua Cachoeira Tijuco Preto, 75',
@@ -858,7 +887,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4698': {
     id: 'BC-4698',
     companyId: 'alvorada',
-    role: 'Pintor',
+    oficioId: 'pintor',
+    title: null,
     pay: 190,
     location: 'Mooca, SP',
     address: 'Rua da Mooca, 3180',
@@ -875,7 +905,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4960': {
     id: 'BC-4960',
     companyId: 'meridiano',
-    role: 'Pintor',
+    oficioId: 'pintor',
+    title: null,
     pay: 190,
     location: 'Mooca, SP',
     address: 'Rua da Mooca, 3180',
@@ -892,7 +923,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4944': {
     id: 'BC-4944',
     companyId: 'meridiano',
-    role: 'Armador',
+    oficioId: 'armador',
+    title: null,
     pay: 240,
     location: 'Penha, SP',
     address: 'Rua Cantagalo, 890',
@@ -911,7 +943,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4918': {
     id: 'BC-4918',
     companyId: 'meridiano',
-    role: 'Pedreiro de acabamento',
+    oficioId: 'pedreiro-acabamento',
+    title: null,
     pay: 220,
     location: 'Tatuapé, SP',
     address: 'Rua Serra de Bragança, 1240',
@@ -928,7 +961,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4899': {
     id: 'BC-4899',
     companyId: 'meridiano',
-    role: 'Pedreiro de acabamento',
+    oficioId: 'pedreiro-acabamento',
+    title: null,
     pay: 220,
     location: 'Tatuapé, SP',
     address: 'Rua Serra de Bragança, 1240',
@@ -945,7 +979,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4870': {
     id: 'BC-4870',
     companyId: 'meridiano',
-    role: 'Servente de obra',
+    oficioId: 'servente',
+    title: null,
     pay: 150,
     location: 'Vila Prudente, SP',
     address: 'Av. Vila Ema, 2790',
@@ -988,16 +1023,6 @@ export const APPLICATIONS: Application[] = [
 
 export const SAVED_JOB_IDS: string[] = ['BC-4841', 'BC-4848', 'BC-4712', 'BC-4698'];
 
-export const CARGOS_TRABALHADOR = [
-  'Pedreiro de acabamento',
-  'Servente de obra',
-  'Pintor',
-  'Eletricista',
-  'Azulejista',
-  'Armador',
-  'Ajudante geral',
-  'Encanador'
-];
 export const REGIOES_TRABALHADOR = [
   'Tatuapé, SP',
   'Mooca, SP',
@@ -1017,7 +1042,6 @@ export const ESPECIALIDADES = [
 ];
 export const TIPOS_OBRA = ['Residencial', 'Comercial', 'Reforma', 'Residencial e reforma', 'Industrial'];
 export const REGIOES_RECRUTADOR = ['Zona Leste, SP', 'Zona Norte, SP', 'Zona Sul, SP', 'Zona Oeste, SP', 'Centro, SP'];
-export const TIPOS_SERVICO = ['Pedreiro', 'Servente', 'Azulejista', 'Pintor', 'Armador', 'Ajudante geral'];
 export const REQUISITOS_OPCOES = [
   'Botina e capacete próprios',
   'Ferramenta própria',

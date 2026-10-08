@@ -3,10 +3,13 @@ import { cx } from '../utils/cx';
 import { FieldError } from './FieldError';
 import { Icon } from './icons/Icon';
 
+/** A plain string is both the value and the label. */
+export type SelectOption = string | { value: string; label: string };
+
 interface SelectProps {
   label?: string;
   placeholder?: string;
-  options?: string[];
+  options?: SelectOption[];
   value?: string;
   onChange?: (value: string) => void;
   error?: string | null;
@@ -41,11 +44,14 @@ export function Select({ label, placeholder = 'Selecione', options = [], value =
           <option value="" disabled>
             {placeholder}
           </option>
-          {options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
+          {options.map((opt) => {
+            const { value: v, label: l } = typeof opt === 'string' ? { value: opt, label: opt } : opt;
+            return (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            );
+          })}
         </select>
         <span className="pointer-events-none absolute right-3 text-concrete-500">
           <Icon name="chevron-down" size={18} />

@@ -27,21 +27,21 @@ export default function Feed() {
   const role = useRole();
   const [ui] = useUI<FeedUI>(FEED_KEY, FEED_DEFAULTS);
   const query = useQuery('feed', loadFeed);
-  const { location, tipo, dist, quando, sort } = ui;
-  const q = ui.search.trim().toLowerCase();
+  const { location, oficio, dist, quando, sort } = ui;
+  const q = ui.search.trim();
 
   const open = useMemo(() => activeJobs(db).filter((j) => !isJobClosed(db, j)), [db]);
   const ordered = useMemo(
     () =>
       orderJobs(
-        open.filter((j) => passesFilters(j, { location, tipo, dist, quando })),
+        open.filter((j) => passesFilters(j, { location, oficio, dist, quando })),
         role,
         sort
       ),
-    [open, role, location, tipo, dist, quando, sort]
+    [open, role, location, oficio, dist, quando, sort]
   );
   const found = useMemo(() => (q ? searchMatches(db, open, q, role) : null), [db, open, q, role]);
-  const chips = useMemo(() => activeFilters({ location, tipo, dist, quando }), [location, tipo, dist, quando]);
+  const chips = useMemo(() => activeFilters({ location, oficio, dist, quando }), [location, oficio, dist, quando]);
 
   const layout = { db, role, ui, ordered, found, chips, query };
   return (

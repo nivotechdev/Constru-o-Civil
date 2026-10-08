@@ -10,7 +10,7 @@ import { Tag } from '../../components/Tag';
 import { useUI } from '../../hooks/useStore';
 import { DEFAULT_CITY } from '../../services/cities';
 import { finishSignUp } from '../../services/auth';
-import { CARGOS_TRABALHADOR, TIPOS_OBRA } from '../../services/catalog';
+import { OFICIO_OPTIONS, TIPOS_OBRA } from '../../services/catalog';
 import type { ScreenProps } from '../../types/screen';
 import { navigate } from '../../services/router';
 import {
@@ -83,13 +83,13 @@ interface WorkerUI {
   saveError: string | null;
   capa: string | null;
   photo: string | null;
-  cargo: string;
+  oficioId: string;
   cidade: string;
   pickerOpen: boolean;
   /** What is being typed in the specialties field. */
   especialidade: string;
   especialidades: string[];
-  errors: { cargo?: string | null; especialidades?: string | null };
+  errors: { oficioId?: string | null; especialidades?: string | null };
 }
 
 function WorkerFlow() {
@@ -99,7 +99,7 @@ function WorkerFlow() {
     saveError: null,
     capa: null,
     photo: null,
-    cargo: '',
+    oficioId: '',
     cidade: DEFAULT_CITY,
     pickerOpen: false,
     especialidade: '',
@@ -108,8 +108,8 @@ function WorkerFlow() {
   });
 
   const toStep1 = () => {
-    if (!ui.cargo) {
-      setUi({ errors: { cargo: 'Selecione seu cargo ou especialidade principal.' } });
+    if (!ui.oficioId) {
+      setUi({ errors: { oficioId: 'Escolha o seu ofício principal.' } });
       return;
     }
     setUi({ step: 1, errors: {} });
@@ -132,7 +132,7 @@ function WorkerFlow() {
       <Shell step={0} total={2} onContinue={toStep1} label="Continuar">
         <Heading
           overline="Completar perfil"
-          title="Capa, foto e o seu cargo"
+          title="Capa, foto e o seu ofício"
           help="Isso aparece no seu perfil para as construtoras que virem seu bico."
         />
         <div className="flex flex-col gap-2">
@@ -159,12 +159,12 @@ function WorkerFlow() {
           </div>
         </div>
         <Select
-          label="Cargo ou especialidade principal"
-          placeholder="Selecione seu cargo"
-          options={CARGOS_TRABALHADOR}
-          value={ui.cargo}
-          error={ui.errors.cargo}
-          onChange={(v) => setUi({ cargo: v, errors: { ...ui.errors, cargo: null } })}
+          label="Seu ofício principal"
+          placeholder="Escolha seu ofício"
+          options={OFICIO_OPTIONS}
+          value={ui.oficioId}
+          error={ui.errors.oficioId}
+          onChange={(v) => setUi({ oficioId: v, errors: { ...ui.errors, oficioId: null } })}
         />
       </Shell>
     );
@@ -182,7 +182,7 @@ function WorkerFlow() {
           return;
         }
         setUi({ saving: true, saveError: null });
-        finishSignUp({ role: 'trabalhador', cargo: ui.cargo, city: ui.cidade, specialties: ui.especialidades })
+        finishSignUp({ role: 'trabalhador', oficioId: ui.oficioId, city: ui.cidade, specialties: ui.especialidades })
           .then(() => {
             if (ui.capa) setUI<WorkerPhotoUI>(WORKER_PHOTO_KEY, { photo: ui.capa });
             setUi({ saving: false });

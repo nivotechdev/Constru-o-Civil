@@ -13,6 +13,7 @@ import { allJobs, applicationsForJob, currentCompanyId, getWorker } from '../../
 import type { ApplicationStatus } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
+import { jobTitle } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 
 const STATUS: Partial<Record<ApplicationStatus, StatusBadge & { hint: string }>> = {
@@ -60,7 +61,7 @@ export default function History() {
                         </span>
                         <div className="flex-1 min-w-0 flex flex-col">
                           <span className="font-semibold text-concrete-900 truncate">{worker.name}</span>
-                          <span className="text-sm text-concrete-500 truncate">{`${job.role} · ${dateText(job)}`}</span>
+                          <span className="text-sm text-concrete-500 truncate">{`${jobTitle(job)} · ${dateText(job)}`}</span>
                         </div>
                         <span className="font-mono font-bold text-lg text-concrete-900 shrink-0">
                           {formatPay(job.pay)}

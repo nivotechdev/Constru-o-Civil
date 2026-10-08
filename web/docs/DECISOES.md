@@ -52,3 +52,19 @@ para quem usa o app. Cada item diz de qual ID do plano veio.
 - **Erros de serviço têm código** (`offline`, `falha_demo`, `nao_autorizado`, `nao_encontrado`,
   `conflito`, `validacao`) e mensagem pronta em português; o back-end real deve mapear seus erros para
   esses códigos (ver `services/errors.ts`).
+
+## B07 — Catálogo único de ofícios
+
+- **14 ofícios** em `data/oficios.ts` (servidos por `services/catalog.ts`), cada um com `id` estável,
+  nome e sinônimos. Vaga e trabalhador guardam só o `oficioId`; a tabela `oficios` entra em
+  `types/supabase.ts`.
+- **"Pedreiro" e "Pedreiro de acabamento" são ofícios distintos**; o filtro do mural compara o id exato
+  (filtrar por Pedreiro não traz Pedreiro de acabamento). A busca por texto encontra os dois.
+- **Título da vaga é opcional** (até 60 caracteres). Sem título, a vaga aparece com o nome do ofício.
+- **Busca ignora acento e maiúsculas** e encontra vagas e trabalhadores por nome do ofício ou sinônimo
+  ("hidráulica" acha os encanadores).
+- **"Servente e ajudante"** (texto livre do seed) virou o ofício Servente.
+- **Testes de paridade com o app antigo** para o store e para a mensagem pronta do WhatsApp foram
+  aposentados: o modelo mudou de propósito (ids de catálogo, e nas próximas etapas datas reais e status
+  explícitos). As regras passaram a ser testadas diretamente (`store.test.ts`, `oficios.test.ts`). Os
+  testes de paridade das máscaras, textos de status e busca de cidades continuam.

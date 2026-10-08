@@ -14,6 +14,7 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { companyOf, currentWorker, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
+import { jobTitle, oficioNome } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 
 export default function ConfirmApplication({ params }: ScreenProps) {
@@ -42,7 +43,7 @@ export default function ConfirmApplication({ params }: ScreenProps) {
         <Card padding="md">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-0.5">
-              <span className="font-display font-semibold text-xl text-concrete-900">{job.role}</span>
+              <span className="font-display font-semibold text-xl text-concrete-900">{jobTitle(job)}</span>
               <span className="text-sm text-concrete-700">{company.name}</span>
             </div>
             <div className="flex gap-3">
@@ -61,7 +62,7 @@ export default function ConfirmApplication({ params }: ScreenProps) {
               </span>
               <div className="flex flex-col">
                 <span className="font-semibold text-concrete-900">{worker.name}</span>
-                <span className="text-sm text-concrete-500">{`${worker.role} · ${worker.rating}`}</span>
+                <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${worker.rating}`}</span>
               </div>
             </div>
           </div>

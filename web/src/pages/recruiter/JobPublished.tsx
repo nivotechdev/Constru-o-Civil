@@ -8,6 +8,7 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
+import { jobTitle } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 
 export default function JobPublished({ params }: ScreenProps) {
@@ -28,7 +29,7 @@ export default function JobPublished({ params }: ScreenProps) {
         <Card tone="sunken" padding="md" className="w-full">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="font-semibold text-concrete-900">{job.role}</span>
+              <span className="font-semibold text-concrete-900">{jobTitle(job)}</span>
               <span className="text-sm text-concrete-500">{`${job.address} · ${dateText(job)}`}</span>
             </div>
             <span className="font-mono font-bold text-xl text-concrete-900">{formatPay(job.pay)}</span>

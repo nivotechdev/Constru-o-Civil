@@ -20,6 +20,7 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorker, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
+import { jobTitle } from '../../services/catalog';
 import { diasInfo, hoursText, whenText } from '../../utils/jobInfo';
 
 export default function JobDetail({ params }: ScreenProps) {
@@ -110,7 +111,7 @@ export default function JobDetail({ params }: ScreenProps) {
           </Card>
 
           <div className="flex flex-col gap-1.5">
-            <h1 className="font-display font-bold text-2xl text-concrete-900">{job.role}</h1>
+            <h1 className="font-display font-bold text-2xl text-concrete-900">{jobTitle(job)}</h1>
             {job.description ? <p className="text-sm text-concrete-700 leading-relaxed">{job.description}</p> : null}
           </div>
 

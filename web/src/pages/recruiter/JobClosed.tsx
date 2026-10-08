@@ -14,6 +14,7 @@ import { goBack, navigate } from '../../services/router';
 import { applicationsForJob, getJob, getWorker } from '../../services/selectors';
 import type { Worker } from '../../types/models';
 import { formatBRL, formatPay } from '../../utils/format';
+import { jobTitle, oficioNome } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 
 export default function JobClosed({ params }: ScreenProps) {
@@ -46,7 +47,7 @@ export default function JobClosed({ params }: ScreenProps) {
       <div className="bg-brand-500 text-white px-4 sm:px-6 py-7 flex flex-col gap-3 lg:rounded-card">
         <Badge label="Bico fechado" tone="inverse" icon="circle-check" />
         <h1 className="font-display font-bold text-3xl leading-tight text-white">{title}</h1>
-        <p className="text-white/85">{`${job.role} · ${dateText(job)}`}</p>
+        <p className="text-white/85">{`${jobTitle(job)} · ${dateText(job)}`}</p>
       </div>
       <div className="flex flex-col gap-4 px-4 sm:px-0 py-4">
         <Card tone="sunken" padding="sm">
@@ -68,7 +69,7 @@ export default function JobClosed({ params }: ScreenProps) {
                   </span>
                   <div className="flex-1 min-w-0 flex flex-col">
                     <span className="font-semibold text-concrete-900">{worker.name}</span>
-                    <span className="text-sm text-concrete-500">{`${worker.role} · ${worker.region}`}</span>
+                    <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${worker.region}`}</span>
                   </div>
                 </div>
                 <Button

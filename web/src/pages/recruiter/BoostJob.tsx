@@ -11,7 +11,7 @@ import { useQuery } from '../../hooks/useQuery';
 import { boostJob, loadJob } from '../../services/jobs';
 import { showToast } from '../../services/toast';
 import { useDb, useUI } from '../../hooks/useStore';
-import { BOOST_PLANS } from '../../services/catalog';
+import { BOOST_PLANS, jobTitle } from '../../services/catalog';
 import type { BoostPlanId } from '../../types/models';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
@@ -44,7 +44,7 @@ export default function BoostJob({ params }: ScreenProps) {
       <div className="flex flex-col gap-5 px-4 sm:px-0 py-4">
         <div className="flex flex-col gap-1">
           <h1 className="font-display font-bold text-2xl text-concrete-900">Sua vaga no topo do mural</h1>
-          <span className="text-sm text-concrete-700">{`${job.role} · ${job.location}`}</span>
+          <span className="text-sm text-concrete-700">{`${jobTitle(job)} · ${job.location}`}</span>
         </div>
         <Card padding="md">
           <div className="flex flex-col gap-3.5">

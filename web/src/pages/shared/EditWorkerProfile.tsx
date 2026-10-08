@@ -9,7 +9,7 @@ import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
 import { Tag } from '../../components/Tag';
 import { useDb, useUI } from '../../hooks/useStore';
-import { CARGOS_TRABALHADOR, ESPECIALIDADES, REGIOES_TRABALHADOR } from '../../services/catalog';
+import { ESPECIALIDADES, OFICIO_OPTIONS, REGIOES_TRABALHADOR } from '../../services/catalog';
 import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
 import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI, askSignOut } from '../../services/sharedUI';
@@ -17,7 +17,7 @@ import { toggleItem } from '../../utils/list';
 
 interface EditWorkerUI {
   name: string;
-  role: string;
+  oficioId: string;
   region: string;
   specialties: string[];
   photo: string | null;
@@ -28,7 +28,7 @@ export default function EditWorkerProfile() {
   // Seeded from the profile the first time only; the draft then survives navigation (legacy behaviour).
   const [ui, setUi] = useUI<EditWorkerUI>('edit-worker-profile', () => ({
     name: worker.name,
-    role: worker.role,
+    oficioId: worker.oficioId,
     region: worker.region,
     specialties: [...worker.specialties],
     photo: null
@@ -70,10 +70,11 @@ export default function EditWorkerProfile() {
           onInput={(v) => setUi({ name: v })}
         />
         <Select
-          label="Cargo ou especialidade principal"
-          options={CARGOS_TRABALHADOR}
-          value={ui.role}
-          onChange={(v) => setUi({ role: v })}
+          label="Seu ofício principal"
+          placeholder="Escolha seu ofício"
+          options={OFICIO_OPTIONS}
+          value={ui.oficioId}
+          onChange={(v) => setUi({ oficioId: v })}
         />
         <Select
           label="Região de atuação"
@@ -111,7 +112,7 @@ export default function EditWorkerProfile() {
             className="flex-[1.4]"
             loading={save.loading}
             onClick={() =>
-              void save.run({ name: ui.name, role: ui.role, region: ui.region, specialties: ui.specialties })
+              void save.run({ name: ui.name, oficioId: ui.oficioId, region: ui.region, specialties: ui.specialties })
             }
           />
         </div>

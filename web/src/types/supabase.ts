@@ -6,6 +6,7 @@
 //
 // Tables map to the domain records in models.ts (see services/supabaseMappers.ts):
 //   accounts      – Account (id = auth.users.id; e-mail confirmation, onboarding, worker or company)
+//   oficios       – Oficio: the one catalog of trades (jobs.oficio_id, workers.oficio_id)
 //   companies     – Company (reviews live in `reviews`)
 //   workers       – Worker (reviews live in `reviews`)
 //   jobs          – Job; deleted_at replaces Database.deletedJobIds
@@ -39,6 +40,12 @@ type AccountRow = {
   created_at: string;
 };
 
+type OficioRow = {
+  id: string;
+  nome: string;
+  sinonimos: string[];
+};
+
 type CompanyRow = {
   id: string;
   name: string;
@@ -62,7 +69,7 @@ type WorkerRow = {
   id: string;
   name: string;
   initials: string;
-  role: string;
+  oficio_id: string | null;
   region: string;
   distance: string;
   rating: number;
@@ -78,7 +85,8 @@ type WorkerRow = {
 type JobRow = {
   id: string;
   company_id: string;
-  role: string;
+  oficio_id: string;
+  title: string | null;
   pay: number | null;
   location: string;
   address: string;
@@ -188,7 +196,8 @@ const fk = (table: string, column: string, to: string, isOneToOne = false): Rela
 /** The foreign keys, for documentation and for the tests (supabase-js only needs their type). */
 export const RELATIONSHIPS = {
   accounts: [fk('accounts', 'worker_id', 'workers', true), fk('accounts', 'company_id', 'companies')],
-  jobs: [fk('jobs', 'company_id', 'companies')],
+  workers: [fk('workers', 'oficio_id', 'oficios')],
+  jobs: [fk('jobs', 'company_id', 'companies'), fk('jobs', 'oficio_id', 'oficios')],
   applications: [fk('applications', 'job_id', 'jobs'), fk('applications', 'worker_id', 'workers')],
   saved_jobs: [fk('saved_jobs', 'worker_id', 'workers'), fk('saved_jobs', 'job_id', 'jobs')],
   reviews: [
@@ -205,6 +214,7 @@ export interface SupabaseDatabase {
   public: {
     Tables: {
       accounts: Table<AccountRow, 'created_at'>;
+      oficios: Table<OficioRow, 'sinonimos'>;
       companies: Table<CompanyRow, 'id' | 'rating' | 'review_count' | 'verified' | 'created_at'>;
       workers: Table<
         WorkerRow,

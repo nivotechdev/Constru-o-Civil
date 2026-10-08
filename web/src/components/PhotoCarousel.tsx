@@ -9,7 +9,7 @@ import { JobCover } from './JobCover';
 /** Photo being shown, per job — so the mural tile and the job page open on the same photo. */
 const shownPhoto = new Map<string, number>();
 
-type CarouselJob = Pick<Job, 'id' | 'role' | 'photos'>;
+type CarouselJob = Pick<Job, 'id' | 'oficioId' | 'title' | 'photos'>;
 
 interface PhotoCarouselProps {
   job: CarouselJob;

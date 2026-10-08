@@ -107,11 +107,11 @@ describe('accounts (mock auth)', () => {
     expect(homeFor(store.getSession()!)).toBe('/completar-perfil/trabalhador');
 
     await run(
-      auth.finishSignUp({ role: 'trabalhador', cargo: 'Pintor', city: 'Campinas, SP', specialties: ['Textura'] })
+      auth.finishSignUp({ role: 'trabalhador', oficioId: 'pintor', city: 'Campinas, SP', specialties: ['Textura'] })
     );
     expect(homeFor(store.getSession()!)).toBe('/mural');
     expect(sel.currentWorker(store.getDb())).toMatchObject({
-      role: 'Pintor',
+      oficioId: 'pintor',
       region: 'Campinas, SP',
       specialties: ['Textura']
     });

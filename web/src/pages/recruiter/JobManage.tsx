@@ -34,6 +34,7 @@ import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
 import { diasInfo, hoursText, whenText } from '../../utils/jobInfo';
+import { jobTitle, oficioNome } from '../../services/catalog';
 import { jobPhotos } from '../../utils/jobPhotos';
 
 export default function JobManage({ params }: ScreenProps) {
@@ -143,7 +144,7 @@ export default function JobManage({ params }: ScreenProps) {
               <Badge label={status.label} tone={status.tone} icon={status.icon} />
               <span className="font-mono text-xs text-concrete-500">{job.id}</span>
             </div>
-            <h1 className="font-display font-bold text-2xl text-concrete-900">{job.role}</h1>
+            <h1 className="font-display font-bold text-2xl text-concrete-900">{jobTitle(job)}</h1>
             {job.description ? <p className="text-sm text-concrete-700 leading-relaxed">{job.description}</p> : null}
           </div>
 
@@ -189,7 +190,7 @@ export default function JobManage({ params }: ScreenProps) {
                     <CandidateRow
                       key={a.id}
                       worker={worker}
-                      summary={worker.role + ' · ' + worker.region}
+                      summary={oficioNome(worker.oficioId) + ' · ' + worker.region}
                       distance={worker.distance}
                       isNew={worker.novo}
                       decision={decision}

@@ -4,7 +4,7 @@ import { LocationButton } from '../../../components/CityPicker';
 import { Sheet } from '../../../components/Modal';
 import { Switch } from '../../../components/Switch';
 import { Tag } from '../../../components/Tag';
-import { TIPOS_SERVICO } from '../../../services/catalog';
+import { OFICIO_OPTIONS } from '../../../services/catalog';
 import { NO_FILTERS, setFeed, SORTS, type FeedUI } from './feedUI';
 
 function FilterGroup({
@@ -14,7 +14,8 @@ function FilterGroup({
   onSelect
 }: {
   title: string;
-  options: string[];
+  /** A plain string is both the value and the label. */
+  options: (string | { value: string; label: string })[];
   active: string | null;
   onSelect: (o: string) => void;
 }) {
@@ -22,9 +23,10 @@ function FilterGroup({
     <div className="flex flex-col gap-2.5">
       <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">{title}</div>
       <div className="flex flex-wrap gap-2">
-        {options.map((o) => (
-          <Tag key={o} label={o} selected={active === o} onClick={() => onSelect(o)} />
-        ))}
+        {options.map((o) => {
+          const { value, label } = typeof o === 'string' ? { value: o, label: o } : o;
+          return <Tag key={value} label={label} selected={active === value} onClick={() => onSelect(value)} />;
+        })}
       </div>
     </div>
   );
@@ -49,10 +51,10 @@ export function FiltersSheet({ ui, count }: { ui: FeedUI; count: number }) {
         </div>
       </div>
       <FilterGroup
-        title="Tipo de serviço"
-        options={TIPOS_SERVICO}
-        active={ui.tipo}
-        onSelect={(v) => setFeed({ tipo: ui.tipo === v ? null : v })}
+        title="Ofício"
+        options={OFICIO_OPTIONS}
+        active={ui.oficio}
+        onSelect={(v) => setFeed({ oficio: ui.oficio === v ? null : v })}
       />
       <FilterGroup
         title={'Distância do centro de ' + ui.location.split(',')[0]}

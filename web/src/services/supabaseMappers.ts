@@ -12,6 +12,7 @@ import type {
   Company,
   Database,
   Job,
+  Oficio,
   Review,
   Worker,
   WorkerPost
@@ -60,6 +61,16 @@ export function accountToRow(account: Account): TableInsert<'accounts'> {
     company_id: account.companyId,
     created_at: account.createdAt
   };
+}
+
+// ---- ofícios (the catalog) ----
+
+export function oficioFromRow(row: TableRow<'oficios'>): Oficio {
+  return { id: row.id, nome: row.nome, sinonimos: row.sinonimos };
+}
+
+export function oficioToRow(oficio: Oficio): TableInsert<'oficios'> {
+  return { id: oficio.id, nome: oficio.nome, sinonimos: oficio.sinonimos };
 }
 
 // ---- companies ----
@@ -111,7 +122,7 @@ export function workerFromRow(row: TableRow<'workers'>, reviews: ReviewRow[] = [
     id: row.id,
     name: row.name,
     initials: row.initials,
-    role: row.role,
+    oficioId: row.oficio_id ?? '',
     region: row.region,
     distance: row.distance,
     rating: row.rating,
@@ -132,7 +143,7 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
     id: worker.id,
     name: worker.name,
     initials: worker.initials,
-    role: worker.role,
+    oficio_id: worker.oficioId || null,
     region: worker.region,
     distance: worker.distance,
     rating: worker.rating,
@@ -177,7 +188,8 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
   const job: Job = {
     id: row.id,
     companyId: row.company_id,
-    role: row.role,
+    oficioId: row.oficio_id,
+    title: row.title,
     pay: row.pay,
     location: row.location,
     address: row.address,
@@ -204,7 +216,8 @@ export function jobToRow(job: Job, deletedAt: string | null = null): TableInsert
   return {
     id: job.id,
     company_id: job.companyId,
-    role: job.role,
+    oficio_id: job.oficioId,
+    title: job.title,
     pay: job.pay,
     location: job.location,
     address: job.address,

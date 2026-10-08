@@ -6,6 +6,7 @@ import { formatBRL } from '../utils/format';
 import { diasInfo, whenText } from '../utils/jobInfo';
 import { Icon } from './icons/Icon';
 import { PhotoCarousel } from './PhotoCarousel';
+import { jobTitle } from '../services/catalog';
 import { SaveFlag } from './SaveFlag';
 
 // Icon colour for a status badge on the photo, by tone (the rest fall back to neutral's).
@@ -19,12 +20,14 @@ const TONE_COLOR: Partial<Record<Tone, string>> = {
 };
 
 /** The fields a tile reads (the publish form's preview passes a partial job). */
-type TileJob = Pick<Job, 'id' | 'role' | 'location' | 'date' | 'hours' | 'pay' | 'photos'> & Partial<Pick<Job, 'dias'>>;
+type TileJob = Pick<Job, 'id' | 'oficioId' | 'title' | 'location' | 'date' | 'hours' | 'pay' | 'photos'> &
+  Partial<Pick<Job, 'dias'>>;
 
 interface JobTileProps {
   job: TileJob;
   company?: Company;
-  onClick: () => void;
+  /** Opens the job; without it the tile is only a picture (e.g. the publish form's preview). */
+  onClick?: () => void;
   /** Status shown on the photo (used on "Minhas candidaturas"). */
   badge?: StatusBadge | null;
   mine?: boolean;
@@ -71,17 +74,26 @@ export function JobTile({
 
   return (
     <div
-      role="link"
-      tabIndex={0}
-      aria-label={[job.role, badge && badge.label, company && company.name, where, when].filter(Boolean).join(', ')}
-      className="group min-w-0 cursor-pointer rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
-      onClick={() => onClick()}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
+      role={onClick ? 'link' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={[jobTitle(job), badge && badge.label, company && company.name, where, when]
+        .filter(Boolean)
+        .join(', ')}
+      className={cx(
+        'group min-w-0 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-100',
+        onClick ? 'cursor-pointer' : ''
+      )}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
     >
       <div className="relative aspect-[20/19] rounded-xl sm:rounded-2xl overflow-hidden bg-concrete-200">
         {/* Only the picture is greyed out when muted; badges and the save flag keep their colour.
@@ -112,7 +124,7 @@ export function JobTile({
       </div>
       <div className="flex flex-col pt-2.5 sm:pt-3 text-[0.8125rem] sm:text-[0.9375rem] leading-[1.35]">
         <span className={cx('truncate font-semibold sm:text-base', muted ? 'text-concrete-500' : 'text-concrete-900')}>
-          {job.role}
+          {jobTitle(job)}
         </span>
         <span className="truncate text-concrete-500">{where}</span>
         <span className="truncate text-concrete-500">{when}</span>

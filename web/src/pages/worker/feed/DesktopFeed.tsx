@@ -11,6 +11,7 @@ import type { Database, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
 import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
 import { NO_FILTERS, setFeed, type SearchMatches } from './feedUI';
+import { oficioNome } from '../../../services/catalog';
 import type { FeedLayoutProps } from './MobileFeed';
 
 /** The mural from 770px up (tablet and desktop): a wide search bar, the filters button and the grid. */
@@ -152,7 +153,7 @@ function SearchResults({ db, role, search, found }: SearchResultsProps) {
                     </span>
                   }
                   name={w.name}
-                  meta={`${w.role} · ${w.region}`}
+                  meta={`${oficioNome(w.oficioId)} · ${w.region}`}
                   rating={<Rating value={w.rating} count={w.jobsDone} />}
                   onClick={role === 'recrutador' ? () => navigate('/trabalhador/' + w.id) : null}
                 />

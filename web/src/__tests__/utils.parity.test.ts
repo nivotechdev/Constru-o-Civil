@@ -5,13 +5,13 @@ import * as legacyCidades from '../../../app/js/utils/cidades.js';
 import * as legacyFormat from '../../../app/js/utils/format.js';
 import * as legacyJobInfo from '../../../app/js/utils/jobInfo.js';
 import * as legacyWhatsapp from '../../../app/js/utils/whatsapp.js';
-import { COMPANIES, JOBS } from '../data/seed';
+import { JOBS } from '../data/seed';
 import { nearestCity, popularCities, searchCities } from '../services/cities';
 import type { ApplicationStatus } from '../types/models';
 import { statusInfo } from '../utils/applicationStatus';
 import { formatBRL, formatPostDate, isValidEmail, maskCNPJ, maskCPF, passwordStrength } from '../utils/format';
 import { dateText, diasInfo, hoursText, whenText } from '../utils/jobInfo';
-import { whatsappUrl, workerToCompanyUrl } from '../utils/whatsapp';
+import { whatsappUrl } from '../utils/whatsapp';
 
 const TEXTS = [
   '',
@@ -93,13 +93,10 @@ describe('application status', () => {
 });
 
 describe('whatsapp links', () => {
+  // The ready-made messages changed on purpose (B01); the links themselves are built the same way.
   it('build the same wa.me URLs', () => {
     for (const phone of ['', '(11) 98842-3310', '5511988423310'])
       expect(whatsappUrl(phone, 'oi')).toBe(legacyWhatsapp.whatsappUrl(phone, 'oi'));
-    const job = JOBS['BC-4821'];
-    expect(workerToCompanyUrl(COMPANIES.meridiano, job)).toBe(
-      legacyWhatsapp.workerToCompanyUrl(COMPANIES.meridiano, job)
-    );
   });
 });
 
