@@ -86,7 +86,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
               {`${worker.jobsDone} ${worker.jobsDone === 1 ? 'bico realizado' : 'bicos realizados'}`}
             </span>
             <div className="flex items-center gap-3">
-              <Rating value={worker.rating} count={worker.jobsDone} />
+              <Rating value={worker.rating} count={worker.reviewCount} />
               {!isOwn ? (
                 <button
                   type="button"

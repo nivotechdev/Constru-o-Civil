@@ -186,15 +186,6 @@ export async function giveUp(jobId: string, reason: string): Promise<void> {
   );
 }
 
-/** Marks the worker's side as reviewed. Temporary: B04 stores the review itself. */
-export async function markJobReviewed(jobId: string): Promise<void> {
-  await mockLatency(500);
-  const app = findApp(store.getDb(), jobId, currentWorkerId());
-  if (app.status !== 'concluida' || app.workerReviewed)
-    throw serviceError('conflito', 'Essa avaliação não está disponível.');
-  store.transact((db) => replaceApp(db, { ...app, workerReviewed: true }));
-}
-
 // ---- company ----
 
 /**

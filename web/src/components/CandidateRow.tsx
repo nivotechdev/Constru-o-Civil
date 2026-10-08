@@ -63,7 +63,7 @@ export function CandidateRow({
           <span>·</span>
           <span className="shrink-0">{distance}</span>
         </div>
-        {!isNew ? <Rating value={worker.rating} count={worker.jobsDone} size={12} /> : null}
+        {!isNew ? <Rating value={worker.rating} count={worker.reviewCount} size={12} /> : null}
         {contact || action ? (
           <div className="flex flex-wrap items-center gap-2 pt-1.5" onClick={(e) => e.stopPropagation()}>
             {contact}

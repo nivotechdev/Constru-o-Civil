@@ -159,7 +159,7 @@ function SearchResults({ db, role, search, found }: SearchResultsProps) {
                   }
                   name={w.name}
                   meta={`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}
-                  rating={<Rating value={w.rating} count={w.jobsDone} />}
+                  rating={<Rating value={w.rating} count={w.reviewCount} />}
                   onClick={role === 'recrutador' ? () => navigate('/trabalhador/' + w.id) : null}
                 />
               ))}

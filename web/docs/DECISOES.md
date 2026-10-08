@@ -148,3 +148,15 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
 - **Avaliação vira registro** (`Review`: candidatura, direção, autor, nota, pontos, comentário, data) e o
   trabalhador ganha `reviewCount`. A nota nova entra na média com uma casa decimal. As avaliações antigas
   do seed foram convertidas (sem candidatura ligada).
+
+## B04 — Avaliar a diária grava de verdade
+
+- **"Avaliar a diária" usa o mesmo formulário da construtora** e `reviews.submitReview`: a avaliação vai
+  para o perfil da construtora, a nota e a contagem são recalculadas e o lado do trabalhador fica marcado
+  como avaliado.
+- **Guarda:** só com a diária concluída e uma vez; fora disso, a tela "Essa avaliação não está
+  disponível" (com "Voltar").
+- **Nota começa vazia** (nada de 5 estrelas e "Pagou no dia" pré-marcados); o botão fica desativado até
+  escolher a nota; comentário em caixa de texto com limite de 300 caracteres e contador (antecipa P02/P03).
+- **Estrelas do trabalhador mostram a quantidade de avaliações** (`reviewCount`), não de bicos feitos
+  (antecipa parte da L09).

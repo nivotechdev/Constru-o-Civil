@@ -80,7 +80,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }:
                   <span className="font-semibold text-concrete-900 truncate">{w.name}</span>
                   <span className="text-sm text-concrete-500 truncate">{`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}</span>
                 </div>
-                <Rating value={w.rating} count={w.jobsDone} />
+                <Rating value={w.rating} count={w.reviewCount} />
               </div>
             </Card>
           ))}
