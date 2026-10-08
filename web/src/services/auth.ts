@@ -127,6 +127,7 @@ export async function signUp(data: SignUpData): Promise<SignUpResult> {
       name: data.name.trim(),
       initials: initialsOf(data.name),
       oficioId: '',
+      whatsapp: data.whatsapp,
       city: DEFAULT_CITY,
       neighborhood: null,
       ...DEFAULT_POINT,

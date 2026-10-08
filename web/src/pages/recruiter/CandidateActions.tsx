@@ -24,6 +24,7 @@ import { applicationFor, approvedCount, isJobClosed } from '../../services/selec
 import { getDb } from '../../services/store';
 import { showToast } from '../../services/toast';
 import type { Job, Worker } from '../../types/models';
+import { ContactButton } from '../../components/ContactButton';
 import { candidateBadge } from '../../utils/applicationStatus';
 
 type Confirm = 'contratar' | 'cancelar' | 'concluir' | 'falta' | null;
@@ -99,6 +100,7 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
           <Badge label={badge.label} tone={badge.tone} icon={badge.icon} />
           <span className="flex-1 text-sm text-concrete-500">Contato por WhatsApp liberado para os dois lados.</span>
         </div>
+        <ContactButton applicationId={app.id} size="lg" fullWidth />
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
           <Button
             label="Confirmar contratação"
@@ -136,6 +138,7 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
           <Badge label={badge.label} tone={badge.tone} icon={badge.icon} />
           <span className="flex-1 text-sm text-concrete-500">Depois da diária, marque como concluída.</span>
         </div>
+        <ContactButton applicationId={app.id} size="lg" fullWidth />
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
           <Button
             label="Marcar diária como concluída"

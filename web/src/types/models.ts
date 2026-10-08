@@ -65,6 +65,7 @@ export interface Company {
   cnpj?: string;
   tipoObra?: string;
   location: string;
+  /** Contact number. Private like the worker's: only contacts.getContact() hands it out (B01). */
   whatsapp: string;
   rating: number;
   reviewCount: number;
@@ -82,6 +83,11 @@ export interface Worker {
   initials: string;
   /** Main trade (catalog id); '' until the profile is completed. */
   oficioId: string;
+  /**
+   * Contact number. Private: screens never read it from here; it is handed out only by
+   * contacts.getContact() to the company that picked or hired the worker (B01).
+   */
+  whatsapp: string;
   /** Municipality the worker is based in ("São Paulo, SP"), from the city picker. */
   city: string;
   /** Neighbourhood, when known ("Tatuapé"). */

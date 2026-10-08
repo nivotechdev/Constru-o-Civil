@@ -16,6 +16,8 @@ import type { Worker } from '../../types/models';
 import { formatBRL, formatPay } from '../../utils/format';
 import { jobTitle, oficioNome } from '../../services/catalog';
 import { workerPlace } from '../../utils/workerInfo';
+import { ContactButton } from '../../components/ContactButton';
+import { contactOpen } from '../../services/applicationMachine';
 import { dateText, placeText } from '../../utils/jobInfo';
 
 export default function JobClosed({ params }: ScreenProps) {
@@ -28,8 +30,8 @@ export default function JobClosed({ params }: ScreenProps) {
   const job = getJob(db, params.id);
   const team = job
     ? applicationsForJob(db, job.id)
-        .filter((a) => a.status === 'pre_selecionado' || a.status === 'contratado')
-        .map((a) => getWorker(db, a.workerId) as Worker)
+        .filter((a) => contactOpen(a.status))
+        .map((a) => ({ app: a, worker: getWorker(db, a.workerId) as Worker }))
     : [];
   if (!job || team.length === 0) {
     return (
@@ -39,7 +41,8 @@ export default function JobClosed({ params }: ScreenProps) {
       </div>
     );
   }
-  const title = team.length === 1 ? `${team[0].name} está contratado` : `${team.length} trabalhadores contratados`;
+  const title =
+    team.length === 1 ? `${team[0].worker.name} está contratado` : `${team.length} trabalhadores contratados`;
   const total = (job.pay || 0) * Math.max(team.length, 1);
 
   return (
@@ -61,7 +64,7 @@ export default function JobClosed({ params }: ScreenProps) {
         </Card>
         <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Equipe contratada</div>
         <div className="flex flex-col gap-3">
-          {team.map((worker) => (
+          {team.map(({ app, worker }) => (
             <Card key={worker.id} padding="md">
               <div className="flex flex-col gap-3.5">
                 <div className="flex items-center gap-3">
@@ -73,13 +76,7 @@ export default function JobClosed({ params }: ScreenProps) {
                     <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${workerPlace(worker)}`}</span>
                   </div>
                 </div>
-                <Button
-                  label="Falar no WhatsApp"
-                  variant="accent"
-                  fullWidth
-                  iconLeft="message-circle"
-                  onClick={() => {}}
-                />
+                <ContactButton applicationId={app.id} fullWidth />
               </div>
             </Card>
           ))}

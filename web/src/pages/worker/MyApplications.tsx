@@ -4,15 +4,15 @@ import { Icon } from '../../components/icons/Icon';
 import { JobTile, TileGrid } from '../../components/JobTile';
 import { QueryView } from '../../components/QueryView';
 import { TileGridSkeleton } from '../../components/Skeleton';
-import { WhatsAppButton } from '../../components/WhatsAppButton';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
 import { loadMyApplications } from '../../services/applications';
 import { navigate } from '../../services/router';
 import { applicationsForWorker, companyOf, currentWorker, getJob, savedJobs } from '../../services/selectors';
 import type { Application } from '../../types/models';
+import { ContactButton } from '../../components/ContactButton';
+import { contactOpen } from '../../services/applicationMachine';
 import { isInProgress, statusInfo } from '../../utils/applicationStatus';
-import { workerToCompanyUrl } from '../../utils/whatsapp';
 
 export default function MyApplications() {
   const db = useDb();
@@ -37,11 +37,7 @@ export default function MyApplications() {
         onClick={() => navigate(info.to)}
         badge={{ label: info.label, icon: info.icon, tone: muted ? 'neutral' : info.tone }}
         // Picked for the job: the WhatsApp chat with the company is open.
-        corner={
-          app.status === 'pre_selecionado' || app.status === 'contratado' ? (
-            <WhatsAppButton href={workerToCompanyUrl(company, job)} round />
-          ) : null
-        }
+        corner={contactOpen(app.status) ? <ContactButton applicationId={app.id} round /> : null}
       />
     );
   }

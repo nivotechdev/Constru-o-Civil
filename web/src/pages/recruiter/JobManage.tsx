@@ -14,7 +14,7 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
 import { approve, confirmHire, loadJobCandidates, reject } from '../../services/applications';
-import { isPending } from '../../services/applicationMachine';
+import { contactOpen, isPending } from '../../services/applicationMachine';
 import { candidateBadge } from '../../utils/applicationStatus';
 import { errorMessage } from '../../services/errors';
 import { closeJob, updateJobPhotos } from '../../services/jobs';
@@ -38,6 +38,7 @@ import { formatPay } from '../../utils/format';
 import { diasInfo, durationText, hoursText, placeText, streetText, whenText } from '../../utils/jobInfo';
 import { jobTitle, oficioNome } from '../../services/catalog';
 import { workerDistance, workerPlace } from '../../utils/workerInfo';
+import { ContactButton } from '../../components/ContactButton';
 import { jobPhotos } from '../../utils/jobPhotos';
 
 export default function JobManage({ params }: ScreenProps) {
@@ -203,6 +204,7 @@ export default function JobManage({ params }: ScreenProps) {
                       badge={pending ? null : candidateBadge(a)}
                       muted={quiet.includes(a.status)}
                       onClick={() => navigate(`/trabalhador/${worker.id}/${job.id}`)}
+                      contact={contactOpen(a.status) ? <ContactButton applicationId={a.id} /> : null}
                       action={
                         a.status === 'pre_selecionado'
                           ? { label: 'Confirmar contratação', onClick: () => setUi({ hireId: worker.id }) }

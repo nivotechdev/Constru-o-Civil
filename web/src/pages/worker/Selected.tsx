@@ -14,7 +14,6 @@ import { KeyValue } from '../../components/KeyValue';
 import { JobNotFound } from '../../components/NotFound';
 import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
-import { WhatsAppButton } from '../../components/WhatsAppButton';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
 import { giveUp, loadMyApplications } from '../../services/applications';
@@ -23,8 +22,8 @@ import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { dateText, placeText } from '../../utils/jobInfo';
+import { ContactButton } from '../../components/ContactButton';
 import { jobTitle } from '../../services/catalog';
-import { workerToCompanyUrl } from '../../utils/whatsapp';
 
 const GIVE_UP_REASONS = ['Fiquei doente', 'Peguei outro serviço', 'Problema de transporte', 'Imprevisto na família'];
 
@@ -89,7 +88,7 @@ export default function Selected({ params }: ScreenProps) {
                 <span className="text-sm text-concrete-500">{company.tipoObra || 'Construção civil'}</span>
               </div>
             </div>
-            <WhatsAppButton href={workerToCompanyUrl(company, job)} size="lg" fullWidth />
+            <ContactButton applicationId={hired.id} size="lg" fullWidth />
             <span className="text-sm text-concrete-700">
               Combine ponto de encontro, horário e pagamento direto com a construtora. A Bicos não cobra taxa e não
               entra na negociação.

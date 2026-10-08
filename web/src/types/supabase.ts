@@ -53,6 +53,7 @@ type CompanyRow = {
   cnpj: string | null;
   tipo_obra: string | null;
   location: string;
+  /** Private: readable only through the get_contact RPC. */
   whatsapp: string;
   rating: number;
   review_count: number;
@@ -71,6 +72,8 @@ type WorkerRow = {
   name: string;
   initials: string;
   oficio_id: string | null;
+  /** Private: readable only through the get_contact RPC. */
+  whatsapp: string;
   city: string;
   neighborhood: string | null;
   lat: number;

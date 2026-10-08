@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import type { Worker } from '../types/models';
 import type { StatusBadge } from '../types/ui';
 import { cx } from '../utils/cx';
@@ -20,6 +20,8 @@ interface CandidateRowProps {
   onReject?: ((e: MouseEvent) => void) | null;
   /** A next step for this candidate (e.g. "Confirmar contratação"), under the badge. */
   action?: { label: string; onClick: () => void } | null;
+  /** The WhatsApp button, once the candidate is picked or hired. */
+  contact?: ReactNode;
 }
 
 /** Compact clickable row for a job's candidate list — the recruiter's decision unit. */
@@ -33,7 +35,8 @@ export function CandidateRow({
   onClick,
   onApprove,
   onReject,
-  action = null
+  action = null,
+  contact = null
 }: CandidateRowProps) {
   return (
     <div
@@ -61,19 +64,24 @@ export function CandidateRow({
           <span className="shrink-0">{distance}</span>
         </div>
         {!isNew ? <Rating value={worker.rating} count={worker.jobsDone} size={12} /> : null}
+        {contact || action ? (
+          <div className="flex flex-wrap items-center gap-2 pt-1.5" onClick={(e) => e.stopPropagation()}>
+            {contact}
+            {action ? (
+              <button
+                type="button"
+                className="h-9 px-3.5 rounded-full text-sm font-semibold whitespace-nowrap text-brand-600 bg-brand-50 hover:bg-brand-100"
+                onClick={action.onClick}
+              >
+                {action.label}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       {badge ? (
-        <span className="shrink-0 flex flex-col items-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <span className="shrink-0 self-start pt-0.5">
           <Badge label={badge.label} tone={badge.tone} icon={badge.icon} />
-          {action ? (
-            <button
-              type="button"
-              className="h-8 px-3 rounded-full text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100"
-              onClick={action.onClick}
-            >
-              {action.label}
-            </button>
-          ) : null}
         </span>
       ) : (
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>

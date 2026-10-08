@@ -119,3 +119,19 @@ para quem usa o app. Cada item diz de qual ID do plano veio.
 - **Notificações agora são dados**: cada uma é de um trabalhador ou de uma construtora, nasce na mesma
   transação da mudança que avisa, tem destino (abre a tela certa) e é marcada como lida ao abrir.
 - **Testes de paridade dos rótulos de status** com o app antigo foram aposentados (há status novos).
+
+## B01 — WhatsApp nos dois sentidos
+
+- **Número privado dos dois lados.** `Worker.whatsapp` e `Company.whatsapp` existem no modelo (espelham as
+  colunas do banco), mas nenhuma tela lê esses campos: o número só sai de `contacts.getContact(id da
+candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem pede seja um dos dois
+  lados. No back-end, isso vira uma RPC que confere o mesmo antes de ler a coluna privada.
+- **Botão "Falar no WhatsApp"** pede o contato na hora de aparecer (com "Carregando contato…" e "Tentar de
+  novo" se falhar). Aparece para a construtora na lista de candidatos (aprovado/contratado), no perfil do
+  candidato com contexto de vaga e na tela da equipe; para o trabalhador em Minhas candidaturas e em
+  "Você avançou".
+- **Depois da conclusão o contato fecha** (a regra pede só pré-selecionado/contratado). Se precisar
+  reabrir para combinar algo depois, é uma decisão a revisitar.
+- **Mensagens prontas** usam o nome do ofício (não o título) e o código da vaga: "Olá! Vi sua vaga de
+  {ofício} ({código}) na Bicos e fui aprovado…" e "Olá, {primeiro nome}! Aqui é da {construtora}, sobre a
+  vaga de {ofício} ({código}) na Bicos…".
