@@ -122,3 +122,37 @@ Não há tradução de códigos de erro do Firebase porque não há Firebase.
 
 Não existe. Só a rota sobrevive ao F5 (está no hash). Todo o estado (papel, dados, formulários)
 volta ao seed. Replicado tal qual.
+
+## 7. Fase 1 — o que mudou depois da migração (`web/`)
+
+As seções acima descrevem o legado. A Fase 1 (bloqueadores B01–B12) trocou o seguinte no `web/`;
+as regras estão em `DECISOES.md` e as funções de serviço em `CONTRATO-BACKEND.md`.
+
+### Rotas novas
+
+| Rota                                    | Tela           | Acesso      | O que faz                                                                                                       |
+| --------------------------------------- | -------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `/termos`                               | Terms          | pública     | Termos de uso (versão aceita no cadastro fica gravada na conta) — B11                                           |
+| `/privacidade`                          | PrivacyPolicy  | pública     | Política de privacidade — B11                                                                                   |
+| `/vaga-editar/:id`                      | EditJob        | construtora | mesmo formulário da criação; só a dona e com a vaga aberta; avisa candidatos se valor/data/endereço mudam — B05 |
+| `/avaliar-trabalhador/:jobId/:workerId` | RateWorker     | construtora | avaliação do trabalhador depois da diária (nota, tags, comentário até 300) — B03                                |
+| `/impulsionar/:id/:plan`                | BoostPayment   | construtora | pagamento simulado: PIX (QR, copia e cola, prazo de 30 min) ou cartão (final 0000 é recusado) — B08             |
+| `/configuracoes/excluir-conta`          | DeleteAccount  | logado      | senha + confirmação dos compromissos; mostra o impacto antes de excluir — B12                                   |
+| `/conta-excluida`                       | AccountDeleted | pública     | confirmação depois da exclusão — B12                                                                            |
+
+### Rotas existentes que mudaram de comportamento
+
+- `/login`, `/cadastro/:role`, `/verificar-email`, `/completar-perfil/:role`: conta e sessão de verdade (e-mail +
+  senha, sessão sobrevive ao F5), guardas por rota (B09/B10).
+- `/mural`, `/vaga/:id`: ofício do catálogo único, endereço completo, datas reais, distância por
+  coordenadas (B06/B07).
+- `/minhas-candidaturas`, `/selecionado/:id`, `/vaga-gerenciar/:id`: máquina de status da
+  candidatura com histórico; contato por WhatsApp liberado só a partir de "contratado" (B01/B02).
+- `/avaliar/:id`: grava a avaliação de verdade e atualiza a média (B04).
+- `/configuracoes`: links de Termos/Política funcionam; chave escondida do modo de falha (`?falhar=1`).
+- `/configuracoes/privacidade`: exportar dados real; "Excluir conta" leva a `/configuracoes/excluir-conta`.
+
+### Recarregamento
+
+Agora a sessão (`bicos.sessao` no `localStorage`) sobrevive ao F5; os dados continuam no store em
+memória e voltam ao seed.
