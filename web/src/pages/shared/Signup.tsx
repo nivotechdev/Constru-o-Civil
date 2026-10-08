@@ -1,15 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
+import { FieldError } from '../../components/FieldError';
 import { IconButton } from '../../components/IconButton';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
 import { sendWhatsAppCode, signUp, verifyWhatsAppCode } from '../../services/auth';
-import { AUTH_FLOW_KEY, type AuthFlowUI } from '../../services/sharedUI';
 import type { ScreenProps } from '../../types/screen';
 import { goBack as routerGoBack, navigate } from '../../services/router';
-import { resetUI, setUI } from '../../services/store';
+import { resetUI } from '../../services/store';
 import type { Role } from '../../types/models';
 import {
   isValidEmail,
@@ -154,7 +154,11 @@ interface SignupUI {
   codeSentAt: number;
   resending: boolean;
   resent: boolean;
+  /** A request failed (no connection…): shown above the button, the answers stay. */
+  submitError: string | null;
 }
+
+const NETWORK_ERROR = 'Não deu para continuar agora. Confira sua internet e tente de novo.';
 
 function validateField(field: SignupField, values: Values, role: Role): string | null {
   const v = String(values[field.id] || '').trim();
@@ -202,7 +206,8 @@ export default function Signup({ params }: ScreenProps) {
     acceptError: false,
     codeSentAt: 0,
     resending: false,
-    resent: false
+    resent: false,
+    submitError: null
   }));
   const step = Math.max(0, Math.min(ui.step, cfg.fields.length - 1));
   const field = cfg.fields[step];
@@ -222,20 +227,23 @@ export default function Signup({ params }: ScreenProps) {
   };
 
   function resendCode() {
-    setUi({ resending: true });
-    sendWhatsAppCode(ui.values.whatsapp || '').then(() =>
-      setUi((s) => ({
-        resending: false,
-        resent: true,
-        codeSentAt: Date.now(),
-        values: { ...s.values, codigo: '' },
-        errors: { ...s.errors, codigo: null }
-      }))
-    );
+    if (ui.resending) return;
+    setUi({ resending: true, submitError: null });
+    sendWhatsAppCode(ui.values.whatsapp || '')
+      .then(() =>
+        setUi((s) => ({
+          resending: false,
+          resent: true,
+          codeSentAt: Date.now(),
+          values: { ...s.values, codigo: '' },
+          errors: { ...s.errors, codigo: null }
+        }))
+      )
+      .catch(() => setUi({ resending: false, submitError: NETWORK_ERROR }));
   }
 
   function goBack() {
-    if (step > 0) setUi({ step: step - 1, generalError: false });
+    if (step > 0) setUi({ step: step - 1, generalError: false, submitError: null });
     else routerGoBack('/escolha-perfil');
   }
 
@@ -247,7 +255,8 @@ export default function Signup({ params }: ScreenProps) {
     setUi((s) => ({
       values: { ...s.values, [field.id]: value },
       errors: { ...s.errors, [field.id]: null },
-      generalError: false
+      generalError: false,
+      submitError: null
     }));
   }
 
@@ -259,31 +268,35 @@ export default function Signup({ params }: ScreenProps) {
       return;
     }
     if (field.id === 'whatsapp') {
-      setUi({ submitting: true });
-      sendWhatsAppCode(ui.values.whatsapp || '').then(() =>
-        setUi((s) => ({
-          submitting: false,
-          step: step + 1,
-          codeSentAt: Date.now(),
-          resent: false,
-          values: { ...s.values, codigo: '' },
-          errors: { ...s.errors, codigo: null }
-        }))
-      );
+      setUi({ submitting: true, submitError: null });
+      sendWhatsAppCode(ui.values.whatsapp || '')
+        .then(() =>
+          setUi((s) => ({
+            submitting: false,
+            step: step + 1,
+            codeSentAt: Date.now(),
+            resent: false,
+            values: { ...s.values, codigo: '' },
+            errors: { ...s.errors, codigo: null }
+          }))
+        )
+        .catch(() => setUi({ submitting: false, submitError: NETWORK_ERROR }));
       return;
     }
     if (field.id === 'codigo') {
-      setUi({ submitting: true });
-      verifyWhatsAppCode(ui.values.whatsapp || '', ui.values.codigo || '').then((ok) =>
-        setUi((s) =>
-          ok
-            ? { submitting: false, step: step + 1 }
-            : {
-                submitting: false,
-                errors: { ...s.errors, codigo: 'Código incorreto. Confira a mensagem no WhatsApp e tente de novo.' }
-              }
+      setUi({ submitting: true, submitError: null });
+      verifyWhatsAppCode(ui.values.whatsapp || '', ui.values.codigo || '')
+        .then((ok) =>
+          setUi((s) =>
+            ok
+              ? { submitting: false, step: step + 1 }
+              : {
+                  submitting: false,
+                  errors: { ...s.errors, codigo: 'Código incorreto. Confira a mensagem no WhatsApp e tente de novo.' }
+                }
+          )
         )
-      );
+        .catch(() => setUi({ submitting: false, submitError: NETWORK_ERROR }));
       return;
     }
     if (!isLast) {
@@ -298,7 +311,7 @@ export default function Signup({ params }: ScreenProps) {
       setUi({ acceptError: true });
       return;
     }
-    setUi({ submitting: true, acceptError: false });
+    setUi({ submitting: true, acceptError: false, submitError: null });
     signUp({
       role,
       name: (role === 'trabalhador' ? ui.values.nome : ui.values.razao) || '',
@@ -306,18 +319,33 @@ export default function Signup({ params }: ScreenProps) {
       email: ui.values.email || '',
       whatsapp: ui.values.whatsapp || '',
       password: ui.values.senha || ''
-    }).then((result) => {
-      if (!result.ok) {
-        // The CPF/CNPJ already has an account: back to that step, with the general error.
-        const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
-        setUi({ submitting: false, step: docStep, generalError: true });
-        return;
-      }
-      setUi({ submitting: false });
-      setUI<AuthFlowUI>(AUTH_FLOW_KEY, { role, email: ui.values.email || 'voce@email.com' });
-      resetUI(key);
-      navigate('/verificar-email');
-    });
+    })
+      .then((result) => {
+        if (!result.ok && result.reason === 'email-taken') {
+          const emailStep = cfg.fields.findIndex((f) => f.id === 'email');
+          setUi((s) => ({
+            submitting: false,
+            step: emailStep,
+            errors: { ...s.errors, email: 'Esse e-mail já tem conta na Bicos. Entre na conta ou use outro e-mail.' }
+          }));
+          return;
+        }
+        if (!result.ok) {
+          // The CPF/CNPJ already has an account: back to that step, with the general error.
+          const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
+          setUi({ submitting: false, step: docStep, generalError: true });
+          return;
+        }
+        // The account now exists and is logged in; the route guard takes it to "Confirme seu e-mail".
+        resetUI(key);
+        navigate('/verificar-email', { replace: true });
+      })
+      .catch(() =>
+        setUi({
+          submitting: false,
+          submitError: 'Não deu para criar sua conta agora. Confira sua internet e tente de novo.'
+        })
+      );
   }
 
   const strength = passwordStrength(ui.values.senha);
@@ -467,7 +495,8 @@ export default function Signup({ params }: ScreenProps) {
           />
         )}
       </div>
-      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar">
+      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar flex flex-col gap-2">
+        {ui.submitError ? <FieldError message={ui.submitError} /> : null}
         <Button
           label={
             isLast

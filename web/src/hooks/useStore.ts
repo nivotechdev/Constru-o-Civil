@@ -1,10 +1,15 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { getDb, getRole, getUI, setUI, subscribe, type UIDefaults, type UIPatch } from '../services/store';
-import type { Database, Role } from '../types/models';
+import { getDb, getRole, getSession, getUI, setUI, subscribe, type UIDefaults, type UIPatch } from '../services/store';
+import type { Database, Role, Session } from '../types/models';
 
 /** The mock database snapshot; re-renders only when data changes. */
 export function useDb(): Database {
   return useSyncExternalStore(subscribe, getDb);
+}
+
+/** Who is logged in (`null` = nobody). */
+export function useSession(): Session | null {
+  return useSyncExternalStore(subscribe, getSession);
 }
 
 /** Which side of the marketplace is logged in. */

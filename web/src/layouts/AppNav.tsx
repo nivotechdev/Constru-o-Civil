@@ -5,7 +5,7 @@ import { NotificationsPanel } from '../components/NotificationsPanel';
 import { useNotifications } from '../hooks/useNotifications';
 import { useUI } from '../hooks/useStore';
 import { navigate } from '../services/router';
-import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../services/sharedUI';
+import { MENU_DEFAULTS, MENU_KEY, type MenuUI, askSignOut } from '../services/sharedUI';
 import { getUI, setUI } from '../services/store';
 import type { Role } from '../types/models';
 import { cx } from '../utils/cx';
@@ -387,7 +387,15 @@ function TopBar({ role, items, active, account }: TopBarProps) {
                     <MenuItem key={m.path} icon={m.icon} label={m.label} onClick={() => go(m.path)} />
                   ))}
                   <div className="h-px bg-concrete-200 my-1" />
-                  <MenuItem icon="log-out" label="Sair da conta" danger onClick={() => go('/login')} />
+                  <MenuItem
+                    icon="log-out"
+                    label="Sair da conta"
+                    danger
+                    onClick={() => {
+                      setMenu({ menuOpen: false });
+                      askSignOut();
+                    }}
+                  />
                 </div>
               </>
             ) : null}

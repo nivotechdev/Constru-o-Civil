@@ -8,7 +8,12 @@ import { useDb, useUI } from '../../hooks/useStore';
 import { TIPOS_OBRA } from '../../services/catalog';
 import { goBack, navigate } from '../../services/router';
 import { currentCompany } from '../../services/selectors';
-import { COMPANY_PROFILE_DEFAULTS, COMPANY_PROFILE_KEY, type CompanyProfileUI } from '../../services/sharedUI';
+import {
+  COMPANY_PROFILE_DEFAULTS,
+  COMPANY_PROFILE_KEY,
+  type CompanyProfileUI,
+  askSignOut
+} from '../../services/sharedUI';
 import { updateCompany } from '../../services/store';
 
 interface EditCompanyUI {
@@ -91,13 +96,7 @@ export default function EditCompanyProfile() {
           onInput={(v) => setUi({ whatsapp: v })}
         />
         <div className="pt-2 border-t border-concrete-200">
-          <Button
-            label="Sair da conta"
-            variant="danger"
-            fullWidth
-            iconLeft="log-out"
-            onClick={() => navigate('/login')}
-          />
+          <Button label="Sair da conta" variant="danger" fullWidth iconLeft="log-out" onClick={askSignOut} />
         </div>
       </div>
       <div className="px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex gap-3 lg:static lg:bg-transparent lg:shadow-none">

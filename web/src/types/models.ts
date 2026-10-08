@@ -1,8 +1,41 @@
 // Domain types for the Bicos marketplace. They mirror, field by field, the records the legacy
 // app kept in its in-memory mock database (app/js/data/seed.js + app/js/store.js).
 
-/** Which side of the marketplace is "logged in" (demo account switch). */
+/** Which side of the marketplace an account is on. One account = one side (see docs/DECISOES.md). */
 export type Role = 'trabalhador' | 'recrutador';
+
+/**
+ * A login. The password is not here: it belongs to the auth provider (Supabase Auth), never to the
+ * app's tables. Dates are ISO strings; `null` means "not yet".
+ */
+export interface Account {
+  id: string;
+  email: string;
+  role: Role;
+  /** CPF (worker) or CNPJ (company), masked. */
+  document: string;
+  whatsapp: string;
+  whatsappVerifiedAt: string | null;
+  emailConfirmedAt: string | null;
+  /** When "Completar perfil" was finished. */
+  profileCompletedAt: string | null;
+  /** The worker profile this account owns (role trabalhador). */
+  workerId: string | null;
+  /** The company this account belongs to (role recrutador). */
+  companyId: string | null;
+  createdAt: string;
+}
+
+/** Who is logged in, as the screens and route guards need it. */
+export interface Session {
+  accountId: string;
+  email: string;
+  role: Role;
+  workerId: string | null;
+  companyId: string | null;
+  emailConfirmed: boolean;
+  profileComplete: boolean;
+}
 
 /** Days of the week a job can happen on (see utils/jobInfo.ts). */
 export type DiasKey = 'semana' | 'fimdesemana' | 'qualquer';
@@ -150,6 +183,7 @@ export interface City {
 
 /** Everything the mock backend stores. */
 export interface Database {
+  accounts: Record<string, Account>;
   companies: Record<string, Company>;
   workers: Record<string, Worker>;
   jobs: Record<string, Job>;

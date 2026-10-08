@@ -1,4 +1,5 @@
 import { createElement, use, type ComponentType } from 'react';
+import type { Access } from './services/guards';
 import { compileRoute, type CompiledRoute } from './services/router';
 import type { ScreenProps } from './types/screen';
 
@@ -68,45 +69,57 @@ const JobClosed = screen(() => import('./pages/recruiter/JobClosed'));
 const BoostJob = screen(() => import('./pages/recruiter/BoostJob'));
 const History = screen(() => import('./pages/recruiter/History'));
 
+export interface RouteDef extends Screen {
+  /** Who may open it (see services/guards.ts). */
+  access: Access;
+}
+
+const guest = (s: Screen): RouteDef => ({ ...s, access: 'guest' });
+const onboarding = (s: Screen): RouteDef => ({ ...s, access: 'onboarding' });
+const anyone = (s: Screen): RouteDef => ({ ...s, access: 'public' });
+const app = (s: Screen): RouteDef => ({ ...s, access: 'app' });
+const worker = (s: Screen): RouteDef => ({ ...s, access: 'trabalhador' });
+const company = (s: Screen): RouteDef => ({ ...s, access: 'recrutador' });
+
 // Order matters only for documentation: every pattern is anchored (^…$), so at most one matches.
-export const ROUTES: CompiledRoute<Screen>[] = [
-  compileRoute('/splash', Splash),
-  compileRoute('/escolha-perfil', ChooseProfile),
-  compileRoute('/cadastro/:role', Signup),
-  compileRoute('/verificar-email', VerifyEmail),
-  compileRoute('/completar-perfil/:role', CompleteProfile),
-  compileRoute('/login', Login),
-  compileRoute('/esqueci-senha', ForgotPassword),
-  compileRoute('/redefinir-senha', ResetPassword),
-  compileRoute('/notificacoes', Notifications),
-  compileRoute('/configuracoes', Settings),
-  compileRoute('/configuracoes/privacidade', Privacy),
+export const ROUTES: CompiledRoute<RouteDef>[] = [
+  compileRoute('/splash', guest(Splash)),
+  compileRoute('/escolha-perfil', guest(ChooseProfile)),
+  compileRoute('/cadastro/:role', guest(Signup)),
+  compileRoute('/verificar-email', onboarding(VerifyEmail)),
+  compileRoute('/completar-perfil/:role', onboarding(CompleteProfile)),
+  compileRoute('/login', guest(Login)),
+  compileRoute('/esqueci-senha', anyone(ForgotPassword)),
+  compileRoute('/redefinir-senha', anyone(ResetPassword)),
+  compileRoute('/notificacoes', app(Notifications)),
+  compileRoute('/configuracoes', app(Settings)),
+  compileRoute('/configuracoes/privacidade', app(Privacy)),
 
-  compileRoute('/mural', Feed),
-  compileRoute('/vaga/:id', JobDetail),
-  compileRoute('/confirmar/:id', ConfirmApplication),
-  compileRoute('/enviado/:id', ApplicationSent),
-  compileRoute('/minhas-candidaturas', MyApplications),
-  compileRoute('/vagas-salvas', SavedJobs),
-  compileRoute('/selecionado/:id', Selected),
-  compileRoute('/avaliar/:id', RateJob),
+  compileRoute('/mural', app(Feed)),
+  compileRoute('/vaga/:id', app(JobDetail)),
+  compileRoute('/confirmar/:id', worker(ConfirmApplication)),
+  compileRoute('/enviado/:id', worker(ApplicationSent)),
+  compileRoute('/minhas-candidaturas', worker(MyApplications)),
+  compileRoute('/vagas-salvas', worker(SavedJobs)),
+  compileRoute('/selecionado/:id', worker(Selected)),
+  compileRoute('/avaliar/:id', worker(RateJob)),
 
-  compileRoute('/perfil', WorkerProfile),
-  compileRoute('/perfil/editar', EditWorkerProfile),
-  compileRoute('/trabalhador/:id', WorkerProfile),
-  compileRoute('/trabalhador/:id/:jobId', WorkerProfile),
+  compileRoute('/perfil', worker(WorkerProfile)),
+  compileRoute('/perfil/editar', worker(EditWorkerProfile)),
+  compileRoute('/trabalhador/:id', app(WorkerProfile)),
+  compileRoute('/trabalhador/:id/:jobId', company(WorkerProfile)),
 
-  compileRoute('/empresa', CompanyProfile),
-  compileRoute('/empresa/editar', EditCompanyProfile),
-  compileRoute('/construtora/:id', CompanyProfile),
-  compileRoute('/avaliacoes/:type/:id', Reviews),
+  compileRoute('/empresa', company(CompanyProfile)),
+  compileRoute('/empresa/editar', company(EditCompanyProfile)),
+  compileRoute('/construtora/:id', app(CompanyProfile)),
+  compileRoute('/avaliacoes/:type/:id', app(Reviews)),
 
-  compileRoute('/criar-vaga', CreateJob),
-  compileRoute('/vaga-publicada/:id', JobPublished),
-  compileRoute('/vaga-gerenciar/:id', JobManage),
-  compileRoute('/fechado/:id', JobClosed),
-  compileRoute('/impulsionar/:id', BoostJob),
-  compileRoute('/historico', History)
+  compileRoute('/criar-vaga', company(CreateJob)),
+  compileRoute('/vaga-publicada/:id', company(JobPublished)),
+  compileRoute('/vaga-gerenciar/:id', company(JobManage)),
+  compileRoute('/fechado/:id', company(JobClosed)),
+  compileRoute('/impulsionar/:id', company(BoostJob)),
+  compileRoute('/historico', company(History))
 ];
 
 const AUTH_FLOW = new Set([

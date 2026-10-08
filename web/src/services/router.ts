@@ -51,6 +51,11 @@ export function goBack(fallback = '/mural'): void {
   navigate(prev || fallback, { replace: true });
 }
 
+/** Forgets the back stack (after signing out, "back" must not return into the account). */
+export function resetHistory(): void {
+  backStack.length = 0;
+}
+
 function dispatch(): void {
   location_ = { path: currentPath(), seq: getLocation().seq + 1 };
   listeners.forEach((fn) => fn());

@@ -8,7 +8,7 @@ import { useDb, useUI } from '../../hooks/useStore';
 import { CARGOS_TRABALHADOR, ESPECIALIDADES, REGIOES_TRABALHADOR } from '../../services/catalog';
 import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
-import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI } from '../../services/sharedUI';
+import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI, askSignOut } from '../../services/sharedUI';
 import { updateWorker } from '../../services/store';
 import { toggleItem } from '../../utils/list';
 
@@ -92,13 +92,7 @@ export default function EditWorkerProfile() {
           </div>
         </div>
         <div className="pt-2 border-t border-concrete-200">
-          <Button
-            label="Sair da conta"
-            variant="danger"
-            fullWidth
-            iconLeft="log-out"
-            onClick={() => navigate('/login')}
-          />
+          <Button label="Sair da conta" variant="danger" fullWidth iconLeft="log-out" onClick={askSignOut} />
         </div>
       </div>
       <div className="px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex gap-3 lg:static lg:bg-transparent lg:shadow-none">

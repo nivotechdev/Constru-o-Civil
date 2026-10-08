@@ -1,11 +1,44 @@
-import type { Application, Company, Job, Worker, WorkerPost } from '../types/models';
+import type { Account, Application, Company, Job, Worker, WorkerPost } from '../types/models';
 
 // Mock marketplace data. In production this is an API — here it seeds the in-memory
 // store (see services/store.ts), which is the single source of truth every screen reads from,
 // so the same job/candidate/company record renders identically wherever it's used.
 
+// The demo accounts' profiles (the login decides which one is in use; see services/auth.ts).
 export const CURRENT_COMPANY_ID = 'meridiano';
 export const CURRENT_WORKER_ID = 'jorge';
+
+/** Password of both demo accounts. Only the mock auth knows it; a real backend keeps passwords in Auth. */
+export const DEMO_PASSWORD = 'bicos123';
+
+export const ACCOUNTS: Record<string, Account> = {
+  'conta-jorge': {
+    id: 'conta-jorge',
+    email: 'trabalhador@bicos.demo',
+    role: 'trabalhador',
+    document: '529.982.247-25',
+    whatsapp: '(11) 97412-5580',
+    whatsappVerifiedAt: '2025-03-02T13:10:00.000Z',
+    emailConfirmedAt: '2025-03-02T13:20:00.000Z',
+    profileCompletedAt: '2025-03-02T13:30:00.000Z',
+    workerId: CURRENT_WORKER_ID,
+    companyId: null,
+    createdAt: '2025-03-02T13:00:00.000Z'
+  },
+  'conta-meridiano': {
+    id: 'conta-meridiano',
+    email: 'construtora@bicos.demo',
+    role: 'recrutador',
+    document: '18.402.551/0001-07',
+    whatsapp: '(11) 98842-3310',
+    whatsappVerifiedAt: '2025-03-01T12:10:00.000Z',
+    emailConfirmedAt: '2025-03-01T12:20:00.000Z',
+    profileCompletedAt: '2025-03-01T12:30:00.000Z',
+    workerId: null,
+    companyId: CURRENT_COMPANY_ID,
+    createdAt: '2025-03-01T12:00:00.000Z'
+  }
+};
 
 export const COMPANIES: Record<string, Company> = {
   meridiano: {

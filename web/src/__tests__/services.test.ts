@@ -44,10 +44,12 @@ describe('simulated backend calls keep the legacy delays', () => {
     vi.restoreAllMocks();
   });
 
-  it('signs in after 500 ms, into the chosen side', async () => {
-    expect(s.store.getRole()).toBe('trabalhador');
-    await settlesAfter(s.auth.signIn('recrutador'), 500);
+  it('signs in after 500 ms, into the side of the account', async () => {
+    expect(s.store.getSession()).toBeNull();
+    const result = await settlesAfter(s.auth.signIn('construtora@bicos.demo', 'bicos123'), 500);
+    expect(result).toEqual({ ok: true, role: 'recrutador' });
     expect(s.store.getRole()).toBe('recrutador');
+    expect(s.sel.currentCompanyId()).toBe(seed.CURRENT_COMPANY_ID);
   });
 
   it('signs up after 700 ms, refusing the two "already registered" documents', async () => {
@@ -67,9 +69,7 @@ describe('simulated backend calls keep the legacy delays', () => {
     expect(await settlesAfter(s.auth.signUp(company), 700)).toEqual({ ok: false, reason: 'doc-taken' });
   });
 
-  it('finishes sign-up on the spot and keeps the other flows at 600/900 ms', async () => {
-    s.auth.finishSignUp('recrutador');
-    expect(s.store.getRole()).toBe('recrutador');
+  it('keeps the password flows at 600 ms and the data export at 900 ms', async () => {
     await settlesAfter(s.auth.requestPasswordReset('ana@x.com'), 600);
     await settlesAfter(s.auth.resetPassword('abcdefgh1'), 600);
     await settlesAfter(s.account.exportMyData(), 900);

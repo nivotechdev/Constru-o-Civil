@@ -15,6 +15,7 @@ import type { TableInsert, TableRow } from '../types/supabase';
 
 const seedDatabase = (): Database =>
   structuredClone({
+    accounts: seed.ACCOUNTS,
     companies: seed.COMPANIES,
     workers: seed.WORKERS,
     jobs: seed.JOBS,
@@ -29,8 +30,16 @@ const CREATED = '2026-09-25T12:00:00.000Z';
 /** What Postgres returns for an insert: the row plus the column defaults. */
 function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
   return {
+    accounts: inserts.accounts.map((r): TableRow<'accounts'> => ({
+      whatsapp_verified_at: null,
+      email_confirmed_at: null,
+      profile_completed_at: null,
+      worker_id: null,
+      company_id: null,
+      created_at: CREATED,
+      ...r
+    })),
     companies: inserts.companies.map((r): TableRow<'companies'> => ({
-      owner_id: null,
       cnpj: null,
       tipo_obra: null,
       rating: 0,
@@ -47,7 +56,6 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       id: r.id ?? ''
     })),
     workers: inserts.workers.map((r): TableRow<'workers'> => ({
-      user_id: null,
       distance: '',
       rating: 0,
       jobs_done: 0,
@@ -55,7 +63,6 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       verified: false,
       specialties: [],
       facts: [],
-      cpf: null,
       photo_url: null,
       created_at: CREATED,
       ...r,
@@ -181,7 +188,7 @@ describe('table <-> domain mappers', () => {
     expect(relativeTime('2026-09-23T09:00:00Z', now)).toBe('2 dias atrás');
     const row: TableRow<'notifications'> = {
       id: 1,
-      user_id: '00000000-0000-0000-0000-000000000001',
+      account_id: 'conta-jorge',
       kind: 'bico_fechado',
       title: 'Bico fechado',
       body: 'Todas as vagas de Servente de obra foram preenchidas.',

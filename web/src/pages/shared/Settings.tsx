@@ -3,6 +3,7 @@ import { BackBar } from '../../components/BackBar';
 import { Icon, type IconName } from '../../components/icons/Icon';
 import { useRole } from '../../hooks/useStore';
 import { goBack, navigate } from '../../services/router';
+import { askSignOut } from '../../services/sharedUI';
 
 interface RowProps {
   icon: IconName;
@@ -79,7 +80,7 @@ export default function Settings() {
           <Row icon="shield-check" label="Política de privacidade" onClick={() => {}} />
         </Section>
         <Section title="">
-          <Row icon="log-out" label="Sair da conta" danger onClick={() => navigate('/login')} />
+          <Row icon="log-out" label="Sair da conta" danger onClick={() => askSignOut()} />
         </Section>
       </div>
     </div>

@@ -2,23 +2,26 @@
 // functions of a Database snapshot (so components can memoize on it).
 import { CURRENT_COMPANY_ID, CURRENT_WORKER_ID } from '../data/seed';
 import type { Application, Company, Database, Job, Worker, WorkerPost } from '../types/models';
+import { getSession } from './store';
 
 // ---- companies & workers ----
 export const getCompany = (db: Database, id: string): Company | undefined => db.companies[id];
 export const allCompanies = (db: Database): Company[] => Object.values(db.companies);
-export const currentCompany = (db: Database): Company => db.companies[CURRENT_COMPANY_ID];
-export const currentCompanyId = (): string => CURRENT_COMPANY_ID;
+// The logged-in account's profile. Outside a session (tests, the sign-in screens) they fall back to the
+// demo accounts' profiles, so nothing reading them ever gets `undefined`.
+export const currentCompanyId = (): string => getSession()?.companyId ?? CURRENT_COMPANY_ID;
+export const currentCompany = (db: Database): Company => db.companies[currentCompanyId()];
 
 export const getWorker = (db: Database, id: string): Worker | undefined => db.workers[id];
 export const allWorkers = (db: Database): Worker[] => Object.values(db.workers);
-export const currentWorker = (db: Database): Worker => db.workers[CURRENT_WORKER_ID];
-export const currentWorkerId = (): string => CURRENT_WORKER_ID;
+export const currentWorkerId = (): string => getSession()?.workerId ?? CURRENT_WORKER_ID;
+export const currentWorker = (db: Database): Worker => db.workers[currentWorkerId()];
 
 // ---- jobs ----
 export const allJobs = (db: Database): Job[] => Object.values(db.jobs);
 export const getJob = (db: Database, id: string): Job | undefined => db.jobs[id];
 export const activeJobs = (db: Database): Job[] => allJobs(db).filter((j) => db.deletedJobIds.indexOf(j.id) < 0);
-export const isMine = (job: Job): boolean => job.companyId === CURRENT_COMPANY_ID;
+export const isMine = (job: Job): boolean => job.companyId === currentCompanyId();
 
 export function successfulJobsForCompany(db: Database, companyId: string): number {
   return allJobs(db).filter((j) => j.companyId === companyId && j.closed && !j.semContratacao).length;
