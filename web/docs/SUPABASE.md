@@ -49,16 +49,20 @@ Os dois apps dividem o Auth (`auth.users`), o segredo do CPF/CNPJ no Vault e os 
 
 ## 3. Situação da aplicação no projeto
 
-| Parte                                                                                | Situação                                                           |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| `20261009000100_bicos_v2_schema.sql` (tipos, tabelas, privilégios, RLS ligada)       | **aplicada** (tabelas vazias e fechadas: não afeta o app antigo)   |
-| `20261009000200_bicos_v2_rules.sql` (políticas, gatilhos, RPCs)                      | **a aplicar** — precisa da autorização do responsável pelo projeto |
-| `20261009000300_bicos_v2_data.sql` (ofícios, bucket, cron, Realtime, contas antigas) | **a aplicar** — idem                                               |
-| Edge Function `entrar-com-documento`                                                 | **a publicar** — idem                                              |
+| Parte                                                                                                                                                                                    | Situação                                                                                              |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Tabelas, privilégios, RLS (`…000100_bicos_v2_schema.sql`)                                                                                                                                | **aplicada**                                                                                          |
+| Políticas, gatilhos de conta e no Auth, RPCs de vagas, candidatura, avaliação, pagamento, contato, exportação (`…000200_bicos_v2_rules.sql`)                                             | **aplicada** (em partes)                                                                              |
+| Ofícios, bucket `vagas`, cron, Realtime, contas antigas (`…000300_bicos_v2_data.sql`)                                                                                                    | **aplicada** — as 4 contas antigas já têm conta nova (perfil a completar)                             |
+| Edge Function `entrar-com-documento`                                                                                                                                                     | **publicada**                                                                                         |
+| `supabase/APLICAR-NO-SQL-EDITOR.sql`: decisões da construtora e desistência (`transition_application`), retirar candidatura, excluir vaga, excluir conta, limpeza de cadastro abandonado | **a aplicar** — colar no SQL Editor do painel e rodar (o conector pedia uma aprovação que não chegou) |
 
-Aplicar: no painel (SQL Editor, um arquivo por vez, na ordem) ou com a CLI
-(`supabase link --project-ref ppnxdajiihsjaojxokzh` e `supabase db push`). Publicar a função:
-`supabase functions deploy entrar-com-documento`. Cada arquivo roda inteiro ou não roda nada.
+Testado direto no banco (numa transação desfeita no fim): cadastro com documento cifrado e mascarado,
+aceite dos termos registrado, publicar vaga (e recusar valor abaixo de R$ 80), PIX gerado e
+confirmado, vaga já impulsionada bloqueada, candidatura, contagem privada no mural, WhatsApp ilegível
+por `select`, contato fechado antes da aprovação, RLS das vagas salvas, avisos, marcar como lidas,
+editar vaga (avisa os candidatos), encerrar (recusa quem esperava). O teste achou e corrigiu um erro em
+`update_job`.
 
 ## 4. Configurações do painel (Authentication)
 

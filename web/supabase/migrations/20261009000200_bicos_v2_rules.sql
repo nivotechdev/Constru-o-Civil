@@ -276,7 +276,7 @@ create trigger on_account_deleted_v2
 
 -- Iniciais acompanham o nome; o WhatsApp da construtora acompanha a conta.
 create or replace function public.worker_initials_v2()
-returns trigger language plpgsql set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   new.initials := public.initials_of(new.name);
   return new;
@@ -869,16 +869,16 @@ begin
       message = 'Você já aprovou ' || v_holding || ' pessoas. Não dá para pedir menos que isso.';
   end if;
 
-  if v_old.pay is distinct from j.pay then v_changes := v_changes || 'valor'; end if;
+  if v_old.pay is distinct from j.pay then v_changes := array_append(v_changes, 'valor'); end if;
   if v_old.date_to_arrange is distinct from j.date_to_arrange or v_old.start_date is distinct from j.start_date
      or v_old.end_date is distinct from j.end_date or v_old.start_time is distinct from j.start_time
      or v_old.end_time is distinct from j.end_time then
-    v_changes := v_changes || 'data';
+    v_changes := array_append(v_changes, 'data');
   end if;
   if v_old.cep is distinct from j.cep or v_old.street is distinct from j.street
      or v_old.number is distinct from j.number or v_old.city is distinct from j.city
      or v_old.uf is distinct from j.uf then
-    v_changes := v_changes || 'endereço';
+    v_changes := array_append(v_changes, 'endereço');
   end if;
 
   update public.jobs set

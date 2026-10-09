@@ -6,11 +6,18 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 // `npm run build` → dist/ (code-split, served over HTTP).
 // `npm run build:standalone` → dist-standalone/index.html with everything inlined, which — like the
 // legacy app — also works when opened straight from disk (file://).
+//
+// The Supabase variables (.env.local) turn the real backend on (src/services/mode.ts). The standalone
+// preview and the tests always run on the demo data, so they ignore them.
+const DEMO_ENV = { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' };
 export default defineConfig(({ mode }) => {
   const standalone = mode === 'standalone';
   return {
     base: './',
     plugins: [react(), ...(standalone ? [viteSingleFile()] : [])],
+    define: standalone
+      ? Object.fromEntries(Object.entries(DEMO_ENV).map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)]))
+      : undefined,
     build: {
       outDir: standalone ? 'dist-standalone' : 'dist',
       target: 'es2020',
@@ -21,7 +28,8 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'node',
-      include: ['src/**/*.test.ts']
+      include: ['src/**/*.test.ts'],
+      env: DEMO_ENV
     }
   };
 });
