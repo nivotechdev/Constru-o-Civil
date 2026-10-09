@@ -77,6 +77,15 @@ export interface CompiledRoute<T> {
   value: T;
 }
 
+/** A malformed "%" in a link (e.g. "/vaga/50%") is kept as typed instead of crashing the app (Z10). */
+export function safeDecode(part: string): string {
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    return part;
+  }
+}
+
 export function compileRoute<T>(pattern: string, value: T): CompiledRoute<T> {
   const keys: string[] = [];
   const regexStr = pattern.replace(/:[^/]+/g, (m) => {
@@ -95,7 +104,7 @@ export function matchRoute<T>(
     if (m) {
       const params: Params = {};
       r.keys.forEach((k, i) => {
-        params[k] = decodeURIComponent(m[i + 1]);
+        params[k] = safeDecode(m[i + 1]);
       });
       return { route: r, params };
     }

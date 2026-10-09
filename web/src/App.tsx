@@ -14,6 +14,7 @@ import { getLocation, matchRoute, navigate, subscribe } from './services/router'
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from './services/sharedUI';
 import { getUI, setUI } from './services/store';
 import type { Role } from './types/models';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 /** Unknown route (404). */
 function PageNotFound() {
@@ -87,11 +88,11 @@ function useLocation() {
 
 export function App() {
   return (
-    <>
+    <ErrorBoundary fullScreen>
       <OfflineBanner />
       <Routes />
       <ToastHost />
-    </>
+    </ErrorBoundary>
   );
 }
 
@@ -117,7 +118,15 @@ function Routes() {
   if (decision.kind === 'forbidden') return <WrongArea area={decision.area} />;
 
   const { Component } = match.route.value;
-  const screen = <Component key={path} params={match.params} />;
+  // Z10: one screen failing (render error, or its file failed to download) shows the error card inside
+  // the shell; the navigation keeps working. Keyed by path: opening another screen starts clean.
+  const screen = (
+    <ErrorBoundary key={path}>
+      <Suspense fallback={null}>
+        <Component params={match.params} />
+      </Suspense>
+    </ErrorBoundary>
+  );
   return (
     <Suspense fallback={null}>
       <LegacyRerender />

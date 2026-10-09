@@ -17,18 +17,25 @@ interface Screen {
 // idle (see App.tsx). Unlike React.lazy — which suspends for a tick even when the chunk is already
 // there — a loaded screen renders synchronously, so navigating never shows an empty frame, just like
 // the legacy app.
-function screen(load: Loader): Screen {
+export function screen(load: Loader): Screen {
   let loaded: ScreenModule | null = null;
   let promise: Promise<ScreenModule> | null = null;
   const preload = () => {
     if (!promise) {
-      const p = load().then((m) => {
-        loaded = m;
-        // Marked the way React's use() reads a settled promise, so a screen whose chunk is already
-        // here renders synchronously instead of suspending for a tick.
-        Object.assign(p, { status: 'fulfilled', value: m });
-        return m;
-      });
+      const p = load().then(
+        (m) => {
+          loaded = m;
+          // Marked the way React's use() reads a settled promise, so a screen whose chunk is already
+          // here renders synchronously instead of suspending for a tick.
+          Object.assign(p, { status: 'fulfilled', value: m });
+          return m;
+        },
+        (e: unknown) => {
+          // Z10: a failed download is forgotten, so "Tentar de novo" (or the next visit) tries again.
+          promise = null;
+          throw e;
+        }
+      );
       promise = p;
     }
     return promise;

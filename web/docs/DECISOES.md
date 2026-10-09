@@ -377,3 +377,15 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   só (`layouts/accountMenu.ts`).
 - **Tela "Ajuda"** (`/ajuda`, abre com ou sem conta; adianta a F05): perguntas frequentes por lado e
   "Falar no WhatsApp" / "Mandar e-mail" com o suporte da NivoTech.
+
+## Z10 — Sem tela branca
+
+- **Error Boundary em dois níveis**: o app inteiro (tela cheia) e cada tela (dentro do layout, com a
+  navegação funcionando). O cartão diz "Essa tela não abriu" (ou "Sem internet") com "Tentar de novo" e
+  "Recarregar o app".
+- **Tela que não baixou** (internet caiu no meio) é esquecida e baixada de novo no "Tentar de novo" ou na
+  próxima visita. Se o arquivo sumiu porque saiu uma versão nova, o app recarrega sozinho (no máximo uma
+  vez por minuto, para não entrar em laço).
+- **Link com `%` quebrado** não derruba o roteador: o pedaço fica como foi digitado.
+- **Erros vão para `services/monitoring.ts`** (adianta a X21): no console na demonstração; no modo real,
+  para o Sentry se `VITE_SENTRY_DSN` estiver configurado, sem dados pessoais (a rota vai sem ids).
