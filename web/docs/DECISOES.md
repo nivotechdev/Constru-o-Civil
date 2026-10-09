@@ -614,3 +614,16 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   aparece quando terminarmos) ou "Não verificada" (falar com a gente). Acabou o "conferido em undefined".
 - Recrutador com CPF vê "Documento: CPF (não aparece no perfil)" no lugar do CNPJ.
 - O cadastro deixou de prometer conferir o CNPJ antes de liberar a publicação (Y17).
+
+## Y25 — Trocar o WhatsApp (os dois lados)
+
+- Tela própria **"Trocar WhatsApp"** (`/whatsapp`), aberta pelo "Trocar" em Editar perfil e Editar
+  empresa (o trabalhador antes não conseguia trocar; a construtora salvava "abc" vazio). Máscara, celular
+  com DDD (11 números) no app e no banco (`whatsapp_valid`; o cadastro também passou a exigir celular).
+- Com o código ligado, o número só troca depois de confirmado pelo código (reaproveita `WhatsAppCode`); sem
+  o código, troca e fica "sem confirmação". **Trocar sempre zera `whatsapp_verified_at`**, a não ser que o
+  número novo tenha acabado de ser confirmado (vale uma vez, por 30 minutos).
+- O código real é a Edge Function **`codigo-whatsapp`** (Twilio Verify, canal WhatsApp ou SMS; limites
+  por número e por IP; captcha quando ligado). Fica **escondida até configurar**: sem `TWILIO_ACCOUNT_SID`,
+  `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID` nas secrets e `VITE_CODIGO_WHATSAPP=1` no app, o passo do código
+  some (cadastro e troca), como antes. O código confirmado no cadastro faz a conta nascer confirmada.

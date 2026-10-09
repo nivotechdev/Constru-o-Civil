@@ -16,6 +16,7 @@ import {
   isValidEmail,
   maskCNPJ,
   maskCPF,
+  isValidMobile,
   maskPhone,
   passwordStrength,
   STRENGTH_LABEL,
@@ -177,8 +178,7 @@ function validateField(field: SignupField, values: Values, role: Role): string |
   }
   if (field.id === 'email') return isValidEmail(v) ? null : 'E-mail inválido. Confira se tem @ e o domínio.';
   if (field.id === 'whatsapp') {
-    const digits = v.replace(/\D/g, '');
-    return digits.length === 10 || digits.length === 11 ? null : 'Número inválido. Confira o DDD e o número.';
+    return isValidMobile(v) ? null : 'Número inválido. Use o celular com DDD (11 números).';
   }
   if (field.id === 'codigo') return /^\d{6}$/.test(v) ? null : 'Digite os 6 números do código.';
   if (field.id === 'senha') {
@@ -258,7 +258,7 @@ export default function Signup({ params }: ScreenProps) {
   function resendCode() {
     if (ui.resending) return;
     setUi({ resending: true, submitError: null });
-    sendWhatsAppCode(ui.values.whatsapp || '')
+    sendWhatsAppCode(ui.values.whatsapp || '', captcha.getToken)
       .then(() =>
         setUi((s) => ({
           resending: false,
@@ -304,7 +304,7 @@ export default function Signup({ params }: ScreenProps) {
     }
     if (field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE) {
       setUi({ submitting: true, submitError: null });
-      sendWhatsAppCode(ui.values.whatsapp || '')
+      sendWhatsAppCode(ui.values.whatsapp || '', captcha.getToken)
         .then(() =>
           setUi((s) => ({
             submitting: false,

@@ -67,6 +67,7 @@ const WorkerProfile = screen(() => import('./pages/shared/WorkerProfileScreen'))
 const EditWorkerProfile = screen(() => import('./pages/shared/EditWorkerProfile'));
 const CompanyProfile = screen(() => import('./pages/shared/CompanyProfileScreen'));
 const EditCompanyProfile = screen(() => import('./pages/shared/EditCompanyProfile'));
+const ChangeWhatsApp = screen(() => import('./pages/shared/ChangeWhatsApp'));
 const Reviews = screen(() => import('./pages/shared/ReviewsScreen'));
 const Help = screen(() => import('./pages/shared/Help'));
 
@@ -115,6 +116,7 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/termos', anyone(Terms)),
   compileRoute('/privacidade', anyone(PrivacyPolicy)),
   compileRoute('/notificacoes', app(Notifications)),
+  compileRoute('/whatsapp', app(ChangeWhatsApp)),
   compileRoute('/configuracoes', app(Settings)),
   compileRoute('/configuracoes/privacidade', app(Privacy)),
   compileRoute('/configuracoes/excluir-conta', app(DeleteAccount)),

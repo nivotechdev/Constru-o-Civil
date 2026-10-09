@@ -435,6 +435,31 @@ describe('remote: data and actions', () => {
     expect(m.store.getSession()).toBeNull();
   });
 
+  it('changing the WhatsApp is one RPC; the code goes through the Edge Function (Y25)', async () => {
+    const fake = server('obra', {
+      functions: {
+        'codigo-whatsapp': (body) => ({ data: { ok: (body as { codigo?: string }).codigo === '123456' }, error: null })
+      },
+      rpc: { change_whatsapp: () => ({ data: { whatsapp: '21988881111', verified_at: NOW }, error: null }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('obra@exemplo.com', 'segredo123');
+    const profiles = await import('../services/profiles');
+    await m.auth.sendWhatsAppCode('(21) 98888-1111');
+    expect(await m.auth.verifyWhatsAppCode('(21) 98888-1111', '000000')).toBe(false);
+    expect(await m.auth.verifyWhatsAppCode('(21) 98888-1111', '123456')).toBe(true);
+    expect(fake.calls.filter((c) => c.kind === 'function').map((c) => c.args)).toEqual([
+      { acao: 'enviar', telefone: '21988881111', captchaToken: undefined },
+      { acao: 'conferir', telefone: '21988881111', codigo: '000000' },
+      { acao: 'conferir', telefone: '21988881111', codigo: '123456' }
+    ]);
+    await profiles.changeWhatsApp('(21) 98888-1111');
+    expect(fake.calls.find((c) => c.name === 'change_whatsapp')?.args).toEqual({ p_whatsapp: '21988881111' });
+    const account = m.store.getDb().accounts['u-obra'];
+    expect(account).toMatchObject({ whatsapp: '21988881111', whatsappVerifiedAt: NOW });
+    expect(m.store.getDb().companies['u-obra'].whatsapp).toBe('21988881111');
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

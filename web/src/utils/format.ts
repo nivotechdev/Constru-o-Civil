@@ -75,3 +75,8 @@ export function formatPostDate(isoDate: string): string {
   if (!y || !m || !d) return isoDate;
   return `${d} de ${MESES[m - 1]} de ${y}`;
 }
+
+/** A Brazilian mobile number with DDD: 11 digits, DDD without zero, starting with 9 (Y25). */
+export function isValidMobile(v: string | null | undefined): boolean {
+  return /^[1-9][1-9]9\d{8}$/.test(String(v || '').replace(/\D/g, ''));
+}

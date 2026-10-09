@@ -212,3 +212,38 @@ describe('Z12: profile pictures (demo)', () => {
     expect(fitWithin(800, 600)).toEqual({ width: 800, height: 600 });
   });
 });
+
+describe('Y25: changing the WhatsApp (demo)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('only a mobile with DDD; confirmed only right after the code; profile and account together', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    const profiles = await import('../services/profiles');
+    const store = await import('../services/store');
+    const run = async <T>(p: Promise<T>) => {
+      const r = p.then(
+        (v) => ({ ok: true as const, v }),
+        (e: unknown) => ({ ok: false as const, e: e as Error })
+      );
+      await vi.runAllTimersAsync();
+      return r;
+    };
+    await run(auth.signIn('construtora@bicos.demo', 'bicos123'));
+    const session = store.getSession()!;
+    expect((await run(profiles.changeWhatsApp('1188887777'))).ok).toBe(false);
+
+    // Without the code: the new number is saved unconfirmed.
+    expect((await run(profiles.changeWhatsApp('(21) 99999-0000'))).ok).toBe(true);
+    let db = store.getDb();
+    expect(db.accounts[session.accountId]).toMatchObject({ whatsapp: '(21) 99999-0000', whatsappVerifiedAt: null });
+    expect(db.companies[session.companyId!].whatsapp).toBe('(21) 99999-0000');
+
+    // With the code: confirmed.
+    expect((await run(auth.verifyWhatsAppCode('(21) 98888-1111', '123456'))).ok).toBe(true);
+    await run(profiles.changeWhatsApp('(21) 98888-1111'));
+    db = store.getDb();
+    expect(db.accounts[session.accountId].whatsappVerifiedAt).not.toBeNull();
+  });
+});

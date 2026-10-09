@@ -16,6 +16,7 @@ import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { SpecialtiesField } from '../../components/SpecialtiesField';
+import { WhatsAppRow } from '../../components/WhatsAppRow';
 
 /** Frees the local copies of pictures that were picked and then dropped. */
 function revoke(urls: (string | null | undefined)[]) {
@@ -110,6 +111,7 @@ export default function EditWorkerProfile() {
             onChange={(v) => setDraft((d) => ({ ...d, oficioId: v }))}
           />
           <LocationButton title="Onde você quer trabalhar" location={draft.city} onClick={() => setPickerOpen(true)} />
+          <WhatsAppRow label="Seu WhatsApp" />
           <SpecialtiesField
             id="editar-especialidade"
             value={draft.specialties}

@@ -155,6 +155,18 @@ select count(*) from public.companies where verified <> (verification_status = '
 -- select public.set_company_verification('<id da empresa>', 'verificada');
 ```
 
+### 13. `20261011000600_y25_whatsapp.sql` (Y25)
+
+`whatsapp_valid` (celular com DDD, 11 números) no cadastro; `change_whatsapp` é a única forma de trocar o
+número (a coluna `companies.whatsapp` deixa de ser editável direto) e zera a confirmação, salvo se o número
+acabou de ser confirmado por código; `whatsapp_verifications` + `mark_whatsapp_verified` (só a Edge
+Function `codigo-whatsapp`).
+
+```sql
+select public.whatsapp_valid('11988887777'), public.whatsapp_valid('1188887777');               -- true, false
+select has_column_privilege('authenticated', 'public.companies', 'whatsapp', 'update');          -- false
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

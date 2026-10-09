@@ -334,6 +334,7 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       ensure_my_account: { Args: never; Returns: undefined };
       finish_sign_up: { Args: { p: Json }; Returns: undefined };
       conclude_my_finished_jobs: { Args: never; Returns: number };

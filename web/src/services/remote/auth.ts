@@ -238,3 +238,18 @@ export async function resetPassword(newPassword: string): Promise<void> {
   setRecovering(false);
   await signOut();
 }
+
+// ---- WhatsApp code (Y25) ----
+
+export async function sendWhatsAppCode(phone: string, captcha: CaptchaSource): Promise<void> {
+  await invokeFunction('codigo-whatsapp', { acao: 'enviar', telefone: digits(phone), captchaToken: await captcha() });
+}
+
+export async function verifyWhatsAppCode(phone: string, code: string): Promise<boolean> {
+  const answer = await invokeFunction<{ ok?: boolean }>('codigo-whatsapp', {
+    acao: 'conferir',
+    telefone: digits(phone),
+    codigo: code
+  });
+  return answer?.ok === true;
+}

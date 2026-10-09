@@ -15,6 +15,7 @@ import { saveMyProfileImages, updateMyCompanyProfile, type ProfileImages } from 
 import { goBack, navigate } from '../../services/router';
 import { currentCompany } from '../../services/selectors';
 import { showToast } from '../../services/toast';
+import { WhatsAppRow } from '../../components/WhatsAppRow';
 
 function revoke(urls: (string | null | undefined)[]) {
   for (const u of urls) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
@@ -25,8 +26,7 @@ export default function EditCompanyProfile() {
   const [draft, setDraft] = useState(() => ({
     name: company.name,
     tipoObra: company.tipoObra,
-    location: company.location,
-    whatsapp: company.whatsapp
+    location: company.location
   }));
   const [images, setImages] = useState<ProfileImages>({});
   const [progress, setProgress] = useState<number | null>(null);
@@ -124,16 +124,7 @@ export default function EditCompanyProfile() {
             value={draft.location}
             onInput={(v) => setDraft((d) => ({ ...d, location: v }))}
           />
-          <Input
-            id="edit-company-whatsapp"
-            label="WhatsApp de contato"
-            icon="phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={draft.whatsapp}
-            onInput={(v) => setDraft((d) => ({ ...d, whatsapp: v }))}
-          />
+          <WhatsAppRow label="WhatsApp de contato" />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {save.error ? <FieldError message={save.error} /> : null}

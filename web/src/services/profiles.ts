@@ -10,6 +10,8 @@ import * as store from './store';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/profiles';
 import * as remoteData from './remote/data';
+import { isValidMobile, maskPhone } from '../utils/format';
+import { demoVerifiedPhones } from './auth';
 
 /** A worker's public profile (+ reviews, posts). Backend: select the worker by id. */
 export async function loadWorkerProfile(_workerId: string): Promise<void> {
@@ -44,7 +46,27 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   store.updateWorker(currentWorkerId(), patch);
 }
 
-export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'tipoObra' | 'location' | 'whatsapp'>>;
+export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'tipoObra' | 'location'>>;
+
+/**
+ * Y25: changes the account's WhatsApp (worker or company). A mobile with DDD (11 digits). The number
+ * stays confirmed only if it was just confirmed by code (verifyWhatsAppCode); otherwise
+ * `whatsappVerifiedAt` goes back to empty. Backend: RPC change_whatsapp.
+ */
+export async function changeWhatsApp(phone: string): Promise<void> {
+  if (!IS_DEMO) return remote.changeWhatsApp(phone);
+  await mockLatency(500);
+  const digits = phone.replace(/\D/g, '');
+  if (!isValidMobile(digits)) throw serviceError('validacao', 'Confira o número: celular com DDD, 11 números.');
+  const session = store.getSession();
+  if (!session) throw serviceError('nao_autorizado');
+  const masked = maskPhone(digits);
+  const verifiedAt = demoVerifiedPhones.has(digits) ? new Date().toISOString() : null;
+  demoVerifiedPhones.delete(digits);
+  store.updateAccount(session.accountId, { whatsapp: masked, whatsappVerifiedAt: verifiedAt });
+  if (session.workerId) store.updateWorker(session.workerId, { whatsapp: masked });
+  if (session.companyId) store.updateCompany(session.companyId, { whatsapp: masked });
+}
 
 /** Saves the logged-in company's profile. Backend: update companies where id = my company. */
 export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promise<void> {

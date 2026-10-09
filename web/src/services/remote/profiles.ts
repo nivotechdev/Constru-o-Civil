@@ -51,7 +51,6 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
   if (patch.name !== undefined) update.name = patch.name.trim();
   if (patch.tipoObra !== undefined) update.tipo_obra = patch.tipoObra || null;
   if (patch.location !== undefined) update.location = patch.location;
-  if (patch.whatsapp !== undefined) update.whatsapp = patch.whatsapp.replace(/\D/g, '');
   if (!Object.keys(update).length) return;
   const client = await db();
   const row = await request(() =>
@@ -62,8 +61,6 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
       .select(COMPANY_COLUMNS)
       .single()
   );
-  // The number is private: the account row (readable by its owner) carries it, kept in sync by a trigger.
-  if (typeof update.whatsapp === 'string') store.updateAccount(s.accountId, { whatsapp: update.whatsapp });
   apply(putCompanies([row], undefined, s.accountId));
 }
 
@@ -158,4 +155,17 @@ export async function saveMyProfileImages(changes: ProfileImages, onProgress?: P
     apply(putCompanies([row], undefined, s.accountId));
   }
   void removeMedia(old, 'avatars');
+}
+
+/** Y25: RPC change_whatsapp (validates, syncs the profile row and resets the confirmation). */
+export async function changeWhatsApp(phone: string): Promise<void> {
+  const s = session();
+  const client = await db();
+  const answer = (await request(() => client.rpc('change_whatsapp', { p_whatsapp: phone.replace(/\D/g, '') }))) as {
+    whatsapp: string;
+    verified_at: string | null;
+  };
+  store.updateAccount(s.accountId, { whatsapp: answer.whatsapp, whatsappVerifiedAt: answer.verified_at });
+  if (s.workerId) store.updateWorker(s.workerId, { whatsapp: answer.whatsapp });
+  if (s.companyId) store.updateCompany(s.companyId, { whatsapp: answer.whatsapp });
 }

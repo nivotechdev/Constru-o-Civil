@@ -22,6 +22,7 @@ import { DEFAULT_CITY, DEFAULT_POINT } from './defaults';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/auth';
 import { isValidCnpj, isValidCpf } from '../utils/document';
+import { FEATURES } from './features';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -275,23 +276,36 @@ export async function resetPassword(_newPassword: string): Promise<void> {
 
 // ---- WhatsApp ----
 
-/** Sends the 6-digit confirmation code to the number by WhatsApp. Demo: nothing is sent. */
-export async function sendWhatsAppCode(_phone: string): Promise<void> {
-  await mockLatency(600);
-}
+/** Numbers confirmed by code in this demo session (the server keeps them 30 minutes: Y25). */
+export const demoVerifiedPhones = new Set<string>();
 
-/** Checks the code the user typed. Demo: any 6 digits confirm the number, except 000000. */
-export async function verifyWhatsAppCode(_phone: string, code: string): Promise<boolean> {
+/**
+ * Sends the 6-digit confirmation code to the number by WhatsApp. Backend: Edge Function
+ * `codigo-whatsapp` (Twilio Verify; attempt limits; captcha when configured). Demo: nothing is sent.
+ */
+export async function sendWhatsAppCode(phone: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
+  if (!IS_DEMO) return remote.sendWhatsAppCode(phone, captcha);
   await mockLatency(600);
-  return /^\d{6}$/.test(code) && code !== '000000';
 }
 
 /**
- * Whether the sign-up can confirm the WhatsApp number by code. It needs a WhatsApp/SMS provider (e.g.
- * Twilio or the Meta API), not integrated yet: with the real backend the code step is left out and the
+ * Checks the code the user typed; right → the number counts as confirmed (for the sign-up or a number
+ * change). Demo: any 6 digits confirm the number, except 000000.
+ */
+export async function verifyWhatsAppCode(phone: string, code: string): Promise<boolean> {
+  if (!IS_DEMO) return remote.verifyWhatsAppCode(phone, code);
+  await mockLatency(600);
+  const ok = /^\d{6}$/.test(code) && code !== '000000';
+  if (ok) demoVerifiedPhones.add(digits(phone));
+  return ok;
+}
+
+/**
+ * Whether the number can be confirmed by code (sign-up, number change). It needs the WhatsApp/SMS
+ * provider (Twilio Verify, VITE_CODIGO_WHATSAPP): until it is set up, the code step is left out and the
  * number is stored unconfirmed (accounts.whatsapp_verified_at stays empty). The demo simulates it.
  */
-export const WHATSAPP_CODE_AVAILABLE = IS_DEMO;
+export const WHATSAPP_CODE_AVAILABLE = FEATURES.whatsappCode;
 
 /** Seconds before the code can be sent again. */
 export const WHATSAPP_RESEND_SECONDS = 15;
