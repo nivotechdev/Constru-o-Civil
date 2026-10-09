@@ -8,6 +8,8 @@ import { ServiceError } from '../../services/errors';
 import { RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { navigate } from '../../services/router';
 import { getUI, resetUI } from '../../services/store';
+import { useCaptcha } from '../../components/Captcha';
+import { FEATURES } from '../../services/features';
 
 interface LoginUI {
   identifier: string;
@@ -32,9 +34,7 @@ const LOGIN_DEFAULTS: LoginUI = {
 };
 
 const SIGN_IN_ERRORS: Record<SignInError, string> = {
-  'conta-inexistente': 'Não achamos uma conta com esse e-mail, CPF ou CNPJ. Confira ou crie sua conta.',
-  'senha-errada': 'Senha incorreta. Confira e tente de novo, ou toque em "Esqueci minha senha".',
-  credenciais: 'E-mail ou senha incorretos. Confira e tente de novo, ou toque em "Esqueci minha senha".'
+  credenciais: 'E-mail, CPF/CNPJ ou senha incorretos. Confira e tente de novo, ou toque em "Esqueci minha senha".'
 };
 
 const UNAVAILABLE = DEMO_ACCOUNTS.length
@@ -43,6 +43,7 @@ const UNAVAILABLE = DEMO_ACCOUNTS.length
 
 export default function Login() {
   const [ui, setUi] = useUI<LoginUI>('login', LOGIN_DEFAULTS);
+  const captcha = useCaptcha();
 
   function submit() {
     if (ui.submitting) return;
@@ -53,7 +54,7 @@ export default function Login() {
       return;
     }
     setUi({ submitting: true, error: null });
-    signIn(ui.identifier, ui.password)
+    signIn(ui.identifier, ui.password, captcha.getToken)
       .then((result) => {
         if (!result.ok) {
           setUi({ submitting: false, error: SIGN_IN_ERRORS[result.reason] });
@@ -108,27 +109,34 @@ export default function Login() {
             onInput={(v) => setUi({ password: v, passwordError: null, error: null })}
             onEnter={submit}
           />
+          {captcha.widget}
           {ui.error ? <FieldError message={ui.error} /> : null}
           <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
-          <div className="flex items-center gap-3 py-1">
-            <span className="flex-1 h-px bg-concrete-200" />
-            <span className="text-xs text-concrete-500">ou</span>
-            <span className="flex-1 h-px bg-concrete-200" />
-          </div>
-          <Button
-            label="Continuar com o Google"
-            variant="secondary"
-            fullWidth
-            iconLeftNode={<GoogleIcon size={20} />}
-            onClick={() => setUi({ error: UNAVAILABLE })}
-          />
-          <Button
-            label="Continuar com o celular"
-            variant="secondary"
-            fullWidth
-            iconLeft="phone-call"
-            onClick={() => setUi({ error: UNAVAILABLE })}
-          />
+          {FEATURES.googleLogin || FEATURES.phoneLogin ? (
+            <div className="flex items-center gap-3 py-1">
+              <span className="flex-1 h-px bg-concrete-200" />
+              <span className="text-xs text-concrete-500">ou</span>
+              <span className="flex-1 h-px bg-concrete-200" />
+            </div>
+          ) : null}
+          {FEATURES.googleLogin ? (
+            <Button
+              label="Continuar com o Google"
+              variant="secondary"
+              fullWidth
+              iconLeftNode={<GoogleIcon size={20} />}
+              onClick={() => setUi({ error: UNAVAILABLE })}
+            />
+          ) : null}
+          {FEATURES.phoneLogin ? (
+            <Button
+              label="Continuar com o celular"
+              variant="secondary"
+              fullWidth
+              iconLeft="phone-call"
+              onClick={() => setUi({ error: UNAVAILABLE })}
+            />
+          ) : null}
         </div>
         <div className="flex flex-col items-center gap-1">
           <Button label="Esqueci minha senha" variant="ghost" onClick={() => navigate('/esqueci-senha')} />

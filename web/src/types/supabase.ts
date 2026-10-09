@@ -306,7 +306,6 @@ export interface SupabaseDatabase {
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
       ensure_my_account: { Args: never; Returns: undefined };
-      document_available: { Args: { p_document: string }; Returns: boolean };
       finish_sign_up: { Args: { p: Json }; Returns: undefined };
       conclude_my_finished_jobs: { Args: never; Returns: number };
       job_stats: { Args: { p_job_ids: string[] }; Returns: JobStatsRow[] };
@@ -335,9 +334,6 @@ export interface SupabaseDatabase {
       get_payment: { Args: { p_payment_id: string }; Returns: BoostPaymentRow };
       export_my_data: { Args: never; Returns: Json };
       delete_my_account: { Args: { p_confirm_commitments: boolean }; Returns: undefined };
-      // From the legacy app's schema: free an e-mail/document stuck in a sign-up never confirmed.
-      reiniciar_cadastro_pendente_email: { Args: { p_email: string }; Returns: boolean };
-      reiniciar_cadastro_pendente_documento: { Args: { p_documento: string }; Returns: boolean };
     };
     Enums: {
       app_role: Role;

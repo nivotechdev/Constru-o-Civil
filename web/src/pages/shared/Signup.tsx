@@ -22,6 +22,8 @@ import {
   strengthBarColor
 } from '../../utils/format';
 import { WhatsAppCode } from './WhatsAppCode';
+import { useCaptcha } from '../../components/Captcha';
+import { errorMessage } from '../../services/errors';
 
 type FieldId = 'nome' | 'razao' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
 
@@ -208,6 +210,7 @@ function signupSteps(role: Role): { overline: string; fields: SignupField[] } {
 }
 
 export default function Signup({ params }: ScreenProps) {
+  const captcha = useCaptcha();
   const role: Role = params.role === 'recrutador' ? 'recrutador' : 'trabalhador';
   const key = 'cadastro-' + role;
   const cfg = signupSteps(role);
@@ -330,15 +333,18 @@ export default function Signup({ params }: ScreenProps) {
       return;
     }
     setUi({ submitting: true, acceptError: false, submitError: null });
-    signUp({
-      role,
-      name: (role === 'trabalhador' ? ui.values.nome : ui.values.razao) || '',
-      doc: ui.values.doc || '',
-      email: ui.values.email || '',
-      whatsapp: ui.values.whatsapp || '',
-      password: ui.values.senha || '',
-      acceptedTermsVersion: TERMS_VERSION
-    })
+    signUp(
+      {
+        role,
+        name: (role === 'trabalhador' ? ui.values.nome : ui.values.razao) || '',
+        doc: ui.values.doc || '',
+        email: ui.values.email || '',
+        whatsapp: ui.values.whatsapp || '',
+        password: ui.values.senha || '',
+        acceptedTermsVersion: TERMS_VERSION
+      },
+      captcha.getToken
+    )
       .then((result) => {
         if (!result.ok && result.reason === 'email-taken') {
           const emailStep = cfg.fields.findIndex((f) => f.id === 'email');
@@ -350,7 +356,8 @@ export default function Signup({ params }: ScreenProps) {
           return;
         }
         if (!result.ok) {
-          // The CPF/CNPJ already has an account: back to that step, with the general error.
+          // Refused without a reason (it would reveal whether the CPF/CNPJ has an account): back to the
+          // document step, with the general error.
           const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
           setUi({ submitting: false, step: docStep, generalError: true });
           return;
@@ -359,12 +366,8 @@ export default function Signup({ params }: ScreenProps) {
         resetUI(key);
         navigate('/verificar-email', { replace: true });
       })
-      .catch(() =>
-        setUi({
-          submitting: false,
-          submitError: 'Não deu para criar sua conta agora. Confira sua internet e tente de novo.'
-        })
-      );
+      // Y20: the service's own message (no internet, too many attempts, weak password…).
+      .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
   }
 
   const strength = passwordStrength(ui.values.senha);
@@ -391,11 +394,9 @@ export default function Signup({ params }: ScreenProps) {
             <div className="flex gap-2.5 items-start">
               <span className="shrink-0 mt-0.5" />
               <div className="flex flex-col gap-1">
-                <span className="font-semibold text-danger-500">
-                  {role === 'recrutador' ? 'Esse CNPJ já tem conta na Bicos.' : 'Esse CPF já tem conta na Bicos.'}
-                </span>
+                <span className="font-semibold text-danger-500">Não deu para criar a conta com esses dados.</span>
                 <span className="text-sm text-concrete-700">
-                  Entre com o e-mail cadastrado ou recupere a senha. Se não foi você, fale com a gente pelo WhatsApp.
+                  {`Confira o ${role === 'recrutador' ? 'CNPJ' : 'CPF'} e o e-mail. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
                 </span>
               </div>
             </div>
@@ -523,6 +524,7 @@ export default function Signup({ params }: ScreenProps) {
         )}
       </div>
       <div className="px-5 sm:px-8 py-3 bg-white shadow-bar flex flex-col gap-2">
+        {captcha.widget}
         {ui.submitError ? <FieldError message={ui.submitError} /> : null}
         <Button
           label={

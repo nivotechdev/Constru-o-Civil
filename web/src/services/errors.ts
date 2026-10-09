@@ -17,10 +17,13 @@ export type ServiceErrorCode =
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode;
-  constructor(code: ServiceErrorCode, message: string) {
+  /** The server's own reason, when it gives one (e.g. an Edge Function's `erro`), for services to branch on. */
+  readonly reason: string | null;
+  constructor(code: ServiceErrorCode, message: string, reason: string | null = null) {
     super(message);
     this.name = 'ServiceError';
     this.code = code;
+    this.reason = reason;
   }
 }
 

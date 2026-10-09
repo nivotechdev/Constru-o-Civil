@@ -1,12 +1,11 @@
 // Accounts with the real backend (Supabase Auth), behind the same functions as demo mode
-// (services/auth.ts). Proven flows from the legacy app are kept: the e-mail/document stuck in a sign-up
-// that was never confirmed is freed and the sign-up retried once (reiniciar_cadastro_pendente_*), and
-// the CPF/CNPJ is checked before the account is created.
+// (services/auth.ts). The CPF/CNPJ is checked by the database inside the sign-up itself, never by a
+// separate question anyone could ask (Z07).
 import type { Role } from '../../types/models';
-import type { ProfileData, SignInResult, SignUpData, SignUpResult } from '../auth';
-import { serviceError } from '../errors';
+import type { CaptchaSource, ProfileData, SignInResult, SignUpData, SignUpResult } from '../auth';
+import { serviceError, ServiceError } from '../errors';
 import { getSession } from '../store';
-import { db, request, toServiceError } from './client';
+import { db, invokeFunction, request, toServiceError } from './client';
 import { authRedirectUrl, enterPendingSession, enterSession, leaveSession, setRecovering } from './session';
 
 const digits = (s: string) => s.replace(/\D/g, '');
@@ -21,47 +20,43 @@ const authCode = (e: unknown) => ((e ?? {}) as AuthErrorLike).code ?? '';
 
 // ---- sign-in ----
 
-/** E-mail + password, or CPF/CNPJ + password (the document is resolved on the server). */
-export async function signIn(identifier: string, password: string): Promise<SignInResult> {
+const TOO_MANY = 'Muitas tentativas. Espere 15 minutos e tente de novo, ou toque em "Esqueci minha senha".';
+
+/**
+ * E-mail + password, or CPF/CNPJ + password. For a document, the Edge Function checks the password on
+ * the server and only then answers that account's e-mail (Z07: one answer for "no account" and "wrong
+ * password", captcha and attempt limits); the sign-in itself is the normal e-mail one, from this device.
+ */
+export async function signIn(identifier: string, password: string, captcha: CaptchaSource): Promise<SignInResult> {
   const client = await db();
   const id = identifier.trim();
   let email = id.toLowerCase();
 
   if (!id.includes('@')) {
-    // The document never becomes an e-mail in the browser: the Edge Function signs in with it and
-    // answers only the session (or why not).
     const doc = digits(id);
-    if (doc.length !== 11 && doc.length !== 14) return { ok: false, reason: 'conta-inexistente' };
-    const { data, error } = await client.functions.invoke<{
-      access_token?: string;
-      refresh_token?: string;
-      email?: string;
-      erro?: string;
-    }>('entrar-com-documento', { body: { documento: doc, senha: password } });
-    let answer = data;
-    if (error) {
-      const context = (error as { context?: Response }).context;
-      answer = context && typeof context.json === 'function' ? await context.json().catch(() => null) : null;
-      if (!answer?.erro) throw toServiceError(error);
+    if (doc.length !== 11 && doc.length !== 14) return { ok: false, reason: 'credenciais' };
+    let answer: { email?: string };
+    try {
+      answer = await invokeFunction<{ email?: string }>('entrar-com-documento', {
+        documento: doc,
+        senha: password,
+        captchaToken: await captcha()
+      });
+    } catch (e) {
+      const refusal = e instanceof ServiceError ? e.reason : null;
+      if (refusal === 'credenciais') return { ok: false, reason: 'credenciais' };
+      if (refusal === 'muitas-tentativas') throw serviceError('conflito', TOO_MANY);
+      if (refusal === 'captcha')
+        throw serviceError('validacao', 'Não conseguimos confirmar que você não é um robô. Tente de novo.');
+      throw e;
     }
-    if (answer?.erro === 'conta-inexistente') return { ok: false, reason: 'conta-inexistente' };
-    if (answer?.erro === 'senha-errada') return { ok: false, reason: 'senha-errada' };
-    if (answer?.erro === 'email-nao-confirmado' && answer.email) {
-      enterPendingSession({ id: 'pendente', email: answer.email, role: 'trabalhador' });
-      return { ok: true, role: 'trabalhador' };
-    }
-    if (!answer?.access_token || !answer.refresh_token) throw serviceError('falha_demo');
-    const { data: set, error: setError } = await client.auth.setSession({
-      access_token: answer.access_token,
-      refresh_token: answer.refresh_token
-    });
-    if (setError || !set.user) throw toServiceError(setError);
-    return { ok: true, role: await enterSession(set.user) };
+    if (!answer.email) return { ok: false, reason: 'credenciais' };
+    email = answer.email;
   }
 
   let result;
   try {
-    result = await client.auth.signInWithPassword({ email, password });
+    result = await client.auth.signInWithPassword({ email, password, options: { captchaToken: await captcha() } });
   } catch (e) {
     throw toServiceError(e);
   }
@@ -73,9 +68,11 @@ export async function signIn(identifier: string, password: string): Promise<Sign
       enterPendingSession({ id: 'pendente', email, role: 'trabalhador' });
       return { ok: true, role: 'trabalhador' };
     }
+    if (code === 'over_request_rate_limit') throw serviceError('conflito', TOO_MANY);
+    if (code === 'captcha_failed')
+      throw serviceError('validacao', 'Não conseguimos confirmar que você não é um robô. Tente de novo.');
     throw toServiceError(result.error);
   }
-  email = result.data.user.email ?? email;
   return { ok: true, role: await enterSession(result.data.user) };
 }
 
@@ -106,65 +103,49 @@ export async function checkPassword(password: string): Promise<boolean> {
 
 const ROLE_TIPO: Record<Role, string> = { trabalhador: 'pedreiro', recrutador: 'construtora' };
 
-async function documentAvailable(doc: string): Promise<boolean> {
+/**
+ * Creates the account in Supabase Auth; a trigger creates `accounts` and the worker/company in the same
+ * transaction, and checks the CPF/CNPJ there (Z07): a document of a confirmed account makes the sign-up
+ * fail without saying why; a document stuck in a sign-up never confirmed is freed.
+ */
+export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<SignUpResult> {
   const client = await db();
-  if (await request(() => client.rpc('document_available', { p_document: doc }))) return true;
-  // Maybe stuck in an earlier sign-up never confirmed: free it (only unconfirmed ones) and check again.
-  await client.rpc('reiniciar_cadastro_pendente_documento', { p_documento: doc }).then(undefined, () => undefined);
-  return request(() => client.rpc('document_available', { p_document: doc }));
-}
-
-export async function signUp(data: SignUpData): Promise<SignUpResult> {
-  const client = await db();
-  if (!(await documentAvailable(data.doc))) return { ok: false, reason: 'doc-taken' };
   const email = data.email.trim().toLowerCase();
-
-  const attempt = async () => {
-    try {
-      return await client.auth.signUp({
-        email,
-        password: data.password,
-        options: {
-          emailRedirectTo: authRedirectUrl(),
-          // Read by the database when the account is created (accounts + worker/company, in one
-          // transaction). `tipo` keeps the legacy app's trigger working for the same user.
-          data: {
-            nome: data.name.trim(),
-            role: data.role,
-            tipo: ROLE_TIPO[data.role],
-            documento: digits(data.doc),
-            whatsapp: digits(data.whatsapp),
-            terms_version: data.acceptedTermsVersion
-          }
+  let result;
+  try {
+    result = await client.auth.signUp({
+      email,
+      password: data.password,
+      options: {
+        emailRedirectTo: authRedirectUrl(),
+        captchaToken: await captcha(),
+        // Read by the database when the account is created; the document is removed from the Auth
+        // metadata right after it is encrypted (Z09). `tipo` keeps the legacy app's trigger working.
+        data: {
+          nome: data.name.trim(),
+          role: data.role,
+          tipo: ROLE_TIPO[data.role],
+          documento: digits(data.doc),
+          whatsapp: digits(data.whatsapp),
+          terms_version: data.acceptedTermsVersion
         }
-      });
-    } catch (e) {
-      throw toServiceError(e);
-    }
-  };
-
-  let result = await attempt();
-  const code = authCode(result.error);
-  if (code === 'user_already_exists' || code === 'email_exists') {
-    // The same e-mail in a sign-up never confirmed: free it and try once more.
-    await client.rpc('reiniciar_cadastro_pendente_email', { p_email: email }).then(undefined, () => undefined);
-    result = await attempt();
-  } else if (code === 'unexpected_failure' || code === 'database_error_saving_new_user') {
-    await client
-      .rpc('reiniciar_cadastro_pendente_documento', { p_documento: data.doc })
-      .then(undefined, () => undefined);
-    result = await attempt();
+      }
+    });
+  } catch (e) {
+    throw toServiceError(e);
   }
 
   if (result.error) {
-    const again = authCode(result.error);
-    if (again === 'user_already_exists' || again === 'email_exists') return { ok: false, reason: 'email-taken' };
-    if (again === 'unexpected_failure' || again === 'database_error_saving_new_user')
-      return { ok: false, reason: 'doc-taken' };
-    if (again === 'weak_password')
+    const code = authCode(result.error);
+    if (code === 'user_already_exists' || code === 'email_exists') return { ok: false, reason: 'email-taken' };
+    if (code === 'unexpected_failure' || code === 'database_error_saving_new_user' || result.error.status === 500)
+      return { ok: false, reason: 'recusado' };
+    if (code === 'weak_password')
       throw serviceError('validacao', 'Essa senha é fraca. Use pelo menos 8 caracteres, com letras e números.');
-    if (again === 'over_email_send_rate_limit')
+    if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit')
       throw serviceError('conflito', 'Muitas tentativas agora. Espere alguns minutos e tente de novo.');
+    if (code === 'captcha_failed')
+      throw serviceError('validacao', 'Não conseguimos confirmar que você não é um robô. Tente de novo.');
     throw toServiceError(result.error);
   }
   const user = result.data.user;

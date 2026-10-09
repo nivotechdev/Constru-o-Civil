@@ -210,24 +210,42 @@ describe('remote: sign-in and sign-up', () => {
     expect(m.guards.homeFor(session!)).toBe('/verificar-email');
   });
 
-  it('signs in by CPF through the server function (the e-mail never reaches the browser)', async () => {
+  it('Z07: by CPF the server checks the password and answers only that e-mail; the sign-in is the normal one', async () => {
     const fake = server('ana', {
-      functions: {
-        'entrar-com-documento': () => ({ data: { access_token: 'a', refresh_token: 'r' }, error: null })
-      },
-      auth: { setSession: () => ({ data: { user: authUser('u-ana', 'ana@exemplo.com') }, error: null }) }
+      functions: { 'entrar-com-documento': () => ({ data: { email: 'ana@exemplo.com' }, error: null }) }
     });
     const m = await load(fake);
-    expect(await m.auth.signIn('123.456.789-09', 'segredo123')).toEqual({ ok: true, role: 'trabalhador' });
+    expect(await m.auth.signIn('123.456.789-09', 'segredo123', async () => 'tok-1')).toEqual({
+      ok: true,
+      role: 'trabalhador'
+    });
     expect(fake.calls.find((c) => c.kind === 'function')?.args).toEqual({
       documento: '12345678909',
-      senha: 'segredo123'
+      senha: 'segredo123',
+      captchaToken: 'tok-1'
+    });
+    expect(fake.calls.find((c) => c.name === 'signInWithPassword')?.args).toMatchObject({
+      email: 'ana@exemplo.com',
+      password: 'segredo123'
     });
   });
 
-  it('signs up: checks the document, sends the profile data, waits for the e-mail confirmation', async () => {
+  it('Z07: no account and wrong password are the same answer; too many attempts is explained', async () => {
+    const refusal = (erro: string, status: number) => () => ({
+      data: null,
+      error: { name: 'FunctionsHttpError', context: new Response(JSON.stringify({ erro }), { status }) }
+    });
+    let m = await load(server('ana', { functions: { 'entrar-com-documento': refusal('credenciais', 401) } }));
+    expect(await m.auth.signIn('123.456.789-09', 'errada')).toEqual({ ok: false, reason: 'credenciais' });
+    m = await load(server('ana', { functions: { 'entrar-com-documento': refusal('muitas-tentativas', 429) } }));
+    await expect(m.auth.signIn('123.456.789-09', 'errada')).rejects.toMatchObject({
+      code: 'conflito',
+      message: expect.stringContaining('Muitas tentativas')
+    });
+  });
+
+  it('signs up: sends the profile data (no separate document check), waits for the e-mail confirmation', async () => {
     const fake = fakeSupabase({
-      rpc: { document_available: () => ({ data: true, error: null }) },
       auth: {
         signUp: () => ({ data: { user: authUser('u-novo', 'novo@exemplo.com', false), session: null }, error: null })
       }
@@ -253,11 +271,17 @@ describe('remote: sign-in and sign-up', () => {
       whatsapp: '11988887777',
       terms_version: '1.0'
     });
+    expect(fake.calls.some((c) => c.kind === 'rpc')).toBe(false); // Z07: no document oracle
     expect(m.guards.homeFor(m.store.getSession()!)).toBe('/verificar-email');
   });
 
-  it('refuses a document already in use and an e-mail already confirmed', async () => {
-    let m = await load(fakeSupabase({ rpc: { document_available: () => ({ data: false, error: null }) } }));
+  it('a refused document comes back without the reason; an e-mail already confirmed is told', async () => {
+    let m = await load(
+      fakeSupabase({
+        // The database refuses inside the sign-up; the Auth answers only "database error".
+        auth: { signUp: () => ({ data: {}, error: { code: 'unexpected_failure', status: 500, message: 'x' } }) }
+      })
+    );
     const data = {
       role: 'trabalhador' as const,
       name: 'Novo',
@@ -267,11 +291,10 @@ describe('remote: sign-in and sign-up', () => {
       password: 'segredo123',
       acceptedTermsVersion: '1.0'
     };
-    expect(await m.auth.signUp(data)).toEqual({ ok: false, reason: 'doc-taken' });
+    expect(await m.auth.signUp(data)).toEqual({ ok: false, reason: 'recusado' });
 
     m = await load(
       fakeSupabase({
-        rpc: { document_available: () => ({ data: true, error: null }) },
         // Supabase hides an existing confirmed e-mail: a user without identities and no error.
         auth: {
           signUp: () => ({ data: { user: { ...authUser('x', 'novo@exemplo.com'), identities: [] } }, error: null })

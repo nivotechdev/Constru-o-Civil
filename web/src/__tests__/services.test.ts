@@ -68,10 +68,10 @@ describe('simulated backend calls keep the legacy delays', () => {
     expect(await settlesAfter(s.auth.signUp({ ...data, doc: '123.456.789-01' }), 700)).toEqual({ ok: true });
     expect(await settlesAfter(s.auth.signUp({ ...data, doc: '111.111.111-11' }), 700)).toEqual({
       ok: false,
-      reason: 'doc-taken'
+      reason: 'recusado'
     });
     const company = { ...data, role: 'recrutador' as const, doc: '11.111.111/1111-11' };
-    expect(await settlesAfter(s.auth.signUp(company), 700)).toEqual({ ok: false, reason: 'doc-taken' });
+    expect(await settlesAfter(s.auth.signUp(company), 700)).toEqual({ ok: false, reason: 'recusado' });
   });
 
   it('keeps the password flows at 600 ms and the data export at 900 ms', async () => {

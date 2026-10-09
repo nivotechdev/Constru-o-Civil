@@ -1,23 +1,16 @@
 // Entrar com CPF/CNPJ e senha (tela de login: "E-mail, CPF ou CNPJ").
 //
-// O Supabase Auth só entra por e-mail. Para não revelar a ninguém o e-mail de um CPF/CNPJ, quem faz a
-// troca é esta função, no servidor: acha a conta pelo hash do documento (o mesmo do app antigo), tenta
-// a senha e devolve só a sessão — ou por que não deu. O navegador nunca vê o e-mail de outra pessoa.
+// O Supabase Auth só entra por e-mail. Esta função acha a conta pelo hash do documento, confere a senha
+// no banco (document_login_email) e só então devolve o e-mail da própria conta; o navegador entra com
+// e-mail e senha normalmente (do IP de quem está entrando, com os limites do Auth para cada pessoa).
+// Z07: uma resposta só para "não existe" e "senha errada"; captcha (Turnstile, quando configurado);
+// limite de 5 tentativas por documento e 20 por IP a cada 15 minutos.
 //
-// Respostas: 200 { access_token, refresh_token } · 401 { erro: 'conta-inexistente' | 'senha-errada' |
-// 'email-nao-confirmado', email? } · 400/405/502 { erro }.
+// Respostas: 200 { email } · 401 { erro: 'credenciais' } · 400 { erro: 'captcha' } ·
+// 429 { erro: 'muitas-tentativas' } · 405/502 { erro }.
 // Publicar: supabase functions deploy entrar-com-documento (ver web/docs/SUPABASE.md).
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
-}
+import { captchaOk } from '../_shared/captcha.ts';
+import { adminClient, clientIp, CORS, json } from '../_shared/http.ts';
 
 async function sha256Hex(text: string): Promise<string> {
   const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
@@ -28,38 +21,30 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
 
-  let body: { documento?: unknown; senha?: unknown };
+  let body: { documento?: unknown; senha?: unknown; captchaToken?: unknown };
   try {
     body = await req.json();
   } catch {
-    return json({ erro: 'pedido-invalido' }, 400);
+    return json({ erro: 'credenciais' }, 401);
   }
+  const ip = clientIp(req);
+  if (!(await captchaOk(body.captchaToken, ip))) return json({ erro: 'captcha' }, 400);
+
   const documento = String(body.documento ?? '').replace(/\D/g, '');
   const senha = String(body.senha ?? '');
-  if ((documento.length !== 11 && documento.length !== 14) || !senha) return json({ erro: 'conta-inexistente' }, 401);
+  const admin = adminClient();
 
-  const url = Deno.env.get('SUPABASE_URL') ?? '';
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-  const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Conta cada tentativa (mesmo as inválidas) por IP e por documento.
+  const limits = await Promise.all([
+    admin.rpc('rate_limit_hit', { p_key: 'ip:' + ip, p_max: 20, p_window: '15 minutes' }),
+    admin.rpc('rate_limit_hit', { p_key: 'doc:' + (await sha256Hex(documento)), p_max: 5, p_window: '15 minutes' })
+  ]);
+  if (limits.some((r) => r.error)) return json({ erro: 'falha' }, 502);
+  if (limits.some((r) => r.data === true)) return json({ erro: 'muitas-tentativas' }, 429);
 
-  // A conta do app novo; se não houver, o perfil do app antigo (o hash do documento é o mesmo).
-  const hash = await sha256Hex(documento);
-  const { data: account } = await admin.from('accounts').select('email').eq('document_hash', hash).maybeSingle();
-  let email: string | null = account?.email ?? null;
-  if (!email) {
-    const { data: profile } = await admin.from('profiles').select('email').eq('documento_hash', hash).maybeSingle();
-    email = profile?.email ?? null;
-  }
-  if (!email) return json({ erro: 'conta-inexistente' }, 401);
-
-  const auth = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await auth.auth.signInWithPassword({ email, password: senha });
-  if (error) {
-    // Quem acertou a senha pode saber para qual e-mail o link de confirmação foi.
-    if (error.code === 'email_not_confirmed') return json({ erro: 'email-nao-confirmado', email }, 401);
-    if (error.code === 'invalid_credentials') return json({ erro: 'senha-errada' }, 401);
-    return json({ erro: 'falha' }, 502);
-  }
-  return json({ access_token: data.session?.access_token, refresh_token: data.session?.refresh_token });
+  if ((documento.length !== 11 && documento.length !== 14) || !senha) return json({ erro: 'credenciais' }, 401);
+  const { data: email, error } = await admin.rpc('document_login_email', { p_document: documento, p_password: senha });
+  if (error) return json({ erro: 'falha' }, 502);
+  if (!email) return json({ erro: 'credenciais' }, 401);
+  return json({ email });
 });

@@ -109,8 +109,15 @@ export async function invokeFunction<T>(name: string, body: unknown): Promise<T>
   const answer: FunctionRefusal | null =
     context && typeof context.json === 'function' ? await context.json().catch(() => null) : null;
   if (!answer?.erro) throw toServiceError(result.error);
-  const code = RPC_CODES[answer.erro];
-  if (code) throw serviceError(code, answer.mensagem);
-  if (context?.status === 503) throw serviceError('conflito', answer.mensagem ?? 'Isso ainda não está disponível.');
-  throw serviceError('falha_demo', answer.mensagem);
+  const code: ServiceErrorCode =
+    RPC_CODES[answer.erro] ??
+    (context?.status === 401
+      ? 'nao_autorizado'
+      : context?.status === 400 || context?.status === 422
+        ? 'validacao'
+        : context?.status === 409 || context?.status === 429 || context?.status === 503
+          ? 'conflito'
+          : 'falha_demo');
+  const fallback = serviceError(code);
+  throw new ServiceError(code, answer.mensagem ?? fallback.message, answer.erro);
 }

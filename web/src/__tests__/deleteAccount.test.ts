@@ -54,7 +54,7 @@ describe('deleting the account', () => {
     // The old login no longer works.
     expect(await settle(m.auth.signIn('trabalhador@bicos.demo', 'bicos123'))).toMatchObject({
       ok: true,
-      v: { ok: false, reason: 'conta-inexistente' }
+      v: { ok: false, reason: 'credenciais' }
     });
   });
 

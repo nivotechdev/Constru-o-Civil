@@ -78,9 +78,9 @@ describe('accounts (mock auth)', () => {
   it('refuses unknown accounts and wrong passwords; accepts the CPF too', async () => {
     expect(await run(auth.signIn('ninguem@bicos.demo', 'bicos123'))).toEqual({
       ok: false,
-      reason: 'conta-inexistente'
+      reason: 'credenciais'
     });
-    expect(await run(auth.signIn('trabalhador@bicos.demo', 'errada'))).toEqual({ ok: false, reason: 'senha-errada' });
+    expect(await run(auth.signIn('trabalhador@bicos.demo', 'errada'))).toEqual({ ok: false, reason: 'credenciais' });
     expect(store.getSession()).toBeNull();
     expect(await run(auth.signIn('529.982.247-25', 'bicos123'))).toEqual({ ok: true, role: 'trabalhador' });
     expect(store.getSession()?.workerId).toBe('jorge');

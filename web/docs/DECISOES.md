@@ -315,3 +315,23 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Os dados do cartão da demonstração** ficam no estado da própria tela (somem ao sair), nunca no store (Y14).
 - **Suporte**: WhatsApp `54 9473-1661` e `nivotech.dev@gmail.com`, como informado. O número parece ter um
   dígito a menos para um celular (são 10 dígitos com o DDD); confira e ajuste em `VITE_SUPORTE_WHATSAPP`.
+
+## Z07 — Ninguém descobre quem tem conta pelo CPF/CNPJ
+
+- **Sem pergunta separada sobre o documento.** `document_available` não é mais chamável pelo app; o banco
+  confere o CPF/CNPJ dentro do próprio cadastro (gatilho antes de gravar a conta no Auth). Documento de
+  conta confirmada → o cadastro falha e o app diz só "Não deu para criar a conta com esses dados", com
+  "Entrar" e "Recuperar senha". Documento preso num cadastro nunca confirmado → o cadastro antigo é
+  liberado (o que `reiniciar_cadastro_pendente_*` fazia, agora só dentro de um cadastro de verdade).
+- **Login: uma resposta só** para "não existe" e "senha errada", nos dois modos: "E-mail, CPF/CNPJ ou senha
+  incorretos".
+- **Login por documento**: a Edge Function confere a senha no banco (`document_login_email`, com o hash
+  bcrypt do Auth) e só então devolve o e-mail da própria conta; o app entra normalmente com e-mail e senha,
+  a partir do aparelho da pessoa (antes, todo login por documento saía do IP da função e esbarrava no
+  limite do Auth). Limite: 5 tentativas por documento e 20 por IP a cada 15 minutos (`auth_attempts`).
+- **Captcha: Cloudflare Turnstile**, no login e no último passo do cadastro, no modo "só pede quando
+  desconfia". Escondido até configurar (`VITE_TURNSTILE_SITE_KEY` no app, `TURNSTILE_SECRET` nas Edge
+  Functions e o captcha do próprio Supabase Auth ligado com a mesma chave). O conector do Cloudflare desta
+  sessão não cria widgets do Turnstile: o passo a passo está no `SUPABASE.md`.
+- **Google e celular** só aparecem no login quando o provedor está configurado (`VITE_LOGIN_GOOGLE`,
+  `VITE_LOGIN_CELULAR`); no modo real, hoje, os botões somem (o fluxo completo é a L13).

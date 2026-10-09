@@ -60,22 +60,29 @@ export function forgetPassword(accountId: string): void {
 // ---- sign-in / sign-out ----
 
 /**
- * Why signing in failed. With the real backend an e-mail sign-in can't tell an unknown e-mail from a
- * wrong password (Supabase Auth hides it on purpose): that is `credenciais`.
+ * Why signing in failed. One answer for an unknown e-mail/CPF/CNPJ and a wrong password, in both modes:
+ * telling them apart would reveal who has an account (Z07).
  */
-export type SignInError = 'conta-inexistente' | 'senha-errada' | 'credenciais';
+export type SignInError = 'credenciais';
+
+/** Where a sign-in or sign-up gets its captcha token (components/Captcha.tsx); none in the demo. */
+export type CaptchaSource = () => Promise<string | undefined>;
+const noCaptcha: CaptchaSource = async () => undefined;
 export type SignInResult = { ok: true; role: Role } | { ok: false; reason: SignInError };
 
 /**
  * Signs in with e-mail (or CPF/CNPJ) and password. The side (worker or company) comes from the account.
  * Backend: Supabase Auth `signInWithPassword` (resolving a CPF/CNPJ to the account's e-mail first).
  */
-export async function signIn(identifier: string, password: string): Promise<SignInResult> {
-  if (!IS_DEMO) return remote.signIn(identifier, password);
+export async function signIn(
+  identifier: string,
+  password: string,
+  captcha: CaptchaSource = noCaptcha
+): Promise<SignInResult> {
+  if (!IS_DEMO) return remote.signIn(identifier, password, captcha);
   await mockLatency(500);
   const account = findAccount(identifier);
-  if (!account) return { ok: false, reason: 'conta-inexistente' };
-  if (passwords.get(account.id) !== password) return { ok: false, reason: 'senha-errada' };
+  if (!account || passwords.get(account.id) !== password) return { ok: false, reason: 'credenciais' };
   setSessionAccount(account.id);
   return { ok: true, role: account.role };
 }
@@ -105,7 +112,11 @@ export interface SignUpData {
   acceptedTermsVersion: string;
 }
 
-export type SignUpResult = { ok: true } | { ok: false; reason: 'doc-taken' | 'email-taken' };
+/**
+ * `email-taken`: the e-mail already has a confirmed account. `recusado`: the account couldn't be created
+ * with that data — the server doesn't say why (it would reveal whether a CPF/CNPJ has an account; Z07).
+ */
+export type SignUpResult = { ok: true } | { ok: false; reason: 'recusado' | 'email-taken' };
 
 // Demo: these CPF/CNPJ are "already registered" — they reproduce the "documento já cadastrado" error.
 const TAKEN_DOCS = ['111.111.111-11', '11.111.111/1111-11'];
@@ -122,12 +133,12 @@ function initialsOf(name: string): string {
  * come next (the route guards send the user there). Backend: Supabase Auth `signUp` + a trigger that
  * creates the `accounts` row and the worker/company row.
  */
-export async function signUp(data: SignUpData): Promise<SignUpResult> {
-  if (!IS_DEMO) return remote.signUp(data);
+export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptcha): Promise<SignUpResult> {
+  if (!IS_DEMO) return remote.signUp(data, captcha);
   await mockLatency(700);
   const accounts = Object.values(getDb().accounts);
   if (TAKEN_DOCS.includes(data.doc) || accounts.some((a) => digits(a.document) === digits(data.doc)))
-    return { ok: false, reason: 'doc-taken' };
+    return { ok: false, reason: 'recusado' };
   if (accounts.some((a) => a.email.toLowerCase() === data.email.trim().toLowerCase()))
     return { ok: false, reason: 'email-taken' };
 
