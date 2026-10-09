@@ -188,3 +188,12 @@ describe('CEP', () => {
     expect(p && Math.abs(p.lat + 22.9)).toBeLessThan(0.1);
   });
 });
+
+describe('Y09/W03: total of the job', () => {
+  it('is diária × diárias × people, or "A combinar"', async () => {
+    const { jobTotal } = await import('../utils/jobInfo');
+    expect(jobTotal({ pay: 200, diarias: 3 }, 2)).toBe('R$ 1.200');
+    expect(jobTotal({ pay: null, diarias: 3 }, 2)).toBe('A combinar');
+    expect(jobTotal({ pay: 150, diarias: 1 })).toBe('R$ 150');
+  });
+});

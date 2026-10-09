@@ -70,9 +70,9 @@ export default function CreateJob() {
  * already in the past, can't go below the people already approved, and warns when candidates will be
  * told about a change.
  */
-export function JobFormScreen({ job }: { job?: Job }) {
+export function JobFormScreen({ job, template, templateId }: { job?: Job; template?: JobForm; templateId?: string }) {
   const db = useDb();
-  const KEY = job ? 'edit-job:' + job.id : 'create-job';
+  const KEY = job ? 'edit-job:' + job.id : templateId ? 'create-job:de:' + templateId : 'create-job';
   const holding = job ? approvedCount(db, job.id) : 0;
   const candidates = job
     ? applicationsForJob(db, job.id).filter((a) => isPending(a.status) || holdsSlot(a.status))
@@ -80,7 +80,7 @@ export function JobFormScreen({ job }: { job?: Job }) {
   const limits = job ? { originalStartDate: job.startDate, minSlots: holding } : {};
   const [ui, setUi] = useUI<CreateJobUI>(KEY, () => ({
     step: 1,
-    form: job ? formFromJob(job) : emptyForm(),
+    form: job ? formFromJob(job) : (template ?? emptyForm()),
     errors: {},
     cepStatus: 'idle',
     cepError: null,

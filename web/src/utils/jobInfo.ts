@@ -4,6 +4,7 @@
 // says which part of the week the job can happen on.
 import type { DiasKey, Job, JobAddress } from '../types/models';
 import { addDays, dayLabel, parseISODate, timeLabel, todayISO, weekday } from './dates';
+import { formatBRL } from './format';
 
 interface DiasInfo {
   /** Job page. */
@@ -162,4 +163,12 @@ export function mapLinks(job: Place & { address: { lat: number; lon: number } })
 /** The job is at the top of the mural right now (a paid boost still running; B08/Z03). */
 export function isBoosted(job: { boostEndsAt?: string | null }, now: Date = new Date()): boolean {
   return Boolean(job.boostEndsAt && new Date(job.boostEndsAt).getTime() > now.getTime());
+}
+
+// ---- money ----
+
+/** The whole job: diária × diárias × people, or "A combinar" (Y09/W03). */
+export function jobTotal(job: { pay: number | null; diarias: number }, people = 1): string {
+  if (job.pay == null) return 'A combinar';
+  return formatBRL(job.pay * Math.max(job.diarias || 1, 1) * Math.max(people, 1));
 }

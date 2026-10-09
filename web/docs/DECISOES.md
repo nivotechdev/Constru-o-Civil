@@ -483,3 +483,14 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   construtora" (L02/L03), e no lugar de "Quero esse bico" o botão "Ver outros bicos".
 - "Confirmar candidatura" faz a mesma conferência (link antigo, vaga que lotou no meio do caminho).
 - A demonstração recusa a candidatura com as mesmas mensagens do servidor (`submit_application`).
+
+## Y09 — Resumo do bico (antes "Bico fechado")
+
+- A tela `/fechado/:id` virou **"Resumo do bico"**: título conforme a situação ("Fulano foi pré-selecionado",
+  "está contratado", "concluiu a diária", "Bico concluído", "Vaga encerrada sem contratação"), a equipe com
+  o status de cada um, o que falta (confirmar contratação, avaliar) e o **total = diária × diárias ×
+  pessoas** ("A combinar" sem valor).
+- Encerrar a vaga leva para essa tela; ela também abre em Gerenciar vaga ("Ver resumo do bico") e é só da
+  construtora dona.
+- **"Publicar de novo"** (adianta a F03) numa vaga encerrada, excluída ou vencida: abre o formulário já
+  preenchido (ofício, endereço, valor, pessoas, requisitos, descrição, fotos), com as datas em branco.
