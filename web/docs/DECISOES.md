@@ -368,3 +368,12 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **No modo de demonstração** os dados estão no aparelho; quem esconde é a tela (`canSeeExactAddress`), com
   a mesma regra.
 - A distância antes da aprovação é aproximada (até ~1 km de diferença); a tela não promete precisão.
+
+## Z05 — Menu da conta no celular
+
+- **Engrenagem no topo do próprio perfil** (só abaixo de 770 px, onde não há a barra de cima). Ela abre a
+  folha "Sua conta" com as mesmas entradas do menu do computador: Vagas salvas (trabalhador) ou Bicos
+  fechados (construtora), Notificações, Configurações, Ajuda e Sair da conta. As entradas ficam num lugar
+  só (`layouts/accountMenu.ts`).
+- **Tela "Ajuda"** (`/ajuda`, abre com ou sem conta; adianta a F05): perguntas frequentes por lado e
+  "Falar no WhatsApp" / "Mandar e-mail" com o suporte da NivoTech.

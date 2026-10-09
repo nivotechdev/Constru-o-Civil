@@ -80,6 +80,12 @@ export default function Settings() {
           />
         </Section>
         <Section title="Sobre">
+          <Row
+            icon="circle-help"
+            label="Ajuda"
+            description="Perguntas frequentes e suporte"
+            onClick={() => navigate('/ajuda')}
+          />
           <Row icon="file-check" label="Termos de uso" onClick={() => navigate('/termos')} />
           <Row icon="shield-check" label="Política de privacidade" onClick={() => navigate('/privacidade')} />
         </Section>

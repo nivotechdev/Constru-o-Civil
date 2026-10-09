@@ -35,6 +35,7 @@ import {
 import type { Database, Job } from '../../types/models';
 import { isExpired } from '../../utils/jobInfo';
 import type { StatusBadge } from '../../types/ui';
+import { AccountMenuButton } from '../../components/AccountMenuSheet';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -77,7 +78,11 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           <div className="absolute top-2 left-2">
             <IconButton icon="arrow-left" label="Voltar" variant="solid" onClick={() => goBack('/mural')} />
           </div>
-        ) : null}
+        ) : (
+          <div className="absolute top-2 right-2">
+            <AccountMenuButton role="recrutador" />
+          </div>
+        )}
         <div className="absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised">
           <div className="w-full h-full rounded-full bg-brand-50 flex items-center justify-center overflow-hidden">
             {isOwn && ui.logo ? (

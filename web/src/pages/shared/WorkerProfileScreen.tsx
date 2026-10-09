@@ -18,6 +18,7 @@ import { CandidateActions } from '../recruiter/CandidateActions';
 import { oficioNome } from '../../services/catalog';
 import { workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
+import { AccountMenuButton } from '../../components/AccountMenuSheet';
 
 export default function WorkerProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -62,7 +63,11 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
               onClick={() => goBack(jobId ? '/vaga-gerenciar/' + jobId : '/mural')}
             />
           </div>
-        ) : null}
+        ) : (
+          <div className="absolute top-2 right-2">
+            <AccountMenuButton role="trabalhador" />
+          </div>
+        )}
         <div className="absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised">
           <div className="relative w-full h-full">
             <div className="w-full h-full rounded-full bg-accent-50 text-accent-600 flex items-center justify-center font-bold text-2xl overflow-hidden">
