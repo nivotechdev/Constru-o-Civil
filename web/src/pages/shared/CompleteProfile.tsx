@@ -14,6 +14,8 @@ import { navigate } from '../../services/router';
 import { saveMyProfileImages } from '../../services/profiles';
 import { showToast } from '../../services/toast';
 import { SpecialtiesField } from '../../components/SpecialtiesField';
+import { askSignOut } from '../../services/sharedUI';
+import { errorMessage } from '../../services/errors';
 
 /**
  * The pictures chosen while completing the profile, saved once the profile is (Z12). The profile is
@@ -65,6 +67,8 @@ function Shell({ step, total, onBack, children, onContinue, label, loading = fal
       <div className="px-5 sm:px-8 py-3 bg-white shadow-bar flex flex-col gap-2">
         {error ? <FieldError message={error} /> : null}
         <Button label={label} size="lg" fullWidth loading={loading} onClick={onContinue} />
+        {/* Y26: a way out for whoever entered the wrong account. */}
+        <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
       </div>
     </div>
   );
@@ -79,8 +83,6 @@ function Heading({ overline, title, help }: { overline: string; title: string; h
     </div>
   );
 }
-
-const SAVE_ERROR = 'Não deu para salvar seu perfil agora. Confira sua internet e tente de novo.';
 
 interface WorkerUI {
   step: number;
@@ -178,7 +180,7 @@ function WorkerFlow() {
             setUi({ saving: false });
             navigate('/mural', { replace: true });
           })
-          .catch(() => setUi({ saving: false, saveError: SAVE_ERROR }));
+          .catch((e: unknown) => setUi({ saving: false, saveError: errorMessage(e) }));
       }}
       label="Concluir perfil"
       loading={ui.saving}
@@ -296,7 +298,7 @@ function RecruiterFlow() {
             setUi({ saving: false });
             navigate('/mural', { replace: true });
           })
-          .catch(() => setUi({ saving: false, saveError: SAVE_ERROR }));
+          .catch((e: unknown) => setUi({ saving: false, saveError: errorMessage(e) }));
       }}
       label="Concluir perfil"
       loading={ui.saving}

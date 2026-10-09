@@ -627,3 +627,8 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   por número e por IP; captcha quando ligado). Fica **escondida até configurar**: sem `TWILIO_ACCOUNT_SID`,
   `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID` nas secrets e `VITE_CODIGO_WHATSAPP=1` no app, o passo do código
   some (cadastro e troca), como antes. O código confirmado no cadastro faz a conta nascer confirmada.
+
+## Y26 — Saída do "Completar perfil"
+
+- Os dois passos do "Completar perfil" (trabalhador e construtora) têm "Sair e entrar com outra conta", que
+  abre o mesmo diálogo de sair da conta. Falha ao salvar mostra a mensagem real do erro.
