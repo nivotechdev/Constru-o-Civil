@@ -32,6 +32,74 @@ select proname from pg_proc
 select tgname from pg_trigger where tgname = 'on_account_deleted_v2';  -- 1 linha
 ```
 
+### 2. `20261010000200_z02_pagamentos.sql` (Z02 + Y13)
+
+Apaga `simulate_pix_paid`, `pay_with_card` e `start_pix_payment`; cria as funções de cobrança só para
+`service_role` (`begin_boost_payment`, `attach_boost_charge`, `fail_boost_payment`, `confirm_boost_payment`), a
+tabela `payment_webhook_events`, os status `cancelado`/`reembolso_pendente` e o índice de um pagamento aguardando
+por vaga.
+
+```sql
+select count(*) from pg_proc where pronamespace = 'public'::regnamespace
+   and proname in ('simulate_pix_paid', 'pay_with_card', 'start_pix_payment');            -- 0
+select has_function_privilege('authenticated', 'public.confirm_boost_payment(uuid)', 'execute'); -- false
+select to_regclass('public.payment_webhook_events');                                         -- não nulo
+```
+
+### 3. `20261010000300_z07_documento_login.sql` (Z07 + Y16)
+
+Tira `document_available` do app, cria `auth_attempts`/`rate_limit_hit`, `document_login_email`, o gatilho
+`before_auth_user_created_v2` (documento conferido dentro do cadastro) e a rotina diária de limpeza.
+
+```sql
+select has_function_privilege('anon', 'public.document_available(text)', 'execute');        -- false
+select tgname from pg_trigger where tgname = 'before_auth_user_created_v2';                   -- 1 linha
+select jobname from cron.job where jobname = 'bicos-limpar-tentativas';                       -- 1 linha
+```
+
+Depois de aplicar, publique a Edge Function nova: `supabase functions deploy entrar-com-documento`.
+
+### 4. `20261010000400_z08_app_antigo.sql` (Z08)
+
+Fecha as funções e tabelas do app antigo para visitante e conta logada; cadastro não confirmado expira em
+7 dias (`bicos-limpar-cadastros`).
+
+```sql
+select has_function_privilege('anon', 'public.reiniciar_cadastro_pendente_email(text)', 'execute'); -- false
+select has_table_privilege('authenticated', 'public.profiles', 'update');                          -- false
+select jobname from cron.job where jobname in ('limpar-cadastros-nao-confirmados', 'bicos-limpar-cadastros');
+-- só bicos-limpar-cadastros
+```
+
+### 5. `20261010000500_z09_cpf_metadados.sql` (Z09)
+
+O documento sai dos metadados do Auth no cadastro e nas contas existentes.
+
+```sql
+select count(*) from auth.users where raw_user_meta_data ? 'documento';                       -- 0
+```
+
+### 6. `20261010000600_z06_endereco.sql` (Z06)
+
+Rua, número, complemento, CEP e o ponto exato deixam de ser legíveis por `select`; colunas `area_lat`/`area_lon`;
+RPC `get_job_addresses`.
+
+```sql
+select has_column_privilege('authenticated', 'public.jobs', 'street', 'select');               -- false
+select has_column_privilege('authenticated', 'public.jobs', 'area_lat', 'select');             -- true
+```
+
+### 7. `20261010000700_z12_fotos.sql` (Z12 + X09)
+
+`app_config` com o endereço público do Storage (**no staging, troque o valor**), gatilhos que só aceitam URLs
+do próprio Storage na pasta do dono, políticas do Storage sem listagem e com limites.
+
+```sql
+select value from public.app_config where key = 'storage_public_base';
+-- https://ppnxdajiihsjaojxokzh.supabase.co/storage/v1/object/public/
+select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and cmd = 'SELECT'; -- 0
+```
+
 ## Testes
 
 `supabase/tests/*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
