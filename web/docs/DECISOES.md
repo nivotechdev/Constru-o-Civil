@@ -346,3 +346,11 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   essas tabelas nem chamava essas funções (conferido no código).
 - **Cadastro nunca confirmado** é apagado depois de **7 dias** (o app antigo apagava em 2 horas, antes de
   muita gente abrir o e-mail). A rotina `expirar-vagas-diario` do app antigo foi desligada.
+
+## Z09 — CPF fora dos metadados do Auth
+
+- O documento ainda vai no cadastro dentro dos metadados (é como o gatilho recebe), mas o gatilho que roda
+  **antes** de gravar a conta o retira e o guarda só durante a transação; o gatilho seguinte cifra em
+  `accounts`. O CPF/CNPJ nunca chega a ser gravado em `auth.users`. As contas existentes foram limpas.
+- Efeito colateral aceito: o perfil do app antigo (`profiles`) deixa de receber o documento das contas
+  novas (o app antigo está desligado; o login por documento usa `accounts`).
