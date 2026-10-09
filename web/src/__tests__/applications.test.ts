@@ -175,6 +175,19 @@ describe('status machine in the services', () => {
     expect(noticesFor('bruno').map((n) => n.title)).toContain('A contratação não foi confirmada');
   });
 
+  it('Y07: no candidacy on a job that is full, closed, past or removed (same checks as the server)', async () => {
+    await asCompany();
+    await run(m.jobs.closeJob('BC-4995'));
+    await asWorker();
+    await expect(run(m.apps.submitApplication('BC-4995'))).rejects.toThrow(/encerrada/);
+    expect(status('BC-4995', 'jorge')).toBeNull();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    m.store.updateJob('BC-4855', { dateToArrange: false, startDate: yesterday, endDate: yesterday });
+    await expect(run(m.apps.submitApplication('BC-4855'))).rejects.toThrow(/prazo/);
+    expect(m.sel.unavailableText('cheia')?.title).toBe('Vaga preenchida');
+    expect(m.sel.unavailableText('aberta')).toBeNull();
+  });
+
   it('closing the job makes the refusals final and turns the pending candidates down', async () => {
     await asCompany();
     await run(m.apps.approve('BC-4998', 'bruno'));

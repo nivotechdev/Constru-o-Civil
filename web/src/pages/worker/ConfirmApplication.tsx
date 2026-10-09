@@ -12,11 +12,12 @@ import { submitApplication } from '../../services/applications';
 import { loadJob } from '../../services/jobs';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import { companyOf, currentWorker, getJob } from '../../services/selectors';
+import { applicationFor, companyOf, currentWorker, getJob, jobState, unavailableText } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle, oficioNome } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 import { WorkerAvatar } from '../../components/Avatar';
+import { EmptyState } from '../../components/EmptyState';
 
 export default function ConfirmApplication({ params }: ScreenProps) {
   const db = useDb();
@@ -35,6 +36,22 @@ export default function ConfirmApplication({ params }: ScreenProps) {
   if (!job) return <JobNotFound />;
   const company = companyOf(db, job);
   const worker = currentWorker(db);
+  // Y07: the same check as the job page and the server (a stale link or a job that just filled up).
+  const unavailable = unavailableText(jobState(db, job));
+  if (unavailable && !applicationFor(db, job.id, worker.id)) {
+    return (
+      <div className="flex flex-col">
+        <BackBar title="Confirmar candidatura" onBack={() => goBack('/vaga/' + job.id)} />
+        <EmptyState
+          icon="circle-alert"
+          title={unavailable.title}
+          description={unavailable.text}
+          actionLabel="Ver outros bicos"
+          onAction={() => navigate('/mural')}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">

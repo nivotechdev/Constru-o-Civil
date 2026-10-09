@@ -276,7 +276,13 @@ export async function submitApplication(jobId: string): Promise<void> {
   const job = getJob(db, jobId);
   if (!job) throw serviceError('nao_encontrado', 'Essa vaga não existe mais.');
   const workerId = currentWorkerId();
+  const state = jobState(db, job);
+  if (state === 'excluida') throw serviceError('conflito', 'Essa vaga foi removida pela construtora.');
   if (applicationFor(db, jobId, workerId)) return;
+  // Y07: the same checks as the server's submit_application.
+  if (state === 'encerrada') throw serviceError('conflito', 'Essa vaga foi encerrada.');
+  if (state === 'vencida') throw serviceError('conflito', 'O prazo dessa vaga já passou.');
+  if (state === 'cheia') throw serviceError('conflito', 'Essa vaga já foi preenchida.');
   const at = now();
   const worker = db.workers[workerId];
   store.transact((d) =>

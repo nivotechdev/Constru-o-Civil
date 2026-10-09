@@ -95,6 +95,22 @@ export function jobState(db: Database, job: Job, now: Date = new Date()): JobSta
   return 'aberta';
 }
 
+/** Why a job doesn't take candidates, as the job page says it (Y07); `null` while it is open. */
+export function unavailableText(state: JobState): { title: string; text: string } | null {
+  switch (state) {
+    case 'aberta':
+      return null;
+    case 'cheia':
+      return { title: 'Vaga preenchida', text: 'Todas as vagas desse bico já foram preenchidas.' };
+    case 'encerrada':
+      return { title: 'Vaga encerrada', text: 'A construtora encerrou essa vaga. Tem outros bicos no mural.' };
+    case 'vencida':
+      return { title: 'Vaga vencida', text: 'O prazo dessa vaga já passou. Tem outros bicos no mural.' };
+    case 'excluida':
+      return { title: 'Removida pela construtora', text: 'A construtora tirou essa vaga do ar.' };
+  }
+}
+
 /** Not taking candidates (full, closed, deleted or past). */
 export const isJobClosed = (db: Database, job: Job, now: Date = new Date()): boolean =>
   jobState(db, job, now) !== 'aberta';

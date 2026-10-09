@@ -476,3 +476,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   marcar falta); sem ninguém para trabalhar, a vaga encerra.
 - **Vaga "a combinar" vence 30 dias depois de publicada** (`Job.createdAt`). Na demonstração, as vagas
   ganharam a data de publicação (dois dias antes do início).
+
+## Y07 — Vaga indisponível no detalhe
+
+- Faixa no topo do detalhe: "Vaga preenchida", "Vaga encerrada", "Vaga vencida" ou "Removida pela
+  construtora" (L02/L03), e no lugar de "Quero esse bico" o botão "Ver outros bicos".
+- "Confirmar candidatura" faz a mesma conferência (link antigo, vaga que lotou no meio do caminho).
+- A demonstração recusa a candidatura com as mesmas mensagens do servidor (`submit_application`).

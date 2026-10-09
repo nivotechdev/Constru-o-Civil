@@ -19,7 +19,15 @@ import { loadJob } from '../../services/jobs';
 import { showToast } from '../../services/toast';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import { applicationFor, canSeeExactAddress, companyOf, currentWorker, getJob } from '../../services/selectors';
+import {
+  applicationFor,
+  canSeeExactAddress,
+  companyOf,
+  currentWorker,
+  getJob,
+  jobState,
+  unavailableText
+} from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
 import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, type FeedUI } from './feed/feedUI';
@@ -53,6 +61,8 @@ export default function JobDetail({ params }: ScreenProps) {
   const worker = currentWorker(db);
   const application = role === 'trabalhador' ? applicationFor(db, job.id, worker.id) : null;
   const canCancel = application && (application.status === 'enviada' || application.status === 'em_analise');
+  // Y07: a job that doesn't take candidates says why, with no "Quero esse bico".
+  const unavailable = unavailableText(jobState(db, job));
   const dias = diasInfo(job);
   const distance = role === 'trabalhador' ? formatKm(jobDistance(job, feedOrigin(feed, db, role))) + ' de você' : null;
   // Z06: the street and number only for the company and the worker it picked or hired.
@@ -80,10 +90,12 @@ export default function JobDetail({ params }: ScreenProps) {
               onClick={() => navigate('/minhas-candidaturas')}
             />
           )
+        ) : unavailable ? (
+          <Button label="Ver outros bicos" size="lg" fullWidth variant="secondary" onClick={() => navigate('/mural')} />
         ) : (
           <Button label="Quero esse bico" size="lg" fullWidth onClick={() => navigate('/confirmar/' + job.id)} />
         )}
-        {!application ? (
+        {!application && !unavailable ? (
           <span className="text-center text-xs text-concrete-500">Você não paga nada para se candidatar</span>
         ) : null}
       </>
@@ -116,6 +128,18 @@ export default function JobDetail({ params }: ScreenProps) {
             </div>
           </Card>
 
+          {unavailable && role === 'trabalhador' ? (
+            <div
+              role="status"
+              className="flex items-start gap-2.5 p-3.5 rounded-card bg-warning-50 border border-warning-100"
+            >
+              <Icon name="circle-alert" size={20} color="var(--amber-500)" />
+              <div className="flex flex-col gap-0.5">
+                <span className="font-semibold text-concrete-900">{unavailable.title}</span>
+                <span className="text-sm text-concrete-700">{unavailable.text}</span>
+              </div>
+            </div>
+          ) : null}
           <div className="flex flex-col gap-1.5">
             <h1 className="font-display font-bold text-2xl text-concrete-900">{jobTitle(job)}</h1>
             {job.description ? <p className="text-sm text-concrete-700 leading-relaxed">{job.description}</p> : null}
