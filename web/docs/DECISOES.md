@@ -1,0 +1,260 @@
+# Decisões de produto e de implementação
+
+Decisões tomadas onde o pedido não definia o comportamento. Regra usada: a opção mais simples e segura
+para quem usa o app. Cada item diz de qual ID do plano veio.
+
+## B09 — Sessão e guardas de rota
+
+- **Uma conta = um lado.** O papel (trabalhador ou construtora) vem da conta e não muda no login. Quem
+  quiser os dois lados cria duas contas (F14 tira a frase "Dá para trocar depois").
+- **Contas de demonstração:** `trabalhador@bicos.demo` (perfil Jorge Mendes) e `construtora@bicos.demo`
+  (Construtora Meridiano), senha `bicos123`. Ficam listadas num quadro discreto no fim do login; tocar
+  numa conta preenche os campos.
+- **Login aceita e-mail, CPF ou CNPJ** (como o campo já dizia). O serviço resolve o documento para a
+  conta. As mensagens de erro distinguem conta inexistente e senha errada (L13 completa o resto).
+- **"Continuar com o Google" e "Continuar com o celular"** ainda não têm fluxo (L13). Até lá, tocar neles
+  mostra o aviso "Na demonstração, entre com e-mail e senha", em vez de entrar numa conta qualquer.
+- **Sessão persistida no `localStorage`** (chave `bicos.sessao`, só o id da conta, com `try/catch`).
+  Os dados do mock continuam só em memória: depois de recarregar a página, só as contas de demonstração
+  voltam logadas; uma conta criada no cadastro some com o recarregamento (como o resto do mock).
+- **Sem sessão**, qualquer rota interna leva ao login; depois de entrar, a pessoa volta para o endereço
+  que tentou abrir. A raiz `/` mostra a Splash sem sessão e o mural com sessão.
+- **Onboarding obrigatório:** com e-mail não confirmado, a única tela que abre é "Confirme seu e-mail";
+  com perfil incompleto, só "Completar perfil" do próprio lado. Termos, privacidade e recuperação de
+  senha abrem sempre.
+- **"Abrir meu e-mail"** faz, na demonstração, o papel do link de confirmação (aviso na própria tela).
+- **Rotas por lado:** perfil de candidato com contexto de vaga (`/trabalhador/:id/:jobId`) é só da
+  construtora; perfis públicos (`/trabalhador/:id`, `/construtora/:id`), mural, detalhe da vaga,
+  notificações e configurações abrem para os dois.
+- **Sair da conta** pede confirmação num diálogo único (menu, Configurações, Editar perfil e a tela de
+  confirmar e-mail) e apaga todo o estado de telas da sessão. O "voltar" do navegador não volta para
+  dentro da conta.
+- **Tabela `profiles` virou `accounts`** em `types/supabase.ts`, com e-mail, documento, WhatsApp e as
+  datas de confirmação. O arquivo de tipos agora declara cada linha uma vez e deriva insert/update. O SQL
+  em `web/supabase/` é o rascunho anterior e **não** foi atualizado (o pedido proíbe migrations nesta
+  etapa); o back-end escreve as migrations a partir de `docs/CONTRATO-BACKEND.md` e de `types/supabase.ts`.
+
+## B10 — Carregamento, erro, vazio e offline
+
+- **Interruptor de falha da demonstração:** abrir o app com `?falhar=1` antes do `#` (ex.:
+  `index.html?falhar=1#/mural`) ou ligar **Configurações › Demonstração › Simular falhas de conexão**. Com
+  ele ligado, toda chamada de serviço do mock é rejeitada. "Sair da conta" continua funcionando (a sessão
+  é encerrada no aparelho mesmo sem rede).
+- **Sem internet** (`navigator.onLine` falso), as chamadas também falham, com a mensagem de offline, e uma
+  faixa no topo avisa enquanto durar.
+- **Leituras passam por serviço com cache por sessão:** cada tela pede o que mostra com uma chave
+  (`feed`, `job:ID`, `worker:ID`…). O primeiro acesso mostra esqueleto; os seguintes abrem na hora (o
+  store já tem os dados). Em erro, a tela mostra "Tentar de novo" e, em telas cheias, "Voltar ao início".
+  Sair da conta limpa o cache.
+- **Salvar vaga é otimista:** a bandeirinha muda na hora e volta se a chamada falhar, com um aviso.
+- **Erros de ação** aparecem junto do botão (ou dentro do diálogo, que continua aberto); avisos curtos de
+  sucesso aparecem num toast no rodapé, anunciado a leitores de tela.
+- **Erros de serviço têm código** (`offline`, `falha_demo`, `nao_autorizado`, `nao_encontrado`,
+  `conflito`, `validacao`) e mensagem pronta em português; o back-end real deve mapear seus erros para
+  esses códigos (ver `services/errors.ts`).
+
+## B07 — Catálogo único de ofícios
+
+- **14 ofícios** em `data/oficios.ts` (servidos por `services/catalog.ts`), cada um com `id` estável,
+  nome e sinônimos. Vaga e trabalhador guardam só o `oficioId`; a tabela `oficios` entra em
+  `types/supabase.ts`.
+- **"Pedreiro" e "Pedreiro de acabamento" são ofícios distintos**; o filtro do mural compara o id exato
+  (filtrar por Pedreiro não traz Pedreiro de acabamento). A busca por texto encontra os dois.
+- **Título da vaga é opcional** (até 60 caracteres). Sem título, a vaga aparece com o nome do ofício.
+- **Busca ignora acento e maiúsculas** e encontra vagas e trabalhadores por nome do ofício ou sinônimo
+  ("hidráulica" acha os encanadores).
+- **"Servente e ajudante"** (texto livre do seed) virou o ofício Servente.
+- **Testes de paridade com o app antigo** para o store e para a mensagem pronta do WhatsApp foram
+  aposentados: o modelo mudou de propósito (ids de catálogo, e nas próximas etapas datas reais e status
+  explícitos). As regras passaram a ser testadas diretamente (`store.test.ts`, `oficios.test.ts`). Os
+  testes de paridade das máscaras, textos de status e busca de cidades continuam.
+
+## B06 — Endereço, cidade, localização e datas reais
+
+- **Vaga guarda o endereço inteiro** (CEP, rua, número, complemento, bairro, cidade, UF, latitude e
+  longitude) e as **datas reais** (início e fim em `YYYY-MM-DD`, horários `HH:MM`). "Hoje", "Amanhã",
+  "Sex, 25 set" e "Hoje até 27 set" são calculados na hora de mostrar (`utils/jobInfo.ts`).
+- **CEP na demonstração:** uma tabela pequena de CEPs reais (`services/address.ts`: 03307-000, 03104-000,
+  01310-100, 13010-111, 20040-002). Outro CEP válido aparece como "não encontrado" e a pessoa preenche rua
+  e bairro e escolhe a cidade no seletor. No back-end, a busca vai para ViaCEP/BrasilAPI por uma função.
+- **Coordenadas no mock:** o ponto do CEP conhecido, ou o centro da cidade escolhida, mais um pequeno
+  deslocamento fixo por rua e número (para duas vagas da mesma cidade não ficarem no mesmo ponto).
+- **Datas:** início não pode ser no passado; fim igual ou depois do início; uma vaga cobre no máximo 60
+  dias. "Data a combinar" é um interruptor; ligado, a construtora informa quantas diárias.
+- **Diárias** são contadas pelas datas e pelos dias escolhidos (semana, fim de semana ou qualquer dia). Se
+  nenhum dia do período cair nos dias escolhidos, o formulário avisa.
+- **Horário** continua opcional, agora com minutos (início antes do fim).
+- **Distância** é calculada em linha reta (Haversine) a partir de: (1) a posição do GPS, quando a pessoa
+  usou "Usar minha localização"; (2) a casa do trabalhador, quando o mural está na cidade dele; (3) o
+  centro da cidade escolhida. O filtro "Até X km" e a ordem "Mais perto" usam esse cálculo.
+- **O mural abre na cidade do trabalhador** (a do perfil). "Limpar filtros" volta para ela. Para a
+  construtora, abre em São Paulo (cidade das vagas de demonstração).
+- **Vaga com data final passada sai do mural** sozinha (e da lista de vagas abertas da construtora).
+- **Trabalhador** guarda cidade (rótulo do seletor), bairro (quando conhecido) e coordenadas; o texto
+  "Tatuapé, SP" é montado na hora. Mudar de cidade no perfil move o ponto para o centro da nova cidade.
+- **Datas do seed são relativas ao dia em que o app abre**, para a demonstração sempre ter vagas "Hoje",
+  "Amanhã" e na semana que vem, e um histórico no passado.
+- **Tela carregada sob demanda:** o carregamento das telas marca a promessa do código como resolvida e
+  sempre chama `use()`, removendo um aviso do React sobre `use()` condicional.
+
+## B02 — Máquina de status da candidatura
+
+- **Uma tabela única** (`services/applicationMachine.ts`) diz de qual status para qual, e quem pode
+  (trabalhador, construtora ou sistema). Só ela muda o status; o back-end deve aplicar a mesma tabela (está
+  em `docs/CONTRATO-BACKEND.md`).
+- **"Avaliada" deixou de ser status.** A candidatura fica "concluída" e cada lado tem seu indicador
+  (`workerReviewed`, `companyReviewed`).
+- **Histórico:** cada candidatura guarda `events[]` (status, quando, quem, motivo) e `statusChangedAt`.
+  "Contato liberado em" mostra a data real em que a construtora aprovou.
+- **Abrir o perfil de um candidato novo** muda "enviada" para "em análise" e avisa o trabalhador.
+- **Recusa automática ao preencher a última vaga** fica marcada (`autoRejected`). Se a construtora desfizer
+  aquela aprovação, os recusados automaticamente voltam para "em análise" (antecipa parte da L01). Ao
+  encerrar a vaga, a recusa vira definitiva.
+- **Desfazer aprovação** retira o aviso "Você foi pré-selecionado" se o trabalhador ainda não o viu.
+- **Conclusão automática:** uma contratação cuja vaga já passou da data final vira "concluída" sozinha
+  (no mock, sempre que as candidaturas são lidas; no back-end, uma rotina diária) e os dois lados recebem o
+  pedido de avaliação.
+- **Desistir e cancelar pedem motivo** (lista curta + "Outro motivo" escrito); o motivo vai na notificação
+  para o outro lado. Marcar falta pede só confirmação.
+- **Notificações agora são dados**: cada uma é de um trabalhador ou de uma construtora, nasce na mesma
+  transação da mudança que avisa, tem destino (abre a tela certa) e é marcada como lida ao abrir.
+- **Testes de paridade dos rótulos de status** com o app antigo foram aposentados (há status novos).
+
+## B01 — WhatsApp nos dois sentidos
+
+- **Número privado dos dois lados.** `Worker.whatsapp` e `Company.whatsapp` existem no modelo (espelham as
+  colunas do banco), mas nenhuma tela lê esses campos: o número só sai de `contacts.getContact(id da
+candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem pede seja um dos dois
+  lados. No back-end, isso vira uma RPC que confere o mesmo antes de ler a coluna privada.
+- **Botão "Falar no WhatsApp"** pede o contato na hora de aparecer (com "Carregando contato…" e "Tentar de
+  novo" se falhar). Aparece para a construtora na lista de candidatos (aprovado/contratado), no perfil do
+  candidato com contexto de vaga e na tela da equipe; para o trabalhador em Minhas candidaturas e em
+  "Você avançou".
+- **Depois da conclusão o contato fecha** (a regra pede só pré-selecionado/contratado). Se precisar
+  reabrir para combinar algo depois, é uma decisão a revisitar.
+- **Mensagens prontas** usam o nome do ofício (não o título) e o código da vaga: "Olá! Vi sua vaga de
+  {ofício} ({código}) na Bicos e fui aprovado…" e "Olá, {primeiro nome}! Aqui é da {construtora}, sobre a
+  vaga de {ofício} ({código}) na Bicos…".
+
+## B03 — Construtora avalia o trabalhador
+
+- **Nova rota** `/avaliar-trabalhador/:jobId/:workerId` (só construtora), espelho de "Avaliar a diária":
+  nota de 1 a 5 (nenhuma estrela marcada no início), pontos prontos ("Chegou no horário", "Trabalho
+  caprichado", "Usou EPI", "Respeitou a equipe", "Deixou o local limpo") e comentário de até 300
+  caracteres. Só abre com a diária concluída e se a construtora ainda não avaliou; senão mostra "Essa
+  avaliação não está disponível".
+- **Entradas:** Histórico (item "Avaliar"), notificação "Avalie o trabalhador", perfil do candidato
+  (botão "Avaliar {nome}") e tela da equipe do bico.
+- **Avaliação vira registro** (`Review`: candidatura, direção, autor, nota, pontos, comentário, data) e o
+  trabalhador ganha `reviewCount`. A nota nova entra na média com uma casa decimal. As avaliações antigas
+  do seed foram convertidas (sem candidatura ligada).
+
+## B04 — Avaliar a diária grava de verdade
+
+- **"Avaliar a diária" usa o mesmo formulário da construtora** e `reviews.submitReview`: a avaliação vai
+  para o perfil da construtora, a nota e a contagem são recalculadas e o lado do trabalhador fica marcado
+  como avaliado.
+- **Guarda:** só com a diária concluída e uma vez; fora disso, a tela "Essa avaliação não está
+  disponível" (com "Voltar").
+- **Nota começa vazia** (nada de 5 estrelas e "Pagou no dia" pré-marcados); o botão fica desativado até
+  escolher a nota; comentário em caixa de texto com limite de 300 caracteres e contador (antecipa P02/P03).
+- **Estrelas do trabalhador mostram a quantidade de avaliações** (`reviewCount`), não de bicos feitos
+  (antecipa parte da L09).
+
+## B05 — Editar vaga
+
+- **`/vaga-editar/:id` reaproveita o formulário de publicar** (`JobFormScreen` em modo edição), já
+  preenchido. Só o dono edita, e só com a vaga aberta (encerrada ou excluída mostra o motivo).
+- **Data de início no passado** é aceita se for a mesma de antes (vaga em andamento); trocar para outra
+  data passada não.
+- **Pessoas:** não dá para pedir menos que o número de aprovados/contratados. A aprovação também passou
+  a recusar quando a vaga já está cheia (o teste da edição achou esse caso).
+- **Aviso aos candidatos:** mudar valor, data/horário ou endereço com candidatos ativos (pendentes,
+  aprovados ou contratados) mostra "Os candidatos serão avisados da mudança" antes de salvar e envia a
+  notificação "A vaga mudou" a cada um. Mudar só a descrição, fotos ou requisitos não avisa ninguém.
+- **Requisitos próprios** da vaga (fora da lista padrão) aparecem marcados na edição, para não sumirem.
+
+## B08 — Impulsionamento com pagamento (simulado)
+
+- **Fluxo:** escolher o plano → `/impulsionar/:id/:plano` → PIX ou cartão. A vaga só fica impulsionada
+  com o pagamento **confirmado**, até `boostEndsAt` (24h ou 3 dias, conforme o plano). `boosted` deixou de
+  existir: "impulsionada" é `boostEndsAt` no futuro, e acaba sozinho.
+- **PIX:** código "copia e cola" e QR fictícios (marcados como demonstração), válidos por 30 minutos, com
+  contagem; "Simular pagamento confirmado" faz o papel do banco. Código vencido vira "expirado" e a tela
+  oferece gerar outro. No back-end, a confirmação vem do webhook do provedor de pagamento.
+- **Cartão:** número, nome, validade e código com máscara e validação (dígito verificador, validade
+  futura). Na demonstração qualquer cartão válido é aprovado e um número terminado em 0000 é recusado,
+  com a mensagem do banco. No back-end, o cartão é tokenizado no navegador pelo provedor (o número nunca
+  passa pelo nosso servidor).
+- **Pagamentos são registros** (`BoostPayment`: plano, forma, valor, status aguardando/confirmado/
+  recusado/expirado, datas) — base para a tela de cobranças (F11).
+- **Gerenciar vaga:** selo "Impulsionada até {data, hora}" e botão "Impulsionar vaga" sempre que a vaga
+  estiver aberta e não impulsionada. Vaga encerrada, cheia, vencida ou já impulsionada não pode ser
+  impulsionada (a tela explica).
+- **Textos:** saiu "cartão cadastrado" e a promessa de reembolso (não há tela de reembolso ainda; volta
+  com a F11). Confirmar o pagamento gera a notificação "Vaga impulsionada" para a construtora.
+- **Ordem do mural** ainda usa o "urgente"; o impulsionamento ativo no topo e os selos no cartão da vaga
+  são a L08.
+
+## B11 — Termos de uso e Política de privacidade
+
+- **`/termos` e `/privacidade`** abrem com ou sem login, em tela cheia, com faixa "Rascunho para revisão
+  jurídica", versão e data. O texto-modelo está em `services/legal.ts` (no back-end, servido de uma tabela
+  para o aceite ficar ligado à versão mostrada).
+- **A política de privacidade (texto) é separada de "Privacidade e dados"** (`/configuracoes/privacidade`,
+  onde a pessoa exporta ou exclui os dados).
+- **No cadastro**, o aceite único cobre os dois documentos ("Li e aceito os Termos de uso e a Política de
+  privacidade"); os links abrem as telas e o "voltar" retorna ao passo do cadastro, sem perder o que foi
+  digitado. A conta guarda `termsVersion` e `termsAcceptedAt`.
+- **Configurações › Sobre** aponta para as duas telas (os dois botões estavam sem ação).
+
+## B12 — Exclusão de conta real
+
+- **Fluxo:** Configurações › Privacidade e dados › "Excluir minha conta" abre `/configuracoes/excluir-conta`:
+  senha → lista do que acontece com os bicos em andamento → caixa "Entendo e confirmo…" (só quando há
+  bicos pré-selecionados/contratados; com link para resolver antes) → diálogo final → `account.deleteAccount`
+  → sessão encerrada → `/conta-excluida` (tela pública).
+- **Trabalhador:** desiste das diárias pré-selecionadas/contratadas (a construtora é avisada e a vaga
+  reabre) e as candidaturas pendentes são retiradas.
+- **Construtora:** contratações em andamento são canceladas (o trabalhador é avisado) e as vagas abertas
+  são encerradas (candidatos avisados), como no "Encerrar vaga".
+- **Dados:** a conta some (o login deixa de funcionar); posts e notificações da pessoa são apagados; o
+  perfil fica anônimo ("Conta excluída") para que avaliações e históricos do outro lado continuem
+  coerentes, sem nome nem WhatsApp. No back-end, uma RPC faz o mesmo numa transação e apaga o usuário do
+  Auth.
+- **Diárias que já passaram** são concluídas antes de montar a lista (não aparecem como "em andamento").
+
+## Ligação com o Supabase (front novo no banco do app antigo)
+
+- **Mesmo projeto, tabelas novas ao lado das antigas.** O front novo usa o projeto que o app antigo já
+  usa, com tabelas no formato do contrato (`accounts`, `workers`, `companies`, `jobs`, `applications`…),
+  sem renomear nem alterar as do app antigo — que continua funcionando. Os dois dividem o Auth, o
+  segredo do CPF/CNPJ (Vault) e os buckets. Migrations só acrescentam.
+- **Regras no banco.** Tudo que muda mais de um registro é uma RPC `security definer` que repete as
+  regras do modo de demonstração (mesmas mensagens) numa transação; o cliente só lê pelo RLS e grava
+  diretamente apenas o que é seu e simples (vaga salva, post, lido/não lido, campos do próprio perfil).
+- **WhatsApp privado de verdade.** As colunas de WhatsApp não têm privilégio de leitura; o número só sai
+  pela RPC `get_contact`, para os dois lados do bico, a partir da pré-seleção.
+- **Contagem sem expor candidatos.** O trabalhador não lê candidaturas de outros; o mural sabe se a vaga
+  lotou pela RPC `job_stats` (só números).
+- **Ids de vaga curtos** (`BC-5001`…): aparecem no link e na mensagem pronta do WhatsApp.
+- **Entrar com CPF/CNPJ por Edge Function**, para nunca devolver ao navegador o e-mail de um documento.
+- **Links do e-mail** (confirmação e nova senha) no fluxo `implicit`, tratados antes do roteador — o
+  mesmo jeito comprovado do app antigo (o `#access_token` e o roteador usam o mesmo `#`).
+- **E-mail incorreto ou senha incorreta** viram uma mensagem só ("E-mail ou senha incorretos"): o
+  Supabase Auth não diz qual dos dois, de propósito.
+- **Sem provedor de WhatsApp/pagamento ainda**: o passo do código de WhatsApp sai do cadastro no modo
+  real (o número fica sem confirmação, sem fingir que um código foi enviado); o pagamento do
+  impulsionamento é registrado e confirmado no servidor, com a confirmação do PIX simulada até integrar
+  um provedor. O número do cartão nunca sai do aparelho (só os 4 últimos dígitos).
+- **Exportar dados** no modo real baixa o arquivo no aparelho (não há envio de e-mail configurado); a
+  tela diz isso.
+- **Contas antigas** recebem a conta nova com o perfil a completar; o aceite dos termos só é registrado
+  quando a pessoa aceitou de fato (cadastro no app novo), nunca em nome de quem não viu.
+- **Excluir vaga** também a encerra (quem esperava é avisado), para ninguém ficar com candidatura presa
+  numa vaga que sumiu.
+- **Diária concluída** soma 1 em `jobs_done` do trabalhador (o modo de demonstração não somava).
+- **Ajustes mínimos de tela** (só no modo real, sem mudar o visual): esconder as dicas de demonstração;
+  "Abrir meu e-mail" vira "Já confirmei meu e-mail" e mostra o motivo quando ainda não confirmou;
+  mensagem do login para e-mail/senha incorretos; contagem de candidatos no perfil da construtora
+  vinda do servidor.

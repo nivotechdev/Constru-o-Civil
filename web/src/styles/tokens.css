@@ -1,0 +1,53 @@
+/* Bicos design tokens — ported from the Claude Design bundle (_ds/bicos-design-system.../tokens/*.css).
+   Only the tokens the app references are kept; the complete set (all hues, semantic aliases, status,
+   elevation) is in the legacy app, ../app/css/tokens.css.
+   Spacing itself is NOT tokenized here: screens use Tailwind's rem-based spacing scale directly. */
+:root {
+  /* Azul Nivo (brand / recruiter accent) */
+  --blue-100: #dbe4fd;
+  --blue-500: #1d4bed;
+  --blue-600: #163cc2;
+  --blue-700: #122f97;
+
+  /* Verde-água (worker accent) */
+  --teal-500: #0f8f82;
+
+  /* Concreto (neutrals) */
+  --gray-50: #f4f6f8;
+  --gray-100: #eaeef2;
+  --gray-300: #c3c9d1;
+  --gray-400: #8a939f;
+  --gray-500: #5c6672;
+  --gray-600: #434c57;
+  --gray-700: #2f3742;
+  --gray-900: #101418;
+
+  /* Semantic hues */
+  --green-500: #0b7a4b;
+  --amber-500: #a55a00;
+  --red-500: #c02626;
+
+  --brand: var(--blue-500);
+
+  --text-strong: var(--gray-900);
+  --text-body: var(--gray-700);
+  --text-subtle: var(--gray-400);
+  --text-brand: var(--blue-600);
+  --text-link: var(--blue-600);
+  --text-link-hover: var(--blue-700);
+
+  --surface-page: var(--gray-50);
+  --border-focus: var(--blue-500);
+  --scrim: rgba(16, 20, 24, 0.55);
+  --skeleton-base: var(--gray-100);
+  --skeleton-shine: var(--gray-50);
+
+  /* Type */
+  --font-display: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
+
+  /* Motion */
+  --dur-normal: 180ms;
+  --dur-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+}

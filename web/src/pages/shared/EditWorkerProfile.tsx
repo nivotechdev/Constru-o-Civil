@@ -1,0 +1,132 @@
+import { BackBar } from '../../components/BackBar';
+import { Button } from '../../components/Button';
+import { CityPicker, LocationButton } from '../../components/CityPicker';
+import { FieldError } from '../../components/FieldError';
+import { Input } from '../../components/Input';
+import { useAction } from '../../hooks/useAction';
+import { updateMyWorkerProfile } from '../../services/profiles';
+import { showToast } from '../../services/toast';
+import { PhotoSlot } from '../../components/PhotoSlot';
+import { Select } from '../../components/Select';
+import { Tag } from '../../components/Tag';
+import { useDb, useUI } from '../../hooks/useStore';
+import { ESPECIALIDADES, OFICIO_OPTIONS } from '../../services/catalog';
+import { goBack, navigate } from '../../services/router';
+import { currentWorker } from '../../services/selectors';
+import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI, askSignOut } from '../../services/sharedUI';
+import { toggleItem } from '../../utils/list';
+
+interface EditWorkerUI {
+  name: string;
+  oficioId: string;
+  city: string;
+  pickerOpen: boolean;
+  specialties: string[];
+  photo: string | null;
+}
+
+export default function EditWorkerProfile() {
+  const worker = currentWorker(useDb());
+  // Seeded from the profile the first time only; the draft then survives navigation (legacy behaviour).
+  const [ui, setUi] = useUI<EditWorkerUI>('edit-worker-profile', () => ({
+    name: worker.name,
+    oficioId: worker.oficioId,
+    city: worker.city,
+    pickerOpen: false,
+    specialties: [...worker.specialties],
+    photo: null
+  }));
+  const [banner, setBanner] = useUI<WorkerPhotoUI>(WORKER_PHOTO_KEY, WORKER_PHOTO_DEFAULTS);
+  const save = useAction(updateMyWorkerProfile, () => {
+    showToast('Perfil atualizado');
+    navigate('/perfil');
+  });
+
+  return (
+    <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
+      <BackBar title="Editar perfil" onBack={() => goBack('/perfil')} />
+      <div className="flex-1 flex flex-col gap-5 px-4 sm:px-6 lg:px-0 py-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-semibold text-concrete-900">Foto de capa</span>
+          <PhotoSlot
+            shape="rect"
+            height="9rem"
+            placeholder="Toque para escolher uma foto de capa"
+            value={banner.photo}
+            onChange={(v) => setBanner({ photo: v })}
+          />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <PhotoSlot
+            shape="circle"
+            value={ui.photo}
+            onChange={(v) => setUi({ photo: v })}
+            className="w-24 h-24"
+            placeholder="Sua foto"
+          />
+        </div>
+        <Input
+          id="edit-worker-name"
+          label="Nome completo"
+          icon="user"
+          value={ui.name}
+          onInput={(v) => setUi({ name: v })}
+        />
+        <Select
+          label="Seu ofício principal"
+          placeholder="Escolha seu ofício"
+          options={OFICIO_OPTIONS}
+          value={ui.oficioId}
+          onChange={(v) => setUi({ oficioId: v })}
+        />
+        <LocationButton
+          title="Onde você quer trabalhar"
+          location={ui.city}
+          onClick={() => setUi({ pickerOpen: true })}
+        />
+        <CityPicker
+          open={ui.pickerOpen}
+          title="Onde você quer trabalhar"
+          value={ui.city}
+          stateKey="edit-worker-city"
+          onChoose={(city) => setUi({ city, pickerOpen: false })}
+          onClose={() => setUi({ pickerOpen: false })}
+        />
+        <div className="flex flex-col gap-2.5">
+          <span className="text-sm font-semibold text-concrete-900">Especialidades</span>
+          <div className="flex flex-wrap gap-2">
+            {ESPECIALIDADES.map((e) => (
+              <Tag
+                key={e}
+                label={e}
+                selected={ui.specialties.includes(e)}
+                onClick={() =>
+                  setUi({
+                    specialties: toggleItem(ui.specialties, e)
+                  })
+                }
+              />
+            ))}
+          </div>
+        </div>
+        <div className="pt-2 border-t border-concrete-200">
+          <Button label="Sair da conta" variant="danger" fullWidth iconLeft="log-out" onClick={askSignOut} />
+        </div>
+      </div>
+      <div className="px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+        {save.error ? <FieldError message={save.error} /> : null}
+        <div className="flex gap-3">
+          <Button label="Cancelar" variant="secondary" className="flex-1" onClick={() => navigate('/perfil')} />
+          <Button
+            label="Salvar alterações"
+            className="flex-[1.4]"
+            loading={save.loading}
+            onClick={() =>
+              void save.run({ name: ui.name, oficioId: ui.oficioId, city: ui.city, specialties: ui.specialties })
+            }
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

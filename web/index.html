@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Bicos — diárias de obra perto de você</title>
+    <meta
+      name="description"
+      content="Bicos conecta construtoras a trabalhadores da construção civil para diárias avulsas."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+    />
+  </head>
+  <body class="bg-concrete-50 text-concrete-700 font-body">
+    <div id="app"></div>
+    <script>
+      // This is the development source: it only runs through Vite (npm run dev). Opened straight from
+      // disk it would stay blank, so say where the ready-to-open app is.
+      if (location.protocol === 'file:')
+        document.getElementById('app').innerHTML =
+          '<div style="font:16px/1.5 system-ui,sans-serif;max-width:32rem;margin:15vh auto;padding:0 1.5rem;color:#2f3742">' +
+          '<h1 style="font-size:1.4rem;color:#101418">Este arquivo precisa do servidor de desenvolvimento</h1>' +
+          '<p>Para abrir o app direto no navegador, use o <b>index.html</b> da raiz do projeto (ou <b>web/preview/index.html</b>).</p>' +
+          '<p>Para desenvolver: <code>cd web &amp;&amp; npm install &amp;&amp; npm run dev</code></p></div>';
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
