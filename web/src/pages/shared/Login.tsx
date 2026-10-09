@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '../../components/Button';
 import { FieldError } from '../../components/FieldError';
 import { GoogleIcon, Icon } from '../../components/icons/Icon';
@@ -14,7 +15,6 @@ import { Card } from '../../components/Card';
 
 interface LoginUI {
   identifier: string;
-  password: string;
   visible: boolean;
   submitting: boolean;
   /** Field-level problems (empty field). */
@@ -32,7 +32,6 @@ interface LoginUI {
 
 const LOGIN_DEFAULTS: LoginUI = {
   identifier: '',
-  password: '',
   visible: false,
   submitting: false,
   identifierError: null,
@@ -54,18 +53,22 @@ const UNAVAILABLE = DEMO_ACCOUNTS.length
 
 export default function Login() {
   const [ui, setUi] = useUI<LoginUI>('login', LOGIN_DEFAULTS);
+  // Y22: the password stays in this screen only (never in the shared store).
+  const [password, setPassword] = useState('');
   const captcha = useCaptcha();
 
   function submit() {
     if (ui.submitting) return;
     const identifierError = ui.identifier.trim() ? null : 'Digite seu e-mail, CPF ou CNPJ.';
-    const passwordError = ui.password ? null : 'Digite sua senha.';
+    const passwordError = password ? null : 'Digite sua senha.';
     if (identifierError || passwordError) {
       setUi({ identifierError, passwordError, error: null });
       return;
     }
     setUi({ submitting: true, error: null, notice: null, unconfirmed: null, resent: false });
-    signIn(ui.identifier, ui.password, captcha.getToken)
+    // The deep link that sent the user here (read before: signing in starts a clean screen state).
+    const back = getUI<ReturnToUI>(RETURN_TO_KEY, RETURN_TO_DEFAULTS).path;
+    signIn(ui.identifier, password, captcha.getToken)
       .then((result) => {
         if (!result.ok) {
           if (result.reason === 'email-nao-confirmado')
@@ -73,8 +76,6 @@ export default function Login() {
           else setUi({ submitting: false, error: SIGN_IN_ERRORS[result.reason] });
           return;
         }
-        // Back to the deep link that sent the user here, if any.
-        const back = getUI<ReturnToUI>(RETURN_TO_KEY, RETURN_TO_DEFAULTS).path;
         resetUI(RETURN_TO_KEY);
         resetUI('login');
         navigate(back || '/mural', { replace: true });
@@ -123,11 +124,14 @@ export default function Login() {
           />
           <PasswordInput
             id="login-password"
-            value={ui.password}
+            value={password}
             error={ui.passwordError}
             visible={ui.visible}
             onToggleVisible={() => setUi({ visible: !ui.visible })}
-            onInput={(v) => setUi({ password: v, passwordError: null, error: null })}
+            onInput={(v) => {
+              setPassword(v);
+              setUi({ passwordError: null, error: null });
+            }}
             onEnter={submit}
           />
           {captcha.widget}
@@ -172,15 +176,10 @@ export default function Login() {
                 key={a.email}
                 type="button"
                 className="flex flex-wrap items-baseline gap-x-2 text-left hover:text-brand-600"
-                onClick={() =>
-                  setUi({
-                    identifier: a.email,
-                    password: a.password,
-                    identifierError: null,
-                    passwordError: null,
-                    error: null
-                  })
-                }
+                onClick={() => {
+                  setPassword(a.password);
+                  setUi({ identifier: a.email, identifierError: null, passwordError: null, error: null });
+                }}
               >
                 <span className="font-semibold">{a.role === 'recrutador' ? 'Construtora:' : 'Trabalhador:'}</span>
                 <span className="font-mono">{a.email}</span>

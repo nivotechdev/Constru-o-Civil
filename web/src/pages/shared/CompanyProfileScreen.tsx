@@ -16,7 +16,7 @@ import { deleteJob } from '../../services/jobs';
 import { loadCompanyProfile } from '../../services/profiles';
 import { showToast } from '../../services/toast';
 import { Rating } from '../../components/Rating';
-import { useDb, useRole, useUI } from '../../hooks/useStore';
+import { useDb, useRole, useScreenUI } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import {
@@ -40,7 +40,7 @@ import { holdsSlot } from '../../services/applicationMachine';
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
-  const [ui, setUi] = useUI<{ deleteId: string | null }>('company-profile-delete', { deleteId: null });
+  const [ui, setUi] = useScreenUI<{ deleteId: string | null }>('company-profile-delete', { deleteId: null });
 
   const isOwn = !params.id;
   const companyId = isOwn ? currentCompany(db).id : params.id;

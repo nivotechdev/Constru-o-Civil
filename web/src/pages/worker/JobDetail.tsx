@@ -13,7 +13,7 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { Rating } from '../../components/Rating';
 import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
-import { useDb, useRole, useUI } from '../../hooks/useStore';
+import { useDb, useRole, useUI, useScreenUI } from '../../hooks/useStore';
 import { withdrawApplication } from '../../services/applications';
 import { loadJob } from '../../services/jobs';
 import { showToast } from '../../services/toast';
@@ -38,7 +38,7 @@ import { CompanyAvatar } from '../../components/Avatar';
 export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
-  const [ui, setUi] = useUI<{ confirmCancel: boolean }>('job-detail', { confirmCancel: false });
+  const [ui, setUi] = useScreenUI<{ confirmCancel: boolean }>('job-detail:' + params.id, { confirmCancel: false });
   const [feed] = useUI<FeedUI>(FEED_KEY, () => feedDefaults(db, role));
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
   const withdraw = useAction(withdrawApplication, () => {

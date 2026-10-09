@@ -3,7 +3,7 @@ import { Card } from '../../components/Card';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { ResultIcon } from '../../components/ResultIcon';
-import { useSession, useUI } from '../../hooks/useStore';
+import { useSession, useScreenUI } from '../../hooks/useStore';
 import { confirmEmail, resendConfirmationEmail, signOut } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
 import { IS_DEMO } from '../../services/mode';
@@ -26,7 +26,7 @@ const NETWORK_ERROR = 'Não deu para continuar agora. Confira sua internet e ten
 
 export default function VerifyEmail() {
   const session = useSession();
-  const [ui, setUi] = useUI<VerifyEmailUI>('verificar-email', DEFAULTS);
+  const [ui, setUi] = useScreenUI<VerifyEmailUI>('verificar-email', DEFAULTS);
 
   // Demo: there is no inbox, so "Abrir meu e-mail" stands for opening the link that was sent. With the
   // real backend the link confirms the account; the button checks it (opened in another tab or device).

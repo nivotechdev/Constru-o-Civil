@@ -19,7 +19,7 @@ import { candidateBadge } from '../../utils/applicationStatus';
 import { errorMessage } from '../../services/errors';
 import { closeJob, deleteJob, updateJobPhotos } from '../../services/jobs';
 import { showToast } from '../../services/toast';
-import { useDb, useUI } from '../../hooks/useStore';
+import { useDb, useScreenUI } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import {
@@ -48,7 +48,7 @@ import { FEATURES } from '../../services/features';
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
   // Y21: the dialogs belong to this job (a dialog opened on one job never shows up on another).
-  const [ui, setUi] = useUI<{ confirmClose: boolean; confirmDelete: boolean; hireId: string | null }>(
+  const [ui, setUi] = useScreenUI<{ confirmClose: boolean; confirmDelete: boolean; hireId: string | null }>(
     'job-manage:' + params.id,
     { confirmClose: false, confirmDelete: false, hireId: null }
   );

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
@@ -9,7 +9,7 @@ import { useUI } from '../../hooks/useStore';
 import { sendWhatsAppCode, signUp, verifyWhatsAppCode, WHATSAPP_CODE_AVAILABLE } from '../../services/auth';
 import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
-import { goBack as routerGoBack, navigate } from '../../services/router';
+import { currentPath, goBack as routerGoBack, navigate } from '../../services/router';
 import { resetUI, setUI } from '../../services/store';
 import type { Role } from '../../types/models';
 import {
@@ -150,7 +150,6 @@ interface SignupUI {
   generalError: boolean;
   submitting: boolean;
   passwordVisible: boolean;
-  confirmPassword: string;
   confirmError: string | null;
   accepted: boolean;
   acceptError: boolean;
@@ -219,7 +218,6 @@ export default function Signup({ params }: ScreenProps) {
     generalError: false,
     submitting: false,
     passwordVisible: false,
-    confirmPassword: '',
     confirmError: null,
     accepted: false,
     acceptError: false,
@@ -228,6 +226,18 @@ export default function Signup({ params }: ScreenProps) {
     resent: false,
     submitError: null
   }));
+  // Y22: the password only lives in this screen (never in the shared store), and the draft (name,
+  // document, e-mail…) is forgotten when the flow is left — except for a look at the terms.
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const values: Values = { ...ui.values, senha: password };
+  useEffect(
+    () => () => {
+      const to = currentPath();
+      if (!['/termos', '/privacidade', '/cadastro/' + role].includes(to)) resetUI(key);
+    },
+    [key, role]
+  );
   const step = Math.max(0, Math.min(ui.step, cfg.fields.length - 1));
   const field = cfg.fields[step];
   const isLast = step === cfg.fields.length - 1;
@@ -272,6 +282,11 @@ export default function Signup({ params }: ScreenProps) {
     if (field.mask === 'cnpj') value = maskCNPJ(v);
     if (field.mask === 'cpfCnpj') value = v.replace(/\D/g, '').length > 11 ? maskCNPJ(v) : maskCPF(v);
     if (field.mask === 'phone') value = maskPhone(v);
+    if (field.id === 'senha') {
+      setPassword(value);
+      setUi((s) => ({ errors: { ...s.errors, senha: null }, generalError: false, submitError: null }));
+      return;
+    }
     setUi((s) => ({
       values: { ...s.values, [field.id]: value },
       errors: { ...s.errors, [field.id]: null },
@@ -282,7 +297,7 @@ export default function Signup({ params }: ScreenProps) {
 
   function continueStep() {
     if (ui.submitting) return; // Enter while the account is being created
-    const err = validateField(field, ui.values, role);
+    const err = validateField(field, values, role);
     if (err) {
       setUi((s) => ({ errors: { ...s.errors, [field.id]: err } }));
       return;
@@ -323,7 +338,7 @@ export default function Signup({ params }: ScreenProps) {
       setUi({ step: step + 1 });
       return;
     }
-    if (ui.confirmPassword !== ui.values.senha) {
+    if (confirmPassword !== password) {
       setUi({ confirmError: 'As senhas não são iguais. Confira os dois campos.' });
       return;
     }
@@ -339,7 +354,7 @@ export default function Signup({ params }: ScreenProps) {
         doc: ui.values.doc || '',
         email: ui.values.email || '',
         whatsapp: ui.values.whatsapp || '',
-        password: ui.values.senha || '',
+        password,
         acceptedTermsVersion: TERMS_VERSION
       },
       captcha.getToken
@@ -370,7 +385,7 @@ export default function Signup({ params }: ScreenProps) {
       .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
   }
 
-  const strength = passwordStrength(ui.values.senha);
+  const strength = passwordStrength(password);
   const strengthColor = strengthBarColor(strength);
   const strengthTextColor = strength === 3 ? 'text-success-500' : strength ? 'text-warning-500' : 'text-concrete-500';
 
@@ -443,7 +458,7 @@ export default function Signup({ params }: ScreenProps) {
               id={key + '-senha'}
               label={field.label}
               placeholder={field.placeholder}
-              value={ui.values.senha || ''}
+              value={password}
               error={ui.errors.senha}
               visible={ui.passwordVisible}
               onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
@@ -454,11 +469,14 @@ export default function Signup({ params }: ScreenProps) {
               id={key + '-confirm'}
               label="Confirme a senha"
               placeholder="Repita a senha"
-              value={ui.confirmPassword}
+              value={confirmPassword}
               error={ui.confirmError}
               visible={ui.passwordVisible}
               onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
-              onInput={(v) => setUi({ confirmPassword: v, confirmError: null })}
+              onInput={(v) => {
+                setConfirmPassword(v);
+                setUi({ confirmError: null });
+              }}
               onEnter={continueByEnter}
             />
             <div className="flex flex-col gap-5">

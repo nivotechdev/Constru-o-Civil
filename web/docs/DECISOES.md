@@ -576,3 +576,22 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   quem tem conta). O servidor não diz "documento já cadastrado", então a tela nunca afirma isso: volta ao
   passo do documento com "Não deu para criar a conta com esses dados" e os caminhos (entrar, recuperar a
   senha, falar com a gente).
+
+## Y21 + Y22 — Estado de tela que não fica velho nem passa para a próxima pessoa
+
+- `useScreenUI(key, defaults)` (hooks/useStore.ts): o estado é da visita à tela — criado do dado real ao
+  abrir, apagado ao sair (inclusive ao salvar ou cancelar). Revisadas **todas** as chaves de `useUI`:
+  - passaram a `useScreenUI`, com a chave pelo item quando há item: Editar/Publicar vaga
+    (`edit-job:<id>`, `create-job`, `create-job:de:<id>`), Gerenciar vaga (`job-manage:<id>`), detalhe da
+    vaga (`job-detail:<id>`), Impulsionar (`boost-job:<id>`), excluir vaga no perfil, posts do perfil
+    (`worker-posts:<id>`), Esqueci a senha (não fica mais preso em "Link enviado"), Nova senha,
+    Privacidade, Confirme seu e-mail, Escolher perfil;
+  - Editar perfil e Editar empresa já usam estado local (rodada anterior);
+  - continuam em `useUI` de propósito: mural (filtros), menus, diálogo de sair, seletor de cidade (zera
+    ao fechar), pagamento em andamento (`boost-pay:<id>:<plano>`, só método e id do pagamento) e
+    Completar perfil (o usuário não sai dessa tela sem sair da conta).
+- **Senha nunca fica no estado global**: login e cadastro guardam a senha só no estado local da tela. Abrir
+  os Termos no meio do cadastro mantém o rascunho e pede a senha de novo.
+- **O rascunho do cadastro some ao sair do fluxo** (qualquer tela que não seja o próprio cadastro, Termos ou
+  Privacidade), ao entrar e ao sair da conta: entrar com outra conta, ou sair, apaga todo o estado de tela
+  (`setSessionAccount`).

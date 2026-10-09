@@ -137,10 +137,13 @@ export function getRole(): Role {
   return getSession()?.role ?? 'trabalhador';
 }
 
-/** Starts (`id`) or ends (`null`) the session. Ending it also forgets every screen's UI state. */
+/**
+ * Starts (`id`) or ends (`null`) the session. Ending it, or starting another account's, forgets every
+ * screen's UI state (Y22: nothing typed by one person — a sign-up draft, a login — shows up for the next).
+ */
 export function setSessionAccount(id: string | null): void {
   if (IS_DEMO) storeAccountId(id);
-  state = { ...state, accountId: id, ui: id ? state.ui : {} };
+  state = { ...state, accountId: id, ui: id && id === state.accountId ? state.ui : {} };
   notify();
 }
 

@@ -2,7 +2,7 @@ import { Button } from '../../components/Button';
 import { IconButton } from '../../components/IconButton';
 import { Input } from '../../components/Input';
 import { ResultIcon } from '../../components/ResultIcon';
-import { useUI } from '../../hooks/useStore';
+import { useScreenUI } from '../../hooks/useStore';
 import { requestPasswordReset } from '../../services/auth';
 import { goBack, navigate } from '../../services/router';
 import { errorMessage } from '../../services/errors';
@@ -16,7 +16,12 @@ interface ForgotUI {
 }
 
 export default function ForgotPassword() {
-  const [ui, setUi] = useUI<ForgotUI>('forgot-password', { email: '', error: null, sent: false, submitting: false });
+  const [ui, setUi] = useScreenUI<ForgotUI>('forgot-password', {
+    email: '',
+    error: null,
+    sent: false,
+    submitting: false
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-white lg:max-w-app lg:mx-auto">

@@ -2,7 +2,7 @@ import { Button } from '../../components/Button';
 import { IconButton } from '../../components/IconButton';
 import { PasswordInput } from '../../components/Input';
 import { ResultIcon } from '../../components/ResultIcon';
-import { useUI } from '../../hooks/useStore';
+import { useScreenUI } from '../../hooks/useStore';
 import { resetPassword } from '../../services/auth';
 import { goBack, navigate } from '../../services/router';
 import { errorMessage } from '../../services/errors';
@@ -18,7 +18,7 @@ interface ResetUI {
 }
 
 export default function ResetPassword() {
-  const [ui, setUi] = useUI<ResetUI>('reset-password', {
+  const [ui, setUi] = useScreenUI<ResetUI>('reset-password', {
     senha: '',
     confirm: '',
     visible: false,

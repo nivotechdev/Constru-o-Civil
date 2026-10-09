@@ -11,7 +11,7 @@ import { TextArea } from '../../components/TextArea';
 import { useAction } from '../../hooks/useAction';
 import { addPortfolioPost, deletePortfolioPost } from '../../services/profiles';
 import { showToast } from '../../services/toast';
-import { useDb, useUI } from '../../hooks/useStore';
+import { useDb, useScreenUI } from '../../hooks/useStore';
 import { mediaUrl } from '../../services/media';
 import { postsForWorker } from '../../services/selectors';
 import type { Worker, WorkerPost } from '../../types/models';
@@ -31,7 +31,7 @@ const POSTS_DEFAULTS: PostsUI = { composing: false, mediaUrl: null, mediaType: '
 
 export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean }) {
   const db = useDb();
-  const [ui, setUi] = useUI<PostsUI>(POSTS_KEY, POSTS_DEFAULTS);
+  const [ui, setUi] = useScreenUI<PostsUI>(POSTS_KEY + ':' + worker.id, POSTS_DEFAULTS);
   const posts = postsForWorker(db, worker.id);
   const remove = useAction(deletePortfolioPost, () => {
     setUi({ deleteId: null });

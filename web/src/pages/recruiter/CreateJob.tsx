@@ -11,7 +11,7 @@ import { Select } from '../../components/Select';
 import { Switch } from '../../components/Switch';
 import { Tag } from '../../components/Tag';
 import { TextArea } from '../../components/TextArea';
-import { useDb, useUI } from '../../hooks/useStore';
+import { useDb, useScreenUI } from '../../hooks/useStore';
 import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
 import { IS_DEMO } from '../../services/mode';
 import { OFICIO_OPTIONS, REQUISITOS_OPCOES } from '../../services/catalog';
@@ -78,7 +78,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
     ? applicationsForJob(db, job.id).filter((a) => isPending(a.status) || holdsSlot(a.status))
     : [];
   const limits = job ? { originalStartDate: job.startDate, minSlots: holding } : {};
-  const [ui, setUi] = useUI<CreateJobUI>(KEY, () => ({
+  const [ui, setUi] = useScreenUI<CreateJobUI>(KEY, () => ({
     step: 1,
     form: job ? formFromJob(job) : (template ?? emptyForm()),
     errors: {},

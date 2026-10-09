@@ -2,7 +2,7 @@ import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons/Icon';
-import { useUI } from '../../hooks/useStore';
+import { useScreenUI } from '../../hooks/useStore';
 import { exportMyData } from '../../services/account';
 import { IS_DEMO } from '../../services/mode';
 import { errorMessage } from '../../services/errors';
@@ -15,7 +15,7 @@ interface PrivacyUI {
 }
 
 export default function Privacy() {
-  const [ui, setUi] = useUI<PrivacyUI>('privacy', { exporting: false, exported: false });
+  const [ui, setUi] = useScreenUI<PrivacyUI>('privacy', { exporting: false, exported: false });
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 gap-5 pb-8 lg:bg-transparent lg:min-h-0">

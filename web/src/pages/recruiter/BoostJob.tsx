@@ -10,7 +10,7 @@ import { loadJob } from '../../services/jobs';
 import { boostBlocker, isBoosted } from '../../services/payments';
 import { EmptyState } from '../../components/EmptyState';
 import { dateTimeLabel } from '../../utils/dates';
-import { useDb, useUI } from '../../hooks/useStore';
+import { useDb, useScreenUI } from '../../hooks/useStore';
 import { BOOST_PLANS, jobTitle } from '../../services/catalog';
 import type { BoostPlanId } from '../../types/models';
 import type { ScreenProps } from '../../types/screen';
@@ -22,7 +22,7 @@ import { BoostUnavailable } from './BoostPayment';
 
 export default function BoostJob({ params }: ScreenProps) {
   const db = useDb();
-  const [ui, setUi] = useUI<{ plan: BoostPlanId }>('boost-job', { plan: '24h' });
+  const [ui, setUi] = useScreenUI<{ plan: BoostPlanId }>('boost-job:' + params.id, { plan: '24h' });
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
   if (query.status !== 'ready')
     return (
