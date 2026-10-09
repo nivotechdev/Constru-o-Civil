@@ -3,13 +3,14 @@
 // snapshot. Pure functions of a Database (tested in src/__tests__/remoteMerge.test.ts); `apply` swaps
 // the result into the store in one change.
 import type { Application, Database, JobStats } from '../../types/models';
-import type { JobStatsRow, TableRow } from '../../types/supabase';
+import type { JobAddressRow, JobStatsRow, TableRow } from '../../types/supabase';
 import {
   accountFromRow,
   applicationFromRow,
   boostPaymentFromRow,
   companyFromRow,
-  jobFromRow,
+  jobFromReadRow,
+  type JobRowRead,
   notificationFromRow,
   postFromRow,
   workerFromRow
@@ -21,6 +22,9 @@ export const ACCOUNT_COLUMNS =
   'id, email, role, document, whatsapp, whatsapp_verified_at, email_confirmed_at, profile_completed_at, terms_version, terms_accepted_at, worker_id, company_id, created_at';
 export const WORKER_COLUMNS =
   'id, name, initials, oficio_id, city, neighborhood, lat, lon, rating, review_count, jobs_done, novo, verified, specialties, facts, photo_url, created_at';
+/** What anyone may read of a job (Z06): the exact address comes from get_job_addresses. */
+export const JOB_COLUMNS =
+  'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, created_at, updated_at, deleted_at';
 export const COMPANY_COLUMNS =
   'id, name, cnpj, tipo_obra, location, rating, review_count, verified, verified_since, since_label, respond_time, paid_count, logo_url, cover_url, created_at';
 
@@ -75,19 +79,63 @@ export const putCompanies =
     return { ...db, companies };
   };
 
-/** Jobs; a deleted one (deleted_at) is kept for its candidates' history and listed as deleted. */
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Jobs, as anyone may read them; a deleted one (deleted_at) is kept for its candidates' history and listed
+ * as deleted. An exact address already in the store (from get_job_addresses) stays while the job's area is
+ * the same — a re-read of the mural doesn't blank the address the person is allowed to see.
+ */
 export const putJobs =
-  (rows: TableRow<'jobs'>[]): Recipe =>
+  (rows: JobRowRead[]): Recipe =>
   (db) => {
     if (!rows.length) return db;
     const jobs = { ...db.jobs };
     const deleted = new Set(db.deletedJobIds);
     for (const row of rows) {
-      jobs[row.id] = jobFromRow(row);
+      const fresh = jobFromReadRow(row);
+      const old = db.jobs[row.id]?.address;
+      const sameArea =
+        old &&
+        old.exact !== false &&
+        old.neighborhood === row.neighborhood &&
+        old.city === row.city &&
+        old.uf === row.uf &&
+        round2(old.lat) === row.area_lat &&
+        round2(old.lon) === row.area_lon;
+      jobs[row.id] = sameArea ? { ...fresh, address: old } : fresh;
       if (row.deleted_at) deleted.add(row.id);
       else deleted.delete(row.id);
     }
     return { ...db, jobs, deletedJobIds: [...deleted] };
+  };
+
+/** The exact addresses the session may see (its own jobs; the jobs it was picked or hired for). */
+export const putJobAddresses =
+  (rows: JobAddressRow[]): Recipe =>
+  (db) => {
+    if (!rows.length) return db;
+    const jobs = { ...db.jobs };
+    for (const r of rows) {
+      const job = jobs[r.job_id];
+      if (!job) continue;
+      jobs[r.job_id] = {
+        ...job,
+        address: {
+          cep: r.cep,
+          street: r.street,
+          number: r.number,
+          complement: r.complement,
+          neighborhood: r.neighborhood,
+          city: r.city,
+          uf: r.uf,
+          lat: r.lat,
+          lon: r.lon,
+          exact: true
+        }
+      };
+    }
+    return { ...db, jobs };
   };
 
 /** Forgets a job (it no longer exists or isn't visible). */

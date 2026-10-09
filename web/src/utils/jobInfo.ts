@@ -128,3 +128,18 @@ export function streetText(job: Place): string {
   const a = job.address;
   return [`${a.street}, ${a.number}`, a.complement].filter(Boolean).join(' · ');
 }
+
+/** "Rua Serra de Bragança, 1240, Tatuapé, São Paulo - SP, 03307-000" — for the map apps. */
+export function fullAddressText(job: Place): string {
+  const a = job.address;
+  return `${a.street}, ${a.number}, ${a.neighborhood}, ${a.city} - ${a.uf}, ${a.cep}`;
+}
+
+/** Links that open the address in Google Maps and in Waze (Z06 / L04). */
+export function mapLinks(job: Place & { address: { lat: number; lon: number } }): { google: string; waze: string } {
+  const q = encodeURIComponent(fullAddressText(job));
+  return {
+    google: `https://www.google.com/maps/search/?api=1&query=${q}`,
+    waze: `https://waze.com/ul?ll=${job.address.lat},${job.address.lon}&navigate=yes&q=${q}`
+  };
+}

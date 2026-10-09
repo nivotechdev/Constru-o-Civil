@@ -354,3 +354,17 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   `accounts`. O CPF/CNPJ nunca chega a ser gravado em `auth.users`. As contas existentes foram limpas.
 - Efeito colateral aceito: o perfil do app antigo (`profiles`) deixa de receber o documento das contas
   novas (o app antigo está desligado; o login por documento usa `accounts`).
+
+## Z06 — Endereço da obra só para quem está no bico
+
+- **Antes da aprovação**: bairro, cidade e distância ("2,3 km de você"), com a frase "O endereço completo
+  aparece quando a construtora aprovar você". **Depois** (pré-selecionado ou contratado) e para a própria
+  construtora: rua, número, complemento, CEP e "Abrir no Google Maps" / "Waze" (no detalhe da vaga e em
+  "Você avançou").
+- **No banco**: `select` em `jobs` não devolve rua, número, complemento, CEP nem o ponto exato (privilégio
+  por coluna). Todo mundo lê `area_lat`/`area_lon`, o ponto arredondado em 2 casas (~1 km), usado na
+  distância e no filtro de raio. O endereço exato sai só por `get_job_addresses`, que confere se a conta é
+  a dona ou foi escolhida. Depois de concluída, desistida ou cancelada, o endereço fecha de novo.
+- **No modo de demonstração** os dados estão no aparelho; quem esconde é a tela (`canSeeExactAddress`), com
+  a mesma regra.
+- A distância antes da aprovação é aproximada (até ~1 km de diferença); a tela não promete precisão.

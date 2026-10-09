@@ -79,6 +79,9 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       requirements: [],
       created_at: CREATED,
       deleted_at: null,
+      updated_at: CREATED,
+      area_lat: 0,
+      area_lon: 0,
       ...r,
       id: r.id ?? ''
     })),

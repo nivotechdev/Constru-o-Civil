@@ -242,6 +242,25 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
   return job;
 }
 
+/** A job as anyone may read it (Z06): no street, number, complement or CEP; the point is the area's. */
+export type JobRowRead = Omit<TableRow<'jobs'>, 'cep' | 'street' | 'number' | 'complement' | 'lat' | 'lon'> & {
+  area_lat: number;
+  area_lon: number;
+};
+
+export function jobFromReadRow(row: JobRowRead): Job {
+  const job = jobFromRow({
+    ...row,
+    cep: '',
+    street: '',
+    number: '',
+    complement: null,
+    lat: row.area_lat,
+    lon: row.area_lon
+  } as TableRow<'jobs'>);
+  return { ...job, address: { ...job.address, exact: false } };
+}
+
 /** `deletedAt`: when the company deleted the post (Database.deletedJobIds). */
 export function jobToRow(job: Job, deletedAt: string | null = null): TableInsert<'jobs'> {
   const a = job.address;

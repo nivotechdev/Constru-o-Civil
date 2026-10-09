@@ -137,6 +137,11 @@ export interface JobAddress extends GeoPoint {
   city: string;
   /** "SP" */
   uf: string;
+  /**
+   * `false`: only the area is known — street, number, complement and CEP are empty and the point is the
+   * neighbourhood's, rounded (real mode, for anyone but the company and the picked/hired worker; Z06).
+   */
+  exact?: boolean;
 }
 
 export interface Job {

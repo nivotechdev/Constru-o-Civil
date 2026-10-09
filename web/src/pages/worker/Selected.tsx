@@ -21,7 +21,8 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
-import { dateText, placeText } from '../../utils/jobInfo';
+import { dateText, placeText, streetText } from '../../utils/jobInfo';
+import { MapLinks } from '../../components/MapLinks';
 import { ContactButton } from '../../components/ContactButton';
 import { jobTitle } from '../../services/catalog';
 
@@ -95,10 +96,26 @@ export default function Selected({ params }: ScreenProps) {
             </span>
           </div>
         </Card>
+        <Card padding="md">
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2.5 items-start">
+              <Icon name="map-pin" size={20} color="var(--brand)" />
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="font-semibold text-concrete-900">
+                  {job.address.street ? streetText(job) : placeText(job)}
+                </span>
+                <span className="text-sm text-concrete-500">
+                  {job.address.street ? `${placeText(job)} · CEP ${job.address.cep}` : 'Carregando o endereço…'}
+                </span>
+              </div>
+            </div>
+            {job.address.street ? <MapLinks job={job} /> : null}
+          </div>
+        </Card>
         <Card tone="sunken" padding="md">
           <div className="flex flex-col gap-3">
             <KeyValue label="Diária combinada" value={formatPay(job.pay)} />
-            <KeyValue label="Local" value={placeText(job)} />
+            <KeyValue label="Quando" value={dateText(job)} />
             {openedAt ? <KeyValue label="Contato liberado" value={dateTimeLabel(openedAt)} /> : null}
           </div>
         </Card>

@@ -106,7 +106,9 @@ const jobRow = (id: string, companyId: string, slots = 1) => ({
   requirements: [],
   created_at: NOW,
   updated_at: NOW,
-  deleted_at: null
+  deleted_at: null,
+  area_lat: -23.56,
+  area_lon: -46.65
 });
 
 type Modules = {
@@ -455,6 +457,55 @@ describe('remote: data and actions', () => {
     expect(contact.phone).toBe('11955554444');
     expect(contact.url).toMatch(/^https:\/\/wa\.me\/5511955554444\?text=/);
     expect(decodeURIComponent(contact.url)).toContain('(BC-5001)');
+  });
+
+  it('Z06: jobs are read without the street; the exact address comes only for a picked worker', async () => {
+    const exact = {
+      job_id: 'BC-5001',
+      cep: '01310-100',
+      street: 'Avenida Paulista',
+      number: '1000',
+      complement: null,
+      neighborhood: 'Bela Vista',
+      city: 'São Paulo',
+      uf: 'SP',
+      lat: -23.5631,
+      lon: -46.6544
+    };
+    const app = {
+      id: 'app-1',
+      job_id: 'BC-5001',
+      worker_id: 'u-ana',
+      status: 'enviada',
+      created_at: NOW,
+      status_changed_at: NOW,
+      auto_rejected: false,
+      worker_reviewed: false,
+      company_reviewed: false
+    };
+    const fake = server('ana', {
+      tables: { applications: [app] },
+      rpc: { get_job_addresses: () => ({ data: [exact], error: null }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await m.jobs.loadJob('BC-5001');
+    const selects = fake.calls.filter((c) => c.name === 'jobs').map((c) => String(c.ops?.[0]?.[1]));
+    expect(selects.every((cols) => !cols.includes('street') && cols !== '*')).toBe(true);
+    // Still a candidate: no address asked, none shown.
+    expect(fake.calls.some((c) => c.name === 'get_job_addresses')).toBe(false);
+    let job = m.store.getDb().jobs['BC-5001'];
+    expect(job.address).toMatchObject({ street: '', exact: false, lat: -23.56 });
+    expect(m.selectors.canSeeExactAddress(m.store.getDb(), job)).toBe(false);
+    // Picked: the address comes, and a re-read of the mural doesn't blank it.
+    app.status = 'pre_selecionado';
+    await m.jobs.loadJob('BC-5001');
+    expect(fake.calls.find((c) => c.name === 'get_job_addresses')?.args).toEqual({ p_job_ids: ['BC-5001'] });
+    job = m.store.getDb().jobs['BC-5001'];
+    expect(job.address).toMatchObject({ street: 'Avenida Paulista', number: '1000', exact: true });
+    expect(m.selectors.canSeeExactAddress(m.store.getDb(), job)).toBe(true);
+    await m.jobs.loadFeed();
+    expect(m.store.getDb().jobs['BC-5001'].address.street).toBe('Avenida Paulista');
   });
 
   it('publishing sends the job without the columns the server owns', async () => {

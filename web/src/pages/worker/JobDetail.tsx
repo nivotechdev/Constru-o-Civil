@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon, type IconName } from '../../components/icons/Icon';
 import { InfoRow } from '../../components/InfoRow';
+import { MapLinks } from '../../components/MapLinks';
 import { Dialog } from '../../components/Modal';
 import { NotFound } from '../../components/NotFound';
 import { PhotoCarousel } from '../../components/PhotoCarousel';
@@ -18,7 +19,7 @@ import { loadJob } from '../../services/jobs';
 import { showToast } from '../../services/toast';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import { applicationFor, companyOf, currentWorker, getJob } from '../../services/selectors';
+import { applicationFor, canSeeExactAddress, companyOf, currentWorker, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
 import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, type FeedUI } from './feed/feedUI';
@@ -53,6 +54,8 @@ export default function JobDetail({ params }: ScreenProps) {
   const canCancel = application && (application.status === 'enviada' || application.status === 'em_analise');
   const dias = diasInfo(job);
   const distance = role === 'trabalhador' ? formatKm(jobDistance(job, feedOrigin(feed, db, role))) + ' de você' : null;
+  // Z06: the street and number only for the company and the worker it picked or hired.
+  const exact = canSeeExactAddress(db, job) && Boolean(job.address.street);
 
   // Built fresh for each placement: the phone's sticky bottom bar and the desktop summary card.
   const actions = () =>
@@ -144,9 +147,16 @@ export default function JobDetail({ params }: ScreenProps) {
               <div className="flex flex-col gap-3.5">
                 <InfoRow
                   icon="map-pin"
-                  main={streetText(job)}
-                  sub={[placeText(job), distance].filter(Boolean).join(' · ')}
+                  main={exact ? streetText(job) : placeText(job)}
+                  sub={
+                    exact
+                      ? [placeText(job), distance].filter(Boolean).join(' · ')
+                      : [distance, 'O endereço completo aparece quando a construtora aprovar você']
+                          .filter(Boolean)
+                          .join(' · ')
+                  }
                 />
+                {exact ? <MapLinks job={job} /> : null}
                 {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
                 <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
                 <InfoRow

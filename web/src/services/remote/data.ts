@@ -3,6 +3,7 @@
 // (jobs.loadFeed, applications.loadMyApplications…), via the read cache in services/queries.ts.
 import type { Application } from '../../types/models';
 import type { TableRow } from '../../types/supabase';
+import type { JobRowRead } from '../supabaseMappers';
 import { getSession } from '../store';
 import { todayISO } from '../../utils/dates';
 import { db, request } from './client';
@@ -12,6 +13,8 @@ import {
   dropJob,
   putApplications,
   putCompanies,
+  JOB_COLUMNS,
+  putJobAddresses,
   putJobs,
   putNotifications,
   putPayments,
@@ -23,7 +26,7 @@ import {
   type Recipe
 } from './merge';
 
-type JobRow = TableRow<'jobs'>;
+type JobRow = JobRowRead;
 type AppRow = TableRow<'applications'>;
 type EventRow = TableRow<'application_events'>;
 
@@ -53,7 +56,7 @@ async function workersById(ids: string[]) {
 async function jobsById(ids: string[]): Promise<JobRow[]> {
   if (!ids.length) return [];
   const client = await db();
-  return request(() => client.from('jobs').select('*').in('id', ids));
+  return request(() => client.from('jobs').select(JOB_COLUMNS).in('id', ids));
 }
 
 async function statsFor(jobIds: string[]) {
@@ -77,11 +80,34 @@ async function eventsOf(apps: AppRow[]): Promise<EventRow[]> {
   );
 }
 
-/** Jobs with what the screens read next to them: their companies and how many candidates each has. */
-async function jobsWithContext(jobs: JobRow[]): Promise<Recipe[]> {
+/** The exact addresses of these jobs that the session may see (the server filters: Z06). */
+async function addressesOf(jobIds: string[]) {
+  if (!jobIds.length) return [];
+  const client = await db();
+  return (await request(() => client.rpc('get_job_addresses', { p_job_ids: jobIds }))) ?? [];
+}
+
+const HOLDS_SLOT = new Set(['pre_selecionado', 'contratado']);
+
+/**
+ * Jobs with what the screens read next to them: their companies, how many candidates each has, and the
+ * exact address of the company's own jobs and of `exactFor` (the jobs the worker was picked or hired for).
+ */
+async function jobsWithContext(jobs: JobRow[], exactFor: string[] = []): Promise<Recipe[]> {
   const ids = jobs.map((j) => j.id);
-  const [companies, stats] = await Promise.all([companiesById(unique(jobs.map((j) => j.company_id))), statsFor(ids)]);
-  return [putCompanies(companies, undefined, accountId()), putJobs(jobs), putStats(ids, stats)];
+  const companyId = me().companyId;
+  const exact = unique([...jobs.filter((j) => j.company_id === companyId).map((j) => j.id), ...exactFor]);
+  const [companies, stats, addresses] = await Promise.all([
+    companiesById(unique(jobs.map((j) => j.company_id))),
+    statsFor(ids),
+    addressesOf(exact.filter((id) => ids.includes(id)))
+  ]);
+  return [
+    putCompanies(companies, undefined, accountId()),
+    putJobs(jobs),
+    putJobAddresses(addresses),
+    putStats(ids, stats)
+  ];
 }
 
 /** Candidacies (+ history, + the workers, + the jobs) as recipes; `scope` as in putApplications. */
@@ -91,9 +117,10 @@ async function applicationsWithContext(apps: AppRow[], scope: (a: Application) =
     workersById(unique(apps.map((a) => a.worker_id))),
     jobsById(unique(apps.map((a) => a.job_id)))
   ]);
+  const holding = apps.filter((a) => a.worker_id === me().workerId && HOLDS_SLOT.has(a.status)).map((a) => a.job_id);
   return [
     putWorkers(workers, undefined, accountId()),
-    ...(await jobsWithContext(jobs)),
+    ...(await jobsWithContext(jobs, holding)),
     putApplications(apps, events, scope)
   ];
 }
@@ -122,7 +149,7 @@ export async function loadFeed(): Promise<void> {
   const jobs = await request(() =>
     client
       .from('jobs')
-      .select('*')
+      .select(JOB_COLUMNS)
       .is('deleted_at', null)
       .eq('closed', false)
       .or(`date_to_arrange.eq.true,end_date.gte.${todayISO()}`)
@@ -136,23 +163,27 @@ export async function loadFeed(): Promise<void> {
 /** One job, its company, and the session's side of it (my candidacy, or the candidates if it's mine). */
 export async function loadJob(jobId: string): Promise<void> {
   const client = await db();
-  const job = await request(() => client.from('jobs').select('*').eq('id', jobId).maybeSingle());
+  const job = await request(() => client.from('jobs').select(JOB_COLUMNS).eq('id', jobId).maybeSingle());
   if (!job) {
     apply(dropJob(jobId));
     return;
   }
   const { workerId, companyId } = me();
-  const recipes = await jobsWithContext([job]);
   if (workerId) {
     const [apps, saved] = await Promise.all([
       request(() => client.from('applications').select('*').eq('job_id', jobId).eq('worker_id', workerId)),
       savedIds()
     ]);
+    const recipes = await jobsWithContext([job], apps.some((a) => HOLDS_SLOT.has(a.status)) ? [jobId] : []);
     recipes.push(
       putApplications(apps, await eventsOf(apps), (a) => a.jobId === jobId && a.workerId === workerId),
       putSavedJobIds(saved)
     );
-  } else if (companyId && job.company_id === companyId) {
+    apply(...recipes);
+    return;
+  }
+  const recipes = await jobsWithContext([job]);
+  if (companyId && job.company_id === companyId) {
     const apps = await request(() => client.from('applications').select('*').eq('job_id', jobId));
     recipes.push(...(await applicationsWithContext(apps, (a) => a.jobId === jobId)));
     const payments = await request(() =>
@@ -195,7 +226,12 @@ export async function loadHistory(): Promise<void> {
   await concludeMine();
   const client = await db();
   const jobs = await request(() =>
-    client.from('jobs').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(300)
+    client
+      .from('jobs')
+      .select(JOB_COLUMNS)
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .limit(300)
   );
   const ids = jobs.map((j) => j.id);
   const apps = ids.length ? await request(() => client.from('applications').select('*').in('job_id', ids)) : [];
@@ -249,7 +285,7 @@ export async function loadCompanyProfile(companyId: string): Promise<void> {
     request(() =>
       client
         .from('jobs')
-        .select('*')
+        .select(JOB_COLUMNS)
         .eq('company_id', companyId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
