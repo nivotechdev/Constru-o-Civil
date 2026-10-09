@@ -84,3 +84,14 @@ describe('documents (Y17)', () => {
       expect(isValidCnpj(bad)).toBe(false);
   });
 });
+
+describe('specialties (Y23)', () => {
+  it('adds free text and suggestions without repeats, up to the limit', async () => {
+    const { addSpecialty, MAX_SPECIALTIES } = await import('../utils/specialties');
+    expect(addSpecialty(['Reboco'], '  reboco ')).toEqual(['Reboco']);
+    expect(addSpecialty(['Reboco'], '  Gesso   3D ')).toEqual(['Reboco', 'Gesso 3D']);
+    expect(addSpecialty([], '   ')).toEqual([]);
+    const full = Array.from({ length: MAX_SPECIALTIES }, (_, i) => 'E' + i);
+    expect(addSpecialty(full, 'Outra')).toBe(full);
+  });
+});

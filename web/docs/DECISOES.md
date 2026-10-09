@@ -595,3 +595,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **O rascunho do cadastro some ao sair do fluxo** (qualquer tela que não seja o próprio cadastro, Termos ou
   Privacidade), ao entrar e ao sair da conta: entrar com outra conta, ou sair, apaga todo o estado de tela
   (`setSessionAccount`).
+
+## Y23 — Especialidades num formato só
+
+- `components/SpecialtiesField.tsx` é o único campo de especialidades, em "Completar perfil" e em "Editar
+  perfil": sugestões do catálogo para tocar, texto livre com "Adicionar"/Enter, e qualquer uma pode ser
+  removida (as livres deixaram de sumir na edição). Sem repetir (ignora maiúsculas), até 10, até 40
+  caracteres cada (`utils/specialties.ts`).

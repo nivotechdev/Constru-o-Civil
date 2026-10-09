@@ -8,15 +8,14 @@ import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
-import { Tag } from '../../components/Tag';
 import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
-import { ESPECIALIDADES, OFICIO_OPTIONS } from '../../services/catalog';
+import { OFICIO_OPTIONS } from '../../services/catalog';
 import { saveMyProfileImages, updateMyWorkerProfile, type ProfileImages } from '../../services/profiles';
 import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
 import { showToast } from '../../services/toast';
-import { toggleItem } from '../../utils/list';
+import { SpecialtiesField } from '../../components/SpecialtiesField';
 
 /** Frees the local copies of pictures that were picked and then dropped. */
 function revoke(urls: (string | null | undefined)[]) {
@@ -111,19 +110,11 @@ export default function EditWorkerProfile() {
             onChange={(v) => setDraft((d) => ({ ...d, oficioId: v }))}
           />
           <LocationButton title="Onde você quer trabalhar" location={draft.city} onClick={() => setPickerOpen(true)} />
-          <div className="flex flex-col gap-2.5">
-            <span className="text-sm font-semibold text-concrete-900">Especialidades</span>
-            <div className="flex flex-wrap gap-2">
-              {ESPECIALIDADES.map((e) => (
-                <Tag
-                  key={e}
-                  label={e}
-                  selected={draft.specialties.includes(e)}
-                  onClick={() => setDraft((d) => ({ ...d, specialties: toggleItem(d.specialties, e) }))}
-                />
-              ))}
-            </div>
-          </div>
+          <SpecialtiesField
+            id="editar-especialidade"
+            value={draft.specialties}
+            onChange={(list) => setDraft((d) => ({ ...d, specialties: list }))}
+          />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {save.error ? <FieldError message={save.error} /> : null}

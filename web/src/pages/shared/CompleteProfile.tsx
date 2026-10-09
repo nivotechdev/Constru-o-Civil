@@ -3,10 +3,8 @@ import { Button } from '../../components/Button';
 import { CityPicker, LocationButton } from '../../components/CityPicker';
 import { FieldError } from '../../components/FieldError';
 import { IconButton } from '../../components/IconButton';
-import { Input } from '../../components/Input';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
-import { Tag } from '../../components/Tag';
 import { useUI } from '../../hooks/useStore';
 import { DEFAULT_CITY } from '../../services/cities';
 import { finishSignUp } from '../../services/auth';
@@ -15,6 +13,7 @@ import type { ScreenProps } from '../../types/screen';
 import { navigate } from '../../services/router';
 import { saveMyProfileImages } from '../../services/profiles';
 import { showToast } from '../../services/toast';
+import { SpecialtiesField } from '../../components/SpecialtiesField';
 
 /**
  * The pictures chosen while completing the profile, saved once the profile is (Z12). The profile is
@@ -92,8 +91,6 @@ interface WorkerUI {
   oficioId: string;
   cidade: string;
   pickerOpen: boolean;
-  /** What is being typed in the specialties field. */
-  especialidade: string;
   especialidades: string[];
   errors: { oficioId?: string | null; especialidades?: string | null };
 }
@@ -108,7 +105,6 @@ function WorkerFlow() {
     oficioId: '',
     cidade: DEFAULT_CITY,
     pickerOpen: false,
-    especialidade: '',
     especialidades: [],
     errors: {}
   });
@@ -119,18 +115,6 @@ function WorkerFlow() {
       return;
     }
     setUi({ step: 1, errors: {} });
-  };
-
-  // Typed specialties pile up as chips under the field (same word twice is ignored).
-  const addEspecialidade = () => {
-    const value = ui.especialidade.trim().replace(/\s+/g, ' ');
-    if (!value) return;
-    const exists = ui.especialidades.some((e) => e.toLowerCase() === value.toLowerCase());
-    setUi({
-      especialidade: '',
-      especialidades: exists ? ui.especialidades : [...ui.especialidades, value],
-      errors: { ...ui.errors, especialidades: null }
-    });
   };
 
   if (ui.step === 0) {
@@ -210,40 +194,12 @@ function WorkerFlow() {
         location={ui.cidade}
         onClick={() => setUi({ pickerOpen: true })}
       />
-      <div className="flex flex-col gap-2.5">
-        <div className="flex items-end gap-2">
-          <Input
-            id="completar-especialidade"
-            label="Especialidades"
-            placeholder="Ex.: Reboco, pintura, elétrica"
-            icon="hammer"
-            value={ui.especialidade}
-            invalid={Boolean(ui.errors.especialidades)}
-            onInput={(v) => setUi({ especialidade: v })}
-            onEnter={addEspecialidade}
-          />
-          <Button label="Adicionar" variant="secondary" iconLeft="plus" onClick={addEspecialidade} />
-        </div>
-        {ui.errors.especialidades ? (
-          <FieldError message={ui.errors.especialidades} />
-        ) : (
-          <span className="text-sm text-concrete-500">
-            Escreva uma especialidade e toque em Adicionar ou aperte Enter.
-          </span>
-        )}
-        {ui.especialidades.length ? (
-          <div className="flex flex-wrap gap-2 pt-1" aria-label="Suas especialidades">
-            {ui.especialidades.map((e) => (
-              <Tag
-                key={e}
-                label={e}
-                selected
-                onRemove={() => setUi({ especialidades: ui.especialidades.filter((x) => x !== e) })}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
+      <SpecialtiesField
+        id="completar-especialidade"
+        value={ui.especialidades}
+        error={ui.errors.especialidades}
+        onChange={(list) => setUi({ especialidades: list, errors: { ...ui.errors, especialidades: null } })}
+      />
       <CityPicker
         open={ui.pickerOpen}
         title="Onde você quer trabalhar"
