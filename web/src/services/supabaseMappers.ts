@@ -104,6 +104,8 @@ export function companyFromRow(row: TableRow<'companies'>, reviews: ReviewRow[] 
   setIf(company, 'cnpj', row.cnpj);
   setIf(company, 'tipoObra', row.tipo_obra);
   setIf(company, 'verifiedSince', row.verified_since);
+  setIf(company, 'verification', row.verification_status);
+  setIf(company, 'verifiedAt', row.verified_at);
   setIf(company, 'sinceLabel', row.since_label);
   setIf(company, 'respondTime', row.respond_time);
   setIf(company, 'paidCount', row.paid_count);
@@ -124,6 +126,8 @@ export function companyToRow(company: Company): TableInsert<'companies'> {
     review_count: company.reviewCount,
     verified: company.verified,
     verified_since: company.verifiedSince ?? null,
+    verification_status: company.verification ?? (company.verified ? 'verificada' : 'pendente'),
+    verified_at: company.verifiedAt ?? null,
     since_label: company.sinceLabel ?? null,
     respond_time: company.respondTime ?? null,
     paid_count: company.paidCount ?? null,

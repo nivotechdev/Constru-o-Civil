@@ -24,6 +24,7 @@ import type {
   ReviewDirection,
   BoostPlanId,
   DiasKey,
+  CompanyVerification,
   NotificationKind,
   PaymentMethod,
   PaymentStatus,
@@ -70,6 +71,9 @@ type CompanyRow = {
   review_count: number;
   verified: boolean;
   verified_since: string | null;
+  /** Y24: only the Bicos team changes it (set_company_verification); `verified` follows it. */
+  verification_status: CompanyVerification;
+  verified_at: string | null;
   since_label: string | null;
   respond_time: string | null;
   paid_count: number | null;
@@ -293,7 +297,10 @@ export interface SupabaseDatabase {
     Tables: {
       accounts: Table<AccountRow, 'created_at'>;
       oficios: Table<OficioRow, 'sinonimos'>;
-      companies: Table<CompanyRow, 'id' | 'rating' | 'review_count' | 'verified' | 'created_at'>;
+      companies: Table<
+        CompanyRow,
+        'id' | 'rating' | 'review_count' | 'verified' | 'verification_status' | 'verified_at' | 'created_at'
+      >;
       workers: Table<
         WorkerRow,
         'id' | 'rating' | 'review_count' | 'jobs_done' | 'novo' | 'verified' | 'specialties' | 'facts' | 'created_at'

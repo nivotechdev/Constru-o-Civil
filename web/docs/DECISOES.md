@@ -602,3 +602,15 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   perfil": sugestões do catálogo para tocar, texto livre com "Adicionar"/Enter, e qualquer uma pode ser
   removida (as livres deixaram de sumir na edição). Sem repetir (ignora maiúsculas), até 10, até 40
   caracteres cada (`utils/specialties.ts`).
+
+## Y24 (+ L10) — Selo "Verificada" de verdade
+
+- Construtora tem `verification_status`: **pendente** (toda conta nova), **verificada** ou **reprovada**.
+  Só a equipe da Bicos muda, pela função `set_company_verification` (service_role — SQL Editor do painel
+  até existir uma área de admin), que manda o aviso "Empresa verificada" ou "Não conseguimos verificar a
+  empresa". O selo (`verified`) e a data (`verified_at`) acompanham o status por gatilho; a construtora não
+  consegue mudar nenhum dos dois.
+- No próprio perfil: "Verificada · Conferida em <data>", "Verificação pendente" (pode publicar; o selo
+  aparece quando terminarmos) ou "Não verificada" (falar com a gente). Acabou o "conferido em undefined".
+- Recrutador com CPF vê "Documento: CPF (não aparece no perfil)" no lugar do CNPJ.
+- O cadastro deixou de prometer conferir o CNPJ antes de liberar a publicação (Y17).

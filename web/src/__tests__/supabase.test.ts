@@ -35,6 +35,8 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       review_count: 0,
       verified: false,
       verified_since: null,
+      verification_status: 'pendente',
+      verified_at: null,
       since_label: null,
       respond_time: null,
       paid_count: null,

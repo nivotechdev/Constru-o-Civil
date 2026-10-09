@@ -85,6 +85,10 @@ export interface Company {
   reviewCount: number;
   verified: boolean;
   verifiedSince?: string;
+  /** Y24: where the company's check stands (absent on old demo data: read from `verified`). */
+  verification?: CompanyVerification;
+  /** When it was verified (ISO). */
+  verifiedAt?: string;
   sinceLabel?: string;
   respondTime?: string;
   paidCount?: number;
@@ -244,6 +248,9 @@ export interface WorkerPost {
   date: string;
 }
 
+/** The Bicos team's check of a company (Y24). Every company starts "pendente". */
+export type CompanyVerification = 'pendente' | 'verificada' | 'reprovada';
+
 /** What a notification is about; the screen picks its icon and colour from it. */
 export type NotificationKind =
   | 'novos_candidatos'
@@ -259,7 +266,8 @@ export type NotificationKind =
   | 'vaga_editada'
   | 'impulsionamento'
   | 'bico_urgente'
-  | 'bico_fechado';
+  | 'bico_fechado'
+  | 'verificacao';
 
 /** A notice for one worker or one company (exactly one of `workerId`/`companyId` is set). */
 export interface AppNotification {

@@ -143,6 +143,18 @@ select count(*) from public.workers w
  where review_count <> (select count(*) from public.reviews r where r.worker_id = w.id and r.direction = 'para_trabalhador'); -- 0
 ```
 
+### 12. `20261011000500_y24_verificacao.sql` (Y24 + L10)
+
+Status da verificação da construtora (`pendente | verificada | reprovada`, coluna `verification_status`), com
+`verified_at`; o selo (`verified`) acompanha o status; só a equipe muda, pela função
+`set_company_verification(empresa, status)` (service_role), que avisa a construtora.
+
+```sql
+select count(*) from public.companies where verified <> (verification_status = 'verificada');      -- 0
+-- Para verificar uma empresa (SQL Editor):
+-- select public.set_company_verification('<id da empresa>', 'verificada');
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

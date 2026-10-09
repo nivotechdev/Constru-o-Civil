@@ -189,12 +189,14 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
     const company: Company = {
       id: 'c-' + stamp,
       name: data.name.trim(),
-      cnpj: data.doc,
+      // Y16: only a CNPJ goes to the public profile (a recruiter on their own signs up with a CPF).
+      ...(isValidCnpj(data.doc) ? { cnpj: data.doc } : {}),
       location: DEFAULT_CITY,
       whatsapp: data.whatsapp,
       rating: 0,
       reviewCount: 0,
       verified: false,
+      verification: 'pendente',
       reviews: []
     };
     upsertCompany(company);

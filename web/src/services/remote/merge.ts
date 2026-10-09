@@ -26,7 +26,7 @@ export const WORKER_COLUMNS =
 export const JOB_COLUMNS =
   'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, created_at, updated_at, deleted_at';
 export const COMPANY_COLUMNS =
-  'id, name, cnpj, tipo_obra, location, rating, review_count, verified, verified_since, since_label, respond_time, paid_count, logo_url, cover_url, created_at';
+  'id, name, cnpj, tipo_obra, location, rating, review_count, verified, verified_since, verification_status, verified_at, since_label, respond_time, paid_count, logo_url, cover_url, created_at';
 
 export type AccountRow = TableRow<'accounts'>;
 export type WorkerRowRead = Omit<TableRow<'workers'>, 'whatsapp'>;

@@ -148,6 +148,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.7,
     reviewCount: 31,
     verified: true,
+    verification: 'verificada',
     verifiedSince: '12 ago',
     sinceLabel: 'Na Bicos desde março de 2025',
     respondTime: 'Responde em 1h20, em média',
@@ -193,6 +194,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.5,
     reviewCount: 18,
     verified: true,
+    verification: 'verificada',
     reviews: [
       {
         id: 'r4',
@@ -214,6 +216,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.6,
     reviewCount: 9,
     verified: false,
+    verification: 'pendente',
     reviews: []
   },
   'serra-braganca': {
@@ -224,6 +227,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.8,
     reviewCount: 14,
     verified: true,
+    verification: 'verificada',
     reviews: [
       {
         id: 'r5',
@@ -245,6 +249,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.4,
     reviewCount: 7,
     verified: false,
+    verification: 'pendente',
     reviews: [
       {
         id: 'r6',
@@ -266,6 +271,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.3,
     reviewCount: 5,
     verified: false,
+    verification: 'pendente',
     reviews: []
   },
   aricanduva: {
@@ -276,6 +282,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.2,
     reviewCount: 4,
     verified: false,
+    verification: 'pendente',
     reviews: []
   },
   cangaiba: {
@@ -286,6 +293,7 @@ export const COMPANIES: Record<string, Company> = {
     rating: 4.3,
     reviewCount: 6,
     verified: false,
+    verification: 'pendente',
     reviews: []
   }
 };

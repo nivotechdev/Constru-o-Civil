@@ -30,5 +30,6 @@ export const NOTIFICATION_LOOK: Record<NotificationKind, Look> = {
   vaga_editada: { icon: 'pencil', ...BRAND },
   impulsionamento: { icon: 'rocket', ...BRAND },
   bico_urgente: { icon: 'zap', ...DANGER },
-  bico_fechado: { icon: 'circle-check', ...SUCCESS }
+  bico_fechado: { icon: 'circle-check', ...SUCCESS },
+  verificacao: { icon: 'shield-check', ...BRAND }
 };

@@ -36,6 +36,7 @@ import type { StatusBadge } from '../../types/ui';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { CompanyAvatar } from '../../components/Avatar';
 import { holdsSlot } from '../../services/applicationMachine';
+import type { Company } from '../../types/models';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -132,17 +133,18 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           <Card padding="md">
             <div className="flex flex-col gap-3.5">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-concrete-500">CNPJ</span>
-                <span className="font-mono text-sm text-concrete-900">{company.cnpj}</span>
+                <span className="text-sm text-concrete-500">{company.cnpj ? 'CNPJ' : 'Documento'}</span>
+                {company.cnpj ? (
+                  <span className="font-mono text-sm text-concrete-900">{company.cnpj}</span>
+                ) : (
+                  <span className="text-sm text-concrete-700 text-right">CPF (não aparece no perfil)</span>
+                )}
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-concrete-500">Tipo de obra</span>
                 <span className="font-semibold text-concrete-900 text-right">{company.tipoObra}</span>
               </div>
-              <div className="flex items-center gap-2 pt-3.5 border-t border-concrete-200">
-                <Badge label="Verificada" tone="success" icon="shield-check" />
-                <span className="text-xs text-concrete-500">{`CNPJ conferido em ${company.verifiedSince}`}</span>
-              </div>
+              <VerificationRow company={company} />
             </div>
           </Card>
         ) : (
@@ -272,4 +274,36 @@ function statusBadge(db: Database, job: Job): StatusBadge {
   const total = candidateCount(db, job.id);
   if (total) return { label: total === 1 ? '1 candidato' : `${total} candidatos`, tone: 'brand', icon: 'users' };
   return { label: 'Sem candidatos', tone: 'neutral', icon: 'search-x' };
+}
+
+// Y24: where the Bicos team's check of the company stands — never a "Verificada" that didn't happen.
+function VerificationRow({ company }: { company: Company }) {
+  const status = company.verification ?? (company.verified ? 'verificada' : 'pendente');
+  const when = company.verifiedAt
+    ? new Date(company.verifiedAt).toLocaleDateString('pt-BR')
+    : (company.verifiedSince ?? null);
+  return (
+    <div className="flex flex-col gap-1.5 pt-3.5 border-t border-concrete-200">
+      {status === 'verificada' ? (
+        <div className="flex items-center gap-2">
+          <Badge label="Verificada" tone="success" icon="shield-check" />
+          {when ? <span className="text-xs text-concrete-500">{`Conferida em ${when}`}</span> : null}
+        </div>
+      ) : status === 'reprovada' ? (
+        <>
+          <Badge label="Não verificada" tone="danger" icon="circle-x" />
+          <span className="text-xs text-concrete-500">
+            Não conseguimos confirmar os dados da empresa. Fale com a gente pela Ajuda.
+          </span>
+        </>
+      ) : (
+        <>
+          <Badge label="Verificação pendente" tone="warning" icon="clock" />
+          <span className="text-xs text-concrete-500">
+            Ainda vamos conferir os dados da empresa. Você já pode publicar vagas; o selo aparece quando terminarmos.
+          </span>
+        </>
+      )}
+    </div>
+  );
 }
