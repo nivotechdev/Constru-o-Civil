@@ -17,6 +17,10 @@ export interface FakeOptions {
   rpc?: Record<string, (args: Record<string, unknown>) => Answer | Promise<Answer>>;
   auth?: Partial<Record<string, (...args: unknown[]) => unknown>>;
   functions?: Record<string, (body: unknown) => Answer>;
+  /** Columns that make a row unique, per table: inserting a duplicate fails with 23505, like Postgres. */
+  unique?: Record<string, string[]>;
+  /** Tables the client has no UPDATE privilege on: an upsert fails with 42501, like PostgREST. */
+  noUpdate?: string[];
 }
 
 const ok = (data: unknown): Answer => ({ data, error: null });
@@ -43,7 +47,13 @@ export function fakeSupabase(options: FakeOptions = {}) {
       const verb = ops.find((o) => ['select', 'insert', 'update', 'delete', 'upsert'].includes(o[0] as string));
       const rows = tables[table] ?? [];
       if (verb?.[0] === 'insert' || verb?.[0] === 'upsert') {
+        if (verb[0] === 'upsert' && options.noUpdate?.includes(table))
+          return { data: null, error: { code: '42501', message: `permission denied for table ${table}` } };
         const values = (Array.isArray(verb[1]) ? verb[1] : [verb[1]]) as Row[];
+        const key = options.unique?.[table];
+        const same = (a: Row, b: Row) => !!key && key.every((k) => a[k] === b[k]);
+        if (values.some((v) => rows.some((r) => same(r, v))))
+          return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
         tables[table] = [...rows, ...values];
         return ok(null);
       }

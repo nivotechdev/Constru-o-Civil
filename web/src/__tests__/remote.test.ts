@@ -337,6 +337,25 @@ describe('remote: data and actions', () => {
     expect(m.store.getDb().savedJobIds).toEqual(['BC-5002']);
   });
 
+  it('saving uses insert (no UPDATE privilege on saved_jobs); an already saved job counts as saved (Z04)', async () => {
+    const fake = server('ana');
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    // Same rules as the database: unique (worker_id, job_id) and no UPDATE grant (so no upsert).
+    fake.client.from = fakeSupabase({
+      tables: fake.tables,
+      unique: { saved_jobs: ['worker_id', 'job_id'] },
+      noUpdate: ['saved_jobs']
+    }).client.from;
+    expect(await m.jobs.toggleSavedJob('BC-5002')).toBe(true);
+    expect(fake.tables.saved_jobs).toEqual([{ worker_id: 'u-ana', job_id: 'BC-5002' }]);
+    // Saved on another device meanwhile: this device still thinks it isn't saved, and saving again is fine.
+    m.store.toggleSavedJob('BC-5002');
+    expect(await m.jobs.toggleSavedJob('BC-5002')).toBe(true);
+    expect(m.store.getDb().savedJobIds).toEqual(['BC-5002']);
+    expect(fake.tables.saved_jobs).toHaveLength(1);
+  });
+
   it('the card number never leaves the device; a declined card is an error', async () => {
     const declined = {
       id: 'pg1',

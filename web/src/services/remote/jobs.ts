@@ -7,7 +7,7 @@ import { serviceError } from '../errors';
 import { jobToRow } from '../supabaseMappers';
 import * as store from '../store';
 import { isJobSaved } from '../selectors';
-import { db, request } from './client';
+import { db, request, toServiceError } from './client';
 import { loadJob } from './data';
 import { uploadAll } from './storage';
 
@@ -66,13 +66,15 @@ export async function toggleSavedJob(jobId: string): Promise<boolean> {
   try {
     const client = await db();
     if (wasSaved) await request(() => client.from('saved_jobs').delete().eq('worker_id', workerId).eq('job_id', jobId));
-    else
-      await request(() =>
-        client.from('saved_jobs').upsert({ worker_id: workerId, job_id: jobId }, { onConflict: 'worker_id,job_id' })
-      );
+    else {
+      // Plain insert: the table has no UPDATE privilege, so an upsert is refused. Already saved (saved
+      // on another device, or a double tap) is what the person asked for: not an error.
+      const { error } = await client.from('saved_jobs').insert({ worker_id: workerId, job_id: jobId });
+      if (error && (error as { code?: string }).code !== '23505') throw error;
+    }
   } catch (e) {
     if (isJobSaved(store.getDb(), jobId) !== wasSaved) store.toggleSavedJob(jobId);
-    throw e;
+    throw toServiceError(e);
   }
   return !wasSaved;
 }
