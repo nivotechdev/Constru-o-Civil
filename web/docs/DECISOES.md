@@ -566,3 +566,13 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   Com sessão, confere no Auth e entra; sem confirmação, "Ainda não recebemos a confirmação".
 - O título "Conta criada. Confirme seu e-mail" só aparece vindo do cadastro; nos outros casos, "Confirme seu
   e-mail".
+
+## Y20 — Erros do cadastro
+
+- Toda falha do cadastro (criar a conta, mandar e conferir o código do WhatsApp) mostra a mensagem do
+  `ServiceError` (sem internet, muitas tentativas, senha fraca, captcha…), não mais "confira sua internet"
+  para tudo.
+- A recusa do documento continua **genérica de propósito** (Z07: dizer "esse CPF já tem conta" revelaria
+  quem tem conta). O servidor não diz "documento já cadastrado", então a tela nunca afirma isso: volta ao
+  passo do documento com "Não deu para criar a conta com esses dados" e os caminhos (entrar, recuperar a
+  senha, falar com a gente).

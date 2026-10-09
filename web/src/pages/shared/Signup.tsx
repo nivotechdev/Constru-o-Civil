@@ -162,8 +162,6 @@ interface SignupUI {
   submitError: string | null;
 }
 
-const NETWORK_ERROR = 'Não deu para continuar agora. Confira sua internet e tente de novo.';
-
 function validateField(field: SignupField, values: Values, role: Role): string | null {
   const v = String(values[field.id] || '').trim();
   if (field.id === 'nome') {
@@ -260,7 +258,7 @@ export default function Signup({ params }: ScreenProps) {
           errors: { ...s.errors, codigo: null }
         }))
       )
-      .catch(() => setUi({ resending: false, submitError: NETWORK_ERROR }));
+      .catch((e: unknown) => setUi({ resending: false, submitError: errorMessage(e) }));
   }
 
   function goBack() {
@@ -302,7 +300,7 @@ export default function Signup({ params }: ScreenProps) {
             errors: { ...s.errors, codigo: null }
           }))
         )
-        .catch(() => setUi({ submitting: false, submitError: NETWORK_ERROR }));
+        .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
       return;
     }
     if (field.id === 'codigo') {
@@ -318,7 +316,7 @@ export default function Signup({ params }: ScreenProps) {
                 }
           )
         )
-        .catch(() => setUi({ submitting: false, submitError: NETWORK_ERROR }));
+        .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
       return;
     }
     if (!isLast) {
@@ -398,7 +396,7 @@ export default function Signup({ params }: ScreenProps) {
               <div className="flex flex-col gap-1">
                 <span className="font-semibold text-danger-500">Não deu para criar a conta com esses dados.</span>
                 <span className="text-sm text-concrete-700">
-                  {`Confira o ${role === 'recrutador' ? 'CNPJ' : 'CPF'} e o e-mail. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
+                  {`Confira o ${role === 'recrutador' ? 'CNPJ ou CPF' : 'CPF'} e o e-mail. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
                 </span>
               </div>
             </div>
