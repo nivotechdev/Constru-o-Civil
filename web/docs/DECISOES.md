@@ -424,3 +424,14 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **No banco** (adianta a X09): o banco só aceita URL do Storage deste projeto, do bucket certo e da pasta do
   dono (`app_config.storage_public_base`, trocar no staging); ninguém lista arquivos dos buckets; foto de
   vaga só por conta de construtora e portfólio só por trabalhador; limites de tamanho e tipo por bucket.
+
+## Z03 — Impulsionar muda a ordem do mural
+
+- **Ordem do mural**: impulsionada (paga, ainda no prazo) → urgente (grátis) → a ordem escolhida (mais perto,
+  mais cedo, maior valor). A construtora vê as próprias vagas antes de tudo. No modo real a mesma ordem
+  passa para o servidor na X01.
+- **Selos no card**: "Impulsionada" (foguete, azul) e "Urgente" (raio, vermelho), quando o card não tem um
+  selo de situação (como em Minhas candidaturas).
+- **"Vaga urgente" é um interruptor grátis** no formulário de publicar/editar.
+- **O plano "24h + aviso por WhatsApp" (R$ 39) saiu** até o envio existir; ficaram 24 h (R$ 12) e 3 dias
+  (R$ 28). O valor `whats` continua no tipo do banco só para registros antigos e é recusado na cobrança.

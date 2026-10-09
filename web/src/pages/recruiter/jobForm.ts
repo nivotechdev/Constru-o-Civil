@@ -34,6 +34,8 @@ export interface JobForm {
   negociavel: boolean;
   requisitos: string[];
   detalhe: string;
+  /** Free: the company needs people fast (the mural shows "Urgente" and puts it before the others). */
+  urgente: boolean;
 }
 
 export type FieldKey =
@@ -79,7 +81,8 @@ export function emptyForm(): JobForm {
     valor: '',
     negociavel: false,
     requisitos: ['Botina e capacete próprios'],
-    detalhe: ''
+    detalhe: '',
+    urgente: false
   };
 }
 
@@ -106,7 +109,8 @@ export function formFromJob(job: Job): JobForm {
     valor: job.pay == null ? '' : String(job.pay),
     negociavel: job.pay == null,
     requisitos: [...job.requirements],
-    detalhe: job.description
+    detalhe: job.description,
+    urgente: Boolean(job.urgent)
   };
 }
 
@@ -206,6 +210,7 @@ export function draftFromForm(f: JobForm): JobDraft {
     slots: Number(f.vagas) || 1,
     requirements: f.requisitos,
     description: f.detalhe.trim(),
-    photos: f.fotos
+    photos: f.fotos,
+    urgent: f.urgente
   };
 }

@@ -400,6 +400,14 @@ export function JobFormScreen({ job }: { job?: Job }) {
           onInput={(v) => set({ vagas: digits(v, 2) }, 'vagas')}
         />
       </div>
+      <div className="rounded-card border border-concrete-200 bg-white px-4">
+        <Switch
+          label="Vaga urgente"
+          description="De graça. A vaga ganha o selo Urgente e aparece antes das outras no mural, depois das impulsionadas."
+          checked={f.urgente}
+          onChange={(on) => set({ urgente: on })}
+        />
+      </div>
     </div>
   );
 

@@ -27,14 +27,12 @@ export interface ProviderCardToken {
 }
 import { IS_DEMO } from './mode';
 import * as remote from './remote/actions';
+import { isBoosted } from '../utils/jobInfo';
 
 /** How long a PIX code can be paid. */
 export const PIX_MINUTES = 30;
 
-/** The job is at the top of the mural right now. */
-export function isBoosted(job: Pick<Job, 'boostEndsAt'>, now: Date = new Date()): boolean {
-  return Boolean(job.boostEndsAt && new Date(job.boostEndsAt).getTime() > now.getTime());
-}
+export { isBoosted };
 
 function plan(id: BoostPlanId) {
   const p = BOOST_PLANS.find((x) => x.id === id);

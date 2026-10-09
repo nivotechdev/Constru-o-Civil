@@ -143,3 +143,10 @@ export function mapLinks(job: Place & { address: { lat: number; lon: number } })
     waze: `https://waze.com/ul?ll=${job.address.lat},${job.address.lon}&navigate=yes&q=${q}`
   };
 }
+
+// ---- boost ----
+
+/** The job is at the top of the mural right now (a paid boost still running; B08/Z03). */
+export function isBoosted(job: { boostEndsAt?: string | null }, now: Date = new Date()): boolean {
+  return Boolean(job.boostEndsAt && new Date(job.boostEndsAt).getTime() > now.getTime());
+}

@@ -111,6 +111,18 @@ describe('mural filters and order with real data', () => {
     expect(orderJobs([far, near], 'trabalhador', 'perto', from).map((j) => j.id)).toEqual(['near', 'far']);
   });
 
+  it('Z03: a running paid boost comes first, then urgent jobs, then the chosen order', () => {
+    const boosted = { ...far, id: 'boosted', boostEndsAt: new Date(NOW.getTime() + 3600000).toISOString() };
+    const expired = { ...far, id: 'expired', boostEndsAt: new Date(NOW.getTime() - 3600000).toISOString() };
+    const urgent = { ...far, id: 'urgent', urgent: true };
+    expect(orderJobs([near, expired, urgent, boosted], 'trabalhador', 'perto', from, NOW).map((j) => j.id)).toEqual([
+      'boosted',
+      'urgent',
+      'near',
+      'expired'
+    ]);
+  });
+
   it('measures from the GPS position, else from the city centre', () => {
     const db = { workers: {} } as never;
     expect(feedOrigin({ location: 'São Paulo, SP', origin: { lat: 1, lon: 2 } }, db, 'recrutador')).toEqual({

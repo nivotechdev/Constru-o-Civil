@@ -10,7 +10,7 @@ import { setUI } from '../../../services/store';
 import type { Company, Database, GeoPoint, Job, Role, Worker } from '../../../types/models';
 import { addDays, todayISO } from '../../../utils/dates';
 import { distanceKm } from '../../../utils/geo';
-import { cityLabel, placeText, runsOn } from '../../../utils/jobInfo';
+import { cityLabel, isBoosted, placeText, runsOn } from '../../../utils/jobInfo';
 import { fold } from '../../../utils/text';
 import { workerPlace } from '../../../utils/workerInfo';
 
@@ -91,9 +91,13 @@ function payNum(job: Job) {
   return job.pay == null ? -1 : job.pay;
 }
 
-// Recruiters see their own jobs first, then boosted jobs, then the rest in the chosen order.
-export function orderJobs(jobs: Job[], role: Role, sort: Sort, from: GeoPoint) {
-  const rank = (j: Job) => (role === 'recrutador' && isMine(j) ? 0 : j.urgent ? 1 : 2);
+/**
+ * Z03: boosted jobs (paid, still running) first, then urgent ones (free), then the rest in the chosen
+ * order. A recruiter sees their own jobs before all of that. With the real backend the server applies
+ * the same order (X01).
+ */
+export function orderJobs(jobs: Job[], role: Role, sort: Sort, from: GeoPoint, now: Date = new Date()) {
+  const rank = (j: Job) => (role === 'recrutador' && isMine(j) ? 0 : isBoosted(j, now) ? 1 : j.urgent ? 2 : 3);
   const near = (a: Job, b: Job) => jobDistance(a, from) - jobDistance(b, from);
   // Earliest first; jobs whose date is still to be arranged go last.
   const start = (j: Job) => (j.dateToArrange || !j.startDate ? '9999-12-31' : j.startDate);

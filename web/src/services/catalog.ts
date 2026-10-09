@@ -59,13 +59,5 @@ export const BOOST_PLANS: BoostPlan[] = [
     price: 'R$ 28',
     priceCents: 2800,
     hours: 72
-  },
-  {
-    id: 'whats',
-    label: '24h + aviso por WhatsApp',
-    desc: 'Avisamos quem tem o perfil da vaga por perto.',
-    price: 'R$ 39',
-    priceCents: 3900,
-    hours: 24
   }
 ];

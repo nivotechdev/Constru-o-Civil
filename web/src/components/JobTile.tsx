@@ -3,7 +3,7 @@ import type { Company, Job } from '../types/models';
 import type { StatusBadge, Tone } from '../types/ui';
 import { cx } from '../utils/cx';
 import { formatBRL } from '../utils/format';
-import { diasInfo, whenText } from '../utils/jobInfo';
+import { diasInfo, isBoosted, whenText } from '../utils/jobInfo';
 import { Icon } from './icons/Icon';
 import { PhotoCarousel } from './PhotoCarousel';
 import { jobTitle } from '../services/catalog';
@@ -23,7 +23,7 @@ const TONE_COLOR: Partial<Record<Tone, string>> = {
 type TileJob = Pick<
   Job,
   'id' | 'oficioId' | 'title' | 'pay' | 'photos' | 'dateToArrange' | 'startDate' | 'endDate' | 'startTime' | 'endTime'
-> & { address: Pick<Job['address'], 'neighborhood'> } & Partial<Pick<Job, 'dias'>>;
+> & { address: Pick<Job['address'], 'neighborhood'> } & Partial<Pick<Job, 'dias' | 'urgent' | 'boostEndsAt'>>;
 
 interface JobTileProps {
   job: TileJob;
@@ -115,6 +115,25 @@ export function JobTile({
               )
             : null}
           {mine ? pill('Sua vaga', 'text-brand-600') : null}
+          {/* Z03: the paid boost and the free "urgent" are visible on the card. */}
+          {!badge && isBoosted(job)
+            ? pill(
+                <>
+                  <Icon name="rocket" size={12} color="var(--text-brand)" />
+                  Impulsionada
+                </>,
+                'text-brand-600'
+              )
+            : null}
+          {!badge && job.urgent
+            ? pill(
+                <>
+                  <Icon name="zap" size={12} color="var(--red-500)" />
+                  Urgente
+                </>,
+                'text-danger-500'
+              )
+            : null}
         </div>
         {corner ? (
           <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
