@@ -59,7 +59,10 @@ Deno.serve(async (req) => {
     const limits = await Promise.all([hit('zap:' + phone, 3, '1 hour'), hit('zap-ip:' + ip, 10, '1 hour')]);
     if (limits.some((r) => r.error)) return json({ erro: 'falha' }, 502);
     if (limits.some((r) => r.data === true))
-      return json({ erro: 'muitas-tentativas', mensagem: 'Muitos códigos pedidos. Espere uma hora e tente de novo.' }, 429);
+      return json(
+        { erro: 'muitas-tentativas', mensagem: 'Muitos códigos pedidos. Espere uma hora e tente de novo.' },
+        429
+      );
     const sent = await twilio('Verifications', { To: '+55' + phone, Channel: CHANNEL, Locale: 'pt-BR' });
     return sent ? json({ ok: true }) : json({ erro: 'falha' }, 502);
   }
@@ -70,7 +73,10 @@ Deno.serve(async (req) => {
     const limit = await hit('zap-conferir:' + phone, 8, '15 minutes');
     if (limit.error) return json({ erro: 'falha' }, 502);
     if (limit.data === true)
-      return json({ erro: 'muitas-tentativas', mensagem: 'Muitas tentativas. Peça um código novo daqui a pouco.' }, 429);
+      return json(
+        { erro: 'muitas-tentativas', mensagem: 'Muitas tentativas. Peça um código novo daqui a pouco.' },
+        429
+      );
     const check = await twilio('VerificationCheck', { To: '+55' + phone, Code: code });
     if (!check) return json({ erro: 'falha' }, 502);
     if (check.status !== 'approved') return json({ ok: false });
