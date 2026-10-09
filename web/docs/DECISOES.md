@@ -335,3 +335,14 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   sessão não cria widgets do Turnstile: o passo a passo está no `SUPABASE.md`.
 - **Google e celular** só aparecem no login quando o provedor está configurado (`VITE_LOGIN_GOOGLE`,
   `VITE_LOGIN_CELULAR`); no modo real, hoje, os botões somem (o fluxo completo é a L13).
+
+## Z08 — App antigo desligado
+
+- **O app antigo (`app/`) deixa de funcionar com o banco**: todas as funções dele perdem a permissão de
+  execução para visitante e conta logada, e as tabelas dele (`profiles`, `vagas`, `candidaturas`,
+  `avaliacoes`, `vagas_salvas`, `publicacoes_trabalhador`, `consentimentos`) deixam de ser lidas ou
+  gravadas direto. Os dados ficam: o app novo usa o que precisa por funções do banco (conta antiga vira
+  conta nova no primeiro login; o aceite dos termos continua em `consentimentos`). O app novo não lia
+  essas tabelas nem chamava essas funções (conferido no código).
+- **Cadastro nunca confirmado** é apagado depois de **7 dias** (o app antigo apagava em 2 horas, antes de
+  muita gente abrir o e-mail). A rotina `expirar-vagas-diario` do app antigo foi desligada.
