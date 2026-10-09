@@ -402,6 +402,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   por causa da rede.
 - **Conta sem cadastro no app** (Y27): sai da sessão quebrada e avisa "Não achamos o cadastro dessa conta"
   (antes mostrava "confira sua internet" a cada abertura).
+- **Sessão vencida ou encerrada em outro lugar** (Y27): qualquer pedido que receba o erro de token
+  (PGRST301/302/303, "JWT expired", erros de refresh do Auth) mostra "Sua sessão terminou. Entre de novo
+  para continuar.", sai da sessão no aparelho e abre o login com o e-mail preenchido e esse aviso (antes:
+  "Sua conta não pode fazer isso").
 - **Uma leitura da conta por login** (X20): o login e o aviso do Auth que vem logo depois dividem a mesma
   leitura e o mesmo canal de tempo real.
 

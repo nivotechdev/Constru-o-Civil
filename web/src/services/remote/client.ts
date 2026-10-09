@@ -29,7 +29,6 @@ const RPC_CODES: Record<string, ServiceErrorCode> = {
 /** Postgres/PostgREST codes that can reach the app → app codes (the default messages fit them). */
 const PG_CODES: Record<string, ServiceErrorCode> = {
   '42501': 'nao_autorizado', // RLS / missing privilege
-  PGRST301: 'nao_autorizado', // expired or invalid session token
   PGRST116: 'nao_encontrado', // .single() found no row
   '23503': 'nao_encontrado', // the referenced row no longer exists
   '23505': 'conflito', // unique violation: already done
@@ -45,6 +44,24 @@ function isNetworkFailure(e: ErrorLike): boolean {
   return /Failed to fetch|NetworkError|Load failed|fetch failed|AuthRetryableFetchError|network/i.test(text);
 }
 
+// Y27: an expired or revoked session (PostgREST JWT codes, the Auth's refresh errors).
+const SESSION_GONE = new Set([
+  'PGRST301',
+  'PGRST302',
+  'PGRST303',
+  'session_not_found',
+  'session_expired',
+  'refresh_token_not_found',
+  'refresh_token_already_used'
+]);
+export const SESSION_ENDED = 'Sua sessão terminou. Entre de novo para continuar.';
+
+let onSessionEnded: (() => void) | null = null;
+/** What to do when a request finds the session over (remote/session.ts: leave it and go to the login). */
+export function setSessionEndedHandler(fn: () => void): void {
+  onSessionEnded = fn;
+}
+
 /** Any error from the client (or a thrown one) as the ServiceError the screens understand. */
 export function toServiceError(error: unknown): ServiceError {
   if (error instanceof ServiceError) return error;
@@ -52,6 +69,10 @@ export function toServiceError(error: unknown): ServiceError {
   if (isNetworkFailure(e)) return serviceError('offline');
   const code = typeof e.code === 'string' ? e.code : '';
   const message = typeof e.message === 'string' ? e.message : '';
+  if (SESSION_GONE.has(code) || /JWT expired/i.test(message)) {
+    onSessionEnded?.();
+    return serviceError('nao_autorizado', SESSION_ENDED);
+  }
   if (RPC_CODES[code]) return serviceError(RPC_CODES[code], message || undefined);
   if (PG_CODES[code]) return serviceError(PG_CODES[code]);
   return serviceError('falha_demo');

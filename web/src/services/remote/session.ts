@@ -12,9 +12,9 @@ import type { NotificationKind, Role } from '../../types/models';
 import type { TableRow } from '../../types/supabase';
 import { clearQueries, refreshCandidacies, runQuery } from '../queries';
 import { navigate, resetHistory } from '../router';
-import { clearSessionData, getSession, setSessionAccount, upsertAccount } from '../store';
+import { clearSessionData, getSession, setSessionAccount, setUI, upsertAccount } from '../store';
 import { showToast } from '../toast';
-import { db, request } from './client';
+import { db, request, SESSION_ENDED, setSessionEndedHandler } from './client';
 import {
   ACCOUNT_COLUMNS,
   addNotification,
@@ -280,9 +280,31 @@ async function dropBrokenSession(): Promise<void> {
  *   - saved session, nothing on the device → waits for the server, at most a few seconds;
  *   - the server can't be reached → "offline" (not the login); tries again when the connection returns.
  */
+/**
+ * Y27: a request found the session over (expired, revoked elsewhere). Once: leave it on this device and
+ * go to the login with the e-mail filled and the reason.
+ */
+let ending = false;
+function sessionEnded(): void {
+  const session = getSession();
+  if (ending || !session) return;
+  ending = true;
+  const email = session.email;
+  void (async () => {
+    const client = await db();
+    await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    await leaveSession();
+    setUI<{ identifier: string; notice: string }>('login', { identifier: email, notice: SESSION_ENDED });
+    navigate('/login', { replace: true });
+  })().finally(() => {
+    ending = false;
+  });
+}
+
 export async function startRemoteSession(): Promise<void> {
   if (started) return;
   started = true;
+  setSessionEndedHandler(sessionEnded);
   const client = await db();
   listenToAuth(client);
   await restore();

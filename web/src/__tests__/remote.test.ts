@@ -805,6 +805,27 @@ describe('Z11: opening the app with the real backend', () => {
     expect(m.store.getSession()).toBeNull();
   });
 
+  it('Y27: a request that finds the session expired says so and goes to the login', async () => {
+    const hashes: string[] = [];
+    vi.stubGlobal('window', { location: { pathname: '/', search: '', hash: '' }, addEventListener: () => undefined });
+    vi.stubGlobal('history', { replaceState: (_s: unknown, _t: string, url: string) => hashes.push(url) });
+    const fake = server('ana', {
+      rpc: { submit_application: () => ({ data: null, error: { code: 'PGRST303', message: 'JWT expired' } }) }
+    });
+    const { m, session } = await boot(fake);
+    await session.startRemoteSession();
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await expect(m.apps.submitApplication('BC-5002')).rejects.toMatchObject({
+      code: 'nao_autorizado',
+      message: 'Sua sessão terminou. Entre de novo para continuar.'
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(m.store.getSession()).toBeNull();
+    expect(hashes.at(-1)).toContain('#/login');
+    expect(m.store.getUI('login', {})).toMatchObject({ identifier: 'ana@exemplo.com' });
+  });
+
   it('Y27: a session whose account has no row is signed out with the reason', async () => {
     const fake = fakeSupabase({
       tables: { accounts: [] },
