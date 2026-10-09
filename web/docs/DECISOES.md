@@ -547,3 +547,11 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - O texto do cadastro deixou de prometer "conferimos o CNPJ antes de liberar a publicação" (Y24).
 - Na demonstração, os documentos "já cadastrados" agora são válidos (`111.444.777-35`,
   `11.222.333/0001-81`) e a construtora de exemplo ganhou um CNPJ válido.
+
+## Y18 — Média das notas sem erro acumulado
+
+- No banco, um gatilho em `workers`/`companies` recalcula `rating = round(avg(value), 1)` e `review_count`
+  a partir de `reviews` sempre que a contagem ou a nota mudam (`submit_review` não precisou mudar); a
+  migration recalcula todos os perfis. Valor escrito à mão não fica.
+- Na demonstração, `ratingWith` faz a mesma conta quando o perfil tem todas as avaliações na lista; os
+  perfis de exemplo listam só as últimas, e para eles vale a média arredondada até ali.

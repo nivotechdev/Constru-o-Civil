@@ -133,6 +133,16 @@ select public.cpf_valid('529.982.247-25'), public.cpf_valid('123.456.789-01');  
 select count(*) from public.companies where cnpj like '***%';                     -- 0
 ```
 
+### 11. `20261011000400_y18_media_notas.sql` (Y18)
+
+Gatilho que recalcula nota e quantidade de avaliações de trabalhadores e construtoras a partir de
+`reviews` (`round(avg(value), 1)`) sempre que `submit_review` mexe na contagem; recalcula todos os perfis.
+
+```sql
+select count(*) from public.workers w
+ where review_count <> (select count(*) from public.reviews r where r.worker_id = w.id and r.direction = 'para_trabalhador'); -- 0
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

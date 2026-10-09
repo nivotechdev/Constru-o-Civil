@@ -32,10 +32,26 @@ export interface ReviewInput {
   comment: string;
 }
 
-/** The new average after one more review, rounded to one decimal. */
+/** The new average after one more review, rounded to one decimal, from the rounded average so far. */
 export function addToAverage(rating: number, count: number, value: number): { rating: number; count: number } {
   const total = rating * count + value;
   return { rating: Math.round((total / (count + 1)) * 10) / 10, count: count + 1 };
+}
+
+/**
+ * Y18: the profile's rating with one more review — round(avg, 1) over all its reviews, like the database
+ * (the rounding never piles up). The demo's seed lists only each profile's latest reviews; for those the
+ * rounded average so far stands in for the missing ones.
+ */
+export function ratingWith(
+  profile: { rating: number; reviewCount: number; reviews: { value: number }[] },
+  value: number
+): { rating: number; count: number } {
+  if (profile.reviews.length < profile.reviewCount) return addToAverage(profile.rating, profile.reviewCount, value);
+  const values = [...profile.reviews.map((r) => r.value), value];
+  const sum = values.reduce((s, v) => s + v, 0);
+  // Integer sum × 10 / n, so 4.25 rounds to 4.3 like Postgres (no floating-point 4.2499…).
+  return { rating: Math.round((sum * 10) / values.length) / 10, count: values.length };
 }
 
 /** The candidacy the logged-in side may review now, or why not. */
@@ -95,7 +111,7 @@ export async function submitReview(input: ReviewInput): Promise<void> {
     );
     if (side === 'trabalhador') {
       const c = d.companies[company.id];
-      const avg = addToAverage(c.rating, c.reviewCount, review.value);
+      const avg = ratingWith(c, review.value);
       return {
         ...d,
         applications,
@@ -106,7 +122,7 @@ export async function submitReview(input: ReviewInput): Promise<void> {
       };
     }
     const w = d.workers[worker.id];
-    const avg = addToAverage(w.rating, w.reviewCount, review.value);
+    const avg = ratingWith(w, review.value);
     return {
       ...d,
       applications,

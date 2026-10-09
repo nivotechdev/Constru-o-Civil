@@ -1,7 +1,7 @@
 // B03/B04 — reviews after a concluded diária: stored on the reviewed profile, rating and count updated,
 // once per side, only when the diária is concluded.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { addToAverage } from '../services/reviews';
+import { addToAverage, ratingWith } from '../services/reviews';
 
 type M = {
   reviews: typeof import('../services/reviews');
@@ -34,6 +34,10 @@ describe('reviews', () => {
   it('averages one more review into the rating', () => {
     expect(addToAverage(4.5, 10, 5)).toEqual({ rating: 4.5, count: 11 });
     expect(addToAverage(0, 0, 4)).toEqual({ rating: 4, count: 1 });
+    // Y18: with every review known, the exact average (5, 4, 4, 4 → 4.25 → 4.3, not 4.2).
+    const values = (...v: number[]) => v.map((value) => ({ value }));
+    expect(ratingWith({ rating: 4.3, reviewCount: 3, reviews: values(5, 4, 4) }, 4)).toEqual({ rating: 4.3, count: 4 });
+    expect(ratingWith({ rating: 0, reviewCount: 0, reviews: [] }, 5)).toEqual({ rating: 5, count: 1 });
   });
 
   it('the company reviews the worker once: stored, rating updated, side marked', async () => {
@@ -51,7 +55,7 @@ describe('reviews', () => {
     expect((await settle(m.reviews.submitReview(input))).ok).toBe(true);
     const after = m.store.getDb().workers.marcos;
     expect(after.reviewCount).toBe(before.reviewCount + 1);
-    expect(after.rating).toBe(addToAverage(before.rating, before.reviewCount, 3).rating);
+    expect(after.rating).toBe(ratingWith(before, 3).rating);
     expect(after.reviews[0]).toMatchObject({
       authorLabel: 'Construtora Meridiano',
       value: 3,
