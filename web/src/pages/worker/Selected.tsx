@@ -21,7 +21,7 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
-import { dateText, placeText, streetText } from '../../utils/jobInfo';
+import { dateText, isExpired, placeText, streetText } from '../../utils/jobInfo';
 import { MapLinks } from '../../components/MapLinks';
 import { ContactButton } from '../../components/ContactButton';
 import { jobTitle } from '../../services/catalog';
@@ -124,7 +124,12 @@ export default function Selected({ params }: ScreenProps) {
       <ReasonDialog
         open={asking}
         title="Não vai poder ir?"
-        description={`Avisamos a ${company.name} na hora, e sua vaga volta a ficar aberta para outra pessoa.`}
+        description={
+          // Y06: the place only goes back to the mural if the job is still open.
+          job.closed || isExpired(job)
+            ? `Avisamos a ${company.name} na hora.`
+            : `Avisamos a ${company.name} na hora, e sua vaga volta a ficar aberta para outra pessoa.`
+        }
         reasons={GIVE_UP_REASONS}
         confirmLabel="Avisar que não vou"
         loading={quit.loading}

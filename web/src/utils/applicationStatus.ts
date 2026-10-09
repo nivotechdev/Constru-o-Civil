@@ -58,6 +58,8 @@ export function statusInfo(app: AppLike): StatusInfo {
         hint: 'Ver a vaga',
         to: '/vaga/' + jobId
       };
+    case 'expirada':
+      return { label: 'Não foi confirmado', tone: 'neutral', icon: 'clock', hint: 'Ver a vaga', to: '/vaga/' + jobId };
   }
 }
 
@@ -74,7 +76,8 @@ export function candidateBadge(app: Pick<Application, 'status' | 'companyReviewe
     nao_selecionado: { label: 'Recusado', tone: 'danger', icon: 'circle-x' },
     desistiu: { label: 'Desistiu', tone: 'neutral', icon: 'user-x' },
     cancelado_pela_construtora: { label: 'Cancelado', tone: 'danger', icon: 'circle-x' },
-    nao_compareceu: { label: 'Não compareceu', tone: 'danger', icon: 'calendar-x' }
+    nao_compareceu: { label: 'Não compareceu', tone: 'danger', icon: 'calendar-x' },
+    expirada: { label: 'Prazo vencido', tone: 'neutral', icon: 'clock' }
   };
   return BADGES[app.status];
 }

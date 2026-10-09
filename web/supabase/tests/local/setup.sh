@@ -2,7 +2,7 @@
 # Sobe um Postgres igual ao do Supabase (imagem supabase/postgres) e aplica, em ordem: o que o Auth e o
 # Storage criariam (shim.sql), as migrations do app antigo (../../../../supabase/migrations) e as do app
 # novo (../../migrations). Depois disso, rode os testes:
-#   DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase/tests/run.mjs supabase/tests/*.sql
+#   DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase/tests/run.mjs supabase/tests/[a-z]*.sql
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 web="$(cd "$here/../../.." && pwd)"

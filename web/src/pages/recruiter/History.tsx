@@ -24,7 +24,8 @@ const LISTED = new Set<ApplicationStatus>([
   'concluida',
   'desistiu',
   'cancelado_pela_construtora',
-  'nao_compareceu'
+  'nao_compareceu',
+  'expirada'
 ]);
 
 export default function History() {

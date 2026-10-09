@@ -102,12 +102,12 @@ select count(*) from pg_policies where schemaname = 'storage' and tablename = 'o
 
 ## Testes
 
-`supabase/tests/*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
+`supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
 no banco de verdade). Para rodar localmente:
 
 ```bash
 ./supabase/tests/local/setup.sh      # sobe o Postgres do Supabase (Docker) e aplica todas as migrations
-DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase/tests/run.mjs supabase/tests/*.sql
+DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase/tests/run.mjs supabase/tests/[a-z]*.sql
 ```
 
 No SQL Editor: `node supabase/tests/run.mjs supabase/tests/z01_candidaturas.sql` imprime o SQL completo

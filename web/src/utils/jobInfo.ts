@@ -97,9 +97,22 @@ export function durationText(job: Pick<Job, 'diarias'>): string {
   return job.diarias === 1 ? '1 diária' : `${job.diarias} diárias`;
 }
 
-/** The job's last day has passed: it leaves the mural (F03). */
-export function isExpired(job: Schedule, now: Date = new Date()): boolean {
-  return !job.dateToArrange && Boolean(job.endDate) && (job.endDate as string) < todayISO(now);
+/** How long a job with the date to be arranged stays up (Y04). */
+export const TO_ARRANGE_DAYS = 30;
+
+/**
+ * The job's last day (YYYY-MM-DD): its end date, or — with the date to be arranged — 30 days after it was
+ * published; `null` when unknown (demo jobs to be arranged have no publish date).
+ */
+export function lastDay(job: Schedule & { createdAt?: string }): string | null {
+  if (!job.dateToArrange) return job.endDate ?? null;
+  return job.createdAt ? addDays(todayISO(new Date(job.createdAt)), TO_ARRANGE_DAYS) : null;
+}
+
+/** The job's last day has passed: it leaves the mural (F03, Y04). */
+export function isExpired(job: Schedule & { createdAt?: string }, now: Date = new Date()): boolean {
+  const last = lastDay(job);
+  return Boolean(last) && (last as string) < todayISO(now);
 }
 
 /** Whether the job has a work day on `iso`. */

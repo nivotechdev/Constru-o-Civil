@@ -42,7 +42,8 @@ describe('transition table', () => {
         'contratado -cancelar_contratacao/construtora-> cancelado_pela_construtora',
         'contratado -concluir/construtora-> concluida',
         'contratado -concluir/sistema-> concluida',
-        'contratado -marcar_falta/construtora-> nao_compareceu'
+        'contratado -marcar_falta/construtora-> nao_compareceu',
+        'pre_selecionado -expirar/sistema-> expirada'
       ].sort()
     );
   });
@@ -120,6 +121,60 @@ describe('status machine in the services', () => {
     expect(noticesFor('joel')).toEqual([]);
   });
 
+  it('Y03: a place that opens (cancelled hire) brings back the automatic refusals, told "A vaga reabriu"', async () => {
+    await asCompany();
+    await run(m.apps.approve('BC-4998', 'bruno'));
+    await run(m.apps.approve('BC-4998', 'joel'));
+    expect(status('BC-4998', 'rafael')).toBe('nao_selecionado');
+    await run(m.apps.cancelHire('BC-4998', 'joel', 'A obra foi adiada'));
+    expect(status('BC-4998', 'rafael')).toBe('em_analise');
+    expect(noticesFor('rafael').map((n) => n.title)).toContain('A vaga reabriu');
+  });
+
+  it('Y05: undoing an approval on a closed job is refused', async () => {
+    await asCompany();
+    await run(m.apps.approve('BC-4998', 'bruno'));
+    await run(m.jobs.closeJob('BC-4998'));
+    await expect(run(m.apps.undoApproval('BC-4998', 'bruno'))).rejects.toThrow(/encerrada/);
+  });
+
+  it('Y08: a job with a team is not deleted; without one, who waited is told it was removed', async () => {
+    await asCompany();
+    await run(m.apps.approve('BC-4998', 'bruno'));
+    await expect(run(m.jobs.deleteJob('BC-4998'))).rejects.toThrow(/Encerre a vaga/);
+    await run(m.jobs.deleteJob('BC-4995'));
+    expect(status('BC-4995', 'nelson')).toBe('nao_selecionado');
+    expect(noticesFor('nelson').map((n) => n.title)).toContain('Vaga removida');
+    expect(m.store.getDb().deletedJobIds).toContain('BC-4995');
+    expect(m.sel.jobState(m.store.getDb(), m.store.getDb().jobs['BC-4995'])).toBe('excluida');
+  });
+
+  it('Y01: a full job stays editable; when the whole team is done, it closes by itself', async () => {
+    await asCompany();
+    const today = new Date().toISOString().slice(0, 10);
+    m.store.updateJob('BC-4995', { slots: 1, startDate: today, endDate: today, dateToArrange: false });
+    await run(m.apps.approve('BC-4995', 'nelson'));
+    expect(m.sel.jobState(m.store.getDb(), m.store.getDb().jobs['BC-4995'])).toBe('cheia');
+    await run(m.apps.confirmHire('BC-4995', 'nelson'));
+    await run(m.apps.completeWorkday('BC-4995', 'nelson'));
+    const job = m.store.getDb().jobs['BC-4995'];
+    expect(job.closed).toBe(true);
+    expect(job.semContratacao).toBeFalsy();
+  });
+
+  it('Y04: an expired job leaves nobody waiting; a hire is concluded 2 days after the end', async () => {
+    await asCompany();
+    await run(m.apps.approve('BC-4998', 'bruno'));
+    const now = new Date();
+    const iso = (d: number) => new Date(now.getTime() + d * 86400000).toISOString().slice(0, 10);
+    m.store.updateJob('BC-4998', { startDate: iso(-3), endDate: iso(-1), dateToArrange: false });
+    m.apps.concludeFinishedJobs(now);
+    expect(status('BC-4998', 'rafael')).toBe('nao_selecionado');
+    expect(status('BC-4998', 'bruno')).toBe('expirada');
+    expect(m.store.getDb().jobs['BC-4998'].closed).toBe(true);
+    expect(noticesFor('bruno').map((n) => n.title)).toContain('A contratação não foi confirmada');
+  });
+
   it('closing the job makes the refusals final and turns the pending candidates down', async () => {
     await asCompany();
     await run(m.apps.approve('BC-4998', 'bruno'));
@@ -137,6 +192,12 @@ describe('status machine in the services', () => {
     await run(m.apps.approve('BC-4995', 'nelson'));
     await run(m.apps.confirmHire('BC-4995', 'nelson'));
     expect(status('BC-4995', 'nelson')).toBe('contratado');
+    // Y02: not before the day of the job.
+    const start = m.store.getDb().jobs['BC-4995'].startDate as string;
+    if (start > new Date().toISOString().slice(0, 10)) {
+      await expect(run(m.apps.completeWorkday('BC-4995', 'nelson'))).rejects.toThrow(/a partir do dia/);
+      vi.setSystemTime(new Date(start + 'T12:00:00'));
+    }
     await run(m.apps.completeWorkday('BC-4995', 'nelson'));
     expect(status('BC-4995', 'nelson')).toBe('concluida');
     const kinds = m.store

@@ -14,10 +14,10 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
 import { approve, confirmHire, loadJobCandidates, reject } from '../../services/applications';
-import { contactOpen, isPending } from '../../services/applicationMachine';
+import { contactOpen, holdsSlot, isPending } from '../../services/applicationMachine';
 import { candidateBadge } from '../../utils/applicationStatus';
 import { errorMessage } from '../../services/errors';
-import { closeJob, updateJobPhotos } from '../../services/jobs';
+import { closeJob, deleteJob, updateJobPhotos } from '../../services/jobs';
 import { showToast } from '../../services/toast';
 import { useDb, useUI } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
@@ -27,9 +27,10 @@ import {
   approvedCount,
   currentCompanyId,
   getJob,
-  isJobClosed,
+  jobState,
   pendingCount,
-  workerOf
+  workerOf,
+  type JobState
 } from '../../services/selectors';
 import { getDb } from '../../services/store';
 import type { Database, Job } from '../../types/models';
@@ -46,10 +47,11 @@ import { FEATURES } from '../../services/features';
 
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
-  const [ui, setUi] = useUI<{ confirmClose: boolean; hireId: string | null }>('job-manage', {
-    confirmClose: false,
-    hireId: null
-  });
+  // Y21: the dialogs belong to this job (a dialog opened on one job never shows up on another).
+  const [ui, setUi] = useUI<{ confirmClose: boolean; confirmDelete: boolean; hireId: string | null }>(
+    'job-manage:' + params.id,
+    { confirmClose: false, confirmDelete: false, hireId: null }
+  );
   const query = useQuery('candidates:' + params.id, () => loadJobCandidates(params.id));
   const hire = useAction(confirmHire, () => {
     setUi({ hireId: null });
@@ -58,7 +60,13 @@ export default function JobManage({ params }: ScreenProps) {
   const close = useAction(closeJob, () => {
     setUi({ confirmClose: false });
     showToast('Vaga encerrada');
-    navigate('/mural');
+    // Y09: closing shows the summary of the bico (team, total, what is left to do).
+    navigate('/fechado/' + params.id, { replace: true });
+  });
+  const remove = useAction(deleteJob, () => {
+    setUi({ confirmDelete: false });
+    showToast('Vaga excluída');
+    navigate('/empresa', { replace: true });
   });
   if (query.status !== 'ready')
     return <ScreenLoading title="Sua vaga" onBack={() => goBack('/mural')} query={query} skeleton={<PageSkeleton />} />;
@@ -83,8 +91,13 @@ export default function JobManage({ params }: ScreenProps) {
   const slots = job.slots || 1;
   const approved = approvedCount(db, job.id);
   const pending = pendingCount(db, job.id);
-  const closed = isJobClosed(db, job);
-  const status = jobStatus(db, job, approved, pending);
+  // Y01: open, full, closed, deleted or past — a full job is still editable and closable.
+  const state = jobState(db, job);
+  const closed = state !== 'aberta';
+  const editable = state === 'aberta' || state === 'cheia';
+  const closable = editable || state === 'vencida';
+  const hasTeam = applications.some((a) => holdsSlot(a.status));
+  const status = jobStatus(db, job, state, approved, pending);
   const dias = diasInfo(job);
   const boosted = isBoosted(job);
 
@@ -125,28 +138,54 @@ export default function JobManage({ params }: ScreenProps) {
             <span key={i} className={`flex-1 h-2 rounded-full ${i < approved ? 'bg-brand-500' : 'bg-concrete-200'}`} />
           ))}
         </div>
-        <span className={`text-sm ${closed ? 'text-success-500' : 'text-concrete-500'}`}>
-          {closed
-            ? 'Bico fechado. A vaga saiu do mural e não recebe mais candidatura.'
-            : 'Aprove candidatos até preencher todas as vagas. Aí o bico fecha sozinho.'}
+        <span className={`text-sm ${state === 'cheia' ? 'text-success-500' : 'text-concrete-500'}`}>
+          {STATE_TEXT[state]}
         </span>
       </div>
     </Card>
   );
   const actions = () => (
     <>
-      <Button
-        label="Editar vaga"
-        variant="secondary"
-        iconLeft="pencil"
-        className="flex-1"
-        onClick={() => navigate('/vaga-editar/' + job.id)}
-      />
-      <Button label="Encerrar vaga" variant="ghost" className="flex-1" onClick={() => setUi({ confirmClose: true })} />
+      {editable ? (
+        <Button
+          label="Editar vaga"
+          variant="secondary"
+          iconLeft="pencil"
+          className="flex-1"
+          onClick={() => navigate('/vaga-editar/' + job.id)}
+        />
+      ) : null}
+      {closable ? (
+        <Button
+          label="Encerrar vaga"
+          variant="ghost"
+          className="flex-1"
+          onClick={() => setUi({ confirmClose: true })}
+        />
+      ) : (
+        <Button
+          label="Ver resumo do bico"
+          variant="secondary"
+          iconLeft="file-check"
+          className="flex-1"
+          onClick={() => navigate('/fechado/' + job.id)}
+        />
+      )}
     </>
   );
   // Boosting is offered whenever the job is open and not boosted already.
   const canBoost = FEATURES.payments && !boostBlocker(db, job);
+  // Y08: deleting is for a post without a team; with people picked or hired, closing is the way.
+  const deleteLink = () =>
+    editable && !hasTeam ? (
+      <Button
+        label="Excluir vaga"
+        variant="ghost"
+        size="sm"
+        className="text-danger-500 self-center"
+        onClick={() => setUi({ confirmDelete: true })}
+      />
+    ) : null;
   const boostButton = (className?: string) =>
     canBoost ? (
       <Button
@@ -220,7 +259,13 @@ export default function JobManage({ params }: ScreenProps) {
                 {applications.map((a) => {
                   const worker = workerOf(db, a);
                   const pending = isPending(a.status);
-                  const quiet = ['nao_selecionado', 'desistiu', 'cancelado_pela_construtora', 'nao_compareceu'];
+                  const quiet = [
+                    'nao_selecionado',
+                    'desistiu',
+                    'cancelado_pela_construtora',
+                    'nao_compareceu',
+                    'expirada'
+                  ];
                   return (
                     <CandidateRow
                       key={a.id}
@@ -242,10 +287,13 @@ export default function JobManage({ params }: ScreenProps) {
                           ? (e) => {
                               e.stopPropagation();
                               approve(job.id, worker.id)
-                                .then(() => {
-                                  if (isJobClosed(getDb(), job)) navigate('/fechado/' + job.id);
-                                  else showToast(`${worker.name.split(' ')[0]} aprovado. O WhatsApp está liberado.`);
-                                })
+                                .then(() =>
+                                  showToast(
+                                    jobState(getDb(), job) === 'cheia'
+                                      ? `${worker.name.split(' ')[0]} aprovado. Todas as vagas foram preenchidas.`
+                                      : `${worker.name.split(' ')[0]} aprovado. O WhatsApp está liberado.`
+                                  )
+                                )
                                 .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
                             }
                           : null
@@ -283,17 +331,23 @@ export default function JobManage({ params }: ScreenProps) {
           {payCard()}
           {slotsCard()}
           {boostButton()}
-          {!closed ? <div className="flex gap-3">{actions()}</div> : null}
+          <div className="flex gap-3">{actions()}</div>
+          {deleteLink()}
         </aside>
       </div>
-      {!closed ? (
-        <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-white shadow-bar flex gap-3 lg:hidden">{actions()}</div>
-      ) : null}
+      <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-white shadow-bar flex flex-col gap-1 lg:hidden">
+        <div className="flex gap-3">{actions()}</div>
+        {deleteLink()}
+      </div>
       <Dialog
         open={ui.confirmClose}
         tone="danger"
         title="Encerrar essa vaga?"
-        description="A vaga sai do mural imediatamente e para de receber candidaturas. Isso não pode ser desfeito."
+        description={
+          hasTeam
+            ? 'A vaga sai do mural e para de receber candidaturas. Quem você já escolheu ou contratou continua no bico. Quem ainda esperava é avisado.'
+            : 'A vaga sai do mural e para de receber candidaturas. Quem ainda esperava é avisado. Isso não pode ser desfeito.'
+        }
         confirmLabel="Encerrar vaga"
         onConfirm={() => void close.run(job.id)}
         loading={close.loading}
@@ -302,6 +356,21 @@ export default function JobManage({ params }: ScreenProps) {
         onCancel={() => {
           close.reset();
           setUi({ confirmClose: false });
+        }}
+      />
+      <Dialog
+        open={ui.confirmDelete}
+        tone="danger"
+        title="Excluir essa vaga?"
+        description="O anúncio some do mural e do seu perfil. Quem ainda esperava resposta é avisado de que a vaga foi removida."
+        confirmLabel="Excluir vaga"
+        onConfirm={() => void remove.run(job.id)}
+        loading={remove.loading}
+        error={remove.error}
+        cancelLabel="Cancelar"
+        onCancel={() => {
+          remove.reset();
+          setUi({ confirmDelete: false });
         }}
       />
       <Dialog
@@ -324,10 +393,23 @@ export default function JobManage({ params }: ScreenProps) {
   );
 }
 
-function jobStatus(db: Database, job: Job, approved: number, pending: number): StatusBadge {
-  if (job.closed && job.semContratacao) return { label: 'Encerrada sem contratação', tone: 'danger', icon: 'circle-x' };
-  if (isJobClosed(db, job))
-    return { label: `Bico fechado · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
+/** What the headcount card says for each state of the job (Y01). */
+const STATE_TEXT: Record<JobState, string> = {
+  aberta: 'Aprove candidatos até preencher as vagas. Quando todas estiverem preenchidas, a vaga sai do mural.',
+  cheia: 'Todas as vagas preenchidas: a vaga saiu do mural. Você ainda pode editar ou encerrar.',
+  encerrada: 'Vaga encerrada. Ela saiu do mural e não recebe mais candidatura.',
+  excluida: 'Vaga excluída.',
+  vencida: 'O prazo da vaga passou e ela saiu do mural.'
+};
+
+function jobStatus(db: Database, job: Job, state: JobState, approved: number, pending: number): StatusBadge {
+  if (state === 'excluida') return { label: 'Excluída', tone: 'danger', icon: 'circle-x' };
+  if (state === 'encerrada' && job.semContratacao)
+    return { label: 'Encerrada sem contratação', tone: 'danger', icon: 'circle-x' };
+  if (state === 'encerrada') return { label: 'Bico encerrado', tone: 'neutral', icon: 'circle-check' };
+  if (state === 'vencida') return { label: 'Prazo vencido', tone: 'warning', icon: 'clock' };
+  if (state === 'cheia')
+    return { label: `Vagas preenchidas · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
   if (pending)
     return {
       label: pending === 1 ? '1 aguardando análise' : `${pending} aguardando análise`,

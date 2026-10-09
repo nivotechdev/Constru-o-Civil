@@ -435,3 +435,44 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **"Vaga urgente" é um interruptor grátis** no formulário de publicar/editar.
 - **O plano "24h + aviso por WhatsApp" (R$ 39) saiu** até o envio existir; ficaram 24 h (R$ 12) e 3 dias
   (R$ 28). O valor `whats` continua no tipo do banco só para registros antigos e é recusado na cobrança.
+
+---
+
+# Fase B — falhas de lógica
+
+## Y01 — Estados da vaga
+
+- **Cinco estados**, calculados num lugar só (`selectors.jobState`): **aberta** (recebe candidatos), **cheia**
+  (todas as posições ocupadas: sai do mural, mas continua editável e encerrável), **encerrada**, **excluída** e
+  **vencida** (passou do último dia).
+- **Posição ocupada** = pré-selecionado, contratado ou concluído (nos dois modos).
+- **A vaga encerra sozinha** quando toda a equipe conclui (posições ocupadas por diárias concluídas e ninguém
+  escolhido/contratado ainda para trabalhar): vai para o histórico e conta como bico concluído.
+- **Gerenciar vaga**: "Editar" em vaga aberta ou cheia; "Encerrar" também na vencida; vaga encerrada mostra
+  "Ver resumo do bico". Aprovar a última posição não leva mais à tela de bico fechado (a vaga só ficou
+  cheia); encerrar leva (Y09). O perfil da construtora lista as vagas abertas e cheias ("Suas vagas").
+- **Aumentar o número de pessoas** numa vaga que lotou devolve para análise quem tinha sido recusado
+  automaticamente (mesma regra do Y03).
+
+## Y02 — Concluir e marcar falta só a partir do dia
+
+- Os botões "Marcar diária como concluída" e "Não compareceu" só aparecem a partir do primeiro dia do bico
+  (antes, a tela diz a partir de quando). O serviço e o banco recusam antes disso. Vaga "a combinar" não
+  tem data: vale a qualquer momento depois da contratação.
+
+## Y03/Y05/Y06/Y08 — no modo de demonstração
+
+- As mesmas regras que o Z01 colocou no banco: recusados automáticos voltam ("A vaga reabriu") quando
+  uma posição libera numa vaga aberta; desfazer aprovação em vaga encerrada é recusado; o texto da
+  desistência diz se a vaga volta ao mural; excluir vaga com equipe é recusado e quem esperava é avisado
+  ("Vaga removida"). A exclusão também está em Gerenciar vaga ("Excluir vaga", só sem equipe).
+- Diária concluída soma 1 em "bicos realizados" também na demonstração.
+
+## Y04 — Vaga vencida
+
+- Rotina das vagas cujo prazo acabou (de hora em hora no banco; nas leituras na demonstração): quem esperava
+  vira "não selecionado" (aviso "Vaga vencida"); pré-selecionado sem contratação vira **"expirada"** (status
+  novo, aviso aos dois); a diária contratada é concluída sozinha **2 dias depois do fim** (até lá dá para
+  marcar falta); sem ninguém para trabalhar, a vaga encerra.
+- **Vaga "a combinar" vence 30 dias depois de publicada** (`Job.createdAt`). Na demonstração, as vagas
+  ganharam a data de publicação (dois dias antes do início).

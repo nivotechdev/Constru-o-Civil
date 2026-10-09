@@ -21,21 +21,21 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import {
   activeJobs,
+  applicationsForJob,
   candidateCount,
   approvedCount,
   currentCompany,
   getCompany,
-  isJobClosed,
-  isJobFull,
   isJobSaved,
+  jobState,
   pendingCount,
   successfulJobsForCompany
 } from '../../services/selectors';
 import type { Database, Job } from '../../types/models';
-import { isExpired } from '../../utils/jobInfo';
 import type { StatusBadge } from '../../types/ui';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { CompanyAvatar } from '../../components/Avatar';
+import { holdsSlot } from '../../services/applicationMachine';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -61,9 +61,14 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
   const company = isOwn ? currentCompany(db) : getCompany(db, params.id);
   if (!company) return <NotFound message="Construtora não encontrada." />;
 
-  const openJobs = activeJobs(db).filter(
-    (j) => j.companyId === company.id && !j.closed && !isJobFull(db, j) && !isExpired(j)
-  );
+  const mine = activeJobs(db).filter((j) => j.companyId === company.id);
+  // Workers see the jobs taking candidates; the company sees its open and full ones (W05/Y01).
+  const openJobs = mine.filter((j) => jobState(db, j) === 'aberta');
+  const ownJobs = mine.filter((j) => {
+    const s = jobState(db, j);
+    return s === 'aberta' || s === 'cheia';
+  });
+  const teamOn = (jobId: string) => applicationsForJob(db, jobId).some((a) => holdsSlot(a.status));
   const successfulJobs = successfulJobsForCompany(db, company.id);
 
   return (
@@ -147,12 +152,12 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                 <Icon name="hand-coins" size={20} color="var(--text-subtle)" />
                 <span className="text-sm text-concrete-700">{`${company.paidCount || 0} diárias pagas pela plataforma`}</span>
               </div>
-              <div className="flex gap-2.5 items-center">
-                <Icon name="message-circle" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">
-                  {company.respondTime || 'Responde em poucas horas, em média'}
-                </span>
-              </div>
+              {company.respondTime ? (
+                <div className="flex gap-2.5 items-center">
+                  <Icon name="message-circle" size={20} color="var(--text-subtle)" />
+                  <span className="text-sm text-concrete-700">{company.respondTime}</span>
+                </div>
+              ) : null}
               <div className="flex gap-2.5 items-center">
                 <Icon name="hammer" size={20} color="var(--text-subtle)" />
                 <span className="text-sm text-concrete-700">{`${openJobs.length} vagas abertas agora`}</span>
@@ -168,7 +173,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
         {isOwn ? (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Seus posts</span>
+              <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Suas vagas</span>
               <Button
                 label="Publicar"
                 variant="ghost"
@@ -177,17 +182,17 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                 onClick={() => navigate('/criar-vaga')}
               />
             </div>
-            {openJobs.length === 0 ? (
+            {ownJobs.length === 0 ? (
               <EmptyState
                 icon="hammer"
-                title="Você ainda não publicou nenhuma vaga"
+                title="Nenhuma vaga aberta agora"
                 description="Publique seu primeiro bico para começar a receber candidatos."
                 actionLabel="Publicar vaga"
                 onAction={() => navigate('/criar-vaga')}
               />
             ) : (
               <TileGrid>
-                {openJobs.map((job) => (
+                {ownJobs.map((job) => (
                   <JobTile
                     key={job.id}
                     job={job}
@@ -195,12 +200,15 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                     onClick={() => navigate('/vaga-gerenciar/' + job.id)}
                     badge={statusBadge(db, job)}
                     corner={
-                      <IconButton
-                        icon="trash-2"
-                        label="Excluir post"
-                        variant="solid"
-                        onClick={() => setUi({ deleteId: job.id })}
-                      />
+                      // Y08: with a team (picked/hired), closing the job is the way — in Gerenciar vaga.
+                      teamOn(job.id) ? null : (
+                        <IconButton
+                          icon="trash-2"
+                          label="Excluir vaga"
+                          variant="solid"
+                          onClick={() => setUi({ deleteId: job.id })}
+                        />
+                      )
                     }
                   />
                 ))}
@@ -236,9 +244,9 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
       <Dialog
         open={Boolean(ui.deleteId)}
         tone="danger"
-        title="Excluir esse post?"
-        description="A vaga sai do mural imediatamente. Candidatos já enviados não são avisados."
-        confirmLabel="Excluir post"
+        title="Excluir essa vaga?"
+        description="O anúncio some do mural e do seu perfil. Quem ainda esperava resposta é avisado de que a vaga foi removida."
+        confirmLabel="Excluir vaga"
         onConfirm={() => {
           if (ui.deleteId) void remove.run(ui.deleteId);
         }}
@@ -258,8 +266,8 @@ function statusBadge(db: Database, job: Job): StatusBadge {
   const pending = pendingCount(db, job.id);
   const approved = approvedCount(db, job.id);
   // Short labels: they sit in a pill on the tile's photo.
-  if (isJobClosed(db, job))
-    return { label: `Fechado · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
+  if (jobState(db, job) === 'cheia')
+    return { label: `Preenchida · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
   if (pending) return { label: `${pending} em análise`, tone: 'warning', icon: 'clock' };
   const total = candidateCount(db, job.id);
   if (total) return { label: total === 1 ? '1 candidato' : `${total} candidatos`, tone: 'brand', icon: 'users' };

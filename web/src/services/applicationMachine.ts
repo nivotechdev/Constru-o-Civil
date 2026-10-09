@@ -13,7 +13,8 @@ export type ApplicationAction =
   | 'desistir'
   | 'cancelar_contratacao'
   | 'concluir'
-  | 'marcar_falta';
+  | 'marcar_falta'
+  | 'expirar';
 
 interface Transition {
   from: ApplicationStatus[];
@@ -83,6 +84,12 @@ export const TRANSITIONS: Record<ApplicationAction, Transition> = {
     to: 'nao_compareceu',
     by: ['construtora'],
     where: 'Perfil do candidato › Não compareceu'
+  },
+  expirar: {
+    from: ['pre_selecionado'],
+    to: 'expirada',
+    by: ['sistema'],
+    where: 'Automático: a vaga venceu sem a contratação ser confirmada'
   }
 };
 
@@ -132,6 +139,11 @@ export function newApplication(id: string, jobId: string, workerId: string, at: 
 export const isPending = (status: ApplicationStatus) => status === 'enviada' || status === 'em_analise';
 /** Holding a slot of the job (picked or hired). */
 export const holdsSlot = (status: ApplicationStatus) => status === 'pre_selecionado' || status === 'contratado';
+/**
+ * Takes one of the job's places: picked, hired, or already done the diária (Y02) — a concluded diária
+ * doesn't put the job back on the mural.
+ */
+export const occupiesSlot = (status: ApplicationStatus) => holdsSlot(status) || status === 'concluida';
 /** Contact by WhatsApp is open for both sides. */
 export const contactOpen = (status: ApplicationStatus) => holdsSlot(status);
 

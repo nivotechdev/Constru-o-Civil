@@ -12,6 +12,7 @@ grant all on t_ids to authenticated, anon;
 insert into t_ids values
   ('futura', pg_temp.new_job('10000000-0000-0000-0000-0000000000c1', 1, 2)),
   ('hoje', pg_temp.new_job('10000000-0000-0000-0000-0000000000c1', 1, 0)),
+  ('falta', pg_temp.new_job('10000000-0000-0000-0000-0000000000c1', 1, 0)),
   ('remover', pg_temp.new_job('10000000-0000-0000-0000-0000000000c1', 2, 2));
 
 -- Candidaturas: Ana e Bruno na vaga futura (1 posição).
@@ -97,20 +98,19 @@ select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'hoje'), '100
 select pg_temp.ok(public.job_holding((select v from t_ids where k = 'hoje')) = 1, 'concluída ocupa a posição (Y02)');
 select pg_temp.ok((select jobs_done from public.workers where id = '10000000-0000-0000-0000-0000000000a3') = 1,
   'jobs_done soma 1');
+select pg_temp.ok((select closed from public.jobs where id = (select v from t_ids where k = 'hoje')),
+  'a equipe toda concluiu: a vaga encerra sozinha (Y01)');
 select pg_temp.login('10000000-0000-0000-0000-0000000000a1');
 select pg_temp.fails(format('select public.submit_application(%L)', (select v from t_ids where k = 'hoje')), 'BC409');
 
--- Marcar falta no dia: vaga de hoje com 2 posições.
-select pg_temp.logout();
-update public.jobs set slots = 2 where id = (select v from t_ids where k = 'hoje');
-select pg_temp.login('10000000-0000-0000-0000-0000000000a1');
-select public.submit_application((select v from t_ids where k = 'hoje'));
+-- Marcar falta no dia.
+select public.submit_application((select v from t_ids where k = 'falta'));
 select pg_temp.login('10000000-0000-0000-0000-0000000000c1');
-select public.transition_application((select v from t_ids where k = 'hoje'), '10000000-0000-0000-0000-0000000000a1', 'aprovar');
-select public.transition_application((select v from t_ids where k = 'hoje'), '10000000-0000-0000-0000-0000000000a1', 'contratar');
-select public.transition_application((select v from t_ids where k = 'hoje'), '10000000-0000-0000-0000-0000000000a1', 'marcar_falta');
+select public.transition_application((select v from t_ids where k = 'falta'), '10000000-0000-0000-0000-0000000000a1', 'aprovar');
+select public.transition_application((select v from t_ids where k = 'falta'), '10000000-0000-0000-0000-0000000000a1', 'contratar');
+select public.transition_application((select v from t_ids where k = 'falta'), '10000000-0000-0000-0000-0000000000a1', 'marcar_falta');
 select pg_temp.logout();
-select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'hoje'), '10000000-0000-0000-0000-0000000000a1') = 'nao_compareceu',
+select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'falta'), '10000000-0000-0000-0000-0000000000a1') = 'nao_compareceu',
   'marcar falta no dia do bico');
 
 -- Avaliações para conferir a anonimização na exclusão de conta.

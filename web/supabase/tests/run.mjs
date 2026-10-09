@@ -4,7 +4,7 @@
 //
 //   node supabase/tests/run.mjs supabase/tests/z01_candidaturas.sql             # imprime o SQL
 //   node supabase/tests/run.mjs --with supabase/migrations/2026…_z01….sql supabase/tests/z01_candidaturas.sql
-//   DATABASE_URL=postgres://… node supabase/tests/run.mjs supabase/tests/*.sql  # roda com psql
+//   DATABASE_URL=postgres://… node supabase/tests/run.mjs supabase/tests/[a-z]*.sql  # roda com psql
 //
 // O SQL impresso pode ser colado no SQL Editor do Supabase. Nada fica gravado: o teste termina em rollback.
 import { readFileSync } from 'node:fs';

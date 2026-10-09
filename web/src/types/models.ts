@@ -182,6 +182,8 @@ export interface Job {
   semContratacao?: boolean;
   description: string;
   requirements: string[];
+  /** When it was published (ISO); a job with the date to be arranged expires 30 days later (Y04). */
+  createdAt?: string;
 }
 
 /**
@@ -198,7 +200,9 @@ export type ApplicationStatus =
   | 'nao_selecionado'
   | 'desistiu'
   | 'cancelado_pela_construtora'
-  | 'nao_compareceu';
+  | 'nao_compareceu'
+  /** Picked, but the job's time ran out without the hire being confirmed (Y04). */
+  | 'expirada';
 
 /** Who made a change: the worker, the company, or the system (automatic rules). */
 export type Actor = 'trabalhador' | 'construtora' | 'sistema';

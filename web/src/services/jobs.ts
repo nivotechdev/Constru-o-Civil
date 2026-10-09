@@ -1,8 +1,8 @@
 // Jobs: reading the mural and a job, publishing, saving, closing and deleting. Each function says what
 // the real backend does there (docs/CONTRATO-BACKEND.md); the mock applies the change to the store.
 import type { Database, Job } from '../types/models';
-import { closeJobApplications } from './applications';
-import { holdsSlot, isPending } from './applicationMachine';
+import { closeJobApplications, reopenAutoRejected } from './applications';
+import { holdsSlot, isPending, occupiesSlot, transition } from './applicationMachine';
 import { jobTitle } from './catalog';
 import { withNotification } from './notifications';
 import { serviceError } from './errors';
@@ -95,7 +95,7 @@ export async function updateJob(jobId: string, draft: JobDraft): Promise<void> {
   const db = store.getDb();
   if (job.closed || db.deletedJobIds.includes(jobId))
     throw serviceError('conflito', 'Essa vaga já foi encerrada e não pode mais ser editada.');
-  const holding = db.applications.filter((a) => a.jobId === jobId && holdsSlot(a.status)).length;
+  const holding = db.applications.filter((a) => a.jobId === jobId && occupiesSlot(a.status)).length;
   if ((draft.slots || 1) < holding)
     throw serviceError('validacao', `Você já aprovou ${holding} pessoas. Não dá para pedir menos que isso.`);
   const changes = significantChanges(job, draft);
@@ -120,7 +120,8 @@ export async function updateJob(jobId: string, draft: JobDraft): Promise<void> {
         );
       }
     }
-    return next;
+    // More places on a job that had filled up: the automatic refusals go back to review (Y03).
+    return (draft.slots || 1) > (job.slots || 1) ? reopenAutoRejected(next, jobId, 'vaga_reaberta', at) : next;
   });
 }
 
@@ -148,12 +149,52 @@ export async function closeJob(jobId: string): Promise<void> {
   });
 }
 
-/** Deletes the job post. Backend: set jobs.deleted_at (soft delete). */
+/**
+ * Deletes the job post (Y08). Only without a team: with someone picked or hired, closing the job is the
+ * way (the team stays). Candidates still waiting become "não selecionado" and are told the job was
+ * removed. Backend: delete_job (closes and sets deleted_at, in one transaction).
+ */
 export async function deleteJob(jobId: string): Promise<void> {
   if (!IS_DEMO) return remote.deleteJob(jobId);
   await mockLatency(500);
-  ownJob(jobId);
-  store.deleteJobPost(jobId);
+  const job = ownJob(jobId);
+  const db = store.getDb();
+  if (db.deletedJobIds.includes(jobId)) return;
+  if (db.applications.some((a) => a.jobId === jobId && holdsSlot(a.status)))
+    throw serviceError('conflito', 'Essa vaga tem gente escolhida ou contratada. Encerre a vaga em vez de excluir.');
+  const at = new Date().toISOString();
+  store.transact((d) => {
+    const company = d.companies[job.companyId];
+    let next: Database = {
+      ...d,
+      applications: d.applications.map((a) => (a.jobId === jobId && a.autoRejected ? { ...a, autoRejected: false } : a))
+    };
+    for (const app of next.applications.filter((a) => a.jobId === jobId && isPending(a.status))) {
+      next = withNotification(
+        {
+          ...next,
+          applications: next.applications.map((a) =>
+            a.id === app.id ? transition(a, 'recusar', 'sistema', at, 'vaga_removida') : a
+          )
+        },
+        {
+          kind: 'nao_selecionado',
+          title: 'Vaga removida',
+          text: `${company.name} removeu ${jobTitle(job)}. Tem outros bicos no mural.`,
+          workerId: app.workerId,
+          companyId: null,
+          target: '/mural'
+        },
+        at
+      );
+    }
+    const done = next.applications.some((a) => a.jobId === jobId && a.status === 'concluida');
+    return {
+      ...next,
+      jobs: { ...next.jobs, [jobId]: { ...job, closed: true, semContratacao: job.semContratacao || !done } },
+      deletedJobIds: [...next.deletedJobIds, jobId]
+    };
+  });
 }
 
 // ---- worker actions ----

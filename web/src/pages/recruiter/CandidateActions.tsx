@@ -12,6 +12,7 @@ import {
   approve,
   cancelHire,
   completeWorkday,
+  jobStarted,
   confirmHire,
   markInReview,
   markNoShow,
@@ -20,12 +21,13 @@ import {
 } from '../../services/applications';
 import { isPending } from '../../services/applicationMachine';
 import { navigate } from '../../services/router';
-import { applicationFor, approvedCount, isJobClosed } from '../../services/selectors';
+import { applicationFor, approvedCount, jobState } from '../../services/selectors';
 import { getDb } from '../../services/store';
 import { showToast } from '../../services/toast';
 import type { Job, Worker } from '../../types/models';
 import { ContactButton } from '../../components/ContactButton';
 import { candidateBadge } from '../../utils/applicationStatus';
+import { dateText } from '../../utils/jobInfo';
 
 type Confirm = 'contratar' | 'cancelar' | 'concluir' | 'falta' | null;
 
@@ -49,13 +51,24 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
   };
   const doApprove = useAction(approve, () => {
     const fresh = getDb();
-    if (isJobClosed(fresh, fresh.jobs[job.id])) navigate('/fechado/' + job.id);
-    else showToast(`${first} aprovado. O WhatsApp está liberado para os dois.`);
+    showToast(
+      jobState(fresh, fresh.jobs[job.id]) === 'cheia'
+        ? `${first} aprovado. Todas as vagas foram preenchidas.`
+        : `${first} aprovado. O WhatsApp está liberado para os dois.`
+    );
   });
   const doReject = useAction(reject, () => navigate('/vaga-gerenciar/' + job.id));
   const doUndo = useAction(undoApproval, done('Aprovação desfeita'));
   const doHire = useAction(confirmHire, done('Contratação confirmada. Avisamos o trabalhador.'));
-  const doCancel = useAction(cancelHire, done('Contratação cancelada. A vaga voltou a ficar aberta.'));
+  const doCancel = useAction(cancelHire, () => {
+    setConfirm(null);
+    const fresh = getDb();
+    showToast(
+      jobState(fresh, fresh.jobs[job.id]) === 'aberta'
+        ? 'Contratação cancelada. A vaga voltou a ficar aberta.'
+        : 'Contratação cancelada.'
+    );
+  });
   const doConclude = useAction(completeWorkday, done('Diária concluída. Pedimos as avaliações.'));
   const doNoShow = useAction(markNoShow, done('Falta registrada'));
 
@@ -63,7 +76,7 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
   const busy =
     doApprove.loading || doReject.loading || doUndo.loading || doHire.loading || doConclude.loading || doNoShow.loading;
   const error = doApprove.error || doReject.error || doUndo.error;
-  const full = isJobClosed(db, job);
+  const full = jobState(db, job) !== 'aberta';
   const badge = candidateBadge(app);
 
   let body;
@@ -132,31 +145,41 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
       </div>
     );
   } else if (app.status === 'contratado') {
+    // Y02: "concluída" and "não compareceu" only from the first day of the job.
+    const started = jobStarted(job);
     body = (
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2.5">
           <Badge label={badge.label} tone={badge.tone} icon={badge.icon} />
-          <span className="flex-1 text-sm text-concrete-500">Depois da diária, marque como concluída.</span>
+          <span className="flex-1 text-sm text-concrete-500">
+            {started
+              ? 'Depois da diária, marque como concluída.'
+              : `A partir de ${dateText(job).toLowerCase()} você marca a diária como concluída (ou a falta).`}
+          </span>
         </div>
         <ContactButton applicationId={app.id} size="lg" fullWidth />
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
-          <Button
-            label="Marcar diária como concluída"
-            size="lg"
-            fullWidth
-            iconLeft="circle-check"
-            className="lg:w-auto lg:px-8"
-            disabled={busy}
-            onClick={() => setConfirm('concluir')}
-          />
-          <Button
-            label="Não compareceu"
-            variant="secondary"
-            fullWidth
-            className="lg:w-auto"
-            disabled={busy}
-            onClick={() => setConfirm('falta')}
-          />
+          {started ? (
+            <>
+              <Button
+                label="Marcar diária como concluída"
+                size="lg"
+                fullWidth
+                iconLeft="circle-check"
+                className="lg:w-auto lg:px-8"
+                disabled={busy}
+                onClick={() => setConfirm('concluir')}
+              />
+              <Button
+                label="Não compareceu"
+                variant="secondary"
+                fullWidth
+                className="lg:w-auto"
+                disabled={busy}
+                onClick={() => setConfirm('falta')}
+              />
+            </>
+          ) : null}
           <Button
             label="Cancelar contratação"
             variant="ghost"
@@ -200,7 +223,9 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
                 ? `${first} avisou que não vai poder ir.`
                 : app.status === 'nao_compareceu'
                   ? 'Falta registrada.'
-                  : 'Contratação cancelada.'}
+                  : app.status === 'expirada'
+                    ? 'A vaga venceu sem a contratação ser confirmada.'
+                    : 'Contratação cancelada.'}
         </span>
       </div>
     );

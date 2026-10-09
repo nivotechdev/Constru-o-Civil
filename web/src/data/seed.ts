@@ -1131,6 +1131,13 @@ export const JOBS: Record<string, Job> = {
   }
 };
 
+// When each job was published: two days before its first day (or two days ago when the date is to be
+// arranged, so those stay up for the 30 days of Y04 in the demo too).
+for (const job of Object.values(JOBS)) {
+  const start = job.startDate ? new Date(job.startDate + 'T09:00:00').getTime() : Date.now();
+  job.createdAt = new Date(Math.min(start, Date.now()) - 48 * HOUR).toISOString();
+}
+
 // One application = one worker's candidacy on one job, with the history of its status (the status
 // machine is in services/applicationMachine.ts). Times are relative to when the app opens.
 
@@ -1143,7 +1150,8 @@ const PATH: Record<ApplicationStatus, ApplicationStatus[]> = {
   nao_selecionado: ['enviada', 'em_analise', 'nao_selecionado'],
   desistiu: ['enviada', 'em_analise', 'pre_selecionado', 'desistiu'],
   cancelado_pela_construtora: ['enviada', 'em_analise', 'pre_selecionado', 'cancelado_pela_construtora'],
-  nao_compareceu: ['enviada', 'em_analise', 'pre_selecionado', 'contratado', 'nao_compareceu']
+  nao_compareceu: ['enviada', 'em_analise', 'pre_selecionado', 'contratado', 'nao_compareceu'],
+  expirada: ['enviada', 'em_analise', 'pre_selecionado', 'expirada']
 };
 const BY: Record<ApplicationStatus, Actor> = {
   enviada: 'trabalhador',
@@ -1154,7 +1162,8 @@ const BY: Record<ApplicationStatus, Actor> = {
   nao_selecionado: 'construtora',
   desistiu: 'trabalhador',
   cancelado_pela_construtora: 'construtora',
-  nao_compareceu: 'construtora'
+  nao_compareceu: 'construtora',
+  expirada: 'sistema'
 };
 
 /** A candidacy sent `sentHoursAgo` hours ago that reached `status` (one step every `stepHours`). */

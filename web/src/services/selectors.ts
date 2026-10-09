@@ -3,6 +3,8 @@
 import { CURRENT_COMPANY_ID, CURRENT_WORKER_ID } from '../data/seed';
 import type { Application, Company, Database, Job, Worker, WorkerPost } from '../types/models';
 import { getSession } from './store';
+import { occupiesSlot } from './applicationMachine';
+import { isExpired } from '../utils/jobInfo';
 
 // ---- companies & workers ----
 export const getCompany = (db: Database, id: string): Company | undefined => db.companies[id];
@@ -58,12 +60,11 @@ function statsOf(db: Database, jobId: string) {
   return stats && db.jobs[jobId]?.companyId !== getSession()?.companyId ? stats : null;
 }
 
+/** Places taken: picked, hired or concluded (Y02; the server's job_stats.holding counts the same). */
 export function approvedCount(db: Database, jobId: string): number {
   const stats = statsOf(db, jobId);
   if (stats) return stats.holding;
-  return db.applications.filter(
-    (a) => a.jobId === jobId && (a.status === 'pre_selecionado' || a.status === 'contratado')
-  ).length;
+  return db.applications.filter((a) => a.jobId === jobId && occupiesSlot(a.status)).length;
 }
 export function pendingCount(db: Database, jobId: string): number {
   const stats = statsOf(db, jobId);
@@ -77,7 +78,26 @@ export function candidateCount(db: Database, jobId: string): number {
   return stats ? stats.total : db.applications.filter((a) => a.jobId === jobId).length;
 }
 export const isJobFull = (db: Database, job: Job): boolean => approvedCount(db, job.id) >= (job.slots || 1);
-export const isJobClosed = (db: Database, job: Job): boolean => Boolean(job.closed) || isJobFull(db, job);
+
+/**
+ * Where a job stands (Y01), the same in every screen:
+ *   aberta — takes candidates; cheia — every place taken (still editable and closable);
+ *   encerrada — closed by the company (or by itself when the team finished); excluida — deleted;
+ *   vencida — its last day has passed (or 30 days with the date to be arranged: Y04).
+ */
+export type JobState = 'aberta' | 'cheia' | 'encerrada' | 'excluida' | 'vencida';
+
+export function jobState(db: Database, job: Job, now: Date = new Date()): JobState {
+  if (db.deletedJobIds.includes(job.id)) return 'excluida';
+  if (job.closed) return 'encerrada';
+  if (isExpired(job, now)) return 'vencida';
+  if (isJobFull(db, job)) return 'cheia';
+  return 'aberta';
+}
+
+/** Not taking candidates (full, closed, deleted or past). */
+export const isJobClosed = (db: Database, job: Job, now: Date = new Date()): boolean =>
+  jobState(db, job, now) !== 'aberta';
 
 /**
  * Whether the session may see the job's street, number and CEP (Z06): the company that owns it, or the
