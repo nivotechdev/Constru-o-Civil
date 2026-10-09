@@ -151,11 +151,11 @@ describe('reference data served by services', () => {
     expect(notificationsFor(db, null)).toEqual([]);
   });
 
-  it('offers the seed option lists and the three boost plans', async () => {
+  it('offers the seed option lists and the two boost plans (no WhatsApp plan until it exists: Z03)', async () => {
     const catalog = await import('../services/catalog');
     expect(catalog.OFICIOS).toEqual(seed.OFICIOS);
     expect(catalog.REQUISITOS_OPCOES).toEqual(seed.REQUISITOS_OPCOES);
-    expect(catalog.BOOST_PLANS.map((p) => `${p.id} ${p.price}`)).toEqual(['24h R$ 12', '3d R$ 28', 'whats R$ 39']);
+    expect(catalog.BOOST_PLANS.map((p) => `${p.id} ${p.price}`)).toEqual(['24h R$ 12', '3d R$ 28']);
   });
 
   it('shows picked media from a local URL (nothing is uploaded)', async () => {
