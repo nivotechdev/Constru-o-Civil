@@ -122,6 +122,17 @@ select count(*) from pg_proc where proname = 'feed_jobs' and pronamespace = 'pub
 select indexname from pg_indexes where tablename = 'jobs' and indexname in ('jobs_area_geog_idx', 'jobs_open_city_idx'); -- 2 linhas
 ```
 
+### 10. `20261011000300_y16_y17_documento.sql` (Y16 + Y17)
+
+`cpf_valid`/`cnpj_valid` (dígitos verificadores); o cadastro recusa conta de trabalhador ou recrutador sem
+documento válido (recrutador pode usar CPF); `create_account_for` recusa documento inválido; limpa o CPF
+mascarado que tinha ido para `companies.cnpj`.
+
+```sql
+select public.cpf_valid('529.982.247-25'), public.cpf_valid('123.456.789-01');   -- true, false
+select count(*) from public.companies where cnpj like '***%';                     -- 0
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

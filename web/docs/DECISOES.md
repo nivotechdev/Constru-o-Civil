@@ -533,3 +533,17 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   deixaria só os próprios arquivos para trás. O app nunca faz isso.
 - As telas dizem o que de fato acontece: perfil, fotos e contatos apagados; avaliações e histórico ficam
   sem o nome.
+
+## Y16 + Y17 — Documento válido e CPF fora do perfil da empresa
+
+- CPF e CNPJ conferidos pelo dígito verificador no app (`utils/document.ts`) e no banco (`cpf_valid`,
+  `cnpj_valid`, `document_valid_for`). O gatilho do cadastro no Auth recusa conta de trabalhador ou
+  recrutador **sem documento válido**; `create_account_for` recusa documento inválido.
+- **Recrutador pode se cadastrar com CPF** (quem trabalha por conta própria): o campo virou "CNPJ ou CPF".
+  O CPF fica só cifrado em `accounts`; `companies.cnpj` recebe apenas CNPJ (o começo, mascarado). A
+  migration limpa os CPFs mascarados que já estavam lá.
+- Conta criada pelo Google (sem lado) ainda não tem documento: completa em "Escolher perfil" quando o
+  login com Google for ligado (L13); até lá o botão fica escondido.
+- O texto do cadastro deixou de prometer "conferimos o CNPJ antes de liberar a publicação" (Y24).
+- Na demonstração, os documentos "já cadastrados" agora são válidos (`111.444.777-35`,
+  `11.222.333/0001-81`) e a construtora de exemplo ganhou um CNPJ válido.

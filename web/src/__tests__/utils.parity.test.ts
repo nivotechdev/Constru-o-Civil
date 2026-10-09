@@ -72,3 +72,15 @@ describe('city picker', () => {
     expect(nearestCity(-22.9, -47.06)?.label).toBe('Campinas, SP');
   });
 });
+
+describe('documents (Y17)', () => {
+  it('checks the CPF and CNPJ check digits', async () => {
+    const { isValidCnpj, isValidCpf } = await import('../utils/document');
+    for (const ok of ['529.982.247-25', '39053344705', '111.444.777-35']) expect(isValidCpf(ok)).toBe(true);
+    for (const bad of ['', '123.456.789-01', '111.111.111-11', '5299822472', '529.982.247-26'])
+      expect(isValidCpf(bad)).toBe(false);
+    for (const ok of ['11.222.333/0001-81', '18402551000147']) expect(isValidCnpj(ok)).toBe(true);
+    for (const bad of ['', '11.222.333/0001-80', '11.111.111/1111-11', '00000000000000', '1122233300018'])
+      expect(isValidCnpj(bad)).toBe(false);
+  });
+});

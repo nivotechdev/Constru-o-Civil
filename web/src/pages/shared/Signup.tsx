@@ -24,6 +24,7 @@ import {
 import { WhatsAppCode } from './WhatsAppCode';
 import { useCaptcha } from '../../components/Captcha';
 import { errorMessage } from '../../services/errors';
+import { isValidCnpj, isValidCpf } from '../../utils/document';
 
 type FieldId = 'nome' | 'razao' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
 
@@ -35,7 +36,7 @@ interface SignupField {
   placeholder: string;
   icon?: IconName;
   type?: string;
-  mask?: 'cpf' | 'cnpj' | 'phone';
+  mask?: 'cpf' | 'cnpj' | 'cpfCnpj' | 'phone';
   /** The WhatsApp confirmation code step. */
   isCode?: boolean;
   mono?: boolean;
@@ -121,12 +122,12 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
       },
       {
         id: 'doc',
-        label: 'CNPJ',
+        label: 'CNPJ ou CPF',
         question: 'Qual é o CNPJ da empresa?',
-        help: 'Conferimos o CNPJ antes de liberar a publicação de vagas.',
+        help: 'Trabalha por conta própria? Use seu CPF. O CPF nunca aparece no perfil; do CNPJ, só o começo.',
         placeholder: '00.000.000/0000-00',
         icon: 'id-card',
-        mask: 'cnpj',
+        mask: 'cpfCnpj',
         mono: true
       },
       { ...COMUM_EMAIL, help: 'É por aqui que avisamos cada novo candidato da sua vaga.' },
@@ -172,11 +173,10 @@ function validateField(field: SignupField, values: Values, role: Role): string |
   }
   if (field.id === 'razao') return v.length < 3 ? 'Informe o nome da empresa.' : null;
   if (field.id === 'doc') {
-    const digits = v.replace(/\D/g, '');
-    const need = role === 'recrutador' ? 14 : 11;
-    if (digits.length !== need)
-      return role === 'recrutador' ? 'CNPJ inválido. Confira os 14 números.' : 'CPF inválido. Confira os 11 números.';
-    return null;
+    // Y17: the check digits too (the server refuses the same documents).
+    if (role === 'recrutador')
+      return isValidCnpj(v) || isValidCpf(v) ? null : 'CNPJ ou CPF inválido. Confira os números.';
+    return isValidCpf(v) ? null : 'CPF inválido. Confira os 11 números.';
   }
   if (field.id === 'email') return isValidEmail(v) ? null : 'E-mail inválido. Confira se tem @ e o domínio.';
   if (field.id === 'whatsapp') {
@@ -272,6 +272,7 @@ export default function Signup({ params }: ScreenProps) {
     let value = v;
     if (field.mask === 'cpf') value = maskCPF(v);
     if (field.mask === 'cnpj') value = maskCNPJ(v);
+    if (field.mask === 'cpfCnpj') value = v.replace(/\D/g, '').length > 11 ? maskCNPJ(v) : maskCPF(v);
     if (field.mask === 'phone') value = maskPhone(v);
     setUi((s) => ({
       values: { ...s.values, [field.id]: value },

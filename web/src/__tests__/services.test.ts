@@ -56,7 +56,7 @@ describe('simulated backend calls keep the legacy delays', () => {
     expect(s.sel.currentCompanyId()).toBe(seed.CURRENT_COMPANY_ID);
   });
 
-  it('signs up after 700 ms, refusing the two "already registered" documents', async () => {
+  it('signs up after 700 ms, refusing invalid and "already registered" documents (Y17)', async () => {
     const data = {
       role: 'trabalhador' as const,
       name: 'Ana',
@@ -65,13 +65,16 @@ describe('simulated backend calls keep the legacy delays', () => {
       password: 'abcdefgh1',
       acceptedTermsVersion: '1.0'
     };
-    expect(await settlesAfter(s.auth.signUp({ ...data, doc: '123.456.789-01' }), 700)).toEqual({ ok: true });
-    expect(await settlesAfter(s.auth.signUp({ ...data, doc: '111.111.111-11' }), 700)).toEqual({
-      ok: false,
-      reason: 'recusado'
-    });
-    const company = { ...data, role: 'recrutador' as const, doc: '11.111.111/1111-11' };
-    expect(await settlesAfter(s.auth.signUp(company), 700)).toEqual({ ok: false, reason: 'recusado' });
+    const refused = { ok: false, reason: 'recusado' };
+    expect(await settlesAfter(s.auth.signUp({ ...data, doc: '123.456.789-01' }), 700)).toEqual(refused);
+    expect(await settlesAfter(s.auth.signUp({ ...data, doc: '111.111.111-11' }), 700)).toEqual(refused);
+    expect(await settlesAfter(s.auth.signUp({ ...data, doc: '111.444.777-35' }), 700)).toEqual(refused);
+    expect(await settlesAfter(s.auth.signUp({ ...data, doc: '390.533.447-05' }), 700)).toEqual({ ok: true });
+    const company = { ...data, role: 'recrutador' as const, email: 'obra@x.com' };
+    expect(await settlesAfter(s.auth.signUp({ ...company, doc: '11.222.333/0001-81' }), 700)).toEqual(refused);
+    expect(await settlesAfter(s.auth.signUp({ ...company, doc: '11.222.333/0001-80' }), 700)).toEqual(refused);
+    // A recruiter on their own signs up with a CPF.
+    expect(await settlesAfter(s.auth.signUp({ ...company, doc: '123.456.789-09' }), 700)).toEqual({ ok: true });
   });
 
   it('keeps the password flows at 600 ms and the data export at 900 ms', async () => {

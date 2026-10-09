@@ -47,7 +47,7 @@ export const ACCOUNTS: Record<string, Account> = {
     id: 'conta-meridiano',
     email: 'construtora@bicos.demo',
     role: 'recrutador',
-    document: '18.402.551/0001-07',
+    document: '18.402.551/0001-47',
     whatsapp: '(11) 98842-3310',
     whatsappVerifiedAt: '2025-03-01T12:10:00.000Z',
     emailConfirmedAt: '2025-03-01T12:20:00.000Z',
@@ -141,7 +141,7 @@ export const COMPANIES: Record<string, Company> = {
   meridiano: {
     id: 'meridiano',
     name: 'Construtora Meridiano',
-    cnpj: '18.402.551/0001-07',
+    cnpj: '18.402.551/0001-47',
     tipoObra: 'Residencial e reforma',
     location: 'Zona Leste, SP',
     whatsapp: '(11) 98842-3310',

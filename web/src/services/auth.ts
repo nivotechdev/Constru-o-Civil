@@ -21,6 +21,7 @@ import {
 import { DEFAULT_CITY, DEFAULT_POINT } from './defaults';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/auth';
+import { isValidCnpj, isValidCpf } from '../utils/document';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -118,8 +119,8 @@ export interface SignUpData {
  */
 export type SignUpResult = { ok: true } | { ok: false; reason: 'recusado' | 'email-taken' };
 
-// Demo: these CPF/CNPJ are "already registered" — they reproduce the "documento já cadastrado" error.
-const TAKEN_DOCS = ['111.111.111-11', '11.111.111/1111-11'];
+/** Demo: documents that already have an account elsewhere (valid ones, so they pass the form). */
+const TAKEN_DOCS = ['111.444.777-35', '11.222.333/0001-81'];
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -137,6 +138,9 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
   if (!IS_DEMO) return remote.signUp(data, captcha);
   await mockLatency(700);
   const accounts = Object.values(getDb().accounts);
+  // Y17: like the server, an invalid document (or none) is refused.
+  const validDoc = data.role === 'recrutador' ? isValidCnpj(data.doc) || isValidCpf(data.doc) : isValidCpf(data.doc);
+  if (!validDoc) return { ok: false, reason: 'recusado' };
   if (TAKEN_DOCS.includes(data.doc) || accounts.some((a) => digits(a.document) === digits(data.doc)))
     return { ok: false, reason: 'recusado' };
   if (accounts.some((a) => a.email.toLowerCase() === data.email.trim().toLowerCase()))

@@ -29,9 +29,32 @@ begin
 end;
 $$;
 
+-- Um CPF válido (Y17) e diferente para cada semente: 9 dígitos tirados do md5 + os dois verificadores.
+create or replace function pg_temp.valid_cpf(p_seed text)
+returns text language plpgsql as $$
+declare
+  d text := '';
+  h text := md5(p_seed);
+  s int;
+  r int;
+begin
+  for i in 1..9 loop
+    d := d || (('x' || substr(h, i * 2 - 1, 2))::bit(8)::int % 10)::text;
+  end loop;
+  foreach s in array array[9, 10] loop
+    r := 0;
+    for i in 1..s loop r := r + substr(d, i, 1)::int * (s + 2 - i); end loop;
+    r := (r * 10) % 11;
+    d := d || (case when r = 10 then 0 else r end)::text;
+  end loop;
+  return d;
+end;
+$$;
+
 create or replace function pg_temp.new_user(p_id uuid, p_role text, p_name text, p_document text default null)
 returns void language plpgsql as $$
 begin
+  p_document := coalesce(p_document, pg_temp.valid_cpf(p_id::text));
   insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at, raw_user_meta_data, created_at, updated_at)
   values (p_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
           'teste+' || p_id || '@bicos.test', now(),
