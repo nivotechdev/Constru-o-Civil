@@ -64,10 +64,8 @@ export async function signIn(identifier: string, password: string, captcha: Capt
     const code = authCode(result.error);
     // Supabase doesn't tell a wrong password from an unknown e-mail (on purpose).
     if (code === 'invalid_credentials') return { ok: false, reason: 'credenciais' };
-    if (code === 'email_not_confirmed') {
-      enterPendingSession({ id: 'pendente', email, role: 'trabalhador' });
-      return { ok: true, role: 'trabalhador' };
-    }
+    // Y19: no session (and no way to know the side) until the link is opened: the login says so.
+    if (code === 'email_not_confirmed') return { ok: false, reason: 'email-nao-confirmado', email };
     if (code === 'over_request_rate_limit') throw serviceError('conflito', TOO_MANY);
     if (code === 'captcha_failed')
       throw serviceError('validacao', 'Não conseguimos confirmar que você não é um robô. Tente de novo.');
@@ -157,28 +155,25 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
 }
 
 /** "Já confirmei": the link may have been opened in another tab or device — check with the server. */
-export async function confirmEmail(): Promise<void> {
+export async function confirmEmail(): Promise<'entrou' | 'entrar-com-senha'> {
   const client = await db();
   const { data } = await client.auth.getSession();
   let user = data.session?.user ?? null;
-  if (user && !user.email_confirmed_at) {
+  // A sign-up waiting for the link has no Auth session here: only signing in can tell (Y19).
+  if (!user) return 'entrar-com-senha';
+  if (!user.email_confirmed_at) {
     const fresh = await client.auth.getUser();
     user = fresh.data.user ?? user;
   }
-  if (user?.email_confirmed_at) {
+  if (user.email_confirmed_at) {
     await enterSession(user);
-    return;
+    return 'entrou';
   }
-  throw serviceError(
-    'conflito',
-    user || getSession()?.accountId === 'pendente'
-      ? 'Ainda não recebemos a confirmação. Abra o link que enviamos para o seu e-mail.'
-      : 'Abra o link que enviamos para o seu e-mail e depois entre com seu e-mail e senha.'
-  );
+  throw serviceError('conflito', 'Ainda não recebemos a confirmação. Abra o link que enviamos para o seu e-mail.');
 }
 
-export async function resendConfirmationEmail(): Promise<void> {
-  const email = getSession()?.email;
+export async function resendConfirmationEmail(to?: string): Promise<void> {
+  const email = to ?? getSession()?.email;
   if (!email) throw serviceError('nao_autorizado', 'Entre com seu e-mail e senha para receber o link de novo.');
   const client = await db();
   const { error } = await client.auth.resend({

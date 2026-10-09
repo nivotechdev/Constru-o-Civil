@@ -10,7 +10,7 @@ import { sendWhatsAppCode, signUp, verifyWhatsAppCode, WHATSAPP_CODE_AVAILABLE }
 import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
 import { goBack as routerGoBack, navigate } from '../../services/router';
-import { resetUI } from '../../services/store';
+import { resetUI, setUI } from '../../services/store';
 import type { Role } from '../../types/models';
 import {
   isValidEmail,
@@ -365,6 +365,7 @@ export default function Signup({ params }: ScreenProps) {
         }
         // The account now exists and is logged in; the route guard takes it to "Confirme seu e-mail".
         resetUI(key);
+        setUI<{ fromSignup: boolean }>('verificar-email', { fromSignup: true });
         navigate('/verificar-email', { replace: true });
       })
       // Y20: the service's own message (no internet, too many attempts, weak password…).

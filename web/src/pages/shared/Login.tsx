@@ -3,13 +3,14 @@ import { FieldError } from '../../components/FieldError';
 import { GoogleIcon, Icon } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
-import { DEMO_ACCOUNTS, signIn, type SignInError } from '../../services/auth';
-import { ServiceError } from '../../services/errors';
+import { DEMO_ACCOUNTS, resendConfirmationEmail, signIn, type SignInError } from '../../services/auth';
+import { errorMessage, ServiceError } from '../../services/errors';
 import { RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { navigate } from '../../services/router';
-import { getUI, resetUI } from '../../services/store';
+import { getUI, resetUI, type UIPatch } from '../../services/store';
 import { useCaptcha } from '../../components/Captcha';
 import { FEATURES } from '../../services/features';
+import { Card } from '../../components/Card';
 
 interface LoginUI {
   identifier: string;
@@ -21,6 +22,12 @@ interface LoginUI {
   passwordError: string | null;
   /** What went wrong with the attempt (wrong password, no connection…). */
   error: string | null;
+  /** A line above the form ("Se já confirmou, entre com sua senha", from "Confirme seu e-mail"). */
+  notice: string | null;
+  /** Y19: the e-mail whose confirmation link was never opened (the right password was typed). */
+  unconfirmed: string | null;
+  resending: boolean;
+  resent: boolean;
 }
 
 const LOGIN_DEFAULTS: LoginUI = {
@@ -30,10 +37,14 @@ const LOGIN_DEFAULTS: LoginUI = {
   submitting: false,
   identifierError: null,
   passwordError: null,
-  error: null
+  error: null,
+  notice: null,
+  unconfirmed: null,
+  resending: false,
+  resent: false
 };
 
-const SIGN_IN_ERRORS: Record<SignInError, string> = {
+const SIGN_IN_ERRORS: Record<Exclude<SignInError, 'email-nao-confirmado'>, string> = {
   credenciais: 'E-mail, CPF/CNPJ ou senha incorretos. Confira e tente de novo, ou toque em "Esqueci minha senha".'
 };
 
@@ -53,11 +64,13 @@ export default function Login() {
       setUi({ identifierError, passwordError, error: null });
       return;
     }
-    setUi({ submitting: true, error: null });
+    setUi({ submitting: true, error: null, notice: null, unconfirmed: null, resent: false });
     signIn(ui.identifier, ui.password, captcha.getToken)
       .then((result) => {
         if (!result.ok) {
-          setUi({ submitting: false, error: SIGN_IN_ERRORS[result.reason] });
+          if (result.reason === 'email-nao-confirmado')
+            setUi({ submitting: false, notice: null, unconfirmed: result.email ?? ui.identifier.trim() });
+          else setUi({ submitting: false, error: SIGN_IN_ERRORS[result.reason] });
           return;
         }
         // Back to the deep link that sent the user here, if any.
@@ -89,6 +102,14 @@ export default function Login() {
           <h1 className="font-display font-bold text-3xl text-concrete-900">Olá de novo</h1>
         </div>
         <div className="flex flex-col gap-5">
+          {ui.notice ? (
+            <Card tone="sunken" padding="sm">
+              <div className="flex gap-2.5 items-center" role="status">
+                <Icon name="info" size={20} color="var(--text-subtle)" />
+                <span className="text-sm text-concrete-700">{ui.notice}</span>
+              </div>
+            </Card>
+          ) : null}
           <Input
             id="login-identifier"
             label="E-mail, CPF ou CNPJ"
@@ -111,6 +132,7 @@ export default function Login() {
           />
           {captcha.widget}
           {ui.error ? <FieldError message={ui.error} /> : null}
+          {ui.unconfirmed ? <Unconfirmed ui={ui} setUi={setUi} /> : null}
           <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
           {FEATURES.googleLogin || FEATURES.phoneLogin ? (
             <div className="flex items-center gap-3 py-1">
@@ -172,5 +194,34 @@ export default function Login() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+// Y19: the password was right but the e-mail was never confirmed — say so and offer the link again.
+function Unconfirmed({ ui, setUi }: { ui: LoginUI; setUi: (patch: UIPatch<LoginUI>) => void }) {
+  function resend() {
+    if (ui.resending || !ui.unconfirmed) return;
+    setUi({ resending: true, resent: false, error: null });
+    resendConfirmationEmail(ui.unconfirmed)
+      .then(() => setUi({ resending: false, resent: true }))
+      .catch((e: unknown) => setUi({ resending: false, error: errorMessage(e) }));
+  }
+  return (
+    <Card tone="sunken" padding="md">
+      <div className="flex flex-col gap-3" role="status">
+        <div className="flex gap-2.5 items-start">
+          <Icon name="mail" size={20} color="var(--text-subtle)" />
+          <span className="text-sm text-concrete-700">
+            Falta confirmar seu e-mail. Abra o link que enviamos para{' '}
+            <strong className="text-concrete-900">{ui.unconfirmed}</strong> e depois entre de novo.
+          </span>
+        </div>
+        {ui.resent ? (
+          <span className="text-sm font-semibold text-success-500">Enviamos o link de novo.</span>
+        ) : (
+          <Button label="Reenviar o link" variant="secondary" fullWidth loading={ui.resending} onClick={resend} />
+        )}
+      </div>
+    </Card>
   );
 }

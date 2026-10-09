@@ -555,3 +555,14 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   migration recalcula todos os perfis. Valor escrito à mão não fica.
 - Na demonstração, `ratingWith` faz a mesma conta quando o perfil tem todas as avaliações na lista; os
   perfis de exemplo listam só as últimas, e para eles vale a média arredondada até ali.
+
+## Y19 — E-mail não confirmado
+
+- Entrar com a senha certa e o e-mail sem confirmar **não cria mais uma sessão "pendente" inventada** (sem
+  token e com o lado errado): o login responde `email-nao-confirmado` e mostra "Falta confirmar seu e-mail.
+  Abra o link que enviamos para …" com "Reenviar o link" (para aquele e-mail).
+- Depois do cadastro (sessão pendente com o lado certo), "Já confirmei meu e-mail" sem sessão do Auth no
+  aparelho leva ao login com o e-mail preenchido e a frase "Se já confirmou o e-mail, entre com sua senha".
+  Com sessão, confere no Auth e entra; sem confirmação, "Ainda não recebemos a confirmação".
+- O título "Conta criada. Confirme seu e-mail" só aparece vindo do cadastro; nos outros casos, "Confirme seu
+  e-mail".

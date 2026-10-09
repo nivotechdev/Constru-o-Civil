@@ -203,7 +203,7 @@ describe('remote: sign-in and sign-up', () => {
     expect(m.store.getDb().workers['u-ana'].whatsapp).toBe('11988887777');
   });
 
-  it("can't tell a wrong password from an unknown e-mail; an unconfirmed e-mail goes to /verificar-email", async () => {
+  it("can't tell a wrong password from an unknown e-mail; an unconfirmed e-mail is told, with the link again (Y19)", async () => {
     let m = await load(
       server('ana', {
         auth: { signInWithPassword: () => ({ data: {}, error: { code: 'invalid_credentials', message: 'x' } }) }
@@ -211,15 +211,29 @@ describe('remote: sign-in and sign-up', () => {
     );
     expect(await m.auth.signIn('ana@exemplo.com', 'errada')).toEqual({ ok: false, reason: 'credenciais' });
 
-    m = await load(
-      server('ana', {
-        auth: { signInWithPassword: () => ({ data: {}, error: { code: 'email_not_confirmed', message: 'x' } }) }
-      })
-    );
-    expect((await m.auth.signIn('ana@exemplo.com', 'segredo123')).ok).toBe(true);
-    const session = m.store.getSession();
-    expect(session?.email).toBe('ana@exemplo.com');
-    expect(m.guards.homeFor(session!)).toBe('/verificar-email');
+    const resent: unknown[] = [];
+    const fake = server('ana', {
+      auth: {
+        signInWithPassword: () => ({ data: {}, error: { code: 'email_not_confirmed', message: 'x' } }),
+        getSession: () => ({ data: { session: null }, error: null }),
+        resend: (args: unknown) => {
+          resent.push(args);
+          return { data: {}, error: null };
+        }
+      }
+    });
+    m = await load(fake);
+    expect(await m.auth.signIn('Ana@exemplo.com', 'segredo123')).toEqual({
+      ok: false,
+      reason: 'email-nao-confirmado',
+      email: 'ana@exemplo.com'
+    });
+    // No made-up session (it would not know the side).
+    expect(m.store.getSession()).toBeNull();
+    await m.auth.resendConfirmationEmail('ana@exemplo.com');
+    expect(resent).toMatchObject([{ type: 'signup', email: 'ana@exemplo.com' }]);
+    // "Já confirmei" on a device without a session: sign in with the password.
+    expect(await m.auth.confirmEmail()).toBe('entrar-com-senha');
   });
 
   it('Z07: by CPF the server checks the password and answers only that e-mail; the sign-in is the normal one', async () => {

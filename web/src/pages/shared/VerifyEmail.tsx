@@ -4,22 +4,24 @@ import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { ResultIcon } from '../../components/ResultIcon';
 import { useSession, useUI } from '../../hooks/useStore';
-import { confirmEmail, resendConfirmationEmail } from '../../services/auth';
+import { confirmEmail, resendConfirmationEmail, signOut } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
 import { IS_DEMO } from '../../services/mode';
 import { homeFor } from '../../services/guards';
 import { navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
-import { getSession } from '../../services/store';
+import { getSession, resetUI, setUI } from '../../services/store';
 
 interface VerifyEmailUI {
+  /** Came straight from the sign-up (the title says the account was created). */
+  fromSignup: boolean;
   confirming: boolean;
   resending: boolean;
   resent: boolean;
   error: string | null;
 }
 
-const DEFAULTS: VerifyEmailUI = { confirming: false, resending: false, resent: false, error: null };
+const DEFAULTS: VerifyEmailUI = { fromSignup: false, confirming: false, resending: false, resent: false, error: null };
 const NETWORK_ERROR = 'Não deu para continuar agora. Confira sua internet e tente de novo.';
 
 export default function VerifyEmail() {
@@ -32,8 +34,20 @@ export default function VerifyEmail() {
     if (ui.confirming) return;
     setUi({ confirming: true, error: null });
     confirmEmail()
-      .then(() => {
-        setUi({ confirming: false });
+      .then(async (outcome) => {
+        if (outcome === 'entrar-com-senha') {
+          // Y19: no session on this device to check — signing in tells (and enters if confirmed).
+          const email = getSession()?.email ?? '';
+          await signOut().catch(() => undefined);
+          resetUI('verificar-email');
+          setUI<{ identifier: string; notice: string }>('login', {
+            identifier: email,
+            notice: 'Se já confirmou o e-mail, entre com sua senha.'
+          });
+          navigate('/login', { replace: true });
+          return;
+        }
+        resetUI('verificar-email');
         const next = getSession();
         if (next) navigate(homeFor(next), { replace: true });
       })
@@ -53,7 +67,9 @@ export default function VerifyEmail() {
       <div className="flex-1 flex flex-col items-center text-center gap-6 px-6 pt-16 pb-8">
         <ResultIcon icon="mail-check" tone="brand" />
         <div className="flex flex-col gap-2">
-          <h1 className="font-display font-bold text-2xl text-concrete-900">Conta criada. Confirme seu e-mail</h1>
+          <h1 className="font-display font-bold text-2xl text-concrete-900">
+            {ui.fromSignup ? 'Conta criada. Confirme seu e-mail' : 'Confirme seu e-mail'}
+          </h1>
           <p className="text-base text-concrete-700">
             Enviamos um link de confirmação para{' '}
             <strong className="text-concrete-900">{session?.email ?? 'seu e-mail'}</strong>. Abra o link para ativar sua

@@ -64,12 +64,13 @@ export function forgetPassword(accountId: string): void {
  * Why signing in failed. One answer for an unknown e-mail/CPF/CNPJ and a wrong password, in both modes:
  * telling them apart would reveal who has an account (Z07).
  */
-export type SignInError = 'credenciais';
+/** `email-nao-confirmado`: right password, but the account's e-mail link was never opened (Y19). */
+export type SignInError = 'credenciais' | 'email-nao-confirmado';
 
 /** Where a sign-in or sign-up gets its captcha token (components/Captcha.tsx); none in the demo. */
 export type CaptchaSource = () => Promise<string | undefined>;
 const noCaptcha: CaptchaSource = async () => undefined;
-export type SignInResult = { ok: true; role: Role } | { ok: false; reason: SignInError };
+export type SignInResult = { ok: true; role: Role } | { ok: false; reason: SignInError; email?: string };
 
 /**
  * Signs in with e-mail (or CPF/CNPJ) and password. The side (worker or company) comes from the account.
@@ -209,16 +210,22 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
  * Demo stand-in for opening the link sent by e-mail: confirms the logged-in account's e-mail.
  * Backend: Supabase Auth confirms it when the link is opened; the app only re-reads the session.
  */
-export async function confirmEmail(): Promise<void> {
+/**
+ * "Já confirmei": `entrou` when the account is confirmed and in; `entrar-com-senha` when this device has
+ * no session to check (the sign-up waits for the link without one): the user signs in with the password
+ * (Y19). Still not confirmed → a "not yet" error.
+ */
+export async function confirmEmail(): Promise<'entrou' | 'entrar-com-senha'> {
   if (!IS_DEMO) return remote.confirmEmail();
   await mockLatency(500);
   const session = getSession();
   if (session) updateAccount(session.accountId, { emailConfirmedAt: new Date().toISOString() });
+  return 'entrou';
 }
 
 /** Sends the confirmation link again. Backend: Supabase Auth `resend({ type: 'signup' })`. */
-export async function resendConfirmationEmail(): Promise<void> {
-  if (!IS_DEMO) return remote.resendConfirmationEmail();
+export async function resendConfirmationEmail(email?: string): Promise<void> {
+  if (!IS_DEMO) return remote.resendConfirmationEmail(email);
   await mockLatency(600);
 }
 
