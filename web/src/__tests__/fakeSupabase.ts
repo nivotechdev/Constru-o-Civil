@@ -31,6 +31,19 @@ function applyFilters(rows: Row[], ops: unknown[][]): Row[] {
     if (op === 'eq') out = out.filter((r) => r[a as string] === b);
     if (op === 'in') out = out.filter((r) => (b as unknown[]).includes(r[a as string]));
     if (op === 'is') out = out.filter((r) => (r[a as string] ?? null) === b);
+    if (op === 'neq') out = out.filter((r) => r[a as string] !== b);
+    if (op === 'ilike') {
+      const re = new RegExp(
+        '^' +
+          String(b)
+            .split('%')
+            .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('.*') +
+          '$',
+        'i'
+      );
+      out = out.filter((r) => re.test(String(r[a as string] ?? '')));
+    }
   }
   return out;
 }
@@ -84,6 +97,8 @@ export function fakeSupabase(options: FakeOptions = {}) {
       'eq',
       'in',
       'is',
+      'neq',
+      'ilike',
       'or',
       'order',
       'limit',

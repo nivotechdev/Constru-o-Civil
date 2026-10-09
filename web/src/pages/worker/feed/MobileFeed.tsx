@@ -14,10 +14,11 @@ import { navigate } from '../../../services/router';
 import { workerPlace } from '../../../utils/workerInfo';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
-import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
+import { FeedGrid, LoadMore, NoJobsState, SearchPill, SearchScope } from './FeedParts';
 import { oficioNome } from '../../../services/catalog';
 import { setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
 import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
+import type { Paging } from '../../../services/paging';
 
 export interface FeedLayoutProps {
   db: Database;
@@ -32,16 +33,19 @@ export interface FeedLayoutProps {
   query: Query;
   /** The city the mural opens on (filters reset to it). */
   home: string;
+  /** "Carregar mais" (X01). */
+  paging: Paging & { more: () => void };
 }
 
 /** The mural below 770px: search pill, filter chips, sort control and the grid of tiles. */
-export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }: FeedLayoutProps) {
+export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, paging }: FeedLayoutProps) {
   const noResults =
     found !== null && found.jobs.length === 0 && found.companies.length === 0 && found.workers.length === 0;
   const activeCount = chips.length;
 
   const searchResults = found ? (
     <div className="flex flex-col gap-5">
+      <SearchScope location={ui.location} allCities={ui.allCities} />
       {found.jobs.length ? (
         <div className="flex flex-col gap-3">
           <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Vagas</div>
@@ -69,7 +73,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }:
         <div className="flex flex-col gap-2">
           <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Trabalhadores</div>
           {found.workers.map((w) => (
-            <Card key={w.id} padding="md">
+            <Card key={w.id} padding="md" onClick={() => navigate('/trabalhador/' + w.id)}>
               <div className="flex items-center gap-3">
                 <WorkerAvatar worker={w} size="sm" />
                 <div className="flex-1 min-w-0 flex flex-col">
@@ -119,7 +123,10 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }:
         ))}
       </div>
       {ordered.length ? (
-        <FeedGrid db={db} role={role} jobs={ordered} />
+        <>
+          <FeedGrid db={db} role={role} jobs={ordered} />
+          <LoadMore paging={paging} />
+        </>
       ) : (
         <NoJobsState location={ui.location} home={home} />
       )}

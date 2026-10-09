@@ -2,10 +2,13 @@
 // (services/remote/merge.ts). The screens call them through the same functions as in demo mode
 // (jobs.loadFeed, applications.loadMyApplications…), via the read cache in services/queries.ts.
 import type { Application } from '../../types/models';
-import type { TableRow } from '../../types/supabase';
+import type { Json, TableRow } from '../../types/supabase';
 import type { JobRowRead } from '../supabaseMappers';
-import { getSession } from '../store';
-import { todayISO } from '../../utils/dates';
+import { getDb, getSession } from '../store';
+import { feedKey, type FeedQuery } from '../feedQuery';
+import { getPaging, setPaging } from '../paging';
+import { cityByLabel } from '../cities';
+import { DEFAULT_CITY, DEFAULT_POINT } from '../defaults';
 import { db, request } from './client';
 import {
   apply,
@@ -27,6 +30,7 @@ import {
 } from './merge';
 
 type JobRow = JobRowRead;
+type FeedRow = JobRowRead & { _rank: number; _key: number; _km: number };
 type AppRow = TableRow<'applications'>;
 type EventRow = TableRow<'application_events'>;
 
@@ -143,21 +147,101 @@ async function concludeMine(): Promise<void> {
 
 // ---- jobs ----
 
-/** The mural: open jobs (not closed, not deleted, not past), newest first. */
-export async function loadFeed(): Promise<void> {
+const FEED_PAGE = 30;
+
+/** The query the mural opens with when a screen doesn't say (the session's city, the whole city). */
+function defaultFeedQuery(): FeedQuery {
+  const s = getSession();
+  const worker = s?.workerId ? getDb().workers[s.workerId] : undefined;
+  const location = worker?.city || DEFAULT_CITY;
+  return {
+    location,
+    from: worker ? { lat: worker.lat, lon: worker.lon } : (cityByLabel(location) ?? DEFAULT_POINT),
+    radiusKm: null,
+    oficio: null,
+    quando: null,
+    sort: 'perto',
+    search: '',
+    allCities: false
+  };
+}
+
+/**
+ * The mural (X01): one page of the RPC feed_jobs — open jobs with room, in the city or the radius,
+ * boosted → urgent → the chosen order. `more` loads the next page ("Carregar mais"). On the first page,
+ * the jobs already on the device for this city that didn't come back are read again (closed, filled up
+ * or deleted meanwhile: Y10), so the mural never shows a job that is gone. A search also brings the
+ * companies (and, for a company, the workers) that match (L17).
+ */
+export async function loadFeed(query?: FeedQuery, more = false): Promise<void> {
+  const q = query ?? defaultFeedQuery();
+  const key = feedKey(q);
+  const [city, uf = ''] = q.location.split(',').map((x) => x.trim());
   const client = await db();
-  const jobs = await request(() =>
-    client
-      .from('jobs')
-      .select(JOB_COLUMNS)
-      .is('deleted_at', null)
-      .eq('closed', false)
-      .or(`date_to_arrange.eq.true,end_date.gte.${todayISO()}`)
-      .order('created_at', { ascending: false })
-      .limit(300)
+  const rows = await request(() =>
+    client.rpc('feed_jobs', {
+      p_city: city,
+      p_uf: uf,
+      p_lat: q.from.lat,
+      p_lon: q.from.lon,
+      p_radius_km: q.radiusKm,
+      p_oficio: q.oficio,
+      p_quando: q.quando,
+      p_search: q.search.trim() || null,
+      p_all_cities: q.allCities,
+      p_sort: q.sort,
+      p_limit: FEED_PAGE,
+      p_cursor: more ? (getPaging(key).cursor as Json) : null
+    })
   );
-  const [context, saved] = await Promise.all([jobsWithContext(jobs), savedIds()]);
-  apply(...context, ...(me().workerId ? [putSavedJobIds(saved)] : []));
+  const list = (rows ?? []) as FeedRow[];
+  const jobs = list.map(({ _rank, _key, _km, ...job }) => {
+    void _rank;
+    void _key;
+    void _km;
+    return job as unknown as JobRow;
+  });
+  const last = list[list.length - 1];
+  setPaging(key, {
+    hasMore: list.length === FEED_PAGE,
+    cursor: last ? { r: last._rank, k: last._key, id: last.id } : null
+  });
+  const recipes = await jobsWithContext(jobs);
+  if (!more) {
+    // Y10: what this device still shows for this city but the server no longer lists.
+    const got = new Set(jobs.map((j) => j.id));
+    const stale = Object.values(getDb().jobs)
+      .filter((j) => !got.has(j.id) && `${j.address.city}, ${j.address.uf}` === q.location && !j.closed)
+      .filter((j) => j.companyId !== me().companyId)
+      .map((j) => j.id)
+      .slice(0, 100);
+    if (stale.length) {
+      const fresh = await jobsById(stale);
+      recipes.push(
+        ...(await jobsWithContext(fresh)),
+        ...stale.filter((id) => !fresh.some((f) => f.id === id)).map(dropJob)
+      );
+    }
+  }
+  if (q.search.trim()) recipes.push(...(await searchPeople(q.search.trim())));
+  const saved = me().workerId && !more ? [putSavedJobIds(await savedIds())] : [];
+  apply(...recipes, ...saved);
+}
+
+/** Companies (and, for a company, workers) whose name — or the worker's trade — matches a search. */
+async function searchPeople(text: string): Promise<Recipe[]> {
+  const client = await db();
+  const like = `%${text.replace(/[%_,()]/g, ' ')}%`;
+  const companies = await request(() => client.from('companies').select(COMPANY_COLUMNS).ilike('name', like).limit(10));
+  const recipes: Recipe[] = [putCompanies(companies, undefined, accountId())];
+  if (me().companyId) {
+    // L17: workers only show up for companies.
+    const workers = await request(() =>
+      client.from('workers').select(WORKER_COLUMNS).ilike('name', like).neq('name', 'Conta excluída').limit(20)
+    );
+    recipes.push(putWorkers(workers, undefined, accountId()));
+  }
+  return recipes;
 }
 
 /** One job, its company, and the session's side of it (my candidacy, or the candidates if it's mine). */

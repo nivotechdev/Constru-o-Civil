@@ -10,6 +10,9 @@ import { toggleSaved } from '../../../services/feedback';
 import type { Company, Database, Job, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
 import { noFilters, setFeed, type FeedUI } from './feedUI';
+import type { Paging } from '../../../services/paging';
+import { FieldError } from '../../../components/FieldError';
+import { Button } from '../../../components/Button';
 
 interface FeedTileProps {
   job: Job;
@@ -143,6 +146,37 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
           <Icon name="x" size={18} />
         </button>
       ) : null}
+    </div>
+  );
+}
+
+/** "Carregar mais" under a paged list (X01): only while the server says there is more. */
+export function LoadMore({ paging }: { paging: Paging & { more: () => void } }) {
+  if (!paging.hasMore && !paging.error) return null;
+  return (
+    <div className="flex flex-col items-center gap-2 pt-2">
+      {paging.error ? <FieldError message={paging.error} /> : null}
+      <Button
+        label={paging.error ? 'Tentar de novo' : 'Carregar mais'}
+        variant="secondary"
+        loading={paging.loadingMore}
+        onClick={paging.more}
+      />
+    </div>
+  );
+}
+
+/** Under the search results: widen the search to every city, or come back to the chosen one (L17). */
+export function SearchScope({ location, allCities }: { location: string; allCities: boolean }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm text-concrete-500">
+      <span>{allCities ? 'Buscando em todas as cidades.' : `Buscando em ${location.split(',')[0]}.`}</span>
+      <Button
+        label={allCities ? `Só em ${location.split(',')[0]}` : 'Buscar em todas as cidades'}
+        variant="ghost"
+        size="sm"
+        onClick={() => setFeed({ allCities: !allCities })}
+      />
     </div>
   );
 }

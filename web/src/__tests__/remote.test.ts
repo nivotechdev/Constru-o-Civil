@@ -110,6 +110,12 @@ const jobRow = (id: string, companyId: string, slots = 1) => ({
   area_lat: -23.56,
   area_lon: -46.65
 });
+/** A row as feed_jobs returns it (X01): the job without its exact address, plus the order keys. */
+const feedRow = (id: string, companyId: string, slots: number, rank: number) => {
+  const { street, number, complement, cep, lat, lon, ...rest } = jobRow(id, companyId, slots);
+  void [street, number, complement, cep, lat, lon];
+  return { ...rest, _rank: rank, _key: 1000 - rank, _km: 2.5 };
+};
 
 type Modules = {
   auth: typeof import('../services/auth');
@@ -121,6 +127,8 @@ type Modules = {
   selectors: typeof import('../services/selectors');
   guards: typeof import('../services/guards');
   client: typeof import('../services/remote/client');
+  mappers: typeof import('../services/supabaseMappers');
+  paging: typeof import('../services/paging');
 };
 
 async function load(fake: ReturnType<typeof fakeSupabase>): Promise<Modules> {
@@ -135,7 +143,9 @@ async function load(fake: ReturnType<typeof fakeSupabase>): Promise<Modules> {
     store: await import('../services/store'),
     selectors: await import('../services/selectors'),
     guards: await import('../services/guards'),
-    client: await import('../services/remote/client')
+    client: await import('../services/remote/client'),
+    mappers: await import('../services/supabaseMappers'),
+    paging: await import('../services/paging')
   };
 }
 
@@ -312,6 +322,10 @@ describe('remote: data and actions', () => {
     const m = await load(
       server('ana', {
         rpc: {
+          feed_jobs: () => ({
+            data: [feedRow('BC-5001', 'u-obra', 1, 0), feedRow('BC-5002', 'u-outra', 2, 1)],
+            error: null
+          }),
           job_stats: () => ({ data: [{ job_id: 'BC-5001', holding: 1, pending: 0, total: 3 }], error: null })
         }
       })
@@ -324,6 +338,88 @@ describe('remote: data and actions', () => {
     // BC-5001 has its only slot taken: the mural reads it as full without seeing the candidacy.
     expect(m.selectors.isJobFull(db, db.jobs['BC-5001'])).toBe(true);
     expect(m.selectors.isJobFull(db, db.jobs['BC-5002'])).toBe(false);
+  });
+
+  it('the mural comes in pages from the server; a job gone meanwhile leaves the screen (X01, Y10)', async () => {
+    const page = Array.from({ length: 30 }, (_, i) => feedRow(`BC-6${String(i).padStart(3, '0')}`, 'u-outra', 1, i));
+    const fake = server('ana', {
+      rpc: {
+        feed_jobs: (args) => ({ data: args.p_cursor ? [feedRow('BC-7000', 'u-outra', 1, 30)] : page, error: null })
+      }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    // BC-5001 is on the device from before; the server stopped listing it and it was deleted.
+    m.store.createJob(m.mappers.jobFromRow(jobRow('BC-5001', 'u-obra')));
+    fake.tables.jobs = fake.tables.jobs.filter((j) => j.id !== 'BC-5001');
+    const q = {
+      location: 'São Paulo, SP',
+      from: { lat: -23.56, lon: -46.65 },
+      radiusKm: 10,
+      oficio: 'pintor',
+      quando: null,
+      sort: 'perto' as const,
+      search: '',
+      allCities: false
+    };
+    await m.jobs.loadFeed(q);
+    const first = fake.calls.filter((c) => c.name === 'feed_jobs')[0].args;
+    expect(first).toMatchObject({
+      p_city: 'São Paulo',
+      p_uf: 'SP',
+      p_radius_km: 10,
+      p_oficio: 'pintor',
+      p_search: null,
+      p_all_cities: false,
+      p_limit: 30,
+      p_cursor: null
+    });
+    let db = m.store.getDb();
+    expect(db.jobs['BC-5001']).toBeUndefined();
+    expect(Object.keys(db.jobs)).toHaveLength(30);
+    expect(m.paging.getPaging(m.jobs.feedKey(q))).toMatchObject({ hasMore: true });
+
+    await m.jobs.loadMoreFeed(q);
+    expect((fake.calls.filter((c) => c.name === 'feed_jobs')[1].args as Record<string, unknown>).p_cursor).toEqual({
+      r: 29,
+      k: 971,
+      id: 'BC-6029'
+    });
+    db = m.store.getDb();
+    expect(db.jobs['BC-7000']).toBeDefined();
+    expect(m.paging.getPaging(m.jobs.feedKey(q)).hasMore).toBe(false);
+  });
+
+  it('a search brings matching companies; workers only for a company (L17)', async () => {
+    const q = (search: string) => ({
+      location: 'São Paulo, SP',
+      from: { lat: -23.56, lon: -46.65 },
+      radiusKm: null,
+      oficio: null,
+      quando: null,
+      sort: 'perto' as const,
+      search,
+      allCities: false
+    });
+    let fake = server('ana', { rpc: { feed_jobs: () => ({ data: [], error: null }) } });
+    let m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await m.jobs.loadFeed(q('outra'));
+    expect((fake.calls.filter((c) => c.name === 'feed_jobs')[0].args as Record<string, unknown>).p_search).toBe(
+      'outra'
+    );
+    expect(m.store.getDb().companies['u-outra']).toBeDefined();
+    expect(
+      fake.calls.some((c) => c.kind === 'from' && c.name === 'workers' && c.ops?.some((o) => o[0] === 'ilike'))
+    ).toBe(false);
+
+    fake = server('obra', { rpc: { feed_jobs: () => ({ data: [], error: null }) } });
+    m = await load(fake);
+    await m.auth.signIn('obra@exemplo.com', 'segredo123');
+    await m.jobs.loadFeed(q('ana'));
+    expect(
+      fake.calls.some((c) => c.kind === 'from' && c.name === 'workers' && c.ops?.some((o) => o[0] === 'ilike'))
+    ).toBe(true);
   });
 
   it('a decision is one RPC; a refusal comes back with the server message', async () => {

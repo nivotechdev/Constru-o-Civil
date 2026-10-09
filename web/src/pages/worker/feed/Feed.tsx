@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CityPicker } from '../../../components/CityPicker';
 import { useQuery } from '../../../hooks/useQuery';
 import { useDb, useRole, useUI } from '../../../hooks/useStore';
-import { loadFeed } from '../../../services/jobs';
+import { feedKey, loadFeed, loadMoreFeed, type FeedQuery } from '../../../services/jobs';
+import { usePaging } from '../../../hooks/usePaging';
 import { activeJobs, isJobClosed } from '../../../services/selectors';
 import { isExpired } from '../../../utils/jobInfo';
 import { DesktopFeed } from './DesktopFeed';
@@ -15,6 +16,7 @@ import {
   homeCity,
   orderJobs,
   passesFilters,
+  radiusOf,
   searchMatches,
   setFeed,
   type FeedUI
@@ -25,15 +27,33 @@ import { MobileFeed } from './MobileFeed';
  * The mural. Both layouts are in the page (CSS shows one), so the lists they show are worked out
  * here, once per change of the data or of the filters/search they depend on.
  */
+/** The value, once it stopped changing for `ms`. */
+function useDebounced<T>(value: T, ms: number): T {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSettled(value), ms);
+    return () => window.clearTimeout(t);
+  }, [value, ms]);
+  return settled;
+}
+
 export default function Feed() {
   const db = useDb();
   const role = useRole();
   const [ui] = useUI<FeedUI>(FEED_KEY, () => feedDefaults(db, role));
-  const query = useQuery('feed', loadFeed);
-  const { location, origin, oficio, dist, quando, sort } = ui;
+  const { location, origin, oficio, dist, quando, sort, allCities } = ui;
   const q = ui.search.trim();
   const home = homeCity(db, role);
   const from = useMemo(() => feedOrigin({ location, origin }, db, role), [location, origin, db, role]);
+  // X01: the server lists the mural for these filters; a typed search waits a moment before asking.
+  const search = useDebounced(q, 400);
+  const feedQuery: FeedQuery = useMemo(
+    () => ({ location, from, radiusKm: radiusOf(dist), oficio, quando, sort, search, allCities }),
+    [location, from, dist, oficio, quando, sort, search, allCities]
+  );
+  const key = feedKey(feedQuery);
+  const query = useQuery(key, () => loadFeed(feedQuery));
+  const paging = usePaging(key, () => loadMoreFeed(feedQuery));
 
   // Open jobs: not closed, not full, and whose last day hasn't passed (expired jobs leave the mural).
   const open = useMemo(() => activeJobs(db).filter((j) => !isJobClosed(db, j) && !isExpired(j)), [db]);
@@ -47,13 +67,16 @@ export default function Feed() {
       ),
     [open, role, location, oficio, dist, quando, sort, from]
   );
-  const found = useMemo(() => (q ? searchMatches(db, open, q, role, from) : null), [db, open, q, role, from]);
+  const found = useMemo(
+    () => (q ? searchMatches(db, open, q, role, from, { location, allCities }) : null),
+    [db, open, q, role, from, location, allCities]
+  );
   const chips = useMemo(
     () => activeFilters({ location, oficio, dist, quando }, home),
     [location, oficio, dist, quando, home]
   );
 
-  const layout = { db, role, ui, ordered, found, chips, query, home };
+  const layout = { db, role, ui, ordered, found, chips, query, home, paging };
   return (
     <div>
       <MobileFeed {...layout} />

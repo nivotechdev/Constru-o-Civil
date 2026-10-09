@@ -12,13 +12,27 @@ import * as store from './store';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/jobs';
 import * as remoteData from './remote/data';
+import { feedKey, type FeedQuery } from './feedQuery';
 
 // ---- reads ----
 
 /** The mural's open jobs. Backend: select open jobs (+ companies) near the worker; put them in the store. */
-export async function loadFeed(): Promise<void> {
-  if (!IS_DEMO) return remoteData.loadFeed();
+/**
+ * The mural's first page. Demo: everything is already here (the screen filters and orders it). Backend:
+ * the RPC feed_jobs (city or radius, boosted → urgent → order, 30 per page) and, for a search, the
+ * companies (and, for a company, the workers) that match.
+ */
+export type { FeedQuery };
+export { feedKey };
+
+export async function loadFeed(q?: FeedQuery): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadFeed(q);
   await mockLatency(450);
+}
+
+/** "Carregar mais" in the mural: the next page. Demo: nothing more to load. */
+export async function loadMoreFeed(q: FeedQuery): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadFeed(q, true);
 }
 
 /** One job with its company. Backend: select the job by id (+ company, + my application). */

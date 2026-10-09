@@ -26,6 +26,7 @@ import {
   WORKER_COLUMNS
 } from './merge';
 import { setBootStatus, withTimeout } from '../boot';
+import { clearPaging } from '../paging';
 
 /** Where the links sent by e-mail come back to: this page, without a route (see handleAuthRedirect). */
 export function authRedirectUrl(): string {
@@ -204,6 +205,7 @@ export async function leaveSession(): Promise<void> {
   await stopRealtime().catch(() => undefined);
   clearSessionData();
   clearQueries();
+  clearPaging();
   resetHistory();
 }
 

@@ -355,6 +355,23 @@ export interface SupabaseDatabase {
       get_contact: { Args: { p_application_id: string }; Returns: { name: string; phone: string }[] };
       get_payment: { Args: { p_payment_id: string }; Returns: BoostPaymentRow };
       get_job_addresses: { Args: { p_job_ids: string[] }; Returns: JobAddressRow[] };
+      feed_jobs: {
+        Args: {
+          p_city: string;
+          p_uf: string;
+          p_lat: number;
+          p_lon: number;
+          p_radius_km?: number | null;
+          p_oficio?: string | null;
+          p_quando?: string | null;
+          p_search?: string | null;
+          p_all_cities?: boolean;
+          p_sort?: string;
+          p_limit?: number;
+          p_cursor?: Json | null;
+        };
+        Returns: Json[];
+      };
       export_my_data: { Args: never; Returns: Json };
       delete_my_account: { Args: { p_confirm_commitments: boolean }; Returns: undefined };
     };

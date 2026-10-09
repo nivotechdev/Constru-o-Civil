@@ -32,6 +32,8 @@ export interface FeedUI {
   quando: string | null;
   sort: Sort;
   notifyUrgent: boolean;
+  /** The search looks in every city, not only `location` (L17). */
+  allCities: boolean;
 }
 
 /** The filters that decide which jobs the mural lists, and the point distances are measured from. */
@@ -62,7 +64,8 @@ export function feedDefaults(db: Database, role: Role): FeedUI {
     dist: ALL_CITY,
     quando: null,
     sort: 'perto',
-    notifyUrgent: true
+    notifyUrgent: true,
+    allCities: false
   };
 }
 
@@ -163,19 +166,42 @@ export interface SearchMatches {
  * What a search finds among the open jobs, the companies and the workers. Accents and case are ignored,
  * and a trade is found by its name or any synonym ("hidráulica" finds the encanador jobs).
  */
-export function searchMatches(db: Database, open: Job[], query: string, role: Role, from: GeoPoint): SearchMatches {
+export function searchMatches(
+  db: Database,
+  open: Job[],
+  query: string,
+  role: Role,
+  from: GeoPoint,
+  where: { location: string; allCities: boolean } = { location: '', allCities: true }
+): SearchMatches {
   const q = fold(query.trim());
   const has = (...parts: string[]) => fold(parts.join(' ')).includes(q);
+  // L17: the search stays in the chosen city, unless the person asks for every city.
+  const inCity = (j: Job) => where.allCities || cityLabel(j) === where.location;
   return {
     jobs: orderJobs(
       open.filter(
-        (j) => has(jobTitle(j), companyOf(db, j).name, placeText(j)) || oficioSearchText(j.oficioId).includes(q)
+        (j) =>
+          inCity(j) &&
+          (has(jobTitle(j), companyOf(db, j).name, placeText(j)) || oficioSearchText(j.oficioId).includes(q))
       ),
       role,
       'perto',
       from
     ),
-    companies: allCompanies(db).filter((c) => has(c.name, c.location)),
-    workers: allWorkers(db).filter((w) => has(w.name, workerPlace(w)) || oficioSearchText(w.oficioId).includes(q))
+    companies: allCompanies(db).filter((c) => c.name !== 'Construtora (conta excluída)' && has(c.name, c.location)),
+    // L17: workers show up only for companies.
+    workers:
+      role === 'recrutador'
+        ? allWorkers(db).filter(
+            (w) =>
+              w.name !== 'Conta excluída' && (has(w.name, workerPlace(w)) || oficioSearchText(w.oficioId).includes(q))
+          )
+        : []
   };
+}
+
+/** The radius of "Até X km" in km, or `null` for the whole city. */
+export function radiusOf(dist: string): number | null {
+  return dist === ALL_CITY ? null : parseInt(dist.replace(/\D/g, ''), 10) || null;
 }

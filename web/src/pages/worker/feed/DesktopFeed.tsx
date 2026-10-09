@@ -10,14 +10,14 @@ import { navigate } from '../../../services/router';
 import { workerPlace } from '../../../utils/workerInfo';
 import type { Database, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
-import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
+import { FeedGrid, LoadMore, NoJobsState, SearchPill, SearchScope } from './FeedParts';
 import { noFilters, setFeed, type SearchMatches } from './feedUI';
 import { oficioNome } from '../../../services/catalog';
 import type { FeedLayoutProps } from './MobileFeed';
 import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
 
 /** The mural from 770px up (tablet and desktop): a wide search bar, the filters button and the grid. */
-export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home }: FeedLayoutProps) {
+export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, paging }: FeedLayoutProps) {
   const count = chips.length;
   const browse = (
     <div className="flex flex-col gap-6">
@@ -33,7 +33,10 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home }
         </div>
       ) : null}
       {ordered.length ? (
-        <FeedGrid db={db} role={role} jobs={ordered} />
+        <>
+          <FeedGrid db={db} role={role} jobs={ordered} />
+          <LoadMore paging={paging} />
+        </>
       ) : (
         <NoJobsState location={ui.location} home={home} />
       )}
@@ -69,7 +72,16 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home }
       <div className="page-x pt-8 pb-20">
         <div className="mural-frame">
           <QueryView query={query} skeleton={<TileGridSkeleton count={8} />}>
-            {() => (found ? <SearchResults db={db} role={role} search={ui.search} found={found} /> : browse)}
+            {() =>
+              found ? (
+                <div className="flex flex-col gap-4">
+                  <SearchResults db={db} role={role} search={ui.search} found={found} />
+                  <SearchScope location={ui.location} allCities={ui.allCities} />
+                </div>
+              ) : (
+                browse
+              )
+            }
           </QueryView>
         </div>
       </div>

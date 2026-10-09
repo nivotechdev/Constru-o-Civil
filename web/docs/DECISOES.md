@@ -494,3 +494,20 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   construtora dona.
 - **"Publicar de novo"** (adianta a F03) numa vaga encerrada, excluída ou vencida: abre o formulário já
   preenchido (ofício, endereço, valor, pessoas, requisitos, descrição, fotos), com as datas em branco.
+
+## X01 + Y10/Y11/L17 — Mural paginado no servidor
+
+- O mural lê a RPC **`feed_jobs`** em páginas de 30 (cursor por posição, sem `offset`), já filtrado no banco:
+  só vagas abertas com posição livre e dentro do prazo; da cidade escolhida ou do raio (coluna
+  `area_geog` + índice GiST; o raio usa o centro da área da vaga, nunca o ponto exato); ofício, "Hoje",
+  "Amanhã", "Semana"; busca sem acento no título, ofício, bairro e construtora.
+- **Ordem: impulsionadas → urgentes → a ordem escolhida** (perto, recentes, maior diária) — a mesma regra
+  em `feedUI.orderJobs` para a demonstração.
+- "Carregar mais" no fim da lista (`services/paging.ts` + `hooks/usePaging.ts`). A página volta do zero ao
+  trocar filtro, cidade, busca ou conta.
+- **Y10**: ao abrir a primeira página, as vagas da cidade que o aparelho ainda mostrava e o servidor não
+  devolveu são relidas; as que sumiram (excluídas) saem da tela, as encerradas/lotadas ficam marcadas como
+  tal e saem do mural pelos filtros.
+- **Y11**: a busca procura na cidade escolhida (ou no raio); "Buscar em todas as cidades" amplia. A tela diz
+  onde está procurando.
+- **L17**: a busca de pessoas mostra construtoras para todos e trabalhadores só para construtoras.

@@ -100,6 +100,28 @@ select value from public.app_config where key = 'storage_public_base';
 select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and cmd = 'SELECT'; -- 0
 ```
 
+### 8. `20261011000100_y01_y04_ciclo_vaga.sql` (Y01 + Y04)
+
+Status `expirada`; o último dia da vaga ("a combinar" vale 30 dias depois de publicada); a vaga fecha sozinha
+quando a equipe toda concluiu; a rotina diária conclui quem trabalhou (2 dias depois do último dia) e, em vaga
+vencida, avisa quem esperava e expira pré-seleções não confirmadas; `update_job` reabre a vaga ao aumentar as vagas.
+
+```sql
+select 'expirada' = any(enum_range(null::public.application_status)::text[]);                 -- true
+select proname from pg_proc where pronamespace = 'public'::regnamespace
+   and proname in ('job_last_day', 'job_close_if_team_done') order by 1;                   -- 2 linhas
+```
+
+### 9. `20261011000200_x01_mural.sql` (X01 + Y10/Y11/L17)
+
+Mural paginado no servidor: `feed_jobs` (cidade ou raio, ofício, quando, busca sem acento, impulsionadas e
+urgentes primeiro, cursor), coluna `area_geog` com índice GiST e índices das consultas mais usadas.
+
+```sql
+select count(*) from pg_proc where proname = 'feed_jobs' and pronamespace = 'public'::regnamespace;   -- 1
+select indexname from pg_indexes where tablename = 'jobs' and indexname in ('jobs_area_geog_idx', 'jobs_open_city_idx'); -- 2 linhas
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
