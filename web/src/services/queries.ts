@@ -46,9 +46,11 @@ export function getQuery(key: string): QueryState {
  */
 const STALE_MS = 20_000;
 const loadedAt = new Map<string, number>();
+const loaders = new Map<string, () => Promise<void>>();
 
 /** Loads `key` unless it is already loaded or loading. `force` reloads it (pull to refresh, retry). */
 export function runQuery(key: string, loader: () => Promise<void>, force = false): Promise<void> {
+  loaders.set(key, loader);
   const current = states.get(key);
   const pending = inFlight.get(key);
   if (!force && current?.status === 'ready') {
@@ -77,10 +79,32 @@ export function runQuery(key: string, loader: () => Promise<void>, force = false
   return run;
 }
 
+/** The screens a candidacy notice changes: my candidacies, the history, a job and its candidates. */
+const CANDIDACY_KEY = /^(my-applications|history|job:.+|candidates:.+)$/;
+
+/**
+ * Y12: a notice about a candidacy arrived (or was opened) — the screens it is about read their data again,
+ * so "Você avançou" and "Gerenciar vaga" don't show the status from before the notice. `visible` reads
+ * with the loading state (opening the notice goes to one of these screens); otherwise in the background.
+ */
+export function refreshCandidacies(visible = false): Promise<void> {
+  const keys = [...states.keys()].filter((k) => CANDIDACY_KEY.test(k) && states.get(k)?.status !== 'loading');
+  return Promise.all(
+    keys.map((key) => {
+      const loader = loaders.get(key);
+      if (!loader) return undefined;
+      if (visible) return runQuery(key, loader, true);
+      loadedAt.set(key, 0);
+      return runQuery(key, loader);
+    })
+  ).then(() => undefined);
+}
+
 /** Forgets every loaded key (after signing out, the next account loads its own data). */
 export function clearQueries(): void {
   states = new Map();
   inFlight.clear();
   loadedAt.clear();
+  loaders.clear();
   listeners.forEach((fn) => fn());
 }

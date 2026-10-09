@@ -390,6 +390,35 @@ describe('remote: data and actions', () => {
     expect(m.paging.getPaging(m.jobs.feedKey(q)).hasMore).toBe(false);
   });
 
+  it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
+    await load(server('ana'));
+    const queries = await import('../services/queries');
+    const notifications = await import('../services/notifications');
+    const mine = vi.fn(() => Promise.resolve());
+    const feed = vi.fn(() => Promise.resolve());
+    await queries.runQuery('my-applications', mine);
+    await queries.runQuery('feed', feed);
+    notifications.noticeOpened({
+      id: 'n1',
+      kind: 'pre_selecionado',
+      title: 'Você avançou',
+      text: '',
+      workerId: 'u-ana',
+      companyId: null,
+      target: '/selecionado/BC-5001',
+      createdAt: NOW,
+      readAt: null
+    });
+    // Opening it reads with the loading state, so the screen never shows the old status.
+    expect(queries.getQuery('my-applications').status).toBe('loading');
+    await new Promise((r) => setTimeout(r, 0));
+    // A notice arriving by Realtime reads in the background.
+    await queries.refreshCandidacies();
+    expect(mine).toHaveBeenCalledTimes(3);
+    expect(feed).toHaveBeenCalledTimes(1);
+    expect(queries.getQuery('my-applications').status).toBe('ready');
+  });
+
   it('a search brings matching companies; workers only for a company (L17)', async () => {
     const q = (search: string) => ({
       location: 'São Paulo, SP',

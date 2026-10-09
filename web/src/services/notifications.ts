@@ -1,12 +1,13 @@
 // Notifications: each one is for one worker or one company and is created by the change it tells about
 // (see `withNotification`, used by the status machine). Each function says what the real backend does.
-import type { AppNotification, Database, Session } from '../types/models';
+import type { AppNotification, Database, NotificationKind, Session } from '../types/models';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { getDb, getSession, transact } from './store';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/actions';
 import * as remoteData from './remote/data';
+import { refreshCandidacies } from './queries';
 
 export type NotificationInput = Omit<AppNotification, 'id' | 'createdAt' | 'readAt'>;
 
@@ -24,6 +25,19 @@ export function withNotification(db: Database, n: NotificationInput, at: string)
     readAt: null
   };
   return { ...db, notifications: [notification, ...db.notifications] };
+}
+
+/** Notices about a candidacy (everything but boosts and new-job alerts). */
+export function isCandidacyNotice(kind: NotificationKind): boolean {
+  return kind !== 'impulsionamento' && kind !== 'bico_urgente';
+}
+
+/**
+ * Opening a notice (Y12). Backend: the candidacy screens read again before showing, so the screen the
+ * notice opens has the new status. The demo store already has it.
+ */
+export function noticeOpened(n: AppNotification): void {
+  if (!IS_DEMO && isCandidacyNotice(n.kind)) void refreshCandidacies(true);
 }
 
 /** The logged-in account's notifications, newest first. */

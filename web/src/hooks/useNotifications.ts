@@ -1,5 +1,10 @@
 import { errorMessage } from '../services/errors';
-import { markAllNotificationsRead, markNotificationRead, notificationsFor } from '../services/notifications';
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+  noticeOpened,
+  notificationsFor
+} from '../services/notifications';
 import { navigate } from '../services/router';
 import { showToast } from '../services/toast';
 import type { AppNotification } from '../types/models';
@@ -21,6 +26,7 @@ export function useNotifications() {
     /** Opens what the notification is about (and marks it as read). */
     open: (n: AppNotification) => {
       if (!n.readAt) markNotificationRead(n.id).catch(fail);
+      noticeOpened(n);
       navigate(n.target ?? '/notificacoes');
     }
   };

@@ -511,3 +511,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Y11**: a busca procura na cidade escolhida (ou no raio); "Buscar em todas as cidades" amplia. A tela diz
   onde está procurando.
 - **L17**: a busca de pessoas mostra construtoras para todos e trabalhadores só para construtoras.
+
+## Y12 — Aviso de candidatura atualiza as telas
+
+- Aviso que chega pelo Realtime (exceto impulsionamento e alerta de bico novo) relê em segundo plano as telas
+  de candidatura já abertas: minhas candidaturas, histórico, vaga e candidatos (`queries.refreshCandidacies`).
+- Abrir um aviso relê essas telas **com carregamento**, antes de mostrar: "Você avançou" nunca abre com o
+  status de antes do aviso. Na demonstração o store já tem o status novo.

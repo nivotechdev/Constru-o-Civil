@@ -8,9 +8,9 @@
 //  - a sign-up waiting for the e-mail confirmation has no Auth session yet: it is kept as a "pending"
 //    account, so /verificar-email can show the address and resend the link.
 import type { RealtimeChannel, User } from '@supabase/supabase-js';
-import type { Role } from '../../types/models';
+import type { NotificationKind, Role } from '../../types/models';
 import type { TableRow } from '../../types/supabase';
-import { clearQueries, runQuery } from '../queries';
+import { clearQueries, refreshCandidacies, runQuery } from '../queries';
 import { navigate, resetHistory } from '../router';
 import { clearSessionData, getSession, setSessionAccount, upsertAccount } from '../store';
 import { showToast } from '../toast';
@@ -27,6 +27,7 @@ import {
 } from './merge';
 import { setBootStatus, withTimeout } from '../boot';
 import { clearPaging } from '../paging';
+import { isCandidacyNotice } from '../notifications';
 
 /** Where the links sent by e-mail come back to: this page, without a route (see handleAuthRedirect). */
 export function authRedirectUrl(): string {
@@ -56,9 +57,12 @@ async function startRealtime(account: TableRow<'accounts'>): Promise<void> {
   const filter = account.worker_id ? `worker_id=eq.${account.worker_id}` : `company_id=eq.${account.company_id}`;
   channel = client
     .channel('notificacoes-' + account.id)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter }, (payload) =>
-      apply(addNotification(payload.new as TableRow<'notifications'>))
-    )
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter }, (payload) => {
+      const row = payload.new as TableRow<'notifications'>;
+      apply(addNotification(row));
+      // Y12: the candidacy screens read the new status at once.
+      if (isCandidacyNotice(row.kind as NotificationKind)) void refreshCandidacies();
+    })
     .subscribe();
 }
 
