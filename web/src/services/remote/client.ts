@@ -85,3 +85,32 @@ export async function currentUserId(): Promise<string> {
   if (!id) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
   return id;
 }
+
+/** What the Edge Functions answer when they refuse: { erro: 'BC409' | …, mensagem }. */
+export interface FunctionRefusal {
+  erro?: string;
+  mensagem?: string;
+}
+
+/**
+ * Calls an Edge Function and returns its JSON. A refusal comes back as the ServiceError of its code (the
+ * functions use the RPCs' codes, BC401…), with the function's message; a network failure is `offline`.
+ */
+export async function invokeFunction<T>(name: string, body: unknown): Promise<T> {
+  const client = await db();
+  let result: { data: unknown; error: unknown };
+  try {
+    result = await client.functions.invoke(name, { body: body as Record<string, unknown> });
+  } catch (e) {
+    throw toServiceError(e);
+  }
+  if (!result.error) return result.data as T;
+  const context = (result.error as { context?: Response }).context;
+  const answer: FunctionRefusal | null =
+    context && typeof context.json === 'function' ? await context.json().catch(() => null) : null;
+  if (!answer?.erro) throw toServiceError(result.error);
+  const code = RPC_CODES[answer.erro];
+  if (code) throw serviceError(code, answer.mensagem);
+  if (context?.status === 503) throw serviceError('conflito', answer.mensagem ?? 'Isso ainda não está disponível.');
+  throw serviceError('falha_demo', answer.mensagem);
+}

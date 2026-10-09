@@ -258,3 +258,60 @@ candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem p
   "Abrir meu e-mail" vira "Já confirmei meu e-mail" e mostra o motivo quando ainda não confirmou;
   mensagem do login para e-mail/senha incorretos; contagem de candidatos no perfil da construtora
   vinda do servidor.
+
+---
+
+# Rodada 2 — pronto para produção
+
+Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Cada item diz o ID.
+
+## Como o banco é atualizado
+
+- **Migrations novas ficam prontas e testadas, aplicadas pelo painel.** O conector do Supabase usado no
+  desenvolvimento exige uma aprovação manual para qualquer comando com `DROP`/`DELETE` (mesmo dentro de
+  função), e essa aprovação não chega numa sessão automática. Contornar essa trava não é uma opção. Então
+  cada migration é testada num Postgres igual ao do Supabase (`supabase/tests/local/setup.sh`, imagem
+  `supabase/postgres` 17.6 + as migrations do app antigo e do novo) e a ordem para aplicar está em
+  `supabase/APLICAR.md`.
+- **Testes SQL** (`supabase/tests/*.sql`) rodam cada RPC como o app chama, com a sessão de uma conta
+  (`pg_temp.login`), e terminam em `rollback`: dá para rodar no banco de verdade sem deixar rastro.
+- **O app antigo (`app/`) será desligado.** O front novo substitui o antigo; as funções antigas abertas a
+  visitantes são fechadas (Z08) mesmo que o antigo deixe de conseguir excluir conta ou reiniciar cadastro.
+
+## Z01 — RPCs de candidatura, vaga e conta
+
+- `APLICAR-NO-SQL-EDITOR.sql` saiu do repositório: virou a migration `20261010000100_z01_rpcs_candidatura.sql`,
+  já com as correções Y02, Y03, Y05, Y06, Y08 e Y15 do lado do banco (o modo de demonstração recebe as
+  mesmas regras na Fase B).
+- **Posição ocupada** = pré-selecionado, contratado **ou concluído** (`job_holding`). Assim uma diária
+  concluída não "abre" a vaga de novo no mural.
+- **Excluir conta exige login de até 5 minutos** (o `amr` do token). O app já confere a senha logo antes
+  (o que renova o login); quem chamar a RPC com um token velho recebe "confirme sua senha de novo".
+
+## Z04 — Salvar vaga
+
+- **`insert` simples**, e "já estava salva" (código 23505) conta como sucesso: a tabela não tem permissão
+  de UPDATE, então `upsert` era recusado.
+
+## Z02 — Impulsionar só pagando
+
+- **Provedor: Mercado Pago** (PIX e cartão). Ainda não há conta configurada: no modo real o Impulsionar
+  fica **escondido** (`services/features.ts` › `FEATURES.payments`, ligado por `VITE_PAGAMENTOS=mercadopago`
+  e `VITE_MP_PUBLIC_KEY`). Os botões "Impulsionar" somem do Gerenciar vaga e da tela "Vaga publicada", o
+  texto "Você paga só se impulsionar" vira "Publicar é grátis" e as rotas `/impulsionar/…` mostram
+  "Impulsionar ainda não está disponível".
+- **No banco não existe mais simulação**: `simulate_pix_paid`, `pay_with_card` e `start_pix_payment` (que
+  gerava um PIX de mentira) foram apagadas. Abrir, gravar e confirmar cobrança são funções só do
+  `service_role`, chamadas pelas Edge Functions `criar-cobranca` e `webhook-pagamento`.
+- **Cartão**: no modo real, o formulário é o do próprio Mercado Pago (Card Payment Brick, campos em
+  iframes do provedor); o app recebe só um token de uso único. À vista (1 parcela), sem débito.
+- **PIX**: QR code e "copia e cola" do provedor, válidos por 30 min; a tela consulta o pagamento a cada 5 s
+  e muda sozinha quando o webhook confirma (X08).
+- **Um pagamento aguardando por vaga** (Y13): gerar outro código cancela o anterior (status `cancelado`).
+  Se o código cancelado for pago mesmo assim, o dinheiro entrou: o destaque soma a partir do fim do atual.
+- **Pagamento confirmado com a vaga já fechada/cheia/vencida** vira `reembolso_pendente`, a construtora é
+  avisada ("Pagamento será devolvido") e a devolução é feita pelo painel do Mercado Pago (F11 mostra o
+  status). Reembolso automático fica para quando houver conta no provedor.
+- **Os dados do cartão da demonstração** ficam no estado da própria tela (somem ao sair), nunca no store (Y14).
+- **Suporte**: WhatsApp `54 9473-1661` e `nivotech.dev@gmail.com`, como informado. O número parece ter um
+  dígito a menos para um celular (são 10 dígitos com o DDD); confira e ajuste em `VITE_SUPORTE_WHATSAPP`.

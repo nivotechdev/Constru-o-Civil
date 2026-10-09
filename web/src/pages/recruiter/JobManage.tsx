@@ -42,6 +42,7 @@ import { ContactButton } from '../../components/ContactButton';
 import { boostBlocker, isBoosted } from '../../services/payments';
 import { dateTimeLabel } from '../../utils/dates';
 import { jobPhotos } from '../../utils/jobPhotos';
+import { FEATURES } from '../../services/features';
 
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
@@ -145,7 +146,7 @@ export default function JobManage({ params }: ScreenProps) {
     </>
   );
   // Boosting is offered whenever the job is open and not boosted already.
-  const canBoost = !boostBlocker(db, job);
+  const canBoost = FEATURES.payments && !boostBlocker(db, job);
   const boostButton = (className?: string) =>
     canBoost ? (
       <Button
@@ -267,9 +268,13 @@ export default function JobManage({ params }: ScreenProps) {
               <EmptyState
                 icon="users"
                 title="Nenhum candidato ainda"
-                description="Vagas com valor acima da média da região costumam receber candidato no mesmo dia. Você também pode impulsionar."
-                actionLabel="Impulsionar vaga"
-                onAction={() => navigate('/impulsionar/' + job.id)}
+                description={
+                  canBoost
+                    ? 'Quando alguém se candidatar, aparece aqui e você recebe um aviso. Para mais gente ver a vaga, impulsione.'
+                    : 'Quando alguém se candidatar, aparece aqui e você recebe um aviso.'
+                }
+                actionLabel={canBoost ? 'Impulsionar vaga' : null}
+                onAction={canBoost ? () => navigate('/impulsionar/' + job.id) : null}
               />
             )}
           </div>

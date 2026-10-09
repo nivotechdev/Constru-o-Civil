@@ -17,6 +17,8 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { placeText } from '../../utils/jobInfo';
 import { getJob } from '../../services/selectors';
+import { FEATURES } from '../../services/features';
+import { BoostUnavailable } from './BoostPayment';
 
 export default function BoostJob({ params }: ScreenProps) {
   const db = useDb();
@@ -33,6 +35,7 @@ export default function BoostJob({ params }: ScreenProps) {
     );
   const job = getJob(db, params.id);
   if (!job) return <JobNotFound />;
+  if (!FEATURES.payments) return <BoostUnavailable onBack={() => navigate('/vaga-gerenciar/' + job.id)} />;
   const chosen = BOOST_PLANS.find((p) => p.id === ui.plan) ?? BOOST_PLANS[0];
   const blocker = boostBlocker(db, job);
   if (blocker) {

@@ -276,7 +276,12 @@ export interface BoostPlan {
 }
 
 export type PaymentMethod = 'pix' | 'cartao';
-export type PaymentStatus = 'aguardando' | 'confirmado' | 'recusado' | 'expirado';
+/**
+ * aguardando → confirmado (paid: the job is boosted) · recusado (card declined) · expirado (PIX not paid
+ * in time) · cancelado (a new PIX code replaced it) · reembolso_pendente (paid, but the job could no
+ * longer be boosted: the money goes back).
+ */
+export type PaymentStatus = 'aguardando' | 'confirmado' | 'recusado' | 'expirado' | 'cancelado' | 'reembolso_pendente';
 
 /** One payment for a boost. Only a confirmed one puts the job at the top (B08). */
 export interface BoostPayment {
@@ -289,6 +294,8 @@ export interface BoostPayment {
   status: PaymentStatus;
   /** PIX "copia e cola" (fictitious in the demo). */
   pixCode: string | null;
+  /** The PIX QR code as a PNG in base64, from the payment provider (real mode only). */
+  pixQrBase64?: string | null;
   /** Last 4 digits of the card used. */
   cardLast4: string | null;
   /** ISO timestamps. */

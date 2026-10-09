@@ -1,7 +1,8 @@
-// Paying for a boost: PIX (fictitious QR code and "copia e cola", waiting state and a demo button that
-// stands in for the bank) or card (masked fields, checked before sending; a number ending in 0000 is
-// declined). The job goes to the top of the mural only once the payment is confirmed.
-import { useEffect, useMemo, useState } from 'react';
+// Paying for a boost: PIX (QR code and "copia e cola", a waiting state that updates by itself) or card.
+// Real mode: the PIX comes from the payment provider and the card form is the provider's own (the card
+// number never touches the app). Demo: a fictitious QR, a button that stands in for the bank, and a
+// card form whose number ending in 0000 is declined. The job goes to the top only once paid.
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -9,6 +10,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
+import { MercadoPagoCardForm } from '../../components/MercadoPagoCardForm';
 import { ScreenLoading } from '../../components/QueryView';
 import { ResultIcon } from '../../components/ResultIcon';
 import { PageSkeleton } from '../../components/Skeleton';
@@ -20,11 +22,14 @@ import { loadJob } from '../../services/jobs';
 import {
   boostBlocker,
   getPayment,
+  type ProviderCardToken,
   payWithCard,
   PIX_MINUTES,
   simulatePixPaid,
   startPixPayment
 } from '../../services/payments';
+import { FEATURES } from '../../services/features';
+import { IS_DEMO } from '../../services/mode';
 import { goBack, navigate } from '../../services/router';
 import { showToast } from '../../services/toast';
 import type { PaymentMethod } from '../../types/models';
@@ -36,8 +41,6 @@ import { dateTimeLabel } from '../../utils/dates';
 interface PayUI {
   method: PaymentMethod;
   paymentId: string | null;
-  card: CardInput;
-  cardErrors: CardErrors;
 }
 
 const EMPTY_CARD: CardInput = { number: '', name: '', expiry: '', cvv: '' };
@@ -56,7 +59,8 @@ export default function BoostPayment({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
   const key = `boost-pay:${params.id}:${params.plan}`;
-  const [ui, setUi] = useUI<PayUI>(key, { method: 'pix', paymentId: null, card: EMPTY_CARD, cardErrors: {} });
+  // Only the method and the payment in progress survive navigation; the card never goes to the store (Y14).
+  const [ui, setUi] = useUI<PayUI>(key, { method: 'pix', paymentId: null });
   const back = () => goBack('/impulsionar/' + params.id);
   const pix = useAction(startPixPayment, (p) => setUi({ paymentId: p.id }));
   const paid = useAction(simulatePixPaid);
@@ -70,10 +74,49 @@ export default function BoostPayment({ params }: ScreenProps) {
     if (expiredNow && ui.paymentId) getPayment(ui.paymentId).catch(() => undefined);
   }, [expiredNow, ui.paymentId]);
 
+  // X08: a PIX waiting for the bank updates by itself (the webhook confirms it on the server).
+  const waiting = payment?.status === 'aguardando';
+  useEffect(() => {
+    if (!waiting || !ui.paymentId) return;
+    const id = ui.paymentId;
+    const t = window.setInterval(() => getPayment(id).catch(() => undefined), 5000);
+    return () => window.clearInterval(t);
+  }, [waiting, ui.paymentId]);
+
+  // X08: a finished payment (confirmed or not) doesn't stay on this screen for the next boost.
+  const finished = payment !== undefined && payment.status !== 'aguardando';
+  const finishedRef = useRef(finished);
+  useEffect(() => {
+    finishedRef.current = finished;
+  });
+  useEffect(
+    () => () => {
+      if (finishedRef.current) setUi({ paymentId: null });
+    },
+    [setUi]
+  );
+
+  if (!FEATURES.payments) return <BoostUnavailable onBack={() => navigate('/vaga-gerenciar/' + params.id)} />;
+
   if (query.status !== 'ready')
     return <ScreenLoading title="Pagamento" onBack={back} query={query} skeleton={<PageSkeleton />} />;
   const job = db.jobs[params.id];
   const plan = BOOST_PLANS.find((p) => p.id === params.plan);
+
+  if (payment?.status === 'reembolso_pendente') {
+    return (
+      <div className="flex flex-col">
+        <BackBar title="Pagamento" onBack={() => navigate('/vaga-gerenciar/' + params.id)} />
+        <EmptyState
+          icon="refresh-cw"
+          title="Pagamento será devolvido"
+          description="Recebemos o pagamento, mas a vaga não está mais aberta. Vamos devolver o valor pela mesma forma de pagamento."
+          actionLabel="Voltar para a vaga"
+          onAction={() => navigate('/vaga-gerenciar/' + params.id)}
+        />
+      </div>
+    );
+  }
 
   if (payment?.status === 'confirmado' && payment.boostEndsAt) {
     return (
@@ -106,16 +149,8 @@ export default function BoostPayment({ params }: ScreenProps) {
     );
   }
 
-  const setCard = (patch: Partial<CardInput>, field: keyof CardInput) =>
-    setUi((s) => ({ card: { ...s.card, ...patch }, cardErrors: { ...s.cardErrors, [field]: undefined } }));
-
-  const payByCard = () => {
-    const errors = validateCard(ui.card);
-    if (Object.keys(errors).length) {
-      setUi({ cardErrors: errors });
-      return;
-    }
-    void card.run(job.id, plan.id, ui.card);
+  const payWithToken = async (token: ProviderCardToken) => {
+    if (!(await card.run(job.id, plan.id, { token }))) throw new Error('recusado');
   };
 
   return (
@@ -185,68 +220,24 @@ export default function BoostPayment({ params }: ScreenProps) {
           ) : (
             <PixWaiting
               code={payment.pixCode ?? ''}
+              qrBase64={payment.pixQrBase64 ?? null}
               seconds={seconds}
               loading={paid.loading}
               error={paid.error}
               onPaid={() => void paid.run(payment.id)}
             />
           )
+        ) : IS_DEMO ? (
+          <DemoCardForm
+            price={plan.price}
+            loading={card.loading}
+            error={card.error}
+            onPay={(c) => void card.run(job.id, plan.id, { card: c })}
+          />
         ) : (
-          <div className="flex flex-col gap-4">
-            <Input
-              id="card-number"
-              label="Número do cartão"
-              placeholder="0000 0000 0000 0000"
-              icon="credit-card"
-              inputMode="numeric"
-              mono
-              value={ui.card.number}
-              error={ui.cardErrors.number}
-              onInput={(v) => setCard({ number: maskCardNumber(v) }, 'number')}
-            />
-            <Input
-              id="card-name"
-              label="Nome no cartão"
-              placeholder="Como está escrito no cartão"
-              value={ui.card.name}
-              error={ui.cardErrors.name}
-              maxLength={60}
-              onInput={(v) => setCard({ name: v.toUpperCase() }, 'name')}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                id="card-expiry"
-                label="Validade"
-                placeholder="MM/AA"
-                inputMode="numeric"
-                mono
-                value={ui.card.expiry}
-                error={ui.cardErrors.expiry}
-                onInput={(v) => setCard({ expiry: maskExpiry(v) }, 'expiry')}
-              />
-              <Input
-                id="card-cvv"
-                label="Código de segurança"
-                placeholder="123"
-                inputMode="numeric"
-                mono
-                value={ui.card.cvv}
-                error={ui.cardErrors.cvv}
-                onInput={(v) => setCard({ cvv: v.replace(/\D/g, '').slice(0, 4) }, 'cvv')}
-              />
-            </div>
-            <span className="text-xs text-concrete-500">
-              Demonstração: qualquer cartão válido é aprovado; um número terminado em 0000 é recusado.
-            </span>
+          <div className="flex flex-col gap-3">
+            <MercadoPagoCardForm amount={plan.priceCents / 100} onToken={payWithToken} />
             {card.error ? <FieldError message={card.error} /> : null}
-            <Button
-              label={`Pagar ${plan.price}`}
-              size="lg"
-              fullWidth
-              iconLeft="lock"
-              loading={card.loading}
-              onClick={payByCard}
-            />
           </div>
         )}
         <span className="text-sm text-concrete-500">
@@ -257,14 +248,122 @@ export default function BoostPayment({ params }: ScreenProps) {
   );
 }
 
+/** "Impulsionar" is off until the payment provider is configured (services/features.ts). */
+export function BoostUnavailable({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="flex flex-col">
+      <BackBar title="Impulsionar vaga" onBack={onBack} />
+      <EmptyState
+        icon="rocket"
+        title="Impulsionar ainda não está disponível"
+        description="Sua vaga já aparece no mural de graça. Avisamos quando der para colocá-la no topo."
+        actionLabel="Voltar para a vaga"
+        onAction={onBack}
+      />
+    </div>
+  );
+}
+
+/** The card typed in the demo. Local state only: it disappears when the screen closes (Y14). */
+function DemoCardForm({
+  price,
+  loading,
+  error,
+  onPay
+}: {
+  price: string;
+  loading: boolean;
+  error: string | null;
+  onPay: (card: CardInput) => void;
+}) {
+  const [card, setCardState] = useState<CardInput>(EMPTY_CARD);
+  const [errors, setErrors] = useState<CardErrors>({});
+  const setCard = (patch: Partial<CardInput>, field: keyof CardInput) => {
+    setCardState((c) => ({ ...c, ...patch }));
+    setErrors((e) => ({ ...e, [field]: undefined }));
+  };
+  const pay = () => {
+    const found = validateCard(card);
+    if (Object.keys(found).length) {
+      setErrors(found);
+      return;
+    }
+    onPay(card);
+  };
+  return (
+    <form
+      className="flex flex-col gap-4"
+      autoComplete="on"
+      onSubmit={(e) => {
+        e.preventDefault();
+        pay();
+      }}
+    >
+      <Input
+        id="card-number"
+        label="Número do cartão"
+        placeholder="0000 0000 0000 0000"
+        icon="credit-card"
+        inputMode="numeric"
+        autoComplete="cc-number"
+        mono
+        value={card.number}
+        error={errors.number}
+        onInput={(v) => setCard({ number: maskCardNumber(v) }, 'number')}
+      />
+      <Input
+        id="card-name"
+        label="Nome no cartão"
+        placeholder="Como está escrito no cartão"
+        autoComplete="cc-name"
+        value={card.name}
+        error={errors.name}
+        maxLength={60}
+        onInput={(v) => setCard({ name: v.toUpperCase() }, 'name')}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          id="card-expiry"
+          label="Validade"
+          placeholder="MM/AA"
+          inputMode="numeric"
+          autoComplete="cc-exp"
+          mono
+          value={card.expiry}
+          error={errors.expiry}
+          onInput={(v) => setCard({ expiry: maskExpiry(v) }, 'expiry')}
+        />
+        <Input
+          id="card-cvv"
+          label="Código de segurança"
+          placeholder="123"
+          inputMode="numeric"
+          autoComplete="cc-csc"
+          mono
+          value={card.cvv}
+          error={errors.cvv}
+          onInput={(v) => setCard({ cvv: v.replace(/\D/g, '').slice(0, 4) }, 'cvv')}
+        />
+      </div>
+      <span className="text-xs text-concrete-500">
+        Demonstração: qualquer cartão válido é aprovado; um número terminado em 0000 é recusado.
+      </span>
+      {error ? <FieldError message={error} /> : null}
+      <Button label={`Pagar ${price}`} type="submit" size="lg" fullWidth iconLeft="lock" loading={loading} />
+    </form>
+  );
+}
+
 function PixWaiting({
   code,
+  qrBase64,
   seconds,
   loading,
   error,
   onPaid
 }: {
   code: string;
+  qrBase64: string | null;
   seconds: number;
   loading: boolean;
   error: string | null;
@@ -289,8 +388,21 @@ function PixWaiting({
         {`Aguardando pagamento · vence em ${mm}:${ss}`}
       </div>
       <div className="flex flex-col items-center gap-2">
-        <FakeQr seed={code} />
-        <span className="text-xs text-concrete-400">QR code de demonstração</span>
+        {qrBase64 ? (
+          <img
+            src={`data:image/png;base64,${qrBase64}`}
+            alt="QR code do PIX"
+            className="w-48 h-48 bg-white rounded-card border border-concrete-200"
+          />
+        ) : IS_DEMO ? (
+          <>
+            <FakeQr seed={code} />
+            <span className="text-xs text-concrete-400">QR code de demonstração</span>
+          </>
+        ) : null}
+        <span className="text-sm text-concrete-700 text-center">
+          Abra o app do seu banco, escolha pagar com PIX e leia o QR code ou cole o código.
+        </span>
       </div>
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-semibold text-concrete-900">PIX copia e cola</span>
@@ -299,19 +411,27 @@ function PixWaiting({
           <Button label={copied ? 'Copiado' : 'Copiar'} variant="secondary" size="sm" iconLeft="copy" onClick={copy} />
         </div>
       </div>
-      {error ? <FieldError message={error} /> : null}
-      <Button
-        label="Simular pagamento confirmado"
-        variant="secondary"
-        size="lg"
-        fullWidth
-        iconLeft="circle-check"
-        loading={loading}
-        onClick={onPaid}
-      />
-      <span className="text-xs text-center text-concrete-500">
-        Demonstração: este botão faz o papel do banco confirmando o PIX.
-      </span>
+      {IS_DEMO ? (
+        <>
+          {error ? <FieldError message={error} /> : null}
+          <Button
+            label="Simular pagamento confirmado"
+            variant="secondary"
+            size="lg"
+            fullWidth
+            iconLeft="circle-check"
+            loading={loading}
+            onClick={onPaid}
+          />
+          <span className="text-xs text-center text-concrete-500">
+            Demonstração: este botão faz o papel do banco confirmando o PIX.
+          </span>
+        </>
+      ) : (
+        <span className="text-xs text-center text-concrete-500">
+          Assim que o banco confirmar, esta tela muda sozinha. Pode levar alguns segundos.
+        </span>
+      )}
     </div>
   );
 }

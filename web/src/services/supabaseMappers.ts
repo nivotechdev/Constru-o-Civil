@@ -386,6 +386,7 @@ export function boostPaymentFromRow(r: TableRow<'boost_payments'>): BoostPayment
     amountCents: r.amount_cents,
     status: r.status,
     pixCode: r.pix_code,
+    ...(r.pix_qr_base64 ? { pixQrBase64: r.pix_qr_base64 } : {}),
     cardLast4: r.card_last4,
     createdAt: r.created_at,
     expiresAt: r.expires_at,

@@ -33,6 +33,8 @@ interface ButtonProps {
   loading?: boolean;
   onClick?: MouseEventHandler<HTMLButtonElement>;
   className?: string;
+  /** "submit" inside a <form> (Enter sends it); "button" everywhere else. */
+  type?: 'button' | 'submit';
 }
 
 export function Button({
@@ -46,11 +48,12 @@ export function Button({
   disabled = false,
   loading = false,
   onClick,
-  className = ''
+  className = '',
+  type = 'button'
 }: ButtonProps) {
   return (
     <button
-      type="button"
+      type={type}
       disabled={disabled || loading}
       aria-busy={loading ? 'true' : undefined}
       className={cx(

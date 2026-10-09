@@ -9,3 +9,4 @@ scripts/parity/.font-cache/
 .env.*
 !.env.example
 dist-real/
+deno.lock

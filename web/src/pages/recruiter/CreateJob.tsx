@@ -27,6 +27,7 @@ import { cx } from '../../utils/cx';
 import { todayISO } from '../../utils/dates';
 import { DIAS, DIAS_ORDEM, durationText } from '../../utils/jobInfo';
 import { toggleItem } from '../../utils/list';
+import { FEATURES } from '../../services/features';
 import {
   draftFromForm,
   emptyForm,
@@ -536,7 +537,9 @@ export function JobFormScreen({ job }: { job?: Job }) {
           onClick={advance}
         />
         {job ? null : (
-          <span className="text-center text-xs text-concrete-500">Publicar é grátis. Você paga só se impulsionar.</span>
+          <span className="text-center text-xs text-concrete-500">
+            {FEATURES.payments ? 'Publicar é grátis. Você paga só se impulsionar.' : 'Publicar é grátis.'}
+          </span>
         )}
       </div>
       <CityPicker

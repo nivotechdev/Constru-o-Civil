@@ -205,6 +205,7 @@ type BoostPaymentRow = {
   amount_cents: number;
   status: PaymentStatus;
   pix_code: string | null;
+  pix_qr_base64?: string | null;
   card_last4: string | null;
   created_at: string;
   expires_at: string | null;
@@ -331,13 +332,7 @@ export interface SupabaseDatabase {
         Returns: undefined;
       };
       get_contact: { Args: { p_application_id: string }; Returns: { name: string; phone: string }[] };
-      start_pix_payment: { Args: { p_job_id: string; p_plan: BoostPlanId }; Returns: BoostPaymentRow };
       get_payment: { Args: { p_payment_id: string }; Returns: BoostPaymentRow };
-      simulate_pix_paid: { Args: { p_payment_id: string }; Returns: BoostPaymentRow };
-      pay_with_card: {
-        Args: { p_job_id: string; p_plan: BoostPlanId; p_card_last4: string };
-        Returns: BoostPaymentRow;
-      };
       export_my_data: { Args: never; Returns: Json };
       delete_my_account: { Args: { p_confirm_commitments: boolean }; Returns: undefined };
       // From the legacy app's schema: free an e-mail/document stuck in a sign-up never confirmed.

@@ -8,8 +8,8 @@ import { serviceError } from '../errors';
 import * as store from '../store';
 import { boostPaymentFromRow } from '../supabaseMappers';
 import { companyToWorkerUrl, workerToCompanyUrl } from '../../utils/whatsapp';
-import { validateCard, type CardInput } from '../../utils/card';
-import { db, request } from './client';
+import type { ProviderCardToken } from '../payments';
+import { db, invokeFunction, request } from './client';
 import { loadJob } from './data';
 import { apply, putPayments } from './merge';
 import { checkPassword, signOut } from './auth';
@@ -80,41 +80,44 @@ export async function submitReview(input: ReviewInput): Promise<void> {
   if (app) await loadJob(app.jobId);
 }
 
-// ---- boost payments (the provider is simulated on the server until it is integrated) ----
+// ---- boost payments: the charge is created by the Edge Function criar-cobranca (Mercado Pago) and
+// confirmed by the provider's webhook; the app only reads the payment back ----
 
 async function keep(row: Parameters<typeof boostPaymentFromRow>[0]): Promise<BoostPayment> {
   apply(putPayments([row]));
   return boostPaymentFromRow(row);
 }
 
+type PaymentRow = Parameters<typeof boostPaymentFromRow>[0];
+
 export async function getPayment(paymentId: string): Promise<BoostPayment> {
   const client = await db();
-  return keep(await request(() => client.rpc('get_payment', { p_payment_id: paymentId })));
-}
-
-export async function startPixPayment(jobId: string, planId: BoostPlanId): Promise<BoostPayment> {
-  const client = await db();
-  return keep(await request(() => client.rpc('start_pix_payment', { p_job_id: jobId, p_plan: planId })));
-}
-
-export async function simulatePixPaid(paymentId: string): Promise<BoostPayment> {
-  const client = await db();
-  const payment = await keep(await request(() => client.rpc('simulate_pix_paid', { p_payment_id: paymentId })));
-  await loadJob(payment.jobId);
+  const payment = await keep(await request(() => client.rpc('get_payment', { p_payment_id: paymentId })));
+  if (payment.status === 'confirmado') await loadJob(payment.jobId);
   return payment;
 }
 
-/** The card number never leaves the device: only its last 4 digits go to the server, for the receipt. */
-export async function payWithCard(jobId: string, planId: BoostPlanId, card: CardInput): Promise<BoostPayment> {
-  if (Object.keys(validateCard(card)).length) throw serviceError('validacao', 'Confira os dados do cartão.');
-  const last4 = card.number.replace(/\D/g, '').slice(-4);
-  const client = await db();
-  const payment = await keep(
-    await request(() => client.rpc('pay_with_card', { p_job_id: jobId, p_plan: planId, p_card_last4: last4 }))
-  );
+export async function startPixPayment(jobId: string, planId: BoostPlanId): Promise<BoostPayment> {
+  const { pagamento } = await invokeFunction<{ pagamento: PaymentRow }>('criar-cobranca', {
+    jobId,
+    plan: planId,
+    method: 'pix'
+  });
+  return keep(pagamento);
+}
+
+/** The card was tokenized in the browser by the provider's form: only the token goes to the server. */
+export async function payWithCard(jobId: string, planId: BoostPlanId, card: ProviderCardToken): Promise<BoostPayment> {
+  const { pagamento } = await invokeFunction<{ pagamento: PaymentRow }>('criar-cobranca', {
+    jobId,
+    plan: planId,
+    method: 'cartao',
+    card
+  });
+  const payment = await keep(pagamento);
   if (payment.status === 'recusado')
     throw serviceError('conflito', 'O banco recusou o cartão. Confira os dados ou use outro cartão ou o PIX.');
-  await loadJob(jobId);
+  if (payment.status === 'confirmado') await loadJob(jobId);
   return payment;
 }
 

@@ -10,6 +10,7 @@ import { getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
 import { dateText, placeText } from '../../utils/jobInfo';
+import { FEATURES } from '../../services/features';
 
 export default function JobPublished({ params }: ScreenProps) {
   const job = getJob(useDb(), params.id);
@@ -36,12 +37,14 @@ export default function JobPublished({ params }: ScreenProps) {
           </div>
         </Card>
         <div className="w-full flex flex-col gap-2 pt-2">
-          <Button
-            label="Impulsionar essa vaga"
-            iconLeft="zap"
-            fullWidth
-            onClick={() => navigate('/impulsionar/' + job.id)}
-          />
+          {FEATURES.payments ? (
+            <Button
+              label="Impulsionar essa vaga"
+              iconLeft="zap"
+              fullWidth
+              onClick={() => navigate('/impulsionar/' + job.id)}
+            />
+          ) : null}
           <Button label="Voltar ao início" variant="ghost" fullWidth onClick={() => navigate('/mural')} />
         </div>
       </div>

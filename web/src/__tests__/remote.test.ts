@@ -356,7 +356,9 @@ describe('remote: data and actions', () => {
     expect(fake.tables.saved_jobs).toHaveLength(1);
   });
 
-  it('the card number never leaves the device; a declined card is an error', async () => {
+  it('Z02: the card is charged by the Edge Function with the provider token only; declined is an error', async () => {
+    vi.stubEnv('VITE_PAGAMENTOS', 'mercadopago');
+    vi.stubEnv('VITE_MP_PUBLIC_KEY', 'TEST-public');
     const declined = {
       id: 'pg1',
       job_id: 'BC-5001',
@@ -372,15 +374,39 @@ describe('remote: data and actions', () => {
       confirmed_at: null,
       boost_ends_at: null
     };
-    const fake = server('obra', { rpc: { pay_with_card: () => ({ data: declined, error: null }) } });
+    const fake = server('obra', {
+      functions: { 'criar-cobranca': () => ({ data: { pagamento: declined }, error: null }) }
+    });
     const m = await load(fake);
     await m.auth.signIn('obra@exemplo.com', 'segredo123');
-    const card = { number: '4111 1111 1111 0000', name: 'ANA SOUZA', expiry: '12/30', cvv: '123' };
-    await expect(m.payments.payWithCard('BC-5001', '24h', card)).rejects.toMatchObject({ code: 'conflito' });
-    const sent = fake.calls.find((c) => c.name === 'pay_with_card')?.args;
-    expect(sent).toEqual({ p_job_id: 'BC-5001', p_plan: '24h', p_card_last4: '0000' });
+    // A typed card is never accepted in real mode: only the provider's token.
+    const typed = { card: { number: '4111 1111 1111 0000', name: 'ANA SOUZA', expiry: '12/30', cvv: '123' } };
+    await expect(m.payments.payWithCard('BC-5001', '24h', typed)).rejects.toMatchObject({ code: 'validacao' });
+    const token = { token: 'tok_123', paymentMethodId: 'visa', issuerId: '25' };
+    await expect(m.payments.payWithCard('BC-5001', '24h', { token })).rejects.toMatchObject({ code: 'conflito' });
+    expect(fake.calls.find((c) => c.name === 'criar-cobranca')?.args).toEqual({
+      jobId: 'BC-5001',
+      plan: '24h',
+      method: 'cartao',
+      card: token
+    });
     expect(JSON.stringify(fake.calls)).not.toContain('4111');
     expect(m.store.getDb().boostPayments[0].status).toBe('recusado');
+    // The demo simulation doesn't exist in real mode.
+    await expect(m.payments.simulatePixPaid('pg1')).rejects.toMatchObject({ code: 'nao_autorizado' });
+    vi.unstubAllEnvs();
+  });
+
+  it('Z02: without the payment provider configured, boosting is off in real mode', async () => {
+    vi.stubEnv('VITE_PAGAMENTOS', '');
+    const fake = server('obra');
+    const m = await load(fake);
+    await m.auth.signIn('obra@exemplo.com', 'segredo123');
+    const features = await import('../services/features');
+    expect(features.FEATURES.payments).toBe(false);
+    await expect(m.payments.startPixPayment('BC-5001', '24h')).rejects.toMatchObject({ code: 'conflito' });
+    expect(fake.calls.some((c) => c.name === 'criar-cobranca')).toBe(false);
+    vi.unstubAllEnvs();
   });
 
   it('the WhatsApp number comes only from the server, with the ready-made message', async () => {

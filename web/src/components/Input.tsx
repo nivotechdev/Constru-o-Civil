@@ -27,6 +27,10 @@ interface InputProps {
   max?: string;
   /** What the person typed is cut at this many characters. */
   maxLength?: number;
+  /** The browser's autofill hint (X04): "email", "username", "tel", "one-time-code", "cc-number"… */
+  autoComplete?: string;
+  /** Form field name (helps password managers). */
+  name?: string;
 }
 
 // Enter (outside an IME composition) runs `onEnter`.
@@ -59,10 +63,13 @@ export function Input({
   onEnter,
   min,
   max,
-  maxLength
+  maxLength,
+  autoComplete,
+  name
 }: InputProps) {
   const autoId = useId();
   const fieldId = id || autoId;
+  const messageId = fieldId + '-msg';
   const [fieldRef, handleChange] = useTextField<HTMLInputElement>(onInput, autoFocus);
 
   return (
@@ -96,12 +103,22 @@ export function Input({
           min={min}
           max={max}
           maxLength={maxLength}
+          autoComplete={autoComplete}
+          name={name}
+          aria-invalid={error || invalid ? 'true' : undefined}
+          aria-describedby={error || hint ? messageId : undefined}
           onChange={handleChange}
           onKeyDown={enterHandler(onEnter)}
         />
         {suffix ? <span className="text-sm text-concrete-500 font-semibold shrink-0">{suffix}</span> : null}
       </div>
-      {error ? <FieldError message={error} /> : hint ? <span className="text-sm text-concrete-500">{hint}</span> : null}
+      {error ? (
+        <FieldError id={messageId} message={error} />
+      ) : hint ? (
+        <span id={messageId} className="text-sm text-concrete-500">
+          {hint}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -116,6 +133,8 @@ interface PasswordInputProps {
   visible?: boolean;
   onToggleVisible?: () => void;
   onEnter?: () => void;
+  /** "current-password" (login, confirming) or "new-password" (sign-up, new password) (X04). */
+  autoComplete?: 'current-password' | 'new-password';
 }
 
 /** Input with a show/hide eye toggle, used for every password field in the app. */
@@ -128,10 +147,12 @@ export function PasswordInput({
   error,
   visible,
   onToggleVisible,
-  onEnter
+  onEnter,
+  autoComplete = 'current-password'
 }: PasswordInputProps) {
   const autoId = useId();
   const fieldId = id || autoId;
+  const messageId = fieldId + '-msg';
   const [fieldRef, handleChange] = useTextField<HTMLInputElement>(onInput);
 
   return (
@@ -152,6 +173,10 @@ export function PasswordInput({
           id={fieldId}
           data-focus-id={id}
           type={visible ? 'text' : 'password'}
+          name={autoComplete === 'new-password' ? 'new-password' : 'password'}
+          autoComplete={autoComplete}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error ? messageId : undefined}
           placeholder={placeholder}
           value={value}
           className="flex-1 min-w-0 h-11 bg-transparent outline-none text-base text-concrete-900 placeholder:text-concrete-400"
@@ -167,7 +192,7 @@ export function PasswordInput({
           <Icon name={visible ? 'eye-off' : 'eye'} size={22} />
         </button>
       </div>
-      {error ? <FieldError message={error} /> : null}
+      {error ? <FieldError id={messageId} message={error} /> : null}
     </div>
   );
 }

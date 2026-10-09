@@ -84,14 +84,44 @@ describe('boost payments', () => {
   it('card: approved boosts at once; a number ending in 0000 is declined with a clear error', async () => {
     await signIn();
     const card = { number: '4111 1111 1111 0000', name: 'ANA SOUZA', expiry: '12/28', cvv: '123' };
-    const declined = await settle(m.pay.payWithCard('BC-4998', '24h', card));
+    const declined = await settle(m.pay.payWithCard('BC-4998', '24h', { card }));
     expect(!declined.ok && declined.e.message).toMatch(/recusou/);
     expect(m.store.getDb().boostPayments[0].status).toBe('recusado');
     expect(m.pay.isBoosted(m.store.getDb().jobs['BC-4998'])).toBe(false);
-    const ok = await settle(m.pay.payWithCard('BC-4998', '24h', { ...card, number: '4111 1111 1111 1111' }));
+    const ok = await settle(m.pay.payWithCard('BC-4998', '24h', { card: { ...card, number: '4111 1111 1111 1111' } }));
     expect(ok.ok && ok.v.status).toBe('confirmado');
     expect(ok.ok && ok.v.cardLast4).toBe('1111');
     expect(m.pay.isBoosted(m.store.getDb().jobs['BC-4998'])).toBe(true);
+  });
+
+  it('Y13: a new PIX code cancels the one left behind; a second boost adds to the end of the first', async () => {
+    await signIn();
+    const first = await settle(m.pay.startPixPayment('BC-4998', '24h'));
+    const second = await settle(m.pay.startPixPayment('BC-4998', '24h'));
+    if (!first.ok || !second.ok) throw new Error('pix');
+    const byId = (id: string) => m.store.getDb().boostPayments.find((p) => p.id === id);
+    expect(byId(first.v.id)?.status).toBe('cancelado');
+    expect(
+      m.store.getDb().boostPayments.filter((p) => p.jobId === 'BC-4998' && p.status === 'aguardando')
+    ).toHaveLength(1);
+    await settle(m.pay.simulatePixPaid(second.v.id));
+    const endsFirst = new Date(m.store.getDb().jobs['BC-4998'].boostEndsAt as string).getTime();
+    // The cancelled code is paid anyway (the money came in): the boost adds 24h to the end, once.
+    m.store.transact((db) => m.pay.confirm(db, first.v.id, new Date()));
+    m.store.transact((db) => m.pay.confirm(db, first.v.id, new Date()));
+    const endsBoth = new Date(m.store.getDb().jobs['BC-4998'].boostEndsAt as string).getTime();
+    expect(endsBoth - endsFirst).toBe(24 * 3600000);
+  });
+
+  it('Y13: paid after the job closed → marked to be refunded, not boosted', async () => {
+    await signIn();
+    const started = await settle(m.pay.startPixPayment('BC-4998', '24h'));
+    if (!started.ok) throw started.e;
+    m.store.updateJob('BC-4998', { closed: true });
+    m.store.transact((db) => m.pay.confirm(db, started.v.id, new Date()));
+    expect(m.store.getDb().boostPayments.find((p) => p.id === started.v.id)?.status).toBe('reembolso_pendente');
+    expect(m.pay.isBoosted(m.store.getDb().jobs['BC-4998'])).toBe(false);
+    expect(m.store.getDb().notifications[0].title).toBe('Pagamento será devolvido');
   });
 
   it("can't boost a closed job or another company's", async () => {
