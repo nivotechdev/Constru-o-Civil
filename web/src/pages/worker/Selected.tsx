@@ -25,6 +25,7 @@ import { dateText, placeText, streetText } from '../../utils/jobInfo';
 import { MapLinks } from '../../components/MapLinks';
 import { ContactButton } from '../../components/ContactButton';
 import { jobTitle } from '../../services/catalog';
+import { CompanyAvatar } from '../../components/Avatar';
 
 const GIVE_UP_REASONS = ['Fiquei doente', 'Peguei outro serviço', 'Problema de transporte', 'Imprevisto na família'];
 
@@ -81,9 +82,7 @@ export default function Selected({ params }: ScreenProps) {
         <Card padding="md">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-50 shrink-0">
-                <Icon name="building-2" size={24} color="var(--brand)" />
-              </span>
+              <CompanyAvatar company={company} />
               <div className="flex flex-col gap-0.5">
                 <span className="font-semibold text-concrete-900">{company.name}</span>
                 <span className="text-sm text-concrete-500">{company.tipoObra || 'Construção civil'}</span>

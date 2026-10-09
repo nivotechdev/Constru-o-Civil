@@ -1,6 +1,5 @@
 import { Card } from '../../../components/Card';
 import { EmptyState } from '../../../components/EmptyState';
-import { Icon } from '../../../components/icons/Icon';
 import { IconButton } from '../../../components/IconButton';
 import { Logo } from '../../../components/Logo';
 import { QueryView } from '../../../components/QueryView';
@@ -18,6 +17,7 @@ import type { Database, Job, Role } from '../../../types/models';
 import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
 import { oficioNome } from '../../../services/catalog';
 import { setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
+import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
 
 export interface FeedLayoutProps {
   db: Database;
@@ -54,9 +54,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }:
           {found.companies.map((c) => (
             <Card key={c.id} padding="md" onClick={() => navigate('/construtora/' + c.id)}>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-50 shrink-0">
-                  <Icon name="building-2" size={20} color="var(--brand)" />
-                </span>
+                <CompanyAvatar company={c} size="sm" />
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-concrete-900 truncate">{c.name}</span>
                   <span className="text-sm text-concrete-500 truncate">{c.location}</span>
@@ -73,9 +71,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home }:
           {found.workers.map((w) => (
             <Card key={w.id} padding="md">
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent-50 text-accent-600 font-bold text-sm shrink-0">
-                  {w.initials}
-                </span>
+                <WorkerAvatar worker={w} size="sm" />
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-concrete-900 truncate">{w.name}</span>
                   <span className="text-sm text-concrete-500 truncate">{`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}</span>

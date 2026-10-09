@@ -55,6 +55,43 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
   store.updateCompany(currentCompanyId(), patch);
 }
 
+/**
+ * The account's pictures: worker → `foto` (profile photo) and `capa` (cover); company → `logo` and `capa`.
+ * Each is a new picture picked on the device (a local URL), `null` to remove it, or left out (unchanged).
+ */
+export interface ProfileImages {
+  foto?: string | null;
+  capa?: string | null;
+  logo?: string | null;
+}
+
+/**
+ * Saves the account's pictures (Z12) so everyone sees them (profiles, candidate lists, the mural…).
+ * `onProgress` goes from 0 to 1 while they upload. Backend: compress, upload to Storage (avatars,
+ * the account's folder), update photo_url/cover_url (worker) or logo_url/cover_url (company), and
+ * delete the files they replace.
+ */
+export async function saveMyProfileImages(
+  changes: ProfileImages,
+  onProgress?: (fraction: number) => void
+): Promise<void> {
+  if (!IS_DEMO) return remote.saveMyProfileImages(changes, onProgress);
+  await mockLatency(500);
+  onProgress?.(1);
+  const session = store.getSession();
+  if (session?.workerId) {
+    const patch: Partial<Worker> = {};
+    if (changes.foto !== undefined) patch.photoUrl = changes.foto;
+    if (changes.capa !== undefined) patch.coverUrl = changes.capa;
+    store.updateWorker(session.workerId, patch);
+  } else if (session?.companyId) {
+    const patch: Partial<Company> = {};
+    if (changes.logo !== undefined) patch.logoUrl = changes.logo;
+    if (changes.capa !== undefined) patch.coverUrl = changes.capa;
+    store.updateCompany(session.companyId, patch);
+  }
+}
+
 /** Publishes a photo/video on the worker's portfolio. Backend: upload to Storage, insert worker_posts. */
 export async function addPortfolioPost(post: Pick<WorkerPost, 'mediaUrl' | 'mediaType' | 'caption'>): Promise<void> {
   if (!IS_DEMO) return remote.addPortfolioPost(post);

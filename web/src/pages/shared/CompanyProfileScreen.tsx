@@ -17,7 +17,6 @@ import { loadCompanyProfile } from '../../services/profiles';
 import { showToast } from '../../services/toast';
 import { Rating } from '../../components/Rating';
 import { useDb, useRole, useUI } from '../../hooks/useStore';
-import { COMPANY_PROFILE_DEFAULTS, COMPANY_PROFILE_KEY, type CompanyProfileUI } from '../../services/sharedUI';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import {
@@ -36,11 +35,12 @@ import type { Database, Job } from '../../types/models';
 import { isExpired } from '../../utils/jobInfo';
 import type { StatusBadge } from '../../types/ui';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
+import { CompanyAvatar } from '../../components/Avatar';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
-  const [ui, setUi] = useUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, COMPANY_PROFILE_DEFAULTS);
+  const [ui, setUi] = useUI<{ deleteId: string | null }>('company-profile-delete', { deleteId: null });
 
   const isOwn = !params.id;
   const companyId = isOwn ? currentCompany(db).id : params.id;
@@ -69,8 +69,8 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
       <div className="relative">
-        {isOwn && ui.capa ? (
-          <img src={ui.capa} alt="" className="w-full h-60 object-cover lg:rounded-card" />
+        {company.coverUrl ? (
+          <img src={company.coverUrl} alt="" className="w-full h-60 object-cover lg:rounded-card" />
         ) : (
           <div className="h-60 bg-concrete-200 lg:rounded-card" />
         )}
@@ -84,13 +84,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           </div>
         )}
         <div className="absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised">
-          <div className="w-full h-full rounded-full bg-brand-50 flex items-center justify-center overflow-hidden">
-            {isOwn && ui.logo ? (
-              <img src={ui.logo} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <Icon name="building-2" size={26} color="var(--brand)" />
-            )}
-          </div>
+          <CompanyAvatar company={company} size="lg" className="w-full h-full" />
         </div>
       </div>
       <div className="flex flex-col gap-5 pt-12 px-4 sm:px-6 pb-24 lg:pb-6">

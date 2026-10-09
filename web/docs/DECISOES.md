@@ -404,3 +404,23 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   (antes mostrava "confira sua internet" a cada abertura).
 - **Uma leitura da conta por login** (X20): o login e o aviso do Auth que vem logo depois dividem a mesma
   leitura e o mesmo canal de tempo real.
+
+## Z12 — Fotos de perfil, capa e logo salvas de verdade
+
+- **No modelo**: `Worker.photoUrl`/`coverUrl` e `Company.logoUrl`/`coverUrl` (colunas `photo_url`, `cover_url`,
+  `logo_url` que o banco já tinha). Saem os estados de tela que guardavam as fotos só no aparelho.
+- **Envio**: a foto é reduzida no próprio celular (até 1600 px, WebP ou JPEG, ~0,82 de qualidade; HEIC do
+  iPhone é convertido por uma biblioteca baixada só quando precisa), vai para o bucket `avatars` na pasta
+  da conta, com barra de progresso no lugar da foto e no botão ("Enviando fotos… 40%"). A foto trocada é
+  apagada do Storage (sem arquivo órfão).
+- **Onde aparece para todos**: perfis, lista de candidatos, cards da busca no mural, detalhe da vaga
+  (logo), "Você avançou", confirmar candidatura, histórico, bico fechado e o menu da conta. Componente
+  único `components/Avatar.tsx` (foto, ou iniciais/ícone da empresa).
+- **Editar perfil/empresa** usa um rascunho da própria tela: abre sempre com os dados salvos, "Cancelar" e
+  sair descartam (inclusive as fotos escolhidas). Saiu o botão "Sair da conta" de dentro dessas telas
+  (adianta a P01 e parte da Y21).
+- **Completar perfil**: as fotos escolhidas são salvas junto com o perfil; se o envio falhar, o perfil fica
+  completo e o aviso diz para tentar de novo em Editar perfil.
+- **No banco** (adianta a X09): o banco só aceita URL do Storage deste projeto, do bucket certo e da pasta do
+  dono (`app_config.storage_public_base`, trocar no staging); ninguém lista arquivos dos buckets; foto de
+  vaga só por conta de construtora e portfólio só por trabalhador; limites de tamanho e tipo por bucket.

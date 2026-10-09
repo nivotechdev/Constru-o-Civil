@@ -1,14 +1,14 @@
 // The logged-in account editing its own profile and portfolio, with the real backend. RLS only lets
 // each account update its own row, and only the columns the app edits (the rest — rating, counts,
 // verification — is the server's).
-import type { CompanyProfilePatch, WorkerProfilePatch } from '../profiles';
+import type { CompanyProfilePatch, ProfileImages, WorkerProfilePatch } from '../profiles';
 import type { WorkerPost } from '../../types/models';
 import type { TableUpdate } from '../../types/supabase';
 import { serviceError } from '../errors';
 import * as store from '../store';
 import { db, request } from './client';
 import { apply, COMPANY_COLUMNS, putCompanies, putPosts, putWorkers, WORKER_COLUMNS } from './merge';
-import { uploadMedia } from './storage';
+import { removeMedia, uploadMedia, type Progress } from './storage';
 
 function session() {
   const s = store.getSession();
@@ -91,13 +91,6 @@ export async function addPortfolioPost(post: Pick<WorkerPost, 'mediaUrl' | 'medi
   await reloadPosts(s.workerId);
 }
 
-/** The Storage path of a public URL of the bucket, to remove the file with the post. */
-function storagePath(url: string | null, bucket: string): string | null {
-  const marker = `/storage/v1/object/public/${bucket}/`;
-  const i = url ? url.indexOf(marker) : -1;
-  return url && i >= 0 ? decodeURIComponent(url.slice(i + marker.length)) : null;
-}
-
 export async function deletePortfolioPost(postId: string): Promise<void> {
   const s = session();
   const post = store.getDb().workerPosts.find((p) => p.id === postId);
@@ -106,10 +99,63 @@ export async function deletePortfolioPost(postId: string): Promise<void> {
   const client = await db();
   await request(() => client.from('worker_posts').delete().eq('id', postId));
   store.deleteWorkerPost(postId);
-  const path = storagePath(post.mediaUrl, 'portfolio');
-  if (path)
-    void client.storage
-      .from('portfolio')
-      .remove([path])
-      .then(undefined, () => undefined);
+  void removeMedia([post.mediaUrl], 'portfolio');
+}
+
+/**
+ * The account's profile pictures (Z12): each slot is a new local file (uploaded, compressed), `null`
+ * (removed) or left out (unchanged). Saved on the profile row; the replaced files are deleted.
+ */
+export async function saveMyProfileImages(changes: ProfileImages, onProgress?: Progress): Promise<void> {
+  const s = session();
+  const isWorker = Boolean(s.workerId);
+  const slots = Object.entries(changes).filter(([, v]) => v !== undefined) as [keyof ProfileImages, string | null][];
+  if (!slots.length) return;
+  const done: number[] = slots.map(() => 0);
+  const report = (i: number) => (f: number) => {
+    done[i] = f;
+    onProgress?.(done.reduce((a, b) => a + b, 0) / done.length);
+  };
+  const uploaded = await Promise.all(
+    slots.map(([, v], i) => (v ? uploadMedia(v, 'avatars', report(i)) : Promise.resolve(null)))
+  );
+  const update: { photo_url?: string | null; cover_url?: string | null; logo_url?: string | null } = {};
+  slots.forEach(([slot], i) => {
+    if (slot === 'foto') update.photo_url = uploaded[i];
+    else if (slot === 'logo') update.logo_url = uploaded[i];
+    else update.cover_url = uploaded[i];
+  });
+  const client = await db();
+  const before = isWorker
+    ? store.getDb().workers[s.workerId as string]
+    : store.getDb().companies[s.companyId as string];
+  const old: (string | null | undefined)[] = slots.map(([slot]) =>
+    slot === 'foto'
+      ? (before as { photoUrl?: string | null })?.photoUrl
+      : slot === 'logo'
+        ? (before as { logoUrl?: string | null })?.logoUrl
+        : before?.coverUrl
+  );
+  if (isWorker) {
+    const row = await request(() =>
+      client
+        .from('workers')
+        .update({ photo_url: update.photo_url, cover_url: update.cover_url })
+        .eq('id', s.workerId as string)
+        .select(WORKER_COLUMNS)
+        .single()
+    );
+    apply(putWorkers([row], undefined, s.accountId));
+  } else {
+    const row = await request(() =>
+      client
+        .from('companies')
+        .update({ logo_url: update.logo_url, cover_url: update.cover_url })
+        .eq('id', s.companyId as string)
+        .select(COMPANY_COLUMNS)
+        .single()
+    );
+    apply(putCompanies([row], undefined, s.accountId));
+  }
+  void removeMedia(old, 'avatars');
 }

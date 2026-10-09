@@ -15,6 +15,7 @@ import { candidateBadge } from '../../utils/applicationStatus';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
+import { WorkerAvatar } from '../../components/Avatar';
 
 // Who worked (or was picked) on the company's closed jobs; pending and turned-down candidates aren't listed.
 const LISTED = new Set<ApplicationStatus>([
@@ -66,9 +67,7 @@ export default function History() {
                   <Card key={app.id} padding="sm" onClick={() => navigate(status.to)}>
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent-50 text-accent-600 font-bold text-sm shrink-0">
-                          {worker.initials}
-                        </span>
+                        <WorkerAvatar worker={worker} size="sm" />
                         <div className="flex-1 min-w-0 flex flex-col">
                           <span className="font-semibold text-concrete-900 truncate">{worker.name}</span>
                           <span className="text-sm text-concrete-500 truncate">{`${jobTitle(job)} · ${dateText(job)}`}</span>

@@ -508,6 +508,24 @@ describe('remote: data and actions', () => {
     expect(m.store.getDb().jobs['BC-5001'].address.street).toBe('Avenida Paulista');
   });
 
+  it('Z12: profile pictures go to Storage (own folder) and are saved on the profile; the old file is removed', async () => {
+    const fake = server('ana');
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const profiles = await import('../services/profiles');
+    // A local picture (as picked on the phone); fetch() reads it back as a blob before the upload.
+    vi.stubGlobal('fetch', async () => new Response(new Blob(['x'], { type: 'image/gif' })));
+    await profiles.saveMyProfileImages({ foto: 'blob:local/1', capa: null });
+    vi.unstubAllGlobals();
+    const upload = fake.calls.find((c) => c.kind === 'storage');
+    expect(upload?.name).toBe('avatars');
+    expect(String(upload?.args)).toMatch(/^u-ana\//);
+    const update = fake.calls.find((c) => c.name === 'workers' && c.ops?.some((o) => o[0] === 'update'));
+    const patch = update?.ops?.find((o) => o[0] === 'update')?.[1] as Record<string, unknown>;
+    expect(patch.photo_url).toMatch(/\/storage\/v1\/object\/public\/avatars\/u-ana\//);
+    expect(patch.cover_url).toBeNull();
+  });
+
   it('publishing sends the job without the columns the server owns', async () => {
     const m = await load(fakeSupabase());
     const { draftRow } = await import('../services/remote/jobs');

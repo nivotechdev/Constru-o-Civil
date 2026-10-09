@@ -88,6 +88,9 @@ export interface Company {
   sinceLabel?: string;
   respondTime?: string;
   paidCount?: number;
+  /** Logo and cover picture, in the app's Storage (Z12); absent = none chosen. */
+  logoUrl?: string | null;
+  coverUrl?: string | null;
   reviews: Review[];
 }
 
@@ -117,6 +120,9 @@ export interface Worker {
   verified: boolean;
   specialties: string[];
   facts: string[];
+  /** Profile photo and cover picture, in the app's Storage (Z12); absent = none chosen. */
+  photoUrl?: string | null;
+  coverUrl?: string | null;
   reviews: Review[];
 }
 

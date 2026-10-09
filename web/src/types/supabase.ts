@@ -97,6 +97,7 @@ type WorkerRow = {
   specialties: string[];
   facts: string[];
   photo_url: string | null;
+  cover_url: string | null;
   created_at: string;
 };
 

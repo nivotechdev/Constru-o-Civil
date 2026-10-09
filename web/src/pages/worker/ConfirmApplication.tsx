@@ -16,6 +16,7 @@ import { companyOf, currentWorker, getJob } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle, oficioNome } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
+import { WorkerAvatar } from '../../components/Avatar';
 
 export default function ConfirmApplication({ params }: ScreenProps) {
   const db = useDb();
@@ -57,9 +58,7 @@ export default function ConfirmApplication({ params }: ScreenProps) {
               </div>
             </div>
             <div className="flex items-center gap-2.5 pt-4 border-t border-concrete-200">
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent-50 text-accent-600 font-bold text-sm shrink-0">
-                {worker.initials}
-              </span>
+              <WorkerAvatar worker={worker} size="sm" />
               <div className="flex flex-col">
                 <span className="font-semibold text-concrete-900">{worker.name}</span>
                 <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${worker.rating}`}</span>

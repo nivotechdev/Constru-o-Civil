@@ -5,6 +5,7 @@ import { cx } from '../utils/cx';
 import { Badge } from './Badge';
 import { IconButton } from './IconButton';
 import { Rating } from './Rating';
+import { WorkerAvatar } from './Avatar';
 
 interface CandidateRowProps {
   worker: Worker;
@@ -46,9 +47,7 @@ export function CandidateRow({
       )}
       onClick={() => onClick()}
     >
-      <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-50 text-accent-600 font-bold text-sm shrink-0">
-        {worker.initials}
-      </span>
+      <WorkerAvatar worker={worker} />
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-concrete-900 truncate">{worker.name}</span>

@@ -14,6 +14,7 @@ import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
 import { noFilters, setFeed, type SearchMatches } from './feedUI';
 import { oficioNome } from '../../../services/catalog';
 import type { FeedLayoutProps } from './MobileFeed';
+import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
 
 /** The mural from 770px up (tablet and desktop): a wide search bar, the filters button and the grid. */
 export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home }: FeedLayoutProps) {
@@ -131,11 +132,7 @@ function SearchResults({ db, role, search, found }: SearchResultsProps) {
               {companies.map((c) => (
                 <PersonCard
                   key={c.id}
-                  avatar={
-                    <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-50 shrink-0">
-                      <Icon name="building-2" size={22} color="var(--brand)" />
-                    </span>
-                  }
+                  avatar={<CompanyAvatar company={c} />}
                   name={c.name}
                   meta={c.location}
                   rating={<Rating value={c.rating} count={c.reviewCount} />}
@@ -152,11 +149,7 @@ function SearchResults({ db, role, search, found }: SearchResultsProps) {
               {workers.map((w) => (
                 <PersonCard
                   key={w.id}
-                  avatar={
-                    <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-50 text-accent-600 font-bold shrink-0">
-                      {w.initials}
-                    </span>
-                  }
+                  avatar={<WorkerAvatar worker={w} />}
                   name={w.name}
                   meta={`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}
                   rating={<Rating value={w.rating} count={w.reviewCount} />}

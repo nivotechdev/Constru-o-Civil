@@ -1,7 +1,6 @@
 import { useSyncExternalStore, type ReactNode } from 'react';
-import { useDb, useRole, useUI } from '../hooks/useStore';
+import { useDb, useRole } from '../hooks/useStore';
 import { currentCompany, currentWorker } from '../services/selectors';
-import { COMPANY_PROFILE_DEFAULTS, COMPANY_PROFILE_KEY, type CompanyProfileUI } from '../services/sharedUI';
 import { getVersion, subscribe } from '../services/store';
 import type { Role } from '../types/models';
 import { cx } from '../utils/cx';
@@ -62,17 +61,17 @@ export function AppShell({ path, pattern, children }: AppShellProps) {
   // The legacy app rebuilt the navigation on every state change; remounting it keeps its imperatively
   // placed tab indicators exactly as they were (see AppNav).
   const storeVersion = useSyncExternalStore(subscribe, getVersion);
-  const [companyProfile] = useUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, COMPANY_PROFILE_DEFAULTS);
 
   const isMural = path === '/mural';
   const showMobileNav = TAB_ROOTS[role] && TAB_ROOTS[role].has(path);
 
   let account: AccountSummary;
   if (role === 'recrutador') {
-    account = { name: currentCompany(db).name, photo: companyProfile.logo };
+    const company = currentCompany(db);
+    account = { name: company.name, photo: company.logoUrl ?? null };
   } else {
     const worker = currentWorker(db);
-    account = { name: worker.name, initials: worker.initials };
+    account = { name: worker.name, initials: worker.initials, photo: worker.photoUrl ?? null };
   }
 
   return (

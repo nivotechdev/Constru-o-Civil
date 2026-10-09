@@ -13,14 +13,20 @@ import { finishSignUp } from '../../services/auth';
 import { OFICIO_OPTIONS, TIPOS_OBRA } from '../../services/catalog';
 import type { ScreenProps } from '../../types/screen';
 import { navigate } from '../../services/router';
-import {
-  COMPANY_PROFILE_DEFAULTS,
-  COMPANY_PROFILE_KEY,
-  WORKER_PHOTO_KEY,
-  type CompanyProfileUI,
-  type WorkerPhotoUI
-} from '../../services/sharedUI';
-import { getUI, setUI } from '../../services/store';
+import { saveMyProfileImages } from '../../services/profiles';
+import { showToast } from '../../services/toast';
+
+/**
+ * The pictures chosen while completing the profile, saved once the profile is (Z12). The profile is
+ * already done at this point: if the upload fails, the app goes on and says where to try again.
+ */
+async function savePictures(pictures: { foto?: string | null; capa?: string | null; logo?: string | null }) {
+  const chosen = Object.fromEntries(Object.entries(pictures).filter(([, v]) => v));
+  if (!Object.keys(chosen).length) return;
+  await saveMyProfileImages(chosen).catch(() =>
+    showToast('Não deu para enviar suas fotos agora. Tente de novo em Editar perfil.', { tone: 'error' })
+  );
+}
 
 export default function CompleteProfile({ params }: ScreenProps) {
   return params.role === 'recrutador' ? <RecruiterFlow /> : <WorkerFlow />;
@@ -183,8 +189,8 @@ function WorkerFlow() {
         }
         setUi({ saving: true, saveError: null });
         finishSignUp({ role: 'trabalhador', oficioId: ui.oficioId, city: ui.cidade, specialties: ui.especialidades })
+          .then(() => savePictures({ foto: ui.photo, capa: ui.capa }))
           .then(() => {
-            if (ui.capa) setUI<WorkerPhotoUI>(WORKER_PHOTO_KEY, { photo: ui.capa });
             setUi({ saving: false });
             navigate('/mural', { replace: true });
           })
@@ -329,12 +335,8 @@ function RecruiterFlow() {
         }
         setUi({ saving: true, saveError: null });
         finishSignUp({ role: 'recrutador', tipoObra: ui.tipoObra, city: ui.cidade })
+          .then(() => savePictures({ logo: ui.logo, capa: ui.capa }))
           .then(() => {
-            const current = getUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, COMPANY_PROFILE_DEFAULTS);
-            setUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, {
-              capa: ui.capa ?? current.capa,
-              logo: ui.logo ?? current.logo
-            });
             setUi({ saving: false });
             navigate('/mural', { replace: true });
           })

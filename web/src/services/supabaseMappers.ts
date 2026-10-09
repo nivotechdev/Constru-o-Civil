@@ -107,6 +107,8 @@ export function companyFromRow(row: TableRow<'companies'>, reviews: ReviewRow[] 
   setIf(company, 'sinceLabel', row.since_label);
   setIf(company, 'respondTime', row.respond_time);
   setIf(company, 'paidCount', row.paid_count);
+  setIf(company, 'logoUrl', row.logo_url);
+  setIf(company, 'coverUrl', row.cover_url);
   return company;
 }
 
@@ -124,7 +126,9 @@ export function companyToRow(company: Company): TableInsert<'companies'> {
     verified_since: company.verifiedSince ?? null,
     since_label: company.sinceLabel ?? null,
     respond_time: company.respondTime ?? null,
-    paid_count: company.paidCount ?? null
+    paid_count: company.paidCount ?? null,
+    logo_url: company.logoUrl ?? null,
+    cover_url: company.coverUrl ?? null
   };
 }
 
@@ -150,6 +154,8 @@ export function workerFromRow(row: TableRow<'workers'>, reviews: ReviewRow[] = [
     reviews: reviews.filter((r) => r.direction === 'para_trabalhador' && r.worker_id === row.id).map(reviewFromRow)
   };
   setIf(worker, 'novo', row.novo);
+  setIf(worker, 'photoUrl', row.photo_url);
+  setIf(worker, 'coverUrl', row.cover_url);
   return worker;
 }
 
@@ -170,7 +176,9 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
     novo: Boolean(worker.novo),
     verified: worker.verified,
     specialties: worker.specialties,
-    facts: worker.facts
+    facts: worker.facts,
+    photo_url: worker.photoUrl ?? null,
+    cover_url: worker.coverUrl ?? null
   };
 }
 

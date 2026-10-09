@@ -179,3 +179,33 @@ describe('phone mask', () => {
     expect(maskPhone('(11) 98842-33109')).toBe('(11) 98842-3310');
   });
 });
+
+describe('Z12: profile pictures (demo)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('are saved on the profile (so every screen shows them); null removes one', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    const profiles = await import('../services/profiles');
+    const store = await import('../services/store');
+    const run = async <T>(p: Promise<T>) => {
+      await vi.runAllTimersAsync();
+      return p;
+    };
+    await run(auth.signIn('trabalhador@bicos.demo', 'bicos123'));
+    const id = store.getSession()?.workerId as string;
+    let progress = 0;
+    await run(profiles.saveMyProfileImages({ foto: 'blob:foto', capa: 'blob:capa' }, (f) => (progress = f)));
+    expect(store.getDb().workers[id]).toMatchObject({ photoUrl: 'blob:foto', coverUrl: 'blob:capa' });
+    expect(progress).toBe(1);
+    await run(profiles.saveMyProfileImages({ capa: null }));
+    expect(store.getDb().workers[id]).toMatchObject({ photoUrl: 'blob:foto', coverUrl: null });
+  });
+
+  it('pictures are resized to at most 1600 px on the long side', async () => {
+    const { fitWithin } = await import('../utils/image');
+    expect(fitWithin(4000, 3000)).toEqual({ width: 1600, height: 1200 });
+    expect(fitWithin(800, 600)).toEqual({ width: 800, height: 600 });
+  });
+});

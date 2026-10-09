@@ -19,6 +19,7 @@ import { workerPlace } from '../../utils/workerInfo';
 import { ContactButton } from '../../components/ContactButton';
 import { contactOpen } from '../../services/applicationMachine';
 import { dateText, placeText } from '../../utils/jobInfo';
+import { WorkerAvatar } from '../../components/Avatar';
 
 export default function JobClosed({ params }: ScreenProps) {
   const db = useDb();
@@ -68,9 +69,7 @@ export default function JobClosed({ params }: ScreenProps) {
             <Card key={worker.id} padding="md">
               <div className="flex flex-col gap-3.5">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-50 text-accent-600 font-bold shrink-0">
-                    {worker.initials}
-                  </span>
+                  <WorkerAvatar worker={worker} />
                   <div className="flex-1 min-w-0 flex flex-col">
                     <span className="font-semibold text-concrete-900">{worker.name}</span>
                     <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${workerPlace(worker)}`}</span>

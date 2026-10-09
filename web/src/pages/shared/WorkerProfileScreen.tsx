@@ -9,8 +9,7 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
 import { loadWorkerProfile } from '../../services/profiles';
 import { Rating } from '../../components/Rating';
-import { useDb, useRole, useUI } from '../../hooks/useStore';
-import { WORKER_PHOTO_DEFAULTS, WORKER_PHOTO_KEY, type WorkerPhotoUI } from '../../services/sharedUI';
+import { useDb, useRole } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { currentCompanyId, currentWorker, getJob, getWorker } from '../../services/selectors';
@@ -19,11 +18,11 @@ import { oficioNome } from '../../services/catalog';
 import { workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
+import { WorkerAvatar } from '../../components/Avatar';
 
 export default function WorkerProfileScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
-  const [ui] = useUI<WorkerPhotoUI>(WORKER_PHOTO_KEY, WORKER_PHOTO_DEFAULTS);
 
   const isOwn = !params.id;
   const workerId = isOwn ? currentWorker(db).id : params.id;
@@ -49,8 +48,8 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
       <div className="relative">
-        {isOwn && ui.photo ? (
-          <img src={ui.photo} alt="" className="w-full h-60 object-cover lg:rounded-card" />
+        {worker.coverUrl ? (
+          <img src={worker.coverUrl} alt="" className="w-full h-60 object-cover lg:rounded-card" />
         ) : (
           <div className="h-60 bg-concrete-200 lg:rounded-card" />
         )}
@@ -70,9 +69,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
         )}
         <div className="absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised">
           <div className="relative w-full h-full">
-            <div className="w-full h-full rounded-full bg-accent-50 text-accent-600 flex items-center justify-center font-bold text-2xl overflow-hidden">
-              {worker.initials}
-            </div>
+            <WorkerAvatar worker={worker} size="lg" className="w-full h-full" />
             {worker.verified ? (
               <span className="absolute -right-0.5 -bottom-0.5 inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-500 border-[3px] border-white">
                 <Icon name="check" size={14} color="#fff" />
