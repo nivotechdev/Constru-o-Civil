@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { reloadOnceForNewVersion } from './components/ErrorBoundary';
+import { setBootStatus } from './services/boot';
 import { installGlobalErrorReporting } from './services/monitoring';
 import { IS_DEMO } from './services/mode';
 import { currentPath, navigate, startRouter } from './services/router';
@@ -15,17 +16,16 @@ window.addEventListener('vite:preloadError', (event) => {
   if (reloadOnceForNewVersion()) event.preventDefault();
 });
 
-async function start(): Promise<void> {
-  // With the real backend, the session is restored (and the links sent by e-mail handled) before the
-  // first screen, so the route guards already know who is logged in.
+function start(): void {
+  // Z11: with the real backend the app renders at once (the splash shows while the session is restored
+  // and the e-mail links are handled; services/boot.ts); the router starts after the redirect handling
+  // has cleaned the URL, so a #access_token never reaches it.
   if (!IS_DEMO) {
-    const { startRemoteSession } = await import('./services/remote/session');
-    await startRemoteSession();
-  }
-
-  startRouter();
-  // "/" (no hash) opens the splash screen, replacing the entry like the legacy router did.
-  if (currentPath() === '/') navigate('/splash', { replace: true });
+    void import('./services/remote/session')
+      .then((m) => m.startRemoteSession())
+      .catch(() => setBootStatus('offline'))
+      .finally(startRoutes);
+  } else startRoutes();
 
   const appElement = document.getElementById('app');
   if (!appElement) throw new Error('index.html sem o elemento #app');
@@ -34,4 +34,10 @@ async function start(): Promise<void> {
   createRoot(appElement).render(<App />);
 }
 
-void start();
+function startRoutes(): void {
+  startRouter();
+  // "/" (no hash) opens the splash screen, replacing the entry like the legacy router did.
+  if (currentPath() === '/') navigate('/splash', { replace: true });
+}
+
+start();

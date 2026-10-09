@@ -1,4 +1,4 @@
-import { startTransition, Suspense, useEffect, useState } from 'react';
+import { startTransition, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { Button } from './components/Button';
 import { LegacyRerender } from './components/LegacyRerender';
@@ -15,6 +15,7 @@ import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from './services/sharedUI';
 import { getUI, setUI } from './services/store';
 import type { Role } from './types/models';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { getBootStatus, subscribeBoot } from './services/boot';
 
 /** Unknown route (404). */
 function PageNotFound() {
@@ -87,12 +88,53 @@ function useLocation() {
 }
 
 export function App() {
+  const boot = useSyncExternalStore(subscribeBoot, getBootStatus);
   return (
     <ErrorBoundary fullScreen>
       <OfflineBanner />
-      <Routes />
+      {boot === 'starting' ? <BootSplash /> : boot === 'offline' ? <OfflineStart /> : <Routes />}
       <ToastHost />
     </ErrorBoundary>
+  );
+}
+
+/** While the saved session is restored (Z11): the same look as the static splash in index.html. */
+function BootSplash() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-brand-500" aria-busy="true">
+      <span className="font-display font-bold text-5xl text-white tracking-tight">Bicos</span>
+      <span
+        role="status"
+        aria-label="Abrindo"
+        className="animate-spin-token"
+        style={{
+          width: '1.75rem',
+          height: '1.75rem',
+          border: '3px solid rgba(255,255,255,0.9)',
+          borderRightColor: 'transparent',
+          borderRadius: '9999px'
+        }}
+      />
+    </div>
+  );
+}
+
+/** A session on the device, but no connection to the server (Z11): not the login. */
+function OfflineStart() {
+  const [trying, setTrying] = useState(false);
+  const retry = () => {
+    setTrying(true);
+    void import('./services/remote/session').then((m) => m.retryStart()).finally(() => setTrying(false));
+  };
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-5 text-center px-6">
+      <ResultIcon icon="wifi-off" tone="brand" />
+      <div className="flex flex-col gap-2 max-w-sm">
+        <h1 className="font-display font-bold text-2xl text-concrete-900">Sem conexão com a Bicos</h1>
+        <p className="text-concrete-500">Sua conta continua aqui. Assim que a internet voltar, o app abre sozinho.</p>
+      </div>
+      <Button label="Tentar de novo" iconLeft="refresh-cw" loading={trying} onClick={retry} />
+    </div>
   );
 }
 

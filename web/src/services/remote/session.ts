@@ -25,6 +25,7 @@ import {
   putWorkers,
   WORKER_COLUMNS
 } from './merge';
+import { setBootStatus, withTimeout } from '../boot';
 
 /** Where the links sent by e-mail come back to: this page, without a route (see handleAuthRedirect). */
 export function authRedirectUrl(): string {
@@ -60,18 +61,85 @@ async function startRealtime(account: TableRow<'accounts'>): Promise<void> {
     .subscribe();
 }
 
+// ---- the account kept on the device (Z11) ----
+// The own account and profile rows, saved after each sign-in, so a returning user sees the app at once
+// while the session is checked with the server in the background. Only this device's own data; removed
+// on sign-out (leaveSession).
+const CACHE_KEY = 'bicos.conta';
+
+interface CachedAccount {
+  account: TableRow<'accounts'>;
+  worker?: Parameters<typeof putWorkers>[0][number];
+  company?: Parameters<typeof putCompanies>[0][number];
+}
+
+function saveCache(data: CachedAccount): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    /* private mode / full storage: the app just waits for the server next time */
+  }
+}
+
+function readCache(userId: string): CachedAccount | null {
+  try {
+    const data = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null') as CachedAccount | null;
+    return data && data.account?.id === userId ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearAccountCache(): void {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    /* nothing to clear */
+  }
+}
+
+/** Puts a saved account in the store and opens the session with it (no network). */
+function enterCachedSession(cached: CachedAccount): void {
+  const recipes = [putAccount(cached.account)];
+  if (cached.worker) recipes.push(putWorkers([cached.worker], undefined, cached.account.id));
+  if (cached.company) recipes.push(putCompanies([cached.company], undefined, cached.account.id));
+  apply(...recipes);
+  setSessionAccount(cached.account.id);
+}
+
+/** The account has no row in the app (deleted, or a sign-up that never finished): Y27. */
+export class MissingAccountError extends Error {
+  constructor() {
+    super('conta sem linha em accounts');
+    this.name = 'MissingAccountError';
+  }
+}
+
+// X20: the sign-in and the Auth event that follows it ask for the same account at the same time; they
+// share one read (and one Realtime channel).
+let entering: { userId: string; promise: Promise<Role> } | null = null;
+
 /** Loads the logged-in user's account and own profile into the store and starts the session there. */
-export async function enterSession(user: User): Promise<Role> {
+export function enterSession(user: User): Promise<Role> {
+  if (entering && entering.userId === user.id) return entering.promise;
+  const promise = loadSession(user).finally(() => {
+    if (entering?.promise === promise) entering = null;
+  });
+  entering = { userId: user.id, promise };
+  return promise;
+}
+
+async function loadSession(user: User): Promise<Role> {
   const client = await db();
   const readAccount = () =>
     request(() => client.from('accounts').select(ACCOUNT_COLUMNS).eq('id', user.id).maybeSingle());
   let row = await readAccount();
   if (!row) {
     // An account of the legacy app (created there): it gets its row from the old profile.
-    await request(() => client.rpc('ensure_my_account'));
+    await request(() => client.rpc('ensure_my_account')).catch(() => undefined);
     row = await readAccount();
   }
-  if (!row) throw new Error('conta sem linha em accounts');
+  if (!row) throw new MissingAccountError();
   // Auth is the source of truth for the confirmation (the row follows it by a trigger).
   const account: TableRow<'accounts'> = {
     ...row,
@@ -87,6 +155,7 @@ export async function enterSession(user: User): Promise<Role> {
         .single()
     );
     apply(putAccount(account), putWorkers([worker], undefined, account.id));
+    saveCache({ account, worker });
   } else {
     const company = await request(() =>
       client
@@ -96,6 +165,7 @@ export async function enterSession(user: User): Promise<Role> {
         .single()
     );
     apply(putAccount(account), putCompanies([company], undefined, account.id));
+    saveCache({ account, company });
   }
   if (getSession()?.accountId !== account.id) setSessionAccount(account.id);
   void startRealtime(account);
@@ -130,6 +200,7 @@ export function enterPendingSession(pending: { id: string; email: string; role: 
 
 /** Ends the session on this device (the store, the loaded screens and the history are forgotten). */
 export async function leaveSession(): Promise<void> {
+  clearAccountCache();
   await stopRealtime().catch(() => undefined);
   clearSessionData();
   clearQueries();
@@ -168,23 +239,114 @@ async function handleAuthRedirect(): Promise<void> {
 
 let notice: string | null = null;
 let started = false;
+let listening = false;
+
+/** Whether this device still holds a Supabase session (even one that can't be refreshed offline). */
+function hasStoredSession(): boolean {
+  try {
+    return Object.keys(localStorage).some((k) => k.startsWith('sb-') && k.endsWith('-auth-token'));
+  } catch {
+    return false;
+  }
+}
+
+function flushNotice(): void {
+  if (!notice) return;
+  const text = notice;
+  notice = null;
+  setTimeout(() => showToast(text, { tone: text.startsWith('E-mail confirmado') ? 'default' : 'error' }), 300);
+}
+
+/** Y27: the session points to an account the app doesn't have — sign out and say why. */
+async function dropBrokenSession(): Promise<void> {
+  const client = await db();
+  await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+  await leaveSession();
+  notice = 'Não achamos o cadastro dessa conta. Entre de novo ou crie uma conta nova.';
+}
 
 /**
- * Restores the session before the app's first render (main.tsx). It never rejects: without a
- * connection the app opens signed out and the login screen says what is wrong when it is used.
+ * Restores the session (Z11). Resolves quickly — the app renders right away (main.tsx) and shows the
+ * splash while this runs:
+ *   - no saved session → ready (signed out);
+ *   - saved session and the account saved on this device → ready at once with it; the server is
+ *     checked in the background;
+ *   - saved session, nothing on the device → waits for the server, at most a few seconds;
+ *   - the server can't be reached → "offline" (not the login); tries again when the connection returns.
  */
 export async function startRemoteSession(): Promise<void> {
   if (started) return;
   started = true;
   const client = await db();
-  try {
-    await handleAuthRedirect();
-    const { data } = await client.auth.getSession();
-    if (data.session && !recovering) await enterSession(data.session.user);
-  } catch {
-    notice = notice ?? 'Não deu para abrir sua conta agora. Confira sua internet e entre de novo.';
-  }
+  listenToAuth(client);
+  await restore();
+}
 
+async function restore(): Promise<void> {
+  const client = await db();
+  setBootStatus('starting');
+  try {
+    await withTimeout(handleAuthRedirect(), 8000).catch(() => {
+      notice = notice ?? 'Não deu para abrir o link agora. Confira sua internet e tente de novo.';
+    });
+    let user: User | null = null;
+    try {
+      const { data } = await withTimeout(client.auth.getSession(), 5000);
+      user = data.session?.user ?? null;
+    } catch {
+      if (hasStoredSession()) return goOffline();
+    }
+    if (!user) {
+      if (hasStoredSession() && globalThis.navigator?.onLine === false) return goOffline();
+      setBootStatus('ready');
+      return;
+    }
+    if (recovering) {
+      setBootStatus('ready');
+      return;
+    }
+    const cached = readCache(user.id);
+    if (cached) {
+      enterCachedSession(cached);
+      setBootStatus('ready');
+      const fresh = user;
+      enterSession(fresh).catch((e: unknown) => {
+        if (e instanceof MissingAccountError) void dropBrokenSession().then(flushNotice);
+      });
+      return;
+    }
+    await withTimeout(enterSession(user), 10000);
+    setBootStatus('ready');
+  } catch (e) {
+    if (e instanceof MissingAccountError) {
+      await dropBrokenSession();
+      setBootStatus('ready');
+    } else return goOffline();
+  } finally {
+    flushNotice();
+  }
+}
+
+/** The server can't be reached with a session on the device: wait for the connection, then retry. */
+function goOffline(): void {
+  setBootStatus('offline');
+  const target = globalThis.window;
+  if (!target) return;
+  const again = () => {
+    target.removeEventListener('online', again);
+    void retryStart();
+  };
+  target.addEventListener('online', again);
+}
+
+/** "Tentar de novo" on the offline start screen (and the automatic retry when the connection returns). */
+export function retryStart(): Promise<void> {
+  return restore();
+}
+
+function listenToAuth(client: Awaited<ReturnType<typeof db>>): void {
+  if (listening) return;
+  listening = true;
   client.auth.onAuthStateChange((event, session) => {
     // Supabase asks not to call it back from inside this callback: the work runs right after.
     setTimeout(() => {
@@ -205,9 +367,4 @@ export async function startRemoteSession(): Promise<void> {
       }
     });
   });
-
-  if (notice) {
-    const text = notice;
-    setTimeout(() => showToast(text, { tone: text.startsWith('E-mail confirmado') ? 'default' : 'error' }), 300);
-  }
 }

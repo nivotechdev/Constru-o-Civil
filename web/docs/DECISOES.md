@@ -389,3 +389,18 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Link com `%` quebrado** não derruba o roteador: o pedaço fica como foi digitado.
 - **Erros vão para `services/monitoring.ts`** (adianta a X21): no console na demonstração; no modo real,
   para o Sentry se `VITE_SENTRY_DSN` estiver configurado, sem dados pessoais (a rota vai sem ids).
+
+## Z11 — Abertura rápida e sem cair no login por falta de sinal
+
+- **Splash no `index.html`**, sem depender do JavaScript (aparece na hora, mesmo com o celular lento); o
+  React o troca pela splash dele enquanto a sessão é restaurada.
+- **O app abre na hora para quem volta**: a conta e o perfil da própria pessoa ficam guardados no aparelho
+  (`bicos.conta`, apagados ao sair); com eles o app abre logo e confere com o servidor em segundo plano.
+  Sem nada guardado, espera o servidor no máximo ~10 s.
+- **Sem conexão com uma sessão no aparelho**: tela "Sem conexão com a Bicos — sua conta continua aqui",
+  com "Tentar de novo"; o app tenta sozinho quando a internet volta (evento `online`). Nunca cai no login
+  por causa da rede.
+- **Conta sem cadastro no app** (Y27): sai da sessão quebrada e avisa "Não achamos o cadastro dessa conta"
+  (antes mostrava "confira sua internet" a cada abertura).
+- **Uma leitura da conta por login** (X20): o login e o aviso do Auth que vem logo depois dividem a mesma
+  leitura e o mesmo canal de tempo real.

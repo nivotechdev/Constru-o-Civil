@@ -521,3 +521,86 @@ describe('remote: data and actions', () => {
     expect(m.store.getDb().jobs).toEqual({});
   });
 });
+
+describe('Z11: opening the app with the real backend', () => {
+  const storage = new Map<string, string>();
+  beforeEach(() => {
+    storage.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => void storage.set(k, v),
+      removeItem: (k: string) => void storage.delete(k),
+      key: (i: number) => [...storage.keys()][i] ?? null,
+      get length() {
+        return storage.size;
+      }
+    });
+    // Object.keys(localStorage) must list the keys, as in a browser.
+    vi.stubGlobal(
+      'localStorage',
+      new Proxy(globalThis.localStorage, {
+        ownKeys: () => [...storage.keys()],
+        getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true })
+      })
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function boot(fake: ReturnType<typeof fakeSupabase>) {
+    const m = await load(fake);
+    const session = await import('../services/remote/session');
+    const bootState = await import('../services/boot');
+    return { m, session, bootState };
+  }
+
+  it('a returning user with the account saved on the device opens at once; the server is checked after', async () => {
+    // First visit: signs in, the account is saved on the device.
+    const first = await boot(server('ana'));
+    await first.m.auth.signIn('ana@exemplo.com', 'segredo123');
+    expect(storage.get('bicos.conta')).toContain('u-ana');
+    // Next visit: the server is slow; the saved account opens the app without waiting for it.
+    const fake = server('ana');
+    let release: () => void = () => undefined;
+    const slow = new Promise<void>((r) => (release = r));
+    const original = fake.client.from;
+    fake.client.from = ((table: string) => {
+      const b = original(table);
+      if (table !== 'accounts') return b;
+      const then = (b as { then: (...a: unknown[]) => unknown }).then;
+      (b as { then: unknown }).then = (...a: unknown[]) => slow.then(() => then(...a));
+      return b;
+    }) as typeof fake.client.from;
+    const { m, session, bootState } = await boot(fake);
+    await session.startRemoteSession();
+    expect(bootState.getBootStatus()).toBe('ready');
+    expect(m.store.getSession()?.accountId).toBe('u-ana');
+    release();
+  });
+
+  it('a session on the device but no server: "offline", not the login', async () => {
+    storage.set('sb-x-auth-token', '{}');
+    const fake = server('ana', {
+      auth: {
+        getSession: () => {
+          throw new TypeError('Failed to fetch');
+        }
+      }
+    });
+    const { session, bootState, m } = await boot(fake);
+    await session.startRemoteSession();
+    expect(bootState.getBootStatus()).toBe('offline');
+    expect(m.store.getSession()).toBeNull();
+  });
+
+  it('Y27: a session whose account has no row is signed out with the reason', async () => {
+    const fake = fakeSupabase({
+      tables: { accounts: [] },
+      auth: { getSession: () => ({ data: { session: { user: authUser('u-sumiu', 'x@y.z') } }, error: null }) }
+    });
+    const { session, bootState, m } = await boot(fake);
+    await session.startRemoteSession();
+    expect(bootState.getBootStatus()).toBe('ready');
+    expect(m.store.getSession()).toBeNull();
+    expect(fake.calls.some((c) => c.name === 'signOut')).toBe(true);
+  });
+});
