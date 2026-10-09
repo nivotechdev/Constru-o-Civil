@@ -518,3 +518,18 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   de candidatura já abertas: minhas candidaturas, histórico, vaga e candidatos (`queries.refreshCandidacies`).
 - Abrir um aviso relê essas telas **com carregamento**, antes de mostrar: "Você avançou" nunca abre com o
   status de antes do aviso. Na demonstração o store já tem o status novo.
+
+## Y15 — Exclusão de conta completa
+
+- O app exclui a conta pela Edge Function **`excluir-conta`** (depois de conferir a senha, o que renova o
+  login). Ela chama `delete_my_account` **com o token do usuário** — a RPC exige login de no máximo 5
+  minutos (`session_authenticated_at`, pelo `amr` do token), recusa bico em andamento sem confirmação,
+  avisa o outro lado, anonimiza perfil e `reviews.author_label` e apaga a conta de acesso numa transação —
+  e só então apaga a pasta `<id>/` do usuário em `avatars`, `portfolio` e `vagas` e limpa `jobs.photos`
+  das vagas dele.
+- Se apagar os arquivos falhar depois de a conta ter saído, o erro fica no log da função (a conta não
+  volta); os arquivos já não estão ligados a nenhum perfil.
+- A RPC continua liberada para `authenticated` (ela só apaga a própria conta); quem a chamasse direto
+  deixaria só os próprios arquivos para trás. O app nunca faz isso.
+- As telas dizem o que de fato acontece: perfil, fotos e contatos apagados; avaliações e histórico ficam
+  sem o nome.

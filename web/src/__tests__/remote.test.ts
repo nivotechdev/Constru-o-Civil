@@ -390,6 +390,37 @@ describe('remote: data and actions', () => {
     expect(m.paging.getPaging(m.jobs.feedKey(q)).hasMore).toBe(false);
   });
 
+  it('deleting the account goes through the Edge Function, which also removes the files (Y15)', async () => {
+    const fake = server('ana', {
+      functions: {
+        'excluir-conta': (body) =>
+          (body as { confirmCommitments: boolean }).confirmCommitments
+            ? { data: { ok: true, arquivos: 3 }, error: null }
+            : {
+                data: null,
+                error: {
+                  context: new Response(
+                    JSON.stringify({ erro: 'BC409', mensagem: 'Confirme o que acontece com os bicos em andamento.' }),
+                    { status: 409 }
+                  )
+                }
+              }
+      }
+    });
+    const m = await load(fake);
+    const account = await import('../services/account');
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await expect(account.deleteAccount('segredo123', false)).rejects.toMatchObject({ code: 'conflito' });
+    expect(m.store.getSession()).not.toBeNull();
+    await account.deleteAccount('segredo123', true);
+    expect(fake.calls.filter((c) => c.kind === 'function').map((c) => c.args)).toEqual([
+      { confirmCommitments: false },
+      { confirmCommitments: true }
+    ]);
+    expect(fake.calls.some((c) => c.name === 'delete_my_account')).toBe(false);
+    expect(m.store.getSession()).toBeNull();
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

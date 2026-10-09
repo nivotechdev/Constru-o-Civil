@@ -141,7 +141,8 @@ export async function exportMyData(): Promise<void> {
 
 export async function deleteAccount(password: string, confirmCommitments: boolean): Promise<void> {
   if (!(await checkPassword(password))) throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
-  const client = await db();
-  await request(() => client.rpc('delete_my_account', { p_confirm_commitments: confirmCommitments }));
+  // Y15: the Edge Function runs delete_my_account as this user (recent sign-in, anonymized reviews) and
+  // then removes the user's files from Storage.
+  await invokeFunction('excluir-conta', { confirmCommitments });
   await signOut();
 }

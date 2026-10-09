@@ -58,8 +58,8 @@ export default function DeleteAccount() {
             <div className="flex flex-col gap-1">
               <span className="font-semibold text-danger-500">Essa ação não pode ser desfeita</span>
               <span className="text-sm text-concrete-600">
-                Seu perfil, candidaturas, posts e notificações são apagados. Avaliações que você deu ou recebeu
-                continuam, sem o seu nome.
+                Seu perfil, fotos, contatos, candidaturas, posts e notificações são apagados. Avaliações e o histórico
+                dos bicos continuam para o outro lado, sem o seu nome.
               </span>
             </div>
           </div>
