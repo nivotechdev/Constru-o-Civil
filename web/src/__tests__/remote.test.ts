@@ -581,6 +581,95 @@ describe('remote: data and actions', () => {
     expect(m.store.getDb().workers['u-ana']).toMatchObject({ identity: 'recusado', identityReason: 'Foto borrada' });
   });
 
+  it('X03: the bell counts on the server; read elsewhere, new notices and a reconnect keep it right', async () => {
+    const notice = (id: string, read: string | null) => ({
+      id,
+      worker_id: 'u-ana',
+      company_id: null,
+      kind: 'vaga_editada',
+      title: 'Vaga editada',
+      body: 'Mudou o horário.',
+      target: '/vaga/BC-5001',
+      created_at: '2026-10-09T12:00:00Z',
+      read_at: read
+    });
+    let serverCount = 140;
+    const fake = server('ana', {
+      tables: { notifications: [notice('n1', null), notice('n2', '2026-10-09T13:00:00Z')] },
+      rpc: { my_unread_count: () => ({ data: serverCount, error: null }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const notifications = await import('../services/notifications');
+    const count = () => notifications.unreadCount(m.store.getDb(), m.store.getSession());
+    await notifications.loadNotifications();
+    expect(count()).toBe(140);
+    await notifications.markNotificationRead('n1');
+    expect(count()).toBe(139);
+    fake.emit('INSERT', notice('n3', null));
+    expect(count()).toBe(140);
+    // Read on another device: the notice changes here and the number comes from the server again.
+    serverCount = 7;
+    fake.emit('UPDATE', notice('n3', '2026-10-09T14:00:00Z'));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(m.store.getDb().notifications.find((n) => n.id === 'n3')?.readAt).toBeTruthy();
+    await vi.waitFor(() => expect(count()).toBe(7));
+    // The channel dropped and came back: the list and the number are read again.
+    const before = fake.calls.filter((c) => c.name === 'my_unread_count').length;
+    fake.resubscribe();
+    await vi.waitFor(() =>
+      expect(fake.calls.filter((c) => c.name === 'my_unread_count').length).toBeGreaterThan(before)
+    );
+    await notifications.markAllNotificationsRead();
+    expect(count()).toBe(0);
+  });
+
+  it('X03: turning push on asks the browser, subscribes with the VAPID key and saves the device', async () => {
+    vi.stubEnv(
+      'VITE_VAPID_PUBLIC_KEY',
+      'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
+    );
+    const fake = server('ana');
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    let subscribed: PushSubscriptionOptionsInit | null = null;
+    const sub = {
+      endpoint: 'https://push.example/xyz',
+      toJSON: () => ({ keys: { p256dh: 'p'.repeat(40), auth: 'a'.repeat(16) } }),
+      unsubscribe: async () => true
+    };
+    let current: typeof sub | null = null;
+    const reg = {
+      pushManager: {
+        getSubscription: async () => current,
+        subscribe: async (opts: PushSubscriptionOptionsInit) => {
+          subscribed = opts;
+          current = sub;
+          return sub;
+        }
+      }
+    };
+    vi.stubGlobal('navigator', { serviceWorker: { getRegistration: async () => reg }, userAgent: 'Teste' });
+    vi.stubGlobal('Notification', { permission: 'default', requestPermission: async () => 'granted' });
+    vi.stubGlobal('PushManager', function PushManager() {});
+    const push = await import('../services/push');
+    expect(await push.pushState()).toBe('desligado');
+    await push.enablePush();
+    expect(subscribed).toMatchObject({ userVisibleOnly: true });
+    expect(fake.calls.find((c) => c.name === 'save_push_subscription')?.args).toEqual({
+      p_endpoint: 'https://push.example/xyz',
+      p_p256dh: 'p'.repeat(40),
+      p_auth: 'a'.repeat(16),
+      p_user_agent: 'Teste'
+    });
+    await push.disablePush();
+    expect(fake.calls.find((c) => c.name === 'delete_push_subscription')?.args).toEqual({
+      p_endpoint: 'https://push.example/xyz'
+    });
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

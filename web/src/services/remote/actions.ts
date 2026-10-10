@@ -21,7 +21,11 @@ export async function markAllNotificationsRead(): Promise<void> {
   const now = new Date().toISOString();
   // RLS limits the update to the session's notifications.
   await request(() => client.from('notifications').update({ read_at: now }).is('read_at', null));
-  store.transact((d) => ({ ...d, notifications: d.notifications.map((n) => (n.readAt ? n : { ...n, readAt: now })) }));
+  store.transact((d) => ({
+    ...d,
+    notifications: d.notifications.map((n) => (n.readAt ? n : { ...n, readAt: now })),
+    unreadTotal: 0
+  }));
 }
 
 export async function markNotificationRead(id: string): Promise<void> {
@@ -33,7 +37,8 @@ export async function markNotificationRead(id: string): Promise<void> {
   await request(() => client.from('notifications').update({ read_at: now }).eq('id', id));
   store.transact((d) => ({
     ...d,
-    notifications: d.notifications.map((n) => (n.id === id ? { ...n, readAt: now } : n))
+    notifications: d.notifications.map((n) => (n.id === id ? { ...n, readAt: now } : n)),
+    unreadTotal: d.unreadTotal === undefined ? undefined : Math.max(0, d.unreadTotal - 1)
   }));
 }
 

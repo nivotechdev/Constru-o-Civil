@@ -425,6 +425,12 @@ export interface SupabaseDatabase {
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
       submit_identity: { Args: { p_selfie_path: string; p_document_path: string }; Returns: undefined };
+      my_unread_count: { Args: never; Returns: number };
+      save_push_subscription: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent: string | null };
+        Returns: undefined;
+      };
+      delete_push_subscription: { Args: { p_endpoint: string }; Returns: undefined };
       my_identity: {
         Args: never;
         Returns: { status: IdentityStatus; reason: string | null; submitted_at: string | null }[];

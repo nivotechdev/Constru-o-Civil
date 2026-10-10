@@ -422,6 +422,8 @@ export interface Database {
   workerTrack?: Record<string, { faltas: number; desistencias: number }>;
   /** Y28: "Avisar quando aparecer bico novo", per worker (the real backend loads only the session's). */
   jobAlerts?: Record<string, JobAlert>;
+  /** X03: the session's unread notices as the server counts them (more than the 100 loaded). */
+  unreadTotal?: number;
 }
 
 /** A worker's alert for new jobs (Y28): a city — or a radius around a point — and an optional trade. */

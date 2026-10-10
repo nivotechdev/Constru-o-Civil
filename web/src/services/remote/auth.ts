@@ -6,6 +6,7 @@ import type { CaptchaSource, ProfileData, SignInResult, SignUpData, SignUpResult
 import { serviceError, ServiceError } from '../errors';
 import { getSession } from '../store';
 import { db, invokeFunction, request, toServiceError } from './client';
+import { withTimeout } from '../boot';
 import { authRedirectUrl, enterPendingSession, enterSession, leaveSession, setRecovering } from './session';
 
 const digits = (s: string) => s.replace(/\D/g, '');
@@ -76,6 +77,8 @@ export async function signIn(identifier: string, password: string, captcha: Capt
 
 export async function signOut(): Promise<void> {
   const client = await db();
+  // X03: this device stops receiving the account's notices (best effort, with the session still valid).
+  await import('../push').then((m) => withTimeout(m.disablePush(), 3000)).catch(() => undefined);
   // Works offline too: the session is dropped on the device even if the server can't be told.
   await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
   await leaveSession();

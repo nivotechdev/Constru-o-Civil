@@ -23,6 +23,7 @@ import {
   putAccount,
   putCompanies,
   putWorkers,
+  updateNotification,
   WORKER_COLUMNS
 } from './merge';
 import { setBootStatus, withTimeout } from '../boot';
@@ -44,18 +45,31 @@ export function setRecovering(on: boolean): void {
   recovering = on;
 }
 
+let stopReconnectWatch: (() => void) | null = null;
+
 async function stopRealtime(): Promise<void> {
+  stopReconnectWatch?.();
+  stopReconnectWatch = null;
   if (!channel) return;
   const client = await db();
   await client.removeChannel(channel);
   channel = null;
 }
 
-/** New notifications reach the bell while the app is open (RLS limits them to the session's). */
+/** X03: after a gap (no signal, phone asleep) the bell reads again what it may have missed. */
+function rereadNotifications(): void {
+  void import('./data').then((m) => m.loadNotifications()).catch(() => undefined);
+}
+
+/**
+ * New notifications reach the bell while the app is open, and a notice read on another device stops counting
+ * here (X03). RLS limits both to the session's.
+ */
 async function startRealtime(account: TableRow<'accounts'>): Promise<void> {
   await stopRealtime();
   const client = await db();
   const filter = account.worker_id ? `worker_id=eq.${account.worker_id}` : `company_id=eq.${account.company_id}`;
+  let subscribedBefore = false;
   channel = client
     .channel('notificacoes-' + account.id)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter }, (payload) => {
@@ -64,7 +78,28 @@ async function startRealtime(account: TableRow<'accounts'>): Promise<void> {
       // Y12: the candidacy screens read the new status at once.
       if (isCandidacyNotice(row.kind as NotificationKind)) void refreshCandidacies();
     })
-    .subscribe();
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter }, (payload) => {
+      apply(updateNotification(payload.new as TableRow<'notifications'>));
+      void import('./data').then((m) => m.refreshUnreadCount()).catch(() => undefined);
+    })
+    .subscribe((status) => {
+      if (status !== 'SUBSCRIBED') return;
+      // The channel came back after dropping: whatever arrived meanwhile wasn't delivered.
+      if (subscribedBefore) rereadNotifications();
+      subscribedBefore = true;
+    });
+  const target = globalThis.window;
+  if (typeof target?.addEventListener === 'function') {
+    const onVisible = () => {
+      if (globalThis.document?.visibilityState === 'visible') rereadNotifications();
+    };
+    target.addEventListener('online', rereadNotifications);
+    globalThis.document?.addEventListener('visibilitychange', onVisible);
+    stopReconnectWatch = () => {
+      target.removeEventListener?.('online', rereadNotifications);
+      globalThis.document?.removeEventListener('visibilitychange', onVisible);
+    };
+  }
 }
 
 // ---- the account kept on the device (Z11) ----
@@ -175,6 +210,8 @@ async function loadSession(user: User): Promise<Role> {
   }
   if (getSession()?.accountId !== account.id) setSessionAccount(account.id);
   void startRealtime(account);
+  // X03: the browser may have renewed this device's push address since last time.
+  void import('../push').then((m) => m.syncPushSubscription()).catch(() => undefined);
   // The bell's badge needs the notifications from the start (the rest loads with each screen).
   void import('./data').then((m) => runQuery('notifications', m.loadNotifications));
   return account.role;

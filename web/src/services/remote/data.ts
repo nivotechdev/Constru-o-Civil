@@ -20,6 +20,7 @@ import {
   putJobAddresses,
   putJobs,
   putNotifications,
+  putUnreadTotal,
   putPayments,
   putPosts,
   putSavedJobIds,
@@ -393,10 +394,18 @@ export async function loadCompanyProfile(companyId: string): Promise<void> {
 
 export async function loadNotifications(): Promise<void> {
   const client = await db();
-  const rows = await request(() =>
-    client.from('notifications').select('*').order('created_at', { ascending: false }).limit(100)
-  );
-  apply(putNotifications(rows));
+  const [rows, unread] = await Promise.all([
+    request(() => client.from('notifications').select('*').order('created_at', { ascending: false }).limit(100)),
+    request(() => client.rpc('my_unread_count'))
+  ]);
+  apply(putNotifications(rows), putUnreadTotal(unread ?? 0));
+}
+
+/** X03: only the bell's number (after a notice read on another device). */
+export async function refreshUnreadCount(): Promise<void> {
+  const client = await db();
+  const unread = await request(() => client.rpc('my_unread_count'));
+  apply(putUnreadTotal(unread ?? 0));
 }
 
 // ---- account ----

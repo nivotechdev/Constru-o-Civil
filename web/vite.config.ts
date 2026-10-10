@@ -61,6 +61,8 @@ export default defineConfig(({ mode }) => {
                 // shows the offline screens instead of the browser's dinosaur.
                 globPatterns: ['**/*.{js,css,html,woff2,svg}', 'icons/*.png'],
                 navigateFallback: 'index.html',
+                // X03: the push notices (public/push-sw.js).
+                importScripts: ['push-sw.js'],
                 cleanupOutdatedCaches: true,
                 runtimeCaching: [
                   {

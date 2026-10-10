@@ -75,7 +75,9 @@ export function notificationsFor(db: Database, session: Session | null): AppNoti
 
 /** The bell's badge. */
 export function unreadCount(db: Database, session: Session | null): number {
-  return notificationsFor(db, session).filter((n) => !n.readAt).length;
+  if (!session) return 0;
+  // X03: with the real backend the server's count (it sees past the 100 loaded); the demo counts here.
+  return db.unreadTotal ?? notificationsFor(db, session).filter((n) => !n.readAt).length;
 }
 
 /** The logged-in account's notifications. Backend: select notifications for me, newest first. */

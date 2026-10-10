@@ -49,6 +49,8 @@ function applyFilters(rows: Row[], ops: unknown[][]): Row[] {
 }
 
 export function fakeSupabase(options: FakeOptions = {}) {
+  const realtime: { event: string; cb: (payload: { new: Row }) => void }[] = [];
+  const statusListeners: ((status: string) => void)[] = [];
   const tables: Record<string, Row[]> = options.tables ?? {};
   const calls: Call[] = [];
 
@@ -149,7 +151,17 @@ export function fakeSupabase(options: FakeOptions = {}) {
       }
     },
     channel: () => {
-      const ch = { on: () => ch, subscribe: () => ch };
+      const ch = {
+        on: (_type: string, filter: { event: string }, cb: (payload: { new: Row }) => void) => {
+          realtime.push({ event: filter.event, cb });
+          return ch;
+        },
+        subscribe: (cb?: (status: string) => void) => {
+          statusListeners.push(cb ?? (() => undefined));
+          cb?.('SUBSCRIBED');
+          return ch;
+        }
+      };
       return ch;
     },
     removeChannel: async () => 'ok',
@@ -167,7 +179,12 @@ export function fakeSupabase(options: FakeOptions = {}) {
     }
   };
 
-  return { client, calls, tables };
+  /** Delivers a Realtime change to the channels the services opened. */
+  const emit = (event: 'INSERT' | 'UPDATE', row: Row) =>
+    realtime.filter((h) => h.event === event).forEach((h) => h.cb({ new: row }));
+  /** The channel dropped and came back (each listener hears SUBSCRIBED again). */
+  const resubscribe = () => statusListeners.forEach((cb) => cb('SUBSCRIBED'));
+  return { client, calls, tables, emit, resubscribe };
 }
 
 /** A Supabase Auth user as the client hands it out. */

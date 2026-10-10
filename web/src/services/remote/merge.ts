@@ -185,7 +185,27 @@ export const addNotification =
   (db) =>
     db.notifications.some((n) => n.id === row.id)
       ? db
-      : { ...db, notifications: [notificationFromRow(row), ...db.notifications] };
+      : {
+          ...db,
+          notifications: [notificationFromRow(row), ...db.notifications],
+          unreadTotal: db.unreadTotal === undefined || row.read_at ? db.unreadTotal : db.unreadTotal + 1
+        };
+
+/** A notice changed elsewhere (read on another device: X03). */
+export const updateNotification =
+  (row: TableRow<'notifications'>): Recipe =>
+  (db) => ({
+    ...db,
+    notifications: db.notifications.map((n) => (n.id === row.id ? notificationFromRow(row) : n))
+  });
+
+/** X03: the unread count from the server; `delta` adjusts what is there (after marking one read). */
+export const putUnreadTotal =
+  (total: number | ((current: number) => number)): Recipe =>
+  (db) => ({
+    ...db,
+    unreadTotal: Math.max(0, typeof total === 'number' ? total : total(db.unreadTotal ?? 0))
+  });
 
 export const putSavedJobIds =
   (ids: string[]): Recipe =>

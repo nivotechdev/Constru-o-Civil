@@ -985,3 +985,27 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Colunas protegidas**: o `update` de cada tabela só aceita as colunas com grant (perfil, legenda do post,
   `read_at` do aviso); qualquer outra (nota, selo, status, impulsionamento) é erro de tipo — elas mudam só
   pelas RPCs, e o banco também recusa.
+
+### X03 — Notificações
+
+- **Sino certo em qualquer aparelho**: o número vem do servidor (`my_unread_count`, não só dos 100 avisos
+  carregados); abrir um aviso num aparelho tira dos outros (Realtime de UPDATE em `notifications`); ao voltar
+  o sinal, ao reabrir o app (aba visível) ou quando o canal do Realtime cai e volta, a lista e o número são
+  relidos.
+- **Push (Web Push com VAPID)**: Configurações › Avisos › "Ativar neste aparelho" abre **uma explicação antes**
+  do pedido do navegador (o que chega, que dá para desligar); só então o navegador pergunta. O aparelho vai
+  para `push_subscriptions` (por RPC; um aparelho fica com a última conta que entrou nele). Sair da conta
+  desliga o aparelho. Estados mostrados: ligado, desligado, bloqueado no navegador (como liberar), sem suporte
+  (no iPhone, só com o app na tela de início).
+- Envio: cada aviso novo chama a Edge Function **`enviar-push`** pelo `pg_net` (gatilho no banco; só se a conta
+  tem aparelho). A função respeita os grupos escolhidos (F06), manda título, texto e a tela do aviso (nada
+  além do que o sino mostra) e apaga aparelhos que o navegador diz que não existem mais. Tocar na notificação
+  abre o app na tela certa (`public/push-sw.js`, importado pelo service worker do X02).
+- **Escondido até configurar** (`VITE_VAPID_PUBLIC_KEY`). Para ligar: gerar as chaves
+  (`npx web-push generate-vapid-keys`); em Edge Functions › Secrets, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+  `VAPID_SUBJECT` (`mailto:nivotech.dev@gmail.com`) e `PUSH_WEBHOOK_SECRET` (um texto aleatório longo);
+  publicar `enviar-push` com `--no-verify-jwt`; ligar a extensão **pg_net**; no SQL Editor, guardar no Vault
+  a URL da função e o mesmo segredo:
+  `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');`
+  e `select vault.create_secret('<o mesmo PUSH_WEBHOOK_SECRET>', 'bicos_push_secret');`; por fim
+  `VITE_VAPID_PUBLIC_KEY` no build. A chave privada nunca vai para o front.

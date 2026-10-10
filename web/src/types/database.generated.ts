@@ -923,6 +923,36 @@ export type Database = {
           }
         ];
       };
+      push_subscriptions: {
+        Row: {
+          endpoint: string;
+          account_id: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+          last_used_at: string | null;
+        };
+        Insert: {
+          endpoint: string;
+          account_id: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+          last_used_at?: string | null;
+        };
+        Update: {
+          endpoint?: string;
+          account_id?: string;
+          p256dh?: string;
+          auth?: string;
+          user_agent?: string | null;
+          created_at?: string;
+          last_used_at?: string | null;
+        };
+        Relationships: [];
+      };
       reports: {
         Row: {
           id: string;
@@ -1382,6 +1412,7 @@ export type Database = {
       delete_job: { Args: { p_job_id: string }; Returns: undefined };
       delete_job_alert: { Args: Record<PropertyKey, never>; Returns: undefined };
       delete_my_account: { Args: { p_confirm_commitments: boolean }; Returns: undefined };
+      delete_push_subscription: { Args: { p_endpoint: string }; Returns: undefined };
       document_available: { Args: { p_document: string }; Returns: boolean };
       document_hash: { Args: { p_document: string }; Returns: string };
       document_login_email: { Args: { p_document: string; p_password: string }; Returns: string };
@@ -1470,6 +1501,7 @@ export type Database = {
         Returns: { status: string; reason: string; submitted_at: string }[];
       };
       my_job_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      my_unread_count: { Args: Record<PropertyKey, never>; Returns: number };
       my_worker_id: { Args: Record<PropertyKey, never>; Returns: string };
       notification_group: { Args: { p_kind: Database['public']['Enums']['notification_kind'] }; Returns: string };
       notify: {
@@ -1529,6 +1561,10 @@ export type Database = {
         Returns: undefined;
       };
       save_notification_prefs: { Args: { p_muted: string[]; p_push: string[] }; Returns: undefined };
+      save_push_subscription: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent: string };
+        Returns: undefined;
+      };
       session_authenticated_at: { Args: Record<PropertyKey, never>; Returns: string };
       set_company_verification: {
         Args: { p_company: string; p_status: Database['public']['Enums']['company_verification'] };

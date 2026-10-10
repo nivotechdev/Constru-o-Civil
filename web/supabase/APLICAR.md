@@ -374,6 +374,19 @@ select tgname from pg_trigger where tgname = 'limit_application_spam';          
 Depois das duas: **Advisors** (Database › Advisors) — segurança sem ERROR; os avisos que sobram estão
 explicados em `docs/ADVISORS.md`.
 
+### 33. `20261014000300_x03_push.sql` (X03)
+
+`push_subscriptions` (aparelhos que aceitaram notificações; só por RPC), `save_push_subscription`,
+`delete_push_subscription`, `my_unread_count` (o número do sino vem do servidor), o gatilho que chama a Edge
+Function `enviar-push` a cada aviso novo (pelo pg_net, só com a URL e o segredo no Vault) e `notifications` na
+publicação do Realtime (o "lida" chega aos outros aparelhos). Sem configurar o push, nada muda para o usuário.
+
+```sql
+select count(*) from pg_proc where proname in ('save_push_subscription', 'delete_push_subscription', 'my_unread_count'); -- 3
+select tgname from pg_trigger where tgname = 'push_new_notification';                                                   -- 1 linha
+select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'notifications';         -- 1
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
