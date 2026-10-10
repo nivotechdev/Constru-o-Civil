@@ -843,3 +843,12 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   Configurações › **Contas bloqueadas**, com "Desbloquear".
 - Uma contratação já confirmada não é desfeita pelo bloqueio (a pessoa pode estar indo trabalhar); para isso
   existem cancelar e desistir.
+
+### F06 — Preferências de aviso
+
+- Configurações › **Avisos**: no app, "Bicos novos e convites" pode ser desligado (o banco deixa de gravar esses
+  avisos para a conta: `notify()` respeita `notification_prefs`). O andamento do próprio bico (aprovado,
+  contratado, cancelado, lembretes) **sempre chega** — silenciar isso faria a pessoa perder trabalho.
+- "No celular" (um interruptor por grupo) aparece quando o push estiver ligado (X03); a escolha já fica salva em
+  `push_groups`. O pedido de permissão explicado antes do pedido do navegador entra com o X03.
+- E-mail por tipo: adiado — o app ainda não manda avisos por e-mail (só os do Auth).

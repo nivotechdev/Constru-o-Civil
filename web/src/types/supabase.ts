@@ -275,6 +275,14 @@ interface Relationship {
   referencedColumns: string[];
 }
 
+/** F06 */
+type NotificationPrefsRow = {
+  account_id: string;
+  muted_groups: string[];
+  push_groups: string[];
+  updated_at: string;
+};
+
 /** F04: who blocked whom (select: the blocker's own). */
 type BlockRow = { blocker_id: string; blocked_id: string; created_at: string };
 
@@ -332,6 +340,7 @@ export const RELATIONSHIPS = {
   job_alerts: [fk('job_alerts', 'worker_id', 'workers', true)],
   job_invites: [fk('job_invites', 'job_id', 'jobs'), fk('job_invites', 'worker_id', 'workers')],
   blocks: [],
+  notification_prefs: [],
   application_events: [fk('application_events', 'application_id', 'applications')],
   notifications: [fk('notifications', 'worker_id', 'workers'), fk('notifications', 'company_id', 'companies')],
   boost_payments: [fk('boost_payments', 'job_id', 'jobs'), fk('boost_payments', 'company_id', 'companies')]
@@ -344,6 +353,7 @@ export interface SupabaseDatabase {
       job_alerts: Table<JobAlertRow, 'created_at' | 'updated_at'>;
       job_invites: Table<JobInviteRow, 'status' | 'created_at'>;
       blocks: Table<BlockRow, 'created_at'>;
+      notification_prefs: Table<NotificationPrefsRow, 'muted_groups' | 'push_groups' | 'updated_at'>;
       oficios: Table<OficioRow, 'sinonimos'>;
       companies: Table<
         CompanyRow,
@@ -382,6 +392,7 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      save_notification_prefs: { Args: { p_muted: string[]; p_push: string[] }; Returns: undefined };
       report_content: {
         Args: { p_target_type: ReportTarget; p_target_id: string; p_reason: ReportReason; p_details: string | null };
         Returns: undefined;

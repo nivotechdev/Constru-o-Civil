@@ -72,8 +72,8 @@ export default function Settings() {
           <Row
             icon="bell"
             label="Notificações"
-            description="Candidaturas, avaliações e avisos da Bicos"
-            onClick={() => navigate('/notificacoes')}
+            description="O que chega no app e no celular"
+            onClick={() => navigate('/configuracoes/avisos')}
           />
           {role === 'recrutador' && FEATURES.payments ? (
             <Row

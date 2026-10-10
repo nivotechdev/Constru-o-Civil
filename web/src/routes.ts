@@ -73,6 +73,7 @@ const ChangeEmail = screen(() => import('./pages/shared/ChangeEmail'));
 const CompleteSignup = screen(() => import('./pages/shared/CompleteSignup'));
 const PublicJob = screen(() => import('./pages/shared/PublicJob'));
 const BlockedAccounts = screen(() => import('./pages/shared/BlockedAccounts'));
+const NotificationSettings = screen(() => import('./pages/shared/NotificationSettings'));
 const Reviews = screen(() => import('./pages/shared/ReviewsScreen'));
 const Help = screen(() => import('./pages/shared/Help'));
 
@@ -131,6 +132,7 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/configuracoes/senha', app(ChangePassword)),
   compileRoute('/configuracoes/email', app(ChangeEmail)),
   compileRoute('/configuracoes/bloqueados', app(BlockedAccounts)),
+  compileRoute('/configuracoes/avisos', app(NotificationSettings)),
   compileRoute('/configuracoes/excluir-conta', app(DeleteAccount)),
   compileRoute('/conta-excluida', anyone(AccountDeleted)),
   compileRoute('/ajuda', anyone(Help)),

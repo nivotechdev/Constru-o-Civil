@@ -297,6 +297,15 @@ painel (`select * from public.reports where status = 'aberta' order by created_a
 select count(*) from pg_trigger where tgname in ('applications_refuse_blocked', 'job_invites_refuse_blocked'); -- 2
 ```
 
+### 28. `20261013000500_f06_preferencias_aviso.sql` (F06)
+
+`notification_prefs` (silenciar "bicos novos" no sino; grupos do push para o X03), `save_notification_prefs` e
+`notify()` respeitando o que foi silenciado.
+
+```sql
+select count(*) from pg_proc where proname in ('save_notification_prefs', 'notification_group');   -- 2
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

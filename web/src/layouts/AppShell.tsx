@@ -24,6 +24,7 @@ const NARROW_SCREENS = new Set([
   '/configuracoes/senha',
   '/configuracoes/email',
   '/configuracoes/bloqueados',
+  '/configuracoes/avisos',
   '/pagamentos',
   '/whatsapp',
   '/notificacoes',

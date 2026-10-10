@@ -160,6 +160,21 @@ describe('status machine in the services', () => {
     expect(safety.isBlocked(m.store.getDb(), 'rafael')).toBe(false);
   });
 
+  it('F06: muting "bicos novos" keeps invites out of the bell; candidacy news always arrive', async () => {
+    const notices = await import('../services/notifications');
+    const inv = await import('../services/invites');
+    await asWorker();
+    await run(notices.saveNotificationPrefs({ muted: ['bicos_novos'], push: [] }));
+    await expect(run(notices.saveNotificationPrefs({ muted: ['candidaturas'], push: [] }))).rejects.toMatchObject({
+      code: 'validacao'
+    });
+    await asCompany();
+    await run(inv.inviteWorker('BC-4998', 'jorge'));
+    expect(noticesFor('jorge').some((n) => n.kind === 'convite')).toBe(false);
+    await run(m.apps.confirmHire('BC-4821', 'jorge'));
+    expect(noticesFor('jorge').some((n) => n.kind === 'contratado')).toBe(true);
+  });
+
   it('L07: each closed job says how it ended', async () => {
     await asCompany();
     const db = m.store.getDb();
