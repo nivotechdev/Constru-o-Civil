@@ -264,6 +264,16 @@ describe('status machine in the services', () => {
     expect(m.sel.unavailableText('aberta')).toBeNull();
   });
 
+  it('X07: applying again to the same job says so instead of a second "Candidatura enviada"', async () => {
+    await asWorker();
+    const open = Object.values(m.store.getDb().jobs).find(
+      (j) => m.sel.jobState(m.store.getDb(), j) === 'aberta' && !m.sel.applicationFor(m.store.getDb(), j.id, 'jorge')
+    )!;
+    expect(await run(m.apps.submitApplication(open.id))).toBe('enviada');
+    expect(await run(m.apps.submitApplication(open.id))).toBe('ja_enviada');
+    expect(m.store.getDb().applications.filter((a) => a.jobId === open.id && a.workerId === 'jorge')).toHaveLength(1);
+  });
+
   it('closing the job makes the refusals final and turns the pending candidates down', async () => {
     await asCompany();
     await run(m.apps.approve('BC-4998', 'bruno'));

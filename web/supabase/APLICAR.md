@@ -387,6 +387,17 @@ select tgname from pg_trigger where tgname = 'push_new_notification';           
 select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'notifications';         -- 1
 ```
 
+### 34. `20261014000400_x09_arquivos_orfaos.sql` (X09)
+
+`orphan_storage_objects` (arquivos sem uso há mais de 1 dia; identidade 30 dias depois da decisão; só
+service_role), `identity_submissions.decided_at` e a chamada diária (4h40) da Edge Function `limpar-arquivos`
+pelo pg_cron/pg_net (URL e segredo no Vault). Sem configurar, nada é apagado.
+
+```sql
+select has_function_privilege('service_role', 'public.orphan_storage_objects(integer)', 'execute');   -- true
+select jobname, schedule from cron.job where jobname = 'bicos-limpar-arquivos';                        -- 40 4 * * *
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

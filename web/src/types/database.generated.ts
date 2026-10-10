@@ -481,9 +481,30 @@ export type Database = {
         ];
       };
       identity_submissions: {
-        Row: { id: string; worker_id: string; selfie_path: string; document_path: string; created_at: string };
-        Insert: { id?: string; worker_id: string; selfie_path: string; document_path: string; created_at?: string };
-        Update: { id?: string; worker_id?: string; selfie_path?: string; document_path?: string; created_at?: string };
+        Row: {
+          id: string;
+          worker_id: string;
+          selfie_path: string;
+          document_path: string;
+          created_at: string;
+          decided_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          worker_id: string;
+          selfie_path: string;
+          document_path: string;
+          created_at?: string;
+          decided_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          worker_id?: string;
+          selfie_path?: string;
+          document_path?: string;
+          created_at?: string;
+          decided_at?: string | null;
+        };
         Relationships: [
           {
             foreignKeyName: 'identity_submissions_worker_id_fkey';
@@ -1368,6 +1389,7 @@ export type Database = {
         Args: { termo?: string };
         Returns: { id: string; nome: string; tipo: string; foto_url: string; biografia: string }[];
       };
+      call_storage_cleanup: { Args: Record<PropertyKey, never>; Returns: undefined };
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       claim_document_for: { Args: { p_user_id: string; p_digits: string }; Returns: undefined };
       close_job: { Args: { p_job_id: string }; Returns: undefined };
@@ -1515,6 +1537,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      orphan_storage_objects: { Args: { p_limit?: number }; Returns: { bucket: string; name: string }[] };
       own_job_for_update: { Args: { p_job_id: string }; Returns: Database['public']['Tables']['jobs']['Row'] };
       perfil_publico: {
         Args: { p_id: string };

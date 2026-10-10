@@ -1,4 +1,5 @@
 import { BackBar } from '../../components/BackBar';
+import { showToast } from '../../services/toast';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { FieldError } from '../../components/FieldError';
@@ -23,7 +24,13 @@ import { Rating } from '../../components/Rating';
 export default function ConfirmApplication({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
-  const submit = useAction(submitApplication, () => navigate('/enviado/' + params.id));
+  const submit = useAction(submitApplication, (result) => {
+    if (result === 'enviada') navigate('/enviado/' + params.id, { replace: true });
+    else {
+      showToast('Você já se candidatou a essa vaga.');
+      navigate('/vaga/' + params.id, { replace: true });
+    }
+  });
   if (query.status !== 'ready')
     return (
       <ScreenLoading

@@ -279,8 +279,13 @@ function conclude(db: Database, appId: string, by: Actor, at: string): Database 
  * Sends the logged-in worker's application. Backend: insert into applications (status enviada) after
  * checking the job is still open; notifies the company.
  */
-export async function submitApplication(jobId: string): Promise<void> {
-  if (!IS_DEMO) return remote.submitApplication(jobId);
+export async function submitApplication(jobId: string): Promise<'enviada' | 'ja_enviada'> {
+  // X07: a second "Quero esse bico" (back button, old tab) doesn't pretend to send it again.
+  if (applicationFor(store.getDb(), jobId, currentWorkerId())) return 'ja_enviada';
+  if (!IS_DEMO) {
+    await remote.submitApplication(jobId);
+    return 'enviada';
+  }
   await mockLatency(600);
   const db = store.getDb();
   const job = getJob(db, jobId);
@@ -288,7 +293,7 @@ export async function submitApplication(jobId: string): Promise<void> {
   const workerId = currentWorkerId();
   const state = jobState(db, job);
   if (state === 'excluida') throw serviceError('conflito', 'Essa vaga foi removida pela construtora.');
-  if (applicationFor(db, jobId, workerId)) return;
+  if (applicationFor(db, jobId, workerId)) return 'ja_enviada';
   // Y07: the same checks as the server's submit_application.
   if (state === 'encerrada') throw serviceError('conflito', 'Essa vaga foi encerrada.');
   if (state === 'vencida') throw serviceError('conflito', 'O prazo dessa vaga já passou.');
@@ -307,6 +312,7 @@ export async function submitApplication(jobId: string): Promise<void> {
       at
     )
   );
+  return 'enviada';
 }
 
 /** Withdraws the worker's application while the company hasn't decided. Backend: delete it (own, pending). */

@@ -1060,3 +1060,26 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   candidaturas), quando enviou, desde quando está assim e o **motivo** que a construtora (ou o sistema, como na
   recusa automática por vaga cheia) informou. Quando o próximo passo é em outra tela (WhatsApp, avaliar), o
   botão leva até lá.
+
+### X07 — "Candidatura enviada" sem sucesso falso
+
+- A tela de "Candidatura enviada" lê a vaga e a candidatura quando é aberta direto (recarregar, link antigo) e,
+  **sem candidatura, volta para o detalhe da vaga** em vez de dizer que enviou.
+- Tocar de novo em "Quero esse bico" numa vaga em que já se candidatou responde **"Você já se candidatou a essa
+  vaga"** e volta para o detalhe (`submitApplication` diz `enviada` ou `ja_enviada`), sem segunda notificação.
+
+### X08 — PIX atualiza sozinho
+
+- Feito junto com o Z02: o PIX aguardando é relido a cada 5 s (o webhook confirma no servidor) e um pagamento já
+  terminado não fica preso na tela para o próximo impulso (`BoostPayment.tsx`).
+
+### X09 — Fotos e mídia
+
+- Progresso, compressão (1600 px, WebP/JPEG), HEIC convertido, banco aceitando só URL do próprio Storage na pasta
+  do dono, buckets sem listagem e foto de vaga só por construtora: feitos no Z12/F16.
+- **Arquivos órfãos**: além de apagar a foto trocada e o post excluído na hora, uma limpeza diária
+  (`limpar-arquivos`, chamada pelo pg_cron às 4h40) apaga pela API do Storage o que nenhuma linha usa há mais de 1
+  dia (envio que não chegou a ser gravado, foto tirada de uma vaga) e as **fotos de identidade 30 dias depois da
+  decisão** (F07, guardar só o necessário). Arquivos de antes do app novo ficam.
+- Para ligar: publicar `limpar-arquivos` com `--no-verify-jwt`, segredo `CLEANUP_SECRET` em Edge Functions ›
+  Secrets e no Vault `bicos_cleanup_url` (URL da função) e `bicos_cleanup_secret` (o mesmo segredo).
