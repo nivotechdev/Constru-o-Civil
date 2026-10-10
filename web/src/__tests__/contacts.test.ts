@@ -36,7 +36,9 @@ describe('getContact', () => {
     const r = await settle(m.contacts.getContact('a1')); // jorge, pré-selecionado on BC-4821
     expect(r.ok && r.v.name).toBe('Construtora Meridiano');
     expect(r.ok && r.v.url).toContain('https://wa.me/5511988423310?text=');
-    expect(r.ok && decodeURIComponent(r.v.url)).toContain('Vi sua vaga de Pedreiro de acabamento (BC-4821) na Bicos');
+    expect(r.ok && decodeURIComponent(r.v.url)).toContain(
+      'Aqui é Jorge, da Bicos. Fui aprovado para a vaga de Pedreiro de acabamento (BC-4821)'
+    );
   });
 
   it('gives the company the worker number once approved, never before', async () => {
@@ -58,13 +60,17 @@ describe('getContact', () => {
 });
 
 describe('ready-made messages', () => {
-  const job = { id: 'BC-4821', oficioId: 'pedreiro-acabamento' };
-  it('say who, which trade and which job', () => {
-    expect(workerToCompanyMessage(job)).toBe(
-      'Olá! Vi sua vaga de Pedreiro de acabamento (BC-4821) na Bicos e fui aprovado. Podemos combinar os detalhes?'
+  const job = { id: 'BC-4821', oficioId: 'pedreiro-acabamento', startDate: '2026-10-12', endDate: '2026-10-12' };
+  const parts = { workerName: 'Jorge Mendes', companyName: 'Construtora Meridiano', job, hired: false };
+  it('say who writes, which trade, which job and which day (P07)', () => {
+    expect(workerToCompanyMessage(parts)).toBe(
+      'Olá, Construtora Meridiano! Aqui é Jorge, da Bicos. Fui aprovado para a vaga de Pedreiro de acabamento (BC-4821) do dia 12/10. Podemos combinar os detalhes?'
     );
-    expect(companyToWorkerMessage('Jorge Mendes', 'Construtora Meridiano', job)).toBe(
-      'Olá, Jorge! Aqui é da Construtora Meridiano, sobre a vaga de Pedreiro de acabamento (BC-4821) na Bicos. Podemos combinar os detalhes?'
+    expect(companyToWorkerMessage({ ...parts, hired: true, job: { ...job, endDate: '2026-10-15' } })).toBe(
+      'Olá, Jorge! Aqui é da Construtora Meridiano, pela Bicos. Você foi contratado para a vaga de Pedreiro de acabamento (BC-4821) de 12/10 a 15/10. Podemos combinar os detalhes?'
+    );
+    expect(workerToCompanyMessage({ ...parts, hired: true, job: { ...job, dateToArrange: true } })).toContain(
+      'Fui contratado para a vaga de Pedreiro de acabamento (BC-4821) com data a combinar.'
     );
     expect(whatsappUrl('', 'oi')).toBeNull();
   });

@@ -34,13 +34,14 @@ export async function getContact(applicationId: string): Promise<Contact> {
     throw serviceError('nao_autorizado', 'O contato abre quando a construtora aprova o candidato.');
   const company = db.companies[job.companyId];
   const worker = db.workers[app.workerId];
+  const parts = { workerName: worker.name, companyName: company.name, job, hired: app.status === 'contratado' };
   if (session?.role === 'trabalhador' && session.workerId === app.workerId) {
-    const url = workerToCompanyUrl(company.whatsapp, job);
+    const url = workerToCompanyUrl(company.whatsapp, parts);
     if (!url) throw serviceError('nao_encontrado', 'A construtora ainda não cadastrou um WhatsApp.');
     return { name: company.name, phone: company.whatsapp, url };
   }
   if (session?.role === 'recrutador' && session.companyId === job.companyId) {
-    const url = companyToWorkerUrl(worker.whatsapp, worker.name, company.name, job);
+    const url = companyToWorkerUrl(worker.whatsapp, parts);
     if (!url) throw serviceError('nao_encontrado', 'Esse trabalhador ainda não cadastrou um WhatsApp.');
     return { name: worker.name, phone: worker.whatsapp, url };
   }

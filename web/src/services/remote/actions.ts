@@ -50,10 +50,15 @@ export async function getContact(applicationId: string): Promise<Contact> {
   const job = app ? data.jobs[app.jobId] : undefined;
   const session = store.getSession();
   let url: string | null = null;
-  if (job && session?.role === 'trabalhador') url = workerToCompanyUrl(contact.phone, job);
-  else if (job && app) {
-    const companyName = data.companies[job.companyId]?.name ?? '';
-    url = companyToWorkerUrl(contact.phone, contact.name, companyName, job);
+  if (job && app) {
+    const hired = app.status === 'contratado';
+    if (session?.role === 'trabalhador') {
+      const workerName = data.workers[app.workerId]?.name ?? '';
+      url = workerToCompanyUrl(contact.phone, { workerName, companyName: contact.name, job, hired });
+    } else {
+      const companyName = data.companies[job.companyId]?.name ?? '';
+      url = companyToWorkerUrl(contact.phone, { workerName: contact.name, companyName, job, hired });
+    }
   }
   if (!url) throw serviceError('nao_encontrado', 'Esse contato não está disponível.');
   return { name: contact.name, phone: contact.phone, url };

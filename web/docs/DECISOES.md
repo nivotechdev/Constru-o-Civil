@@ -734,3 +734,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   existia). A construtora recebe o aviso e vê o selo "Confirmou que vai" no candidato. Na véspera, às 18h,
   quem ainda não confirmou recebe "Amanhã tem bico" (rotina diária no banco; a demonstração não tem relógio
   de rotina, então não manda lembrete). Mudar as datas da vaga zera as confirmações.
+
+### P07 — Mensagem pronta do WhatsApp
+
+- A mensagem que abre no WhatsApp diz quem escreve, para quem, a vaga e a data: "Olá, Construtora Meridiano!
+  Aqui é Jorge, da Bicos. Fui aprovado para a vaga de Pedreiro de acabamento (BC-4821) do dia 12/10…" — e
+  "fui contratado" / "você foi contratado" quando a contratação já foi confirmada. Data a combinar ou vários
+  dias aparecem como tal.
