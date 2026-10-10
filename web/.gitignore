@@ -10,3 +10,4 @@ scripts/parity/.font-cache/
 !.env.example
 dist-real/
 deno.lock
+preview/

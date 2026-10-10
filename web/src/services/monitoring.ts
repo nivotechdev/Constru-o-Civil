@@ -44,7 +44,7 @@ export function reportError(error: unknown, context: Record<string, string> = {}
     timestamp: new Date().toISOString(),
     platform: 'javascript',
     level: 'error',
-    release: 'bicos-web@' + ((import.meta.env as ImportMetaEnv & { VITE_RELEASE?: string }).VITE_RELEASE ?? 'dev'),
+    release: 'bicos-web@' + ((import.meta.env as ImportMetaEnv).VITE_RELEASE ?? 'dev'),
     tags: { route: scrubbedRoute(), ...context, componentStack: undefined },
     exception: { values: [{ type: err.name, value: err.message.slice(0, 300), stacktrace: undefined }] },
     extra: { stack: (err.stack ?? '').slice(0, 2000), componentStack: context.componentStack?.slice(0, 1500) }

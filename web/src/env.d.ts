@@ -15,9 +15,7 @@ interface ImportMetaEnv {
   readonly VITE_TURNSTILE_SITE_KEY?: string;
   /** "1" when the Auth has the Google provider configured. */
   readonly VITE_LOGIN_GOOGLE?: string;
-  /** "1" when the Auth has phone sign-in (SMS) configured. */
-  readonly VITE_LOGIN_CELULAR?: string;
-  /** "1" when the WhatsApp/SMS code (Edge Function enviar-codigo) has a provider configured. */
+  /** "1" when the WhatsApp/SMS code (Edge Function codigo-whatsapp) has a provider configured. */
   readonly VITE_CODIGO_WHATSAPP?: string;
   /** Web Push public VAPID key; without it, push notifications are hidden. */
   readonly VITE_VAPID_PUBLIC_KEY?: string;
@@ -25,6 +23,8 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_DSN?: string;
   /** Support WhatsApp number (digits), for "Falar com o suporte". */
   readonly VITE_SUPORTE_WHATSAPP?: string;
+  /** The version name in error reports (set by the deploy). */
+  readonly VITE_RELEASE?: string;
 }
 
 interface ImportMeta {

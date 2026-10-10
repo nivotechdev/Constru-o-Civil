@@ -8,7 +8,24 @@ Supabase (`supabase/tests/local/setup.sh`), para aplicar de uma destas formas:
 
 - **SQL Editor do painel**: abra cada arquivo, na ordem, cole e rode (cada um é idempotente: pode rodar de
   novo sem problema). Ou cole `APLICAR-TUDO.sql`, que junta todos numa transação só.
-- **Supabase CLI**: `supabase link --project-ref ppnxdajiihsjaojxokzh` e `supabase db push`.
+- **Supabase CLI**: `supabase link --project-ref ppnxdajiihsjaojxokzh` e `supabase db push` — antes, alinhe o
+  histórico (abaixo), senão o CLI tenta rodar de novo as três primeiras.
+
+### Histórico de migrations (X16)
+
+No banco, as três primeiras foram aplicadas em 10 partes, com outras versões (`20261008233626_bicos_v2_schema`
+… `20261009002539_bicos_v2_rules_5_auth_triggers`). O conteúdo é o mesmo dos três arquivos
+`20261009000100/200/300`. Para o histórico do banco ficar igual aos arquivos (uma vez, pelo CLI):
+
+```bash
+supabase migration repair --status reverted 20261008233626 20261009000624 20261009001304 20261009001443 \
+  20261009001730 20261009001838 20261009001917 20261009001947 20261009002436 20261009002539
+supabase migration repair --status applied 20261009000100 20261009000200 20261009000300
+supabase migration list   # local e remoto iguais até 20261009000300; o resto aparece só como local
+```
+
+`repair` só mexe na tabela de histórico (`supabase_migrations.schema_migrations`), nunca no esquema.
+Daí em diante, toda mudança no banco entra por arquivo novo em `web/supabase/migrations` e `supabase db push`.
 
 Depois de aplicar, rode a consulta de conferência de cada uma (no fim de cada item).
 

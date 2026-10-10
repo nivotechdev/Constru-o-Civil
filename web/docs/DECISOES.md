@@ -932,3 +932,19 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   `domínio/**` (SUPABASE.md).
 - A pilha própria de "voltar" continua (o "Voltar" do app não sai do app); o botão voltar do navegador
   funciona pelo `popstate`.
+
+### X16 — Processo
+
+- **CI** (`.github/workflows/web.yml`): a cada push/PR que mexe em `web/` — typecheck, lint, format, testes,
+  os três builds (demonstração, modo real com variáveis de mentira, prévia `standalone`), **Lighthouse** no
+  perfil de celular (falha abaixo de 85/95/95, `scripts/lighthouse-check.mjs`) e os **testes SQL** num Postgres
+  igual ao do Supabase com todas as migrations.
+- `web/preview/index.html` saiu do Git: a prévia que abre do disco é o artefato **bicos-preview** do CI (ou
+  `npm run build:standalone`).
+- `.env.example` completo, com o que é público e onde ficam os segredos.
+- **Histórico de migrations**: o banco tem as três primeiras em 10 partes com outras versões; `APLICAR.md`
+  traz os `supabase migration repair` que deixam o histórico igual aos arquivos (só a tabela de histórico).
+- **Staging separado: adiado (decisão do dono do projeto)** — criar um segundo projeto Supabase (gratuito) só
+  para testes, aplicar as mesmas migrations e apontar um build de staging para ele (`VITE_SUPABASE_URL` do
+  staging). Não criei porque um projeto novo entra na conta/cobrança da organização. O "Branching" do
+  Supabase é a alternativa paga. Os testes SQL já rodam isolados no CI, sem tocar o banco de produção.

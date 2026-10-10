@@ -1,0 +1,75 @@
+# X16: every push and pull request touching web/ is checked the way a contributor checks locally —
+# typecheck, lint, format, unit tests, the three builds (demo, real, standalone), the SQL tests on a
+# Supabase-like Postgres, and Lighthouse on a phone profile. The standalone preview is published as an
+# artifact (it is no longer kept in Git).
+name: web
+
+on:
+  push:
+    paths: ["web/**", "supabase/migrations/**", ".github/workflows/web.yml"]
+  pull_request:
+    paths: ["web/**", "supabase/migrations/**", ".github/workflows/web.yml"]
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - name: Build (demonstração)
+        run: npm run build
+      - name: Build (modo real)
+        run: npm run build -- --outDir dist-real
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder
+      - name: Build (prévia que abre do disco)
+        run: npm run build:standalone
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bicos-preview
+          path: web/dist-standalone/index.html
+      - name: Lighthouse (celular)
+        run: |
+          npx --yes lighthouse@12.8.2 --version
+          (npx vite preview --port 4173 --strictPort &) && sleep 3
+          npx --yes lighthouse@12.8.2 http://localhost:4173/ --quiet --form-factor=mobile \
+            --throttling-method=devtools --chrome-flags="--headless=new --no-sandbox" \
+            --output=json --output-path=lighthouse.json
+          node scripts/lighthouse-check.mjs lighthouse.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: web/lighthouse.json
+          if-no-files-found: ignore
+
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Postgres do Supabase + migrations
+        run: ./supabase/tests/local/setup.sh
+      - name: Testes SQL
+        run: node supabase/tests/run.mjs supabase/tests/[a-z]*.sql
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:54322/postgres
