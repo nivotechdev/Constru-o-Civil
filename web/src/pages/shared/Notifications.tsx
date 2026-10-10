@@ -66,7 +66,7 @@ export default function Notifications() {
                       {n.title}
                     </span>
                     <span className="text-sm text-concrete-600">{n.text}</span>
-                    <span className="text-xs text-concrete-400">{relativeTime(n.createdAt)}</span>
+                    <span className="text-xs text-concrete-500">{relativeTime(n.createdAt)}</span>
                   </div>
                   {n.readAt ? null : (
                     <span className="absolute right-4 top-4 w-2 h-2 rounded-full bg-brand-500" aria-label="Não lida" />

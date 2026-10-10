@@ -177,8 +177,10 @@ function Slides({ job, photos, frame, compact }: SlidesProps) {
         n > 1 ? 'cursor-grab' : ''
       )}
       tabIndex={n > 1 && !compact ? 0 : undefined}
-      aria-label="Fotos do bico"
-      aria-roledescription="carrossel"
+      // X05: on a tile the photos are decoration of the card (its link says what the job is); swipe stays.
+      aria-hidden={compact ? true : undefined}
+      aria-label={compact ? undefined : 'Fotos do bico'}
+      aria-roledescription={compact ? undefined : 'carrossel'}
     >
       {photos.map((src, i) => (
         <div key={i} className="shrink-0 w-full h-full snap-center snap-always overflow-hidden">
@@ -202,7 +204,7 @@ function Slides({ job, photos, frame, compact }: SlidesProps) {
       title={label}
       disabled={dir < 0 ? index === 0 : index === n - 1}
       className={cx(
-        'absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-white/90 text-concrete-900 shadow-raised transition hover:bg-white hover:scale-105 disabled:!opacity-0 disabled:pointer-events-none',
+        'tap-target absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-white/90 text-concrete-900 shadow-raised transition hover:bg-white hover:scale-105 disabled:!opacity-0 disabled:pointer-events-none',
         compact
           ? 'hidden lg:inline-flex w-8 h-8 opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
           : 'inline-flex w-9 h-9',

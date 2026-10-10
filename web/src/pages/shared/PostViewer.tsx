@@ -1,4 +1,5 @@
 // F16: a portfolio post in full screen — swipe (or the arrows) to the next one; the owner edits the caption.
+import { useModal } from '../../hooks/useModal';
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '../../components/Button';
@@ -23,6 +24,8 @@ interface PostViewerProps {
 export function PostViewer({ posts, index, isOwn, onIndex }: PostViewerProps) {
   const [editing, setEditing] = useState<string | null>(null);
   const touchX = useRef<number | null>(null);
+  const open = index !== null && Boolean(posts[index]);
+  const modalRef = useModal(open, () => onIndex(null));
   const save = useAction(updatePostCaption, () => {
     setEditing(null);
     showToast('Legenda salva');
@@ -41,13 +44,14 @@ export function PostViewer({ posts, index, isOwn, onIndex }: PostViewerProps) {
     <div
       className="fixed inset-0 z-[60] flex flex-col text-white"
       style={{ background: 'rgba(10, 12, 16, 0.97)' }}
+      ref={modalRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="Trabalho"
       onKeyDown={(e) => {
         if (e.key === 'ArrowRight') go(1);
         if (e.key === 'ArrowLeft') go(-1);
-        if (e.key === 'Escape') onIndex(null);
       }}
     >
       <div className="flex items-center justify-between px-2 min-h-14">

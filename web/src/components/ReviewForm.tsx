@@ -28,7 +28,7 @@ export function StarPicker({ value, onChange }: { value: number; onChange: (v: n
           </button>
         ))}
       </div>
-      <span className={cx('text-sm font-semibold', value ? 'text-concrete-900' : 'text-concrete-400')}>
+      <span className={cx('text-sm font-semibold', value ? 'text-concrete-900' : 'text-concrete-500')}>
         {value ? LABELS[value] : 'Toque nas estrelas para dar a nota'}
       </span>
     </div>
@@ -87,7 +87,7 @@ export function ReviewForm({ question, tags, commentHint, maxComment, loading, e
           rows={4}
           placeholder="Conte em poucas palavras como foi."
           value={comment}
-          className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none transition-colors duration-150"
+          className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150"
           onInput={(v) => setComment(v.slice(0, maxComment))}
         />
         <div className="flex justify-between gap-3 text-sm text-concrete-500">

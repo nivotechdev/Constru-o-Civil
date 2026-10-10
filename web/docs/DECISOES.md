@@ -1027,3 +1027,24 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Sessão de recuperação abandonada é encerrada**: sair da tela sem salvar encerra a sessão curta do link; e se
   a pessoa fechou a aba no meio, na próxima abertura o app encerra essa sessão em vez de entrar na conta
   (marcador `bicos.recuperacao` no aparelho). Recarregar a própria tela de nova senha continua valendo.
+
+### X05 — Acessibilidade (WCAG 2.1 AA)
+
+- **Diálogos e folhas** (`Dialog`, `Sheet`, tela cheia do portfólio): `role="dialog"`/`alertdialog`, título
+  ligado por `aria-labelledby`, foco entra ao abrir, **Tab fica preso dentro**, **Esc fecha** e o foco **volta
+  para o botão que abriu** (`hooks/useModal.ts`; só o de cima responde quando há um sobre o outro).
+- Erros já ligados ao campo (`aria-invalid` + `aria-describedby`) em `Input`/`PasswordInput`.
+- **Cartão de vaga**: deixou de ser um `role="link"` com o botão de salvar dentro. O cartão inteiro continua
+  abrindo a vaga com toque/clique; para teclado e leitor de tela, o **título é o botão** (com o resumo da vaga)
+  e "Salvar vaga" é outro botão — Enter no salvar só salva.
+- A barra de navegação **não é mais recriada a cada mudança de dados** (`AppShell`, `key={storeVersion}`) — isso
+  tirava o foco do teclado da barra. **`LegacyRerender` foi removido**: ele imitava o app antigo (tirava o foco
+  do botão clicado, cortava transições e reiniciava animações a cada mudança); o comportamento normal do React
+  é melhor para acessibilidade.
+- **Alvos de toque ≥ 44 px**: botões, chips, ícones, "salvar vaga" e setas do carrossel ganham uma área de toque
+  invisível de pelo menos 44 × 44 px (`.tap-target`), sem mudar o desenho. No cartão de vaga o alvo de toque é o
+  cartão todo.
+- **Contraste**: textos em `concrete-400` (3,1:1) passaram para `concrete-500` (≥ 4,5:1). As fotos dentro do
+  cartão são decorativas para o leitor de tela (o título já descreve a vaga).
+- Conferência automática: `scripts/a11y-check.mjs` roda o **axe** (WCAG 2.1 A/AA) em 14 telas (trabalhador e
+  construtora, celular) — **0 problemas** — e entra no CI; Lighthouse de Acessibilidade 100.

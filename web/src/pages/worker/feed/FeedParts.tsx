@@ -112,7 +112,7 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
         <input
           ref={inputRef}
           id={id}
-          data-focus-id={id}
+
           type="search"
           autoComplete="off"
           spellCheck={false}

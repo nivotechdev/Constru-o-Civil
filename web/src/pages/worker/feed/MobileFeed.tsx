@@ -115,7 +115,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
           <button
             key={o.id}
             type="button"
-            className={`flex-1 h-10 rounded-full text-sm font-bold transition-colors ${ui.sort === o.id ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'}`}
+            className={`relative tap-target flex-1 h-10 rounded-full text-sm font-bold transition-colors ${ui.sort === o.id ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'}`}
             onClick={() => setFeed({ sort: o.id })}
           >
             {o.label}

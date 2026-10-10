@@ -397,7 +397,7 @@ function PixWaiting({
         ) : IS_DEMO ? (
           <>
             <FakeQr seed={code} />
-            <span className="text-xs text-concrete-400">QR code de demonstração</span>
+            <span className="text-xs text-concrete-500">QR code de demonstração</span>
           </>
         ) : null}
         <span className="text-sm text-concrete-700 text-center">

@@ -108,7 +108,7 @@ export function CityPicker({ open, title, value, onChoose, onClose, stateKey }: 
           {geoMsg}
         </span>
       ) : null}
-      <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.08em] text-concrete-400">
+      <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.08em] text-concrete-500">
         <span className="flex-1 h-px bg-concrete-200" />
         ou
         <span className="flex-1 h-px bg-concrete-200" />

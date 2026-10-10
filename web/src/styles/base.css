@@ -242,3 +242,15 @@ button {
     transition: none;
   }
 }
+
+/* X05: every control answers a touch of at least 44 × 44 px, even when it is drawn smaller (the extra area is
+   invisible and centred on it). The element must be positioned (relative/absolute). */
+.tap-target::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}

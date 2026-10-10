@@ -383,7 +383,12 @@ export const SCENARIOS = [
     name: 'avaliar-diaria',
     start: '#/minhas-candidaturas',
     steps: [
-      click((p) => p.getByRole('link', { name: /Servente de obra, Diária concluída/ })),
+      // The legacy tile is a role=link; the new one has the title as a button (X05).
+      click((p) =>
+        p
+          .getByRole('link', { name: /Servente de obra, Diária concluída/ })
+          .or(p.getByRole('button', { name: /Servente de obra, Diária concluída/ }))
+      ),
       snap('avaliar'),
       click((p) => p.locator('.icon.cursor-pointer').nth(2)),
       click(button('EPI no local')),

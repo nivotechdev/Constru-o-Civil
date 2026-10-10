@@ -17,7 +17,7 @@ export function Tag({ label, icon, selected = false, onClick, onRemove }: TagPro
       type="button"
       aria-pressed={onRemove ? undefined : selected ? 'true' : 'false'}
       className={cx(
-        'inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-colors duration-150',
+        'relative tap-target inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-colors duration-150',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
         selected
           ? 'bg-brand-50 border border-brand-500 text-brand-600'

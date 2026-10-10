@@ -1,7 +1,6 @@
 import { startTransition, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { Button } from './components/Button';
-import { LegacyRerender } from './components/LegacyRerender';
 import { OfflineBanner } from './components/OfflineBanner';
 import { ResultIcon } from './components/ResultIcon';
 import { SignOutDialog } from './components/SignOutDialog';
@@ -171,7 +170,6 @@ function Routes() {
   );
   return (
     <Suspense fallback={null}>
-      <LegacyRerender />
       <SignOutDialog />
       {isAuthFlow(path) ? (
         screen

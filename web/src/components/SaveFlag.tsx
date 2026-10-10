@@ -9,7 +9,7 @@ export function SaveFlag({ saved, onToggle }: { saved: boolean; onToggle: () => 
       aria-label={label}
       aria-pressed={saved ? 'true' : 'false'}
       title={label}
-      className="absolute top-2 right-2 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full transition-transform active:scale-90 hover:scale-110"
+      className="tap-target absolute top-2 right-2 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full transition-transform active:scale-90 hover:scale-110"
       onClick={(e) => {
         e.stopPropagation();
         onToggle();

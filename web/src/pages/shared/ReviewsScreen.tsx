@@ -102,7 +102,7 @@ export default function ReviewsScreen({ params }: ScreenProps) {
                   ) : null}
                   {r.comment ? <span className="text-sm text-concrete-700">{r.comment}</span> : null}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-concrete-400">{dayLabel(toISODate(new Date(r.createdAt)))}</span>
+                    <span className="text-xs text-concrete-500">{dayLabel(toISODate(new Date(r.createdAt)))}</span>
                     <button
                       type="button"
                       className="text-xs font-semibold text-concrete-500 hover:text-danger-500"

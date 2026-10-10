@@ -1,7 +1,6 @@
-import { useSyncExternalStore, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useDb, useRole } from '../hooks/useStore';
 import { currentCompany, currentWorker } from '../services/selectors';
-import { getVersion, subscribe } from '../services/store';
 import type { Role } from '../types/models';
 import { cx } from '../utils/cx';
 import { AppNav, type AccountSummary } from './AppNav';
@@ -66,9 +65,6 @@ interface AppShellProps {
 export function AppShell({ path, pattern, children }: AppShellProps) {
   const role = useRole();
   const db = useDb();
-  // The legacy app rebuilt the navigation on every state change; remounting it keeps its imperatively
-  // placed tab indicators exactly as they were (see AppNav).
-  const storeVersion = useSyncExternalStore(subscribe, getVersion);
 
   const isMural = path === '/mural';
   const showMobileNav = TAB_ROOTS[role] && TAB_ROOTS[role].has(path);
@@ -84,13 +80,8 @@ export function AppShell({ path, pattern, children }: AppShellProps) {
 
   return (
     <div className={cx('lg:flex lg:flex-col lg:min-h-screen', isMural ? 'bg-white' : '')}>
-      <AppNav
-        key={storeVersion}
-        role={role}
-        active={tabIdForPath(path, role)}
-        showMobilePill={showMobileNav}
-        account={account}
-      />
+      {/* X05: not remounted on every data change (that dropped the keyboard focus in the bar). */}
+      <AppNav role={role} active={tabIdForPath(path, role)} showMobilePill={showMobileNav} account={account} />
       <main
         className={cx(
           'flex-1 min-w-0',

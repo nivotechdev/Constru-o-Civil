@@ -161,7 +161,7 @@ function PostCard({
       <div className="flex flex-col gap-1.5 p-3.5">
         {post.caption ? <p className="text-sm text-concrete-800 leading-relaxed">{post.caption}</p> : null}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-concrete-400">{formatPostDate(post.date)}</span>
+          <span className="text-xs text-concrete-500">{formatPostDate(post.date)}</span>
           {!isOwn ? (
             <button
               type="button"
@@ -258,7 +258,7 @@ function Composer({ ui, setUi }: ComposerProps) {
           rows={3}
           placeholder="Conte o que foi feito nesse bico..."
           value={ui.caption}
-          className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none transition-colors duration-150"
+          className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150"
           onInput={(v) => setUi({ caption: v.slice(0, MAX_CAPTION) })}
         />
         <span className="text-xs text-concrete-500 self-end">{`${ui.caption.length}/${MAX_CAPTION}`}</span>

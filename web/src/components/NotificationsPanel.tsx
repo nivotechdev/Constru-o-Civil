@@ -112,7 +112,7 @@ export function NotificationsPanel({
                             {n.title}
                           </span>
                           <span className="text-sm text-concrete-600 line-clamp-2">{n.text}</span>
-                          <span className="text-xs text-concrete-400">{relativeTime(n.createdAt)}</span>
+                          <span className="text-xs text-concrete-500">{relativeTime(n.createdAt)}</span>
                         </span>
                         {n.readAt ? null : (
                           <span

@@ -13,7 +13,7 @@ export function Rating({ value = 0, count, showValue = true, editable = false, o
   if (!value && !editable) {
     return (
       <span className="inline-flex items-center gap-1">
-        <span className="text-sm text-concrete-400">Novo na plataforma</span>
+        <span className="text-sm text-concrete-500">Novo na plataforma</span>
       </span>
     );
   }

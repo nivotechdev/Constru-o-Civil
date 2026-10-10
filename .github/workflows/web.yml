@@ -55,6 +55,12 @@ jobs:
             --throttling-method=devtools --chrome-flags="--headless=new --no-sandbox" \
             --output=json --output-path=lighthouse.json
           node scripts/lighthouse-check.mjs lighthouse.json
+      - name: Acessibilidade (axe, WCAG 2.1 AA)
+        run: |
+          npm i --no-save axe-core@4.10.3
+          npx playwright install chromium
+          curl -sf http://localhost:4173/ > /dev/null || ((npx vite preview --port 4173 --strictPort &) && sleep 3)
+          node scripts/a11y-check.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

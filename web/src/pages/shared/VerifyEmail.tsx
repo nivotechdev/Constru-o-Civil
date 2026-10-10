@@ -129,7 +129,7 @@ export default function VerifyEmail() {
           onClick={open}
         />
         {IS_DEMO ? (
-          <span className="text-xs text-center text-concrete-400">
+          <span className="text-xs text-center text-concrete-500">
             Demonstração: este botão faz o papel do link enviado por e-mail.
           </span>
         ) : null}

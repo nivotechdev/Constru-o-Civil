@@ -91,7 +91,7 @@ export function Input({
         <input
           ref={fieldRef}
           id={fieldId}
-          data-focus-id={id}
+
           type={type}
           placeholder={placeholder}
           inputMode={inputMode || undefined}
@@ -171,7 +171,7 @@ export function PasswordInput({
         <input
           ref={fieldRef}
           id={fieldId}
-          data-focus-id={id}
+
           type={visible ? 'text' : 'password'}
           name={autoComplete === 'new-password' ? 'new-password' : 'password'}
           autoComplete={autoComplete}

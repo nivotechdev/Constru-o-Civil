@@ -62,6 +62,7 @@ export function JobTile({
   const dias = diasInfo(job);
   const where = [bairro, dias && dias.short].filter(Boolean).join(' · ');
   const when = whenText(job);
+  const label = [jobTitle(job), badge && badge.label, company && company.name, where, when].filter(Boolean).join(', ');
 
   const pill = (children: ReactNode, className = '') => (
     <span
@@ -75,28 +76,9 @@ export function JobTile({
   );
 
   return (
-    <div
-      role={onClick ? 'link' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      aria-label={[jobTitle(job), badge && badge.label, company && company.name, where, when]
-        .filter(Boolean)
-        .join(', ')}
-      className={cx(
-        'group min-w-0 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-100',
-        onClick ? 'cursor-pointer' : ''
-      )}
-      onClick={onClick}
-      onKeyDown={
-        onClick
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onClick();
-              }
-            }
-          : undefined
-      }
-    >
+    // X05: the whole card opens the job with the mouse or a tap; for keyboard and screen readers the title is
+    // the button (the save flag is its own button, not nested inside another control).
+    <div className={cx('group min-w-0 rounded-xl', onClick ? 'cursor-pointer' : '')} onClick={onClick}>
       <div className="relative aspect-[20/19] rounded-xl sm:rounded-2xl overflow-hidden bg-concrete-200">
         {/* Only the picture is greyed out when muted; badges and the save flag keep their colour.
             The photos swipe right here on the tile, without opening the job. */}
@@ -144,9 +126,28 @@ export function JobTile({
         ) : null}
       </div>
       <div className="flex flex-col pt-2.5 sm:pt-3 text-[0.8125rem] sm:text-[0.9375rem] leading-[1.35]">
-        <span className={cx('truncate font-semibold sm:text-base', muted ? 'text-concrete-500' : 'text-concrete-900')}>
-          {jobTitle(job)}
-        </span>
+        {onClick ? (
+          <button
+            type="button"
+            aria-label={label}
+            className={cx(
+              'truncate text-left font-semibold sm:text-base rounded outline-none focus-visible:ring-4 focus-visible:ring-brand-100',
+              muted ? 'text-concrete-500' : 'text-concrete-900'
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+          >
+            {jobTitle(job)}
+          </button>
+        ) : (
+          <span
+            className={cx('truncate font-semibold sm:text-base', muted ? 'text-concrete-500' : 'text-concrete-900')}
+          >
+            {jobTitle(job)}
+          </span>
+        )}
         <span className="truncate text-concrete-500">{where}</span>
         <span className="truncate text-concrete-500">{when}</span>
         <span className={cx('truncate pt-0.5', muted ? 'text-concrete-500' : 'text-concrete-900')}>

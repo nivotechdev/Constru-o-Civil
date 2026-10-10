@@ -57,7 +57,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading ? 'true' : undefined}
       className={cx(
-        'inline-flex items-center justify-center rounded-control font-body font-bold whitespace-nowrap select-none',
+        'relative tap-target inline-flex items-center justify-center rounded-control font-body font-bold whitespace-nowrap select-none',
         'transition-colors duration-150 ease-out active:scale-[0.98]',
         'disabled:bg-concrete-100 disabled:text-concrete-400 disabled:border-concrete-200 disabled:cursor-not-allowed disabled:active:scale-100',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',

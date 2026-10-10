@@ -17,7 +17,6 @@ import '@fontsource/space-mono/latin-700.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/tailwind.css';
-import './styles/legacy-rerender.css';
 
 installGlobalErrorReporting();
 // Z10: a screen's file that vanished after a new version was published → reload once to get the new one.
