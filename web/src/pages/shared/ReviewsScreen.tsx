@@ -7,7 +7,7 @@ import { ListSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
 import { loadCompanyProfile, loadWorkerProfile } from '../../services/profiles';
 import { Rating } from '../../components/Rating';
-import { useDb, useRole } from '../../hooks/useStore';
+import { useDb, useRole, useSession } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack } from '../../services/router';
 import { dayLabel, toISODate } from '../../utils/dates';
@@ -16,8 +16,16 @@ import { getCompany, getWorker } from '../../services/selectors';
 export default function ReviewsScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
+  const session = useSession();
   const type = params.type === 'construtora' ? 'construtora' : 'trabalhador';
-  const backTarget = type === 'trabalhador' ? '/trabalhador/' + params.id : '/construtora/' + params.id;
+  const mine = type === 'trabalhador' ? session?.workerId === params.id : session?.companyId === params.id;
+  const backTarget = mine
+    ? type === 'trabalhador'
+      ? '/perfil'
+      : '/empresa'
+    : type === 'trabalhador'
+      ? '/trabalhador/' + params.id
+      : '/construtora/' + params.id;
   const query = useQuery(type === 'trabalhador' ? 'worker:' + params.id : 'company:' + params.id, () =>
     type === 'trabalhador' ? loadWorkerProfile(params.id) : loadCompanyProfile(params.id)
   );
@@ -30,8 +38,9 @@ export default function ReviewsScreen({ params }: ScreenProps) {
   const subject = worker || company;
   if (!subject) return <NotFound message="Não encontrado." />;
 
-  // Only companies see a worker's reviews, and only workers see a company's.
-  const allowed = type === 'trabalhador' ? role === 'recrutador' : role === 'trabalhador';
+  // Each one sees their own reviews; besides that, only companies see a worker's and only workers see a
+  // company's (L09).
+  const allowed = mine || (type === 'trabalhador' ? role === 'recrutador' : role === 'trabalhador');
 
   if (!allowed) {
     return (

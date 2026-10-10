@@ -104,7 +104,8 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
             </span>
             <div className="flex items-center gap-3">
               <Rating value={company.rating} count={company.reviewCount} />
-              {!isOwn ? (
+              {/* L09: the company sees its own reviews; workers see a company's. */}
+              {company.reviewCount > 0 && (isOwn || role === 'trabalhador') ? (
                 <button
                   type="button"
                   className="inline-flex items-center gap-0.5 text-sm font-semibold text-brand-600"

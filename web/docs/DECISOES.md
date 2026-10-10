@@ -683,3 +683,9 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   Preferimos isso a atrasar a decisão: uma decisão "pendurada" no aparelho se perderia se o app fechasse.
 - Desfazer recusa é a transição nova `desfazer_recusa` (RPC `undo_reject`): só a recusa feita pela própria
   construtora, até 10 minutos depois, com a vaga aberta.
+
+### L09 — Quem vê quais avaliações
+
+- Cada um vê as próprias avaliações a partir do próprio perfil ("Ver avaliações", voltando para o perfil).
+  Além disso, construtoras veem as de trabalhadores e trabalhadores veem as de construtoras.
+- "Ver avaliações" só aparece onde a pessoa pode ver e quando há avaliação (antes levava a um cadeado).
