@@ -51,6 +51,7 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
   if (patch.name !== undefined) update.name = patch.name.trim();
   if (patch.tipoObra !== undefined) update.tipo_obra = patch.tipoObra || null;
   if (patch.location !== undefined) update.location = patch.location;
+  if (patch.contactName !== undefined) update.contact_name = patch.contactName.trim() || null;
   if (!Object.keys(update).length) return;
   const client = await db();
   const row = await request(() =>

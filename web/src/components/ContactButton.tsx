@@ -15,12 +15,15 @@ export function ContactButton({
   applicationId,
   size = 'sm',
   fullWidth = false,
-  round = false
+  round = false,
+  label
 }: {
   applicationId: string;
   size?: 'sm' | 'lg';
   fullWidth?: boolean;
   round?: boolean;
+  /** F15: "Falar com Ana". */
+  label?: string;
 }) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
@@ -36,20 +39,20 @@ export function ContactButton({
   }, [applicationId, attempt]);
 
   if (state.status === 'ready') {
-    return <WhatsAppButton href={state.contact.url} size={size} fullWidth={fullWidth} round={round} />;
+    return <WhatsAppButton href={state.contact.url} size={size} fullWidth={fullWidth} round={round} label={label} />;
   }
   const retry = () => {
     setState({ status: 'loading' });
     setAttempt((n) => n + 1);
   };
   const loading = state.status === 'loading';
-  const label = loading ? 'Carregando contato…' : 'Tentar de novo';
+  const status = loading ? 'Carregando contato…' : 'Tentar de novo';
   if (round) {
     return (
       <button
         type="button"
-        aria-label={loading ? label : `Contato não carregou. ${label}`}
-        title={loading ? label : state.message}
+        aria-label={loading ? status : `Contato não carregou. ${status}`}
+        title={loading ? status : state.message}
         disabled={loading}
         className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-concrete-500 shadow-raised ring-2 ring-white"
         onClick={(e) => {
@@ -77,7 +80,7 @@ export function ContactButton({
         }}
       >
         <Icon name={loading ? 'message-circle' : 'refresh-cw'} size={size === 'lg' ? 20 : 16} />
-        {label}
+        {status}
       </button>
       {state.status === 'error' ? <span className="text-xs text-danger-500">{state.message}</span> : null}
     </div>

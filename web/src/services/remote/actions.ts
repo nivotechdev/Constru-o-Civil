@@ -54,7 +54,8 @@ export async function getContact(applicationId: string): Promise<Contact> {
     const hired = app.status === 'contratado';
     if (session?.role === 'trabalhador') {
       const workerName = data.workers[app.workerId]?.name ?? '';
-      url = workerToCompanyUrl(contact.phone, { workerName, companyName: contact.name, job, hired });
+      const contactName = data.companies[job.companyId]?.contactName;
+      url = workerToCompanyUrl(contact.phone, { workerName, companyName: contact.name, job, hired, contactName });
     } else {
       const companyName = data.companies[job.companyId]?.name ?? '';
       url = companyToWorkerUrl(contact.phone, { workerName: contact.name, companyName, job, hired });

@@ -19,7 +19,7 @@ import { errorMessage } from '../../services/errors';
 import { isValidCnpj, isValidCpf } from '../../utils/document';
 import { PasswordStrength } from '../../components/PasswordStrength';
 
-type FieldId = 'nome' | 'razao' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
+type FieldId = 'nome' | 'razao' | 'responsavel' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
 
 interface SignupField {
   id: FieldId;
@@ -114,6 +114,14 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
         icon: 'building-2'
       },
       {
+        id: 'responsavel',
+        label: 'Seu nome',
+        question: 'Quem vai falar com os candidatos?',
+        help: 'Quem você aprovar vê "Fale com" e esse nome no botão do WhatsApp.',
+        placeholder: 'Ana Souza',
+        icon: 'user'
+      },
+      {
         id: 'doc',
         label: 'CNPJ ou CPF',
         question: 'Qual é o CNPJ da empresa?',
@@ -165,6 +173,8 @@ function validateField(field: SignupField, values: Values, role: Role): string |
     return null;
   }
   if (field.id === 'razao') return v.length < 3 ? 'Informe o nome da empresa.' : null;
+  if (field.id === 'responsavel')
+    return v.length < 2 ? 'Escreva seu nome.' : v.length > 60 ? 'Use até 60 caracteres.' : null;
   if (field.id === 'doc') {
     // Y17: the check digits too (the server refuses the same documents).
     if (role === 'recrutador')
@@ -353,7 +363,8 @@ export default function Signup({ params }: ScreenProps) {
         whatsapp: ui.values.whatsapp || '',
         password,
         acceptedTermsVersion: TERMS_VERSION,
-        adult: true
+        adult: true,
+        ...(role === 'recrutador' ? { contactName: (ui.values.responsavel || '').trim() } : {})
       },
       captcha.getToken
     )

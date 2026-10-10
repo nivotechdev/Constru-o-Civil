@@ -29,10 +29,10 @@ export type WorkerProfilePatch = Partial<Pick<Worker, 'name' | 'oficioId' | 'cit
 
 /** L11: the problems of a profile edit, per field (the same in both modes; the database checks too). */
 export function profileErrors(
-  patch: { name?: string; oficioId?: string; city?: string; location?: string },
+  patch: { name?: string; oficioId?: string; city?: string; location?: string; contactName?: string },
   role: 'trabalhador' | 'recrutador'
-): Partial<Record<'name' | 'oficioId' | 'city' | 'location', string>> {
-  const e: Partial<Record<'name' | 'oficioId' | 'city' | 'location', string>> = {};
+): Partial<Record<'name' | 'oficioId' | 'city' | 'location' | 'contactName', string>> {
+  const e: Partial<Record<'name' | 'oficioId' | 'city' | 'location' | 'contactName', string>> = {};
   if (patch.name !== undefined) {
     const name = patch.name.trim();
     if (name.length < 3) e.name = role === 'trabalhador' ? 'Informe seu nome completo.' : 'Informe o nome da empresa.';
@@ -42,6 +42,11 @@ export function profileErrors(
   if (patch.oficioId !== undefined && !getOficio(patch.oficioId)) e.oficioId = 'Escolha seu ofício na lista.';
   if (patch.city !== undefined && !cityByLabel(patch.city)) e.city = 'Escolha a cidade na lista.';
   if (patch.location !== undefined && !cityByLabel(patch.location)) e.location = 'Escolha a cidade na lista.';
+  if (patch.contactName !== undefined) {
+    const n = patch.contactName.trim().length;
+    if (n > 0 && n < 2) e.contactName = 'Escreva o nome de quem fala com os candidatos.';
+    else if (n > 60) e.contactName = 'Use até 60 caracteres.';
+  }
   return e;
 }
 
@@ -66,7 +71,7 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   store.updateWorker(currentWorkerId(), patch);
 }
 
-export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'tipoObra' | 'location'>>;
+export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'tipoObra' | 'location' | 'contactName'>>;
 
 /**
  * Y25: changes the account's WhatsApp (worker or company). A mobile with DDD (11 digits). The number

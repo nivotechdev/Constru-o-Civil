@@ -141,6 +141,7 @@ export const COMPANIES: Record<string, Company> = {
   meridiano: {
     id: 'meridiano',
     name: 'Construtora Meridiano',
+    contactName: 'Ricardo Alves',
     cnpj: '18.402.551/0001-47',
     tipoObra: 'Residencial e reforma',
     location: 'Zona Leste, SP',

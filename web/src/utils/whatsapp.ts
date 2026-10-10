@@ -26,12 +26,15 @@ export interface MessageParts {
   companyName: string;
   job: JobRef;
   hired: boolean;
+  /** F15: the company's contact person, greeted by first name when known. */
+  contactName?: string;
 }
 
 /** The worker's first message to the company that picked them. */
-export function workerToCompanyMessage({ workerName, companyName, job, hired }: MessageParts): string {
+export function workerToCompanyMessage({ workerName, companyName, job, hired, contactName }: MessageParts): string {
   const first = workerName.split(' ')[0];
-  const to = companyName ? `, ${companyName}` : '';
+  const greet = contactName ? contactName.split(' ')[0] : companyName;
+  const to = greet ? `, ${greet}` : '';
   return `Olá${to}! Aqui é ${first}, da Bicos. Fui ${hired ? 'contratado' : 'aprovado'} para a vaga de ${oficioNome(job.oficioId)} (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
 }
 

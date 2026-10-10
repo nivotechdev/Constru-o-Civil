@@ -126,7 +126,8 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
           documento: digits(data.doc),
           whatsapp: digits(data.whatsapp),
           terms_version: data.acceptedTermsVersion,
-          maior_de_idade: data.adult
+          maior_de_idade: data.adult,
+          ...(data.contactName ? { responsavel: data.contactName } : {})
         }
       }
     });

@@ -72,6 +72,8 @@ type CompanyRow = {
   review_count: number;
   verified: boolean;
   verified_since: string | null;
+  /** F15: who talks to the candidates. */
+  contact_name: string | null;
   /** Y24: only the Bicos team changes it (set_company_verification); `verified` follows it. */
   verification_status: CompanyVerification;
   verified_at: string | null;

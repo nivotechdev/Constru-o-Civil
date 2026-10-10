@@ -75,3 +75,12 @@ describe('ready-made messages', () => {
     expect(whatsappUrl('', 'oi')).toBeNull();
   });
 });
+
+describe('F15: the company contact person', () => {
+  it('the worker greets them by first name', () => {
+    const job = { id: 'BC-1', oficioId: 'pintor', startDate: '2026-10-12', endDate: '2026-10-12' };
+    expect(
+      workerToCompanyMessage({ workerName: 'Jorge', companyName: 'Obra', job, hired: false, contactName: 'Ana Souza' })
+    ).toMatch(/^Olá, Ana! Aqui é Jorge/);
+  });
+});

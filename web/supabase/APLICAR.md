@@ -223,6 +223,15 @@ select prosrc like '%maior_de_idade%' from pg_proc where proname = 'claim_docume
 select jobname, schedule from cron.job where jobname = 'bicos-lembrar-presenca';                -- 0 21 * * *
 ```
 
+### 20. `20261012000600_f15_responsavel.sql` (F15)
+
+`companies.contact_name` (2–60 caracteres, editável pela construtora) e `handle_new_user_v2` gravando o
+`responsavel` do cadastro.
+
+```sql
+select has_column_privilege('authenticated', 'public.companies', 'contact_name', 'update');      -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

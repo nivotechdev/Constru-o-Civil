@@ -34,7 +34,13 @@ export async function getContact(applicationId: string): Promise<Contact> {
     throw serviceError('nao_autorizado', 'O contato abre quando a construtora aprova o candidato.');
   const company = db.companies[job.companyId];
   const worker = db.workers[app.workerId];
-  const parts = { workerName: worker.name, companyName: company.name, job, hired: app.status === 'contratado' };
+  const parts = {
+    workerName: worker.name,
+    companyName: company.name,
+    job,
+    hired: app.status === 'contratado',
+    contactName: company.contactName
+  };
   if (session?.role === 'trabalhador' && session.workerId === app.workerId) {
     const url = workerToCompanyUrl(company.whatsapp, parts);
     if (!url) throw serviceError('nao_encontrado', 'A construtora ainda não cadastrou um WhatsApp.');

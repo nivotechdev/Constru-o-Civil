@@ -117,6 +117,8 @@ export interface SignUpData {
   acceptedTermsVersion: string;
   /** L14: "Tenho 18 anos ou mais" (the terms require it; the server refuses without it). */
   adult: boolean;
+  /** F15: recruiter — who talks to the candidates. */
+  contactName?: string;
 }
 
 /**
@@ -203,6 +205,7 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
       reviewCount: 0,
       verified: false,
       verification: 'pendente',
+      ...(data.contactName ? { contactName: data.contactName } : {}),
       reviews: []
     };
     upsertCompany(company);

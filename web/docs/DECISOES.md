@@ -741,3 +741,9 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   Aqui é Jorge, da Bicos. Fui aprovado para a vaga de Pedreiro de acabamento (BC-4821) do dia 12/10…" — e
   "fui contratado" / "você foi contratado" quando a contratação já foi confirmada. Data a combinar ou vários
   dias aparecem como tal.
+
+### F15 — Responsável da construtora
+
+- Cadastro de recrutador ganhou o passo "Quem vai falar com os candidatos?" (nome do responsável), editável em
+  "Editar empresa". Quem foi aprovado vê **"Falar com Ana"** no botão do WhatsApp, e a mensagem pronta começa
+  por "Olá, Ana!". Sem nome, continua "Falar no WhatsApp" / o nome da empresa.

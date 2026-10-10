@@ -33,7 +33,8 @@ export default function EditCompanyProfile() {
   const [draft, setDraft] = useState(() => ({
     name: company.name,
     tipoObra: company.tipoObra,
-    location: company.location
+    location: company.location,
+    contactName: company.contactName ?? ''
   }));
   const [images, setImages] = useState<ProfileImages>({});
   const [progress, setProgress] = useState<number | null>(null);
@@ -49,7 +50,8 @@ export default function EditCompanyProfile() {
   const changes = {
     ...(draft.name !== company.name ? { name: draft.name } : {}),
     ...(draft.tipoObra !== company.tipoObra ? { tipoObra: draft.tipoObra } : {}),
-    ...(draft.location !== company.location ? { location: draft.location } : {})
+    ...(draft.location !== company.location ? { location: draft.location } : {}),
+    ...(draft.contactName !== (company.contactName ?? '') ? { contactName: draft.contactName } : {})
   };
   const save = useAction(
     async () => {
@@ -119,6 +121,19 @@ export default function EditCompanyProfile() {
             onInput={(v) => {
               setDraft((d) => ({ ...d, name: v }));
               setErrors((e) => ({ ...e, name: undefined }));
+            }}
+          />
+          <Input
+            id="edit-company-contact"
+            label="Quem fala com os candidatos"
+            icon="user"
+            autoComplete="name"
+            hint='Quem você aprovar vê "Fale com" e esse nome.'
+            value={draft.contactName}
+            error={errors.contactName}
+            onInput={(v) => {
+              setDraft((d) => ({ ...d, contactName: v }));
+              setErrors((e) => ({ ...e, contactName: undefined }));
             }}
           />
           {company.cnpj ? (

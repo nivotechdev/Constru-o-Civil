@@ -90,7 +90,12 @@ export default function Selected({ params }: ScreenProps) {
                 <span className="text-sm text-concrete-500">{company.tipoObra || 'Construção civil'}</span>
               </div>
             </div>
-            <ContactButton applicationId={hired.id} size="lg" fullWidth />
+            <ContactButton
+              applicationId={hired.id}
+              size="lg"
+              fullWidth
+              label={company.contactName ? `Falar com ${company.contactName.split(' ')[0]}` : undefined}
+            />
             <span className="text-sm text-concrete-700">
               Combine ponto de encontro, horário e pagamento direto com a construtora. A Bicos não cobra taxa e não
               entra na negociação.
