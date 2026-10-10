@@ -971,3 +971,17 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Spam**: cada candidatura enviada fica registrada (`application_attempts`, sem acesso pela API, limpa todo
   dia). Até **30 por dia** e **3 vezes a mesma vaga por dia** (candidatar → retirar → candidatar avisava a
   construtora a cada vez). A mensagem aparece no app como qualquer recusa do servidor.
+
+### X14 — Tipos do banco gerados do SQL
+
+- `src/types/database.generated.ts` sai do próprio banco (todas as migrations aplicadas) por
+  `scripts/gen-db-types.mjs`, no mesmo formato do `supabase gen types typescript` (o comando oficial precisa
+  baixar uma imagem Docker que este ambiente não alcança; com Docker livre, dá o mesmo resultado). O CI
+  regenera e falha se o arquivo commitado estiver velho.
+- `types/supabase.ts` continua escrito à mão (enums com os tipos do domínio, colunas que o app lê), mas agora
+  **é conferido contra o gerado no `typecheck`**: tabela, coluna, tipo, nulidade e RPC diferentes do SQL viram
+  erro com o nome do que divergiu. A conferência achou `jobs.area_lat/area_lon` (colunas geradas, o Postgres
+  as declara anuláveis) — corrigido no mapeador.
+- **Colunas protegidas**: o `update` de cada tabela só aceita as colunas com grant (perfil, legenda do post,
+  `read_at` do aviso); qualquer outra (nota, selo, status, impulsionamento) é erro de tipo — elas mudam só
+  pelas RPCs, e o banco também recusa.

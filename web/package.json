@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "parity": "node scripts/parity/run.mjs"
+    "parity": "node scripts/parity/run.mjs",
+    "gen:types": "node scripts/gen-db-types.mjs"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.2.6",

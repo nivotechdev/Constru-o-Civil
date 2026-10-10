@@ -73,3 +73,14 @@ jobs:
         run: node supabase/tests/run.mjs supabase/tests/[a-z]*.sql
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:54322/postgres
+      # X14: os tipos do banco no app (src/types/database.generated.ts) têm de estar iguais às migrations.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Tipos do banco em dia
+        run: npm run gen:types && git diff --exit-code -- src/types/database.generated.ts
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:54322/postgres

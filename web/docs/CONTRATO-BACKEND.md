@@ -31,7 +31,10 @@ dessas funções, mantendo **assinatura, retorno e erros**. Nenhuma tela precisa
 - **Mudanças que afetam mais de um registro** (status + notificações, encerrar vaga + candidaturas,
   pagar + impulsionar) são **uma transação** (RPC `security definer` ou função no banco).
 - **Datas**: timestamps em ISO (UTC); datas de vaga em `YYYY-MM-DD` (dia local); horários `HH:MM`.
-- **Tipos**: `src/types/models.ts` (domínio) e `src/types/supabase.ts` (linhas das tabelas). Os
+- **Tipos**: `src/types/models.ts` (domínio) e `src/types/supabase.ts` (linhas das tabelas, com os tipos do
+  domínio nos enums e as colunas que o app pode alterar por `update`). `src/types/database.generated.ts` é
+  **gerado do banco** (`npm run gen:types`, X14); o `typecheck` falha se `supabase.ts` declarar tabela,
+  coluna, tipo, nulidade ou RPC diferente do SQL, e o CI falha se o arquivo gerado estiver velho. Os
   mapeadores em `supabaseMappers.ts` convertem de um para o outro e têm teste de ida e volta.
 - **Dados privados**: o WhatsApp de trabalhador e construtora nunca é lido direto pelas telas; só por
   `contacts.getContact` (ver abaixo). As colunas `workers.whatsapp` e `companies.whatsapp` não devem ser
