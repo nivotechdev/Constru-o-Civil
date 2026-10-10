@@ -253,3 +253,34 @@ export async function verifyWhatsAppCode(phone: string, code: string): Promise<b
   });
   return answer?.ok === true;
 }
+
+// ---- account settings (L15, F08) ----
+
+function passwordProblem(error: unknown): never {
+  const code = authCode(error as { code?: string });
+  if (code === 'same_password') throw serviceError('validacao', 'Use uma senha diferente da atual.');
+  if (code === 'weak_password')
+    throw serviceError('validacao', 'Essa senha é fraca. Use pelo menos 8 caracteres, com letras e números.');
+  throw toServiceError(error);
+}
+
+export async function changePassword(current: string, next: string): Promise<void> {
+  if (!(await checkPassword(current))) throw serviceError('validacao', 'Senha atual incorreta.');
+  const client = await db();
+  const { error } = await client.auth.updateUser({ password: next });
+  if (error) passwordProblem(error);
+}
+
+export async function changeEmail(email: string, password: string): Promise<void> {
+  if (!(await checkPassword(password))) throw serviceError('validacao', 'Senha incorreta.');
+  const client = await db();
+  const { error } = await client.auth.updateUser({ email }, { emailRedirectTo: authRedirectUrl() });
+  if (error) {
+    const code = authCode(error);
+    if (code === 'email_exists' || code === 'user_already_exists')
+      throw serviceError('conflito', 'Esse e-mail já tem conta na Bicos.');
+    if (code === 'over_email_send_rate_limit')
+      throw serviceError('conflito', 'Já enviamos um link há pouco. Espere alguns minutos para pedir outro.');
+    throw toServiceError(error);
+  }
+}

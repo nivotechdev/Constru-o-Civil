@@ -63,7 +63,9 @@ export default function Settings() {
             label="Editar perfil"
             onClick={() => navigate(role === 'recrutador' ? '/empresa/editar' : '/perfil/editar')}
           />
-          <Row icon="lock" label="Trocar senha" onClick={() => navigate('/esqueci-senha')} />
+          <Row icon="mail" label="Trocar e-mail" onClick={() => navigate('/configuracoes/email')} />
+          <Row icon="phone" label="Trocar WhatsApp" onClick={() => navigate('/whatsapp')} />
+          <Row icon="lock" label="Trocar senha" onClick={() => navigate('/configuracoes/senha')} />
         </Section>
         <Section title="Preferências">
           <Row

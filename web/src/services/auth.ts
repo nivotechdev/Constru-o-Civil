@@ -23,6 +23,8 @@ import { IS_DEMO } from './mode';
 import * as remote from './remote/auth';
 import { isValidCnpj, isValidCpf } from '../utils/document';
 import { FEATURES } from './features';
+import { serviceError } from './errors';
+import { isValidEmail } from '../utils/format';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -274,6 +276,42 @@ export async function resetPassword(_newPassword: string): Promise<void> {
   await mockLatency(600);
 }
 
+// ---- account settings ----
+
+/**
+ * L15: "Trocar senha" in Configurações: the current password, then the new one. Backend: re-checks the
+ * current password and Supabase Auth `updateUser({ password })`.
+ */
+export async function changePassword(current: string, next: string): Promise<void> {
+  if (next.length < 8 || !/[a-zA-Z]/.test(next) || !/[0-9]/.test(next))
+    throw serviceError('validacao', 'Use 8 caracteres ou mais, misturando letras e números.');
+  if (!IS_DEMO) return remote.changePassword(current, next);
+  await mockLatency(600);
+  const session = getSession();
+  if (!session || passwords.get(session.accountId) !== current)
+    throw serviceError('validacao', 'Senha atual incorreta.');
+  if (current === next) throw serviceError('validacao', 'Use uma senha diferente da atual.');
+  passwords.set(session.accountId, next);
+}
+
+/**
+ * F08: changes the e-mail. Nothing changes until the link sent to the new address is opened. Backend:
+ * re-checks the password and Supabase Auth `updateUser({ email })`; a trigger copies the confirmed
+ * address to accounts.email. Demo: changes at once (there is no inbox).
+ */
+export async function changeEmail(email: string, password: string): Promise<void> {
+  const clean = email.trim().toLowerCase();
+  if (!isValidEmail(clean)) throw serviceError('validacao', 'E-mail inválido. Confira se tem @ e o domínio.');
+  const session = getSession();
+  if (session && clean === session.email.toLowerCase()) throw serviceError('validacao', 'Esse já é o seu e-mail.');
+  if (!IS_DEMO) return remote.changeEmail(clean, password);
+  await mockLatency(600);
+  if (!session || passwords.get(session.accountId) !== password) throw serviceError('validacao', 'Senha incorreta.');
+  if (Object.values(getDb().accounts).some((a) => a.email.toLowerCase() === clean))
+    throw serviceError('conflito', 'Esse e-mail já tem conta na Bicos.');
+  updateAccount(session.accountId, { email: clean });
+}
+
 // ---- WhatsApp ----
 
 /** Numbers confirmed by code in this demo session (the server keeps them 30 minutes: Y25). */
@@ -308,4 +346,4 @@ export async function verifyWhatsAppCode(phone: string, code: string): Promise<b
 export const WHATSAPP_CODE_AVAILABLE = FEATURES.whatsappCode;
 
 /** Seconds before the code can be sent again. */
-export const WHATSAPP_RESEND_SECONDS = 15;
+export const WHATSAPP_RESEND_SECONDS = 60;

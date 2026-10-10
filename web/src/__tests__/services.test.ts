@@ -88,7 +88,7 @@ describe('simulated backend calls keep the legacy delays', () => {
     expect(await settlesAfter(s.auth.verifyWhatsAppCode('(11) 98842-3310', '123456'), 600)).toBe(true);
     expect(await settlesAfter(s.auth.verifyWhatsAppCode('(11) 98842-3310', '000000'), 600)).toBe(false);
     expect(await settlesAfter(s.auth.verifyWhatsAppCode('(11) 98842-3310', '12345'), 600)).toBe(false);
-    expect(s.auth.WHATSAPP_RESEND_SECONDS).toBe(15);
+    expect(s.auth.WHATSAPP_RESEND_SECONDS).toBe(60);
   });
 
   it('sends an application after 600 ms', async () => {
@@ -273,5 +273,34 @@ describe('Y25: changing the WhatsApp (demo)', () => {
     await run(profiles.changeWhatsApp('(21) 98888-1111'));
     db = store.getDb();
     expect(db.accounts[session.accountId].whatsappVerifiedAt).not.toBeNull();
+  });
+});
+
+describe('L15/F08: password and e-mail from Configurações (demo)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('the current password is checked; the e-mail must be new and free', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    const store = await import('../services/store');
+    const run = async <T>(p: Promise<T>) => {
+      const r = p.then(
+        (v) => ({ ok: true as const, v }),
+        (e: unknown) => ({ ok: false as const, e: e as Error })
+      );
+      await vi.runAllTimersAsync();
+      return r;
+    };
+    await run(auth.signIn('trabalhador@bicos.demo', 'bicos123'));
+    expect(await run(auth.changePassword('errada', 'novasenha1'))).toMatchObject({ ok: false });
+    expect(await run(auth.changePassword('bicos123', 'curta'))).toMatchObject({ ok: false });
+    expect((await run(auth.changePassword('bicos123', 'novasenha1'))).ok).toBe(true);
+    expect(await run(auth.checkPassword('novasenha1'))).toEqual({ ok: true, v: true });
+
+    expect(await run(auth.changeEmail('construtora@bicos.demo', 'novasenha1'))).toMatchObject({ ok: false });
+    expect(await run(auth.changeEmail('jorge.novo@x.com', 'errada'))).toMatchObject({ ok: false });
+    expect((await run(auth.changeEmail('Jorge.Novo@x.com', 'novasenha1'))).ok).toBe(true);
+    expect(store.getSession()?.email).toBe('jorge.novo@x.com');
   });
 });

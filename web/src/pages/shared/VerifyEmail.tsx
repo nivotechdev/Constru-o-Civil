@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { FieldError } from '../../components/FieldError';
@@ -18,15 +19,26 @@ interface VerifyEmailUI {
   confirming: boolean;
   resending: boolean;
   resent: boolean;
+  /** When the link was last sent (ms): "Reenviar" unlocks 60 s later (L15). */
+  sentAt: number;
   error: string | null;
 }
 
-const DEFAULTS: VerifyEmailUI = { fromSignup: false, confirming: false, resending: false, resent: false, error: null };
+const DEFAULTS: VerifyEmailUI = {
+  fromSignup: false,
+  confirming: false,
+  resending: false,
+  resent: false,
+  sentAt: 0,
+  error: null
+};
+const RESEND_SECONDS = 60;
 const NETWORK_ERROR = 'Não deu para continuar agora. Confira sua internet e tente de novo.';
 
 export default function VerifyEmail() {
   const session = useSession();
   const [ui, setUi] = useScreenUI<VerifyEmailUI>('verificar-email', DEFAULTS);
+  const [mountedAt] = useState(() => Date.now());
 
   // Demo: there is no inbox, so "Abrir meu e-mail" stands for opening the link that was sent. With the
   // real backend the link confirms the account; the button checks it (opened in another tab or device).
@@ -54,11 +66,22 @@ export default function VerifyEmail() {
       .catch((e: unknown) => setUi({ confirming: false, error: IS_DEMO ? NETWORK_ERROR : errorMessage(e) }));
   }
 
+  // Counted from the sign-up (the first link) or the last resend.
+  const wait = useSecondsLeft(ui.sentAt || (ui.fromSignup ? mountedAt : 0), RESEND_SECONDS);
+
+  /** L15: a typo in the e-mail — start the sign-up again (the unconfirmed one is cleaned up later). */
+  function fixEmail() {
+    const role = session?.role ?? 'trabalhador';
+    void signOut()
+      .catch(() => undefined)
+      .then(() => navigate('/cadastro/' + role, { replace: true }));
+  }
+
   function resend() {
     if (ui.resending) return;
     setUi({ resending: true, resent: false, error: null });
     resendConfirmationEmail()
-      .then(() => setUi({ resending: false, resent: true }))
+      .then(() => setUi({ resending: false, resent: true, sentAt: Date.now() }))
       .catch((e: unknown) => setUi({ resending: false, error: IS_DEMO ? NETWORK_ERROR : errorMessage(e) }));
   }
 
@@ -110,9 +133,27 @@ export default function VerifyEmail() {
             Demonstração: este botão faz o papel do link enviado por e-mail.
           </span>
         ) : null}
-        <Button label="Reenviar o link" variant="ghost" fullWidth loading={ui.resending} onClick={resend} />
+        <Button
+          label={wait > 0 ? `Reenviar o link em 0:${String(wait).padStart(2, '0')}` : 'Reenviar o link'}
+          variant="ghost"
+          fullWidth
+          loading={ui.resending}
+          disabled={wait > 0}
+          onClick={resend}
+        />
+        <Button label="Corrigir e-mail" variant="ghost" fullWidth onClick={fixEmail} />
         <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
       </div>
     </div>
   );
+}
+
+/** Seconds left until `from + seconds`, re-read every second. */
+function useSecondsLeft(from: number, seconds: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return from ? Math.max(0, seconds - Math.floor((now - from) / 1000)) : 0;
 }

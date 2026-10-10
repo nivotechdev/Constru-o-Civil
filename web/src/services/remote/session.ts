@@ -235,11 +235,13 @@ async function handleAuthRedirect(): Promise<void> {
   const refreshToken = params.get('refresh_token');
   if (!accessToken || !refreshToken) return;
   const recovery = params.get('type') === 'recovery';
+  const emailChange = params.get('type') === 'email_change';
   recovering = recovery;
   const client = await db();
   const { error } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
   globalThis.history.replaceState(null, '', base + (recovery ? '#/redefinir-senha' : '#/'));
   if (error) notice = 'Esse link não vale mais. Entre ou peça um novo.';
+  else if (emailChange) notice = 'E-mail trocado. Use o novo para entrar.';
   else if (!recovery) notice = 'E-mail confirmado. Bem-vindo à Bicos!';
 }
 

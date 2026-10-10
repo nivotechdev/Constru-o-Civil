@@ -700,3 +700,15 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   (Y25).
 - **L12**: "Editar empresa" escolhe a cidade das obras na lista (`CityPicker`), como no "Completar perfil",
   no lugar do texto livre "Região onde você contrata".
+
+### L15 + F08 — Senha, e-mail e WhatsApp nas Configurações
+
+- Configurações › Conta: **Trocar e-mail**, **Trocar WhatsApp** (Y25) e **Trocar senha**.
+- Trocar senha pede a senha atual e a nova duas vezes (com o medidor de força); a atual é conferida de novo no
+  Auth antes de `updateUser`. Antes o item levava ao "Esqueci minha senha".
+- Trocar e-mail pede o e-mail novo e a senha; no modo real o Supabase manda um link para o endereço novo e
+  **nada muda até ele ser aberto** (a tela diz isso). Ao abrir, o app avisa "E-mail trocado" e o gatilho
+  `on_auth_user_updated_v2` copia o e-mail para `accounts`. Na demonstração troca na hora.
+- "Confirme seu e-mail": **Corrigir e-mail** (sai do cadastro pendente e começa de novo; o cadastro nunca
+  confirmado é limpo depois e o documento fica livre — Z07/Z08) e reenvio só depois de **60 segundos**, com a
+  contagem no botão. O reenvio do código do WhatsApp também passou a 60 segundos (L14).

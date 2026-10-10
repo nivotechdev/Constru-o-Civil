@@ -492,6 +492,24 @@ describe('remote: data and actions', () => {
     expect(alerts.myJobAlert(m.store.getDb(), m.store.getSession())).toBeNull();
   });
 
+  it('password and e-mail change re-check the password, then go to the Auth (L15, F08)', async () => {
+    const updates: unknown[] = [];
+    const fake = server('ana', {
+      auth: {
+        updateUser: (attrs: unknown) => {
+          updates.push(attrs);
+          return { data: {}, error: null };
+        }
+      }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await m.auth.changePassword('segredo123', 'novasenha1');
+    await m.auth.changeEmail('Ana.Nova@exemplo.com', 'segredo123');
+    expect(updates).toEqual([{ password: 'novasenha1' }, { email: 'ana.nova@exemplo.com' }]);
+    expect(fake.calls.filter((c) => c.name === 'signInWithPassword')).toHaveLength(3);
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');
