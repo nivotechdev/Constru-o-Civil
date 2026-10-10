@@ -1139,3 +1139,27 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   em `services/legal.ts` e todos aceitam de novo.
 - Analytics de navegação (telas vistas, cliques) por pessoa: **adiado** — exigiria banner de consentimento e uma
   ferramenta; o funil acima responde às perguntas do produto sem isso.
+
+---
+
+# Fase E — polimento
+
+### W01–W04
+
+- **W01** valores com centavos só quando há centavos ("R$ 180", "R$ 180,50").
+- **W02** vaga que já começou e ainda vai: "Até 16 out" (ou "Até hoje"), em vez de "Ontem até 16 out".
+- **W03** total da vaga (diária × diárias) no detalhe, na confirmação da candidatura e no Gerenciar, quando há
+  mais de uma diária e valor fixo ("Total R$ 660 por 3 diárias").
+- **W04** "O que precisa levar" some quando a vaga não pede nada.
+- Achado junto: os cartões da diária no detalhe e no Gerenciar ainda diziam "Pago no fim da diária" fixo (resto
+  do L18/X12) — agora mostram a forma de pagamento da vaga.
+
+### W05–W07
+
+- **W05** depois de publicar, botão **Gerenciar vaga**. No perfil da própria construtora, quem já teve vagas
+  (todas encerradas) não é mandado a publicar "seu primeiro bico"; vagas cheias continuam listadas em "Suas
+  vagas"; "1 vaga aberta" no singular.
+- **W06** aprovar/recusar na lista de candidatos: um de cada vez, com o indicador de envio no lugar dos botões
+  (sem duplo toque).
+- **W07** "O contato por WhatsApp abre depois que você aprovar" só aparece enquanto o contato ainda está fechado
+  para aquela candidatura.

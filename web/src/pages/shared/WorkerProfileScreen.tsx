@@ -13,7 +13,15 @@ import { Rating } from '../../components/Rating';
 import { useDb, useRole } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import { currentCompanyId, currentWorker, getJob, getWorker, trackRecord } from '../../services/selectors';
+import {
+  applicationFor,
+  currentCompanyId,
+  currentWorker,
+  getJob,
+  getWorker,
+  trackRecord
+} from '../../services/selectors';
+import { contactOpen } from '../../services/applicationMachine';
 import { CandidateActions } from '../recruiter/CandidateActions';
 import { oficioNome } from '../../services/catalog';
 import { workerFacts, workerPlace } from '../../utils/workerInfo';
@@ -51,6 +59,8 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
   const jobId = jobForCtx && role === 'recrutador' && jobForCtx.companyId === currentCompanyId() ? jobIdRaw : null;
   const job = jobId ? getJob(db, jobId) : undefined;
 
+  const candidacy = jobId ? applicationFor(db, jobId, worker.id) : null;
+  const contactOpenFor = Boolean(candidacy && contactOpen(candidacy.status));
   const facts = workerFacts(worker);
   // F10: companies (and the worker) see the no-shows and give-ups.
   const showTrack = isOwn || role === 'recrutador';
@@ -207,7 +217,8 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
 
         <WorkerPosts worker={worker} isOwn={isOwn} />
 
-        {!isOwn && jobId ? (
+        {/* W07: only while the WhatsApp is still closed for this candidacy. */}
+        {!isOwn && jobId && !contactOpenFor ? (
           <p className="text-sm text-concrete-500">
             O contato por WhatsApp abre depois que você aprovar esse trabalhador para a vaga.
           </p>

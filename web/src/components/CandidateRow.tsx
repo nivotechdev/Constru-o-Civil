@@ -20,6 +20,8 @@ interface CandidateRowProps {
   onClick: () => void;
   onApprove?: ((e: MouseEvent) => void) | null;
   onReject?: ((e: MouseEvent) => void) | null;
+  /** W06: the decision on this candidate is being sent (no second tap). */
+  busy?: boolean;
   /** A next step for this candidate (e.g. "Confirmar contratação"), under the badge. */
   action?: { label: string; onClick: () => void } | null;
   /** The WhatsApp button, once the candidate is picked or hired. */
@@ -37,6 +39,7 @@ export function CandidateRow({
   onClick,
   onApprove,
   onReject,
+  busy = false,
   action = null,
   contact = null
 }: CandidateRowProps) {
@@ -91,10 +94,24 @@ export function CandidateRow({
         </span>
       ) : (
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {onReject ? (
+          {busy && (onReject || onApprove) ? (
+            <span role="status" aria-label="Enviando" className="inline-flex items-center justify-center w-10 h-10">
+              <span
+                className="animate-spin-token"
+                style={{
+                  width: '1.1rem',
+                  height: '1.1rem',
+                  border: '2px solid var(--brand)',
+                  borderRightColor: 'transparent',
+                  borderRadius: '9999px'
+                }}
+              />
+            </span>
+          ) : null}
+          {onReject && !busy ? (
             <IconButton icon="x" label="Recusar candidato" variant="ghost" size="sm" onClick={onReject} />
           ) : null}
-          {onApprove ? (
+          {onApprove && !busy ? (
             <IconButton icon="check" label="Aprovar candidato" variant="brand" size="sm" onClick={onApprove} />
           ) : null}
         </div>

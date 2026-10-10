@@ -1,4 +1,5 @@
 import { BackBar } from '../../components/BackBar';
+import { useState } from 'react';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -35,7 +36,16 @@ import {
 import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
-import { diasInfo, durationText, hoursText, paymentText, placeText, streetText, whenText } from '../../utils/jobInfo';
+import {
+  diasInfo,
+  durationText,
+  hoursText,
+  paymentText,
+  placeText,
+  streetText,
+  totalText,
+  whenText
+} from '../../utils/jobInfo';
 import { jobTitle, oficioNome } from '../../services/catalog';
 import { workerDistance, workerPlace } from '../../utils/workerInfo';
 import { ContactButton } from '../../components/ContactButton';
@@ -50,6 +60,15 @@ import { IconButton } from '../../components/IconButton';
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
   // Y21: the dialogs belong to this job (a dialog opened on one job never shows up on another).
+  // W06: one decision at a time per candidate, with a spinner in place of the buttons.
+  const [deciding, setDeciding] = useState<string | null>(null);
+  const decide = (workerId: string, run: () => Promise<unknown>) => {
+    if (deciding) return;
+    setDeciding(workerId);
+    run()
+      .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }))
+      .finally(() => setDeciding(null));
+  };
   const [ui, setUi] = useScreenUI<{ confirmClose: boolean; confirmDelete: boolean; hireId: string | null }>(
     'job-manage:' + params.id,
     { confirmClose: false, confirmDelete: false, hireId: null }
@@ -115,10 +134,12 @@ export default function JobManage({ params }: ScreenProps) {
             </span>
             <span className="font-mono font-bold text-4xl text-concrete-900">{formatPay(job.pay)}</span>
           </div>
-          <span className="text-sm text-concrete-700 text-right">
-            Pago no fim
-            <br />
-            da diária
+          {/* X12/W03: the job's own payment form, and the total when it has several diárias. */}
+          <span className="text-sm text-concrete-700 text-right max-w-[11rem]">
+            {totalText(job) ? (
+              <span className="block font-semibold text-concrete-900">{`Total ${totalText(job)}`}</span>
+            ) : null}
+            {paymentText(job)}
           </span>
         </div>
         <div className="flex items-center gap-2 pt-4 border-t border-brand-200">
@@ -292,13 +313,14 @@ export default function JobManage({ params }: ScreenProps) {
                           ? { label: 'Confirmar contratação', onClick: () => setUi({ hireId: worker.id }) }
                           : null
                       }
+                      busy={deciding === worker.id}
                       onApprove={
                         pending && !closed
                           ? (e) => {
                               e.stopPropagation();
-                              approve(job.id, worker.id)
-                                .then(() => toastApproved(job.id, worker))
-                                .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
+                              decide(worker.id, () =>
+                                approve(job.id, worker.id).then(() => toastApproved(job.id, worker))
+                              );
                             }
                           : null
                       }
@@ -306,9 +328,9 @@ export default function JobManage({ params }: ScreenProps) {
                         pending && !closed
                           ? (e) => {
                               e.stopPropagation();
-                              reject(job.id, worker.id)
-                                .then(() => toastRejected(job.id, worker))
-                                .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
+                              decide(worker.id, () =>
+                                reject(job.id, worker.id).then(() => toastRejected(job.id, worker))
+                              );
                             }
                           : null
                       }

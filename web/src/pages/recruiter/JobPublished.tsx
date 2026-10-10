@@ -45,6 +45,13 @@ export default function JobPublished({ params }: ScreenProps) {
               onClick={() => navigate('/impulsionar/' + job.id)}
             />
           ) : null}
+          {/* W05: straight to the job's candidates. */}
+          <Button
+            label="Gerenciar vaga"
+            variant={FEATURES.payments ? 'secondary' : 'primary'}
+            fullWidth
+            onClick={() => navigate('/vaga-gerenciar/' + job.id, { replace: true })}
+          />
           <Button label="Voltar ao início" variant="ghost" fullWidth onClick={() => navigate('/mural')} />
         </div>
       </div>

@@ -167,7 +167,9 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
             <div className="flex flex-col gap-3.5">
               <div className="flex gap-2.5 items-center">
                 <Icon name="hammer" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">{`${openJobs.length} vagas abertas agora`}</span>
+                <span className="text-sm text-concrete-700">
+                  {openJobs.length === 1 ? '1 vaga aberta agora' : `${openJobs.length} vagas abertas agora`}
+                </span>
               </div>
               <div className="flex gap-2.5 items-center">
                 <Icon name="calendar" size={20} color="var(--text-subtle)" />
@@ -193,7 +195,12 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
               <EmptyState
                 icon="hammer"
                 title="Nenhuma vaga aberta agora"
-                description="Publique seu primeiro bico para começar a receber candidatos."
+                description={
+                  // W05: a company with past jobs isn't told to publish its "first" one.
+                  mine.length
+                    ? 'As vagas encerradas ficam em Minhas vagas. Publique outra quando precisar.'
+                    : 'Publique seu primeiro bico para começar a receber candidatos.'
+                }
                 actionLabel="Publicar vaga"
                 onAction={() => navigate('/criar-vaga')}
               />
