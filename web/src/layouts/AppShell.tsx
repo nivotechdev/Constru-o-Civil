@@ -8,7 +8,7 @@ import { AppNav, type AccountSummary } from './AppNav';
 
 const TAB_ROOTS: Record<Role, Set<string>> = {
   trabalhador: new Set(['/mural', '/minhas-candidaturas', '/perfil']),
-  recrutador: new Set(['/mural', '/criar-vaga', '/empresa'])
+  recrutador: new Set(['/mural', '/minhas-vagas', '/criar-vaga', '/empresa'])
 };
 
 // Desktop/tablet content width per screen: the mural spans the whole window, focused tasks (forms,
@@ -21,6 +21,9 @@ const NARROW_SCREENS = new Set([
   '/configuracoes',
   '/configuracoes/privacidade',
   '/configuracoes/excluir-conta',
+  '/configuracoes/senha',
+  '/configuracoes/email',
+  '/whatsapp',
   '/notificacoes',
   '/confirmar/:id',
   '/enviado/:id',
@@ -41,6 +44,7 @@ function tabIdForPath(path: string, role: Role): string | null {
     if (path === '/perfil') return 'perfil';
   } else {
     if (path === '/mural') return 'mural';
+    if (path === '/minhas-vagas' || path === '/historico') return 'minhas-vagas';
     if (path === '/criar-vaga') return 'criar-vaga';
     if (path === '/empresa') return 'empresa';
   }

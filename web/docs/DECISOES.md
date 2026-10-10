@@ -747,3 +747,16 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - Cadastro de recrutador ganhou o passo "Quem vai falar com os candidatos?" (nome do responsável), editável em
   "Editar empresa". Quem foi aprovado vê **"Falar com Ana"** no botão do WhatsApp, e a mensagem pronta começa
   por "Olá, Ana!". Sem nome, continua "Falar no WhatsApp" / o nome da empresa.
+
+### F01 + L07 — "Minhas vagas" e histórico por vaga
+
+- Aba nova **Vagas** na navegação da construtora (`/minhas-vagas`), com **Abertas · Cheias · Encerradas** e a
+  contagem de cada. Cada cartão: vaga, data, valor, "x de y vagas preenchidas" ou o desfecho, candidatos novos,
+  a equipe e o que falta ("2 candidatos novos", "Falta confirmar 1 contratação", "Falta avaliar 1 pessoa").
+  Tocar abre o Gerenciar (aberta/cheia) ou o Resumo do bico (encerrada); encerradas têm "Publicar de novo". O
+  mural continua em "Início".
+- **L07**: "Bicos fechados" (`/historico`) virou a aba Encerradas, **por vaga** e não por pessoa, com todos os
+  desfechos (`jobOutcome`): concluída, encerrada com/sem contratação, prazo acabou com/sem equipe, excluída.
+- **Rascunhos: adiado.** Um rascunho de vaga que sobrevive a sair da tela contraria a regra do Y21 (formulário
+  é da visita) e, para valer entre aparelhos, pede uma tabela de rascunhos no servidor. Fica para depois do
+  lançamento; hoje "Publicar de novo" cobre o caso mais comum (repetir uma vaga).

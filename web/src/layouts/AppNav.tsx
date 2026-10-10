@@ -33,6 +33,7 @@ const ITEMS: Record<Role, NavItem[]> = {
   ],
   recrutador: [
     { id: 'mural', icon: 'hammer', label: 'Início', path: '/mural' },
+    { id: 'minhas-vagas', icon: 'hard-hat', label: 'Vagas', desktopLabel: 'Minhas vagas', path: '/minhas-vagas' },
     { id: 'criar-vaga', icon: 'plus', label: 'Publicar', desktopLabel: 'Publicar vaga', path: '/criar-vaga' },
     { id: 'empresa', icon: 'building-2', label: 'Perfil', path: '/empresa' }
   ]

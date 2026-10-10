@@ -134,6 +134,15 @@ describe('status machine in the services', () => {
     ).toBe(true);
   });
 
+  it('L07: each closed job says how it ended', async () => {
+    await asCompany();
+    const db = m.store.getDb();
+    expect(m.sel.jobOutcome(db, db.jobs['BC-4960'])).toBe('Concluída');
+    expect(m.sel.jobOutcome(db, db.jobs['BC-4998'])).toBeNull();
+    await run(m.jobs.closeJob('BC-4998'));
+    expect(m.sel.jobOutcome(m.store.getDb(), m.store.getDb().jobs['BC-4998'])).toBe('Encerrada sem contratação');
+  });
+
   it('L22: a refusal can be undone for 10 minutes; the unseen notice is taken back', async () => {
     await asCompany();
     await run(m.apps.reject('BC-4998', 'rafael'));

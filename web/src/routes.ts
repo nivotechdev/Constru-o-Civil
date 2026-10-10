@@ -91,6 +91,7 @@ const BoostJob = screen(() => import('./pages/recruiter/BoostJob'));
 const RepublishJob = screen(() => import('./pages/recruiter/RepublishJob'));
 const BoostPayment = screen(() => import('./pages/recruiter/BoostPayment'));
 const History = screen(() => import('./pages/recruiter/History'));
+const MyJobs = screen(() => import('./pages/recruiter/MyJobs'));
 const RateWorker = screen(() => import('./pages/recruiter/RateWorker'));
 
 export interface RouteDef extends Screen {
@@ -155,6 +156,7 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/impulsionar/:id', company(BoostJob)),
   compileRoute('/impulsionar/:id/:plan', company(BoostPayment)),
   compileRoute('/historico', company(History)),
+  compileRoute('/minhas-vagas', company(MyJobs)),
   compileRoute('/avaliar-trabalhador/:jobId/:workerId', company(RateWorker))
 ];
 

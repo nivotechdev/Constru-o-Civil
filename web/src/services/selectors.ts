@@ -137,3 +137,19 @@ export const savedJobs = (db: Database): Job[] =>
 export function postsForWorker(db: Database, workerId: string): WorkerPost[] {
   return db.workerPosts.filter((p) => p.workerId === workerId).sort((a, b) => (a.date < b.date ? 1 : -1));
 }
+
+/**
+ * L07: how a job that left the mural ended, for the company's history. `null` while it is open or full.
+ * "Concluída": everyone hired did the work (the job closes itself then, Y01).
+ */
+export function jobOutcome(db: Database, job: Job, now: Date = new Date()): string | null {
+  const state = jobState(db, job, now);
+  if (state === 'aberta' || state === 'cheia') return null;
+  if (state === 'excluida') return 'Excluída';
+  const team = applicationsForJob(db, job.id).filter((a) =>
+    ['pre_selecionado', 'contratado', 'concluida'].includes(a.status)
+  );
+  if (state === 'vencida') return team.length ? 'Prazo acabou com equipe' : 'Prazo acabou sem contratação';
+  if (team.length && team.every((a) => a.status === 'concluida')) return 'Concluída';
+  return team.length ? 'Encerrada com contratação' : 'Encerrada sem contratação';
+}
