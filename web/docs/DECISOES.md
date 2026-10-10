@@ -1092,3 +1092,20 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   salvos.
 - Cidade que o mapa não conhece (fora da lista e sem CEP achado) **não vira (0, 0)**: o passo 1 pede para escolher a
   cidade da lista.
+
+### X12 — Textos que prometiam o que não existe
+
+- Procurados todos os textos de promessa. Corrigidos: "É por aqui (e-mail) que avisamos…" no cadastro (o app não
+  manda avisos por e-mail; agora: "é com ele que você entra e recupera a senha"); "em até 2 dias úteis" na
+  verificação de identidade (sem prazo prometido); "Avisamos quando der para colocá-la no topo" com o impulso
+  desligado; "O link vale por 24 horas" (o prazo é configuração do Auth: agora "vence depois de um tempo; peça
+  outro aqui").
+- Já corrigidos antes: "Pagamento em PIX no fim da diária" fixo (L18, forma de pagamento da vaga), "a falta fica
+  registrada no perfil" (agora é verdade: F10 mostra faltas e desistências), plano de "aviso por WhatsApp" (Z03).
+  Não há "mensagens", "diárias pagas pela plataforma", "responde em poucas horas" nem "dá para trocar depois" no
+  app (conferido por busca).
+
+### X18 — WhatsApp só celular
+
+- Feito no Y25: tela, serviço e banco aceitam só celular (DDD + 9 + 8 números). Agora o serviço de cadastro também
+  confere antes de criar a conta (nos dois modos).

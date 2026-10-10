@@ -430,3 +430,26 @@ describe('X11: one password rule', () => {
     await expect(auth.resetPassword('somenteletras')).rejects.toMatchObject({ code: 'validacao' });
   });
 });
+
+describe('X18: WhatsApp is a mobile', () => {
+  it('a landline (10 digits) or a number without the 9 is refused before anything is created', async () => {
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    const { isValidMobile } = await import('../utils/format');
+    expect(isValidMobile('(11) 3333-4444')).toBe(false);
+    expect(isValidMobile('(11) 83333-4444')).toBe(false);
+    expect(isValidMobile('(11) 93333-4444')).toBe(true);
+    const base = {
+      role: 'trabalhador' as const,
+      name: 'Ana Teste',
+      email: 'ana.teste@exemplo.com',
+      password: 'obra2026',
+      doc: '390.533.447-05',
+      acceptedTermsVersion: '1.0',
+      adult: true
+    };
+    await expect(auth.signUp({ ...base, whatsapp: '(11) 3333-4444' } as never)).rejects.toMatchObject({
+      code: 'validacao'
+    });
+  });
+});

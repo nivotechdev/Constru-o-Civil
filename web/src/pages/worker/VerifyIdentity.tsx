@@ -91,7 +91,7 @@ export default function VerifyIdentity() {
                 <div className="flex flex-col gap-3">
                   <Badge label="Em análise" tone="warning" icon="clock" />
                   <span className="text-concrete-700">
-                    Recebemos suas fotos. Nossa equipe confere e avisa por aqui, em geral em até 2 dias úteis.
+                    Recebemos suas fotos. Nossa equipe confere e avisa por aqui quando terminar.
                   </span>
                   {IS_DEMO ? (
                     <Button

@@ -2,6 +2,7 @@
 // With the real backend each function hands over to services/remote/auth.ts (Supabase Auth); in demo
 // mode (services/mode.ts) every flow is simulated in memory, with realistic delays and outcomes.
 // Screens only call these functions, the same in both modes.
+import { isValidMobile } from '../utils/format';
 import { passwordProblem } from '../utils/password';
 import { ACCOUNTS, DEMO_PASSWORD } from '../data/seed';
 import type { Account, Company, Role, Worker } from '../types/models';
@@ -144,6 +145,9 @@ function initialsOf(name: string): string {
  * creates the `accounts` row and the worker/company row.
  */
 export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptcha): Promise<SignUpResult> {
+  // X18: only a mobile (DDD + 9 + 8 digits) is a WhatsApp — the same check as the server.
+  if (!isValidMobile(data.whatsapp))
+    throw serviceError('validacao', 'Confira o WhatsApp: celular com DDD, 11 números.');
   if (!IS_DEMO) return remote.signUp(data, captcha);
   await mockLatency(700);
   const accounts = Object.values(getDb().accounts);

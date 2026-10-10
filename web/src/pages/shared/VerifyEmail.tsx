@@ -103,7 +103,9 @@ export default function VerifyEmail() {
           <div className="flex flex-col gap-3">
             <div className="flex gap-2.5 items-center">
               <Icon name="clock" size={20} color="var(--text-subtle)" />
-              <span className="text-sm text-concrete-700">O link vale por 24 horas.</span>
+              <span className="text-sm text-concrete-700">
+                O link vence depois de um tempo. Se vencer, peça outro aqui.
+              </span>
             </div>
             <div className="flex gap-2.5 items-center">
               <Icon name="search-x" size={20} color="var(--text-subtle)" />

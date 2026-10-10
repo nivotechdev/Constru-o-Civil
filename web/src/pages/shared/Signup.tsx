@@ -94,7 +94,7 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
         mask: 'cpf',
         mono: true
       },
-      { ...COMUM_EMAIL, help: 'É por aqui que avisamos quando uma construtora escolher você.' },
+      { ...COMUM_EMAIL, help: 'Use um e-mail que você abre: é com ele que você entra e recupera a senha.' },
       {
         ...COMUM_WHATSAPP,
         help: 'É por ele que as construtoras falam com você. Vamos mandar um código para confirmar o número.'
@@ -132,7 +132,7 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
         mask: 'cpfCnpj',
         mono: true
       },
-      { ...COMUM_EMAIL, help: 'É por aqui que avisamos cada novo candidato da sua vaga.' },
+      { ...COMUM_EMAIL, help: 'Use um e-mail que você abre: é com ele que você entra e recupera a senha.' },
       {
         ...COMUM_WHATSAPP,
         help: 'É por ele que os candidatos falam com a empresa. Vamos mandar um código para confirmar o número.'

@@ -256,7 +256,7 @@ export function BoostUnavailable({ onBack }: { onBack: () => void }) {
       <EmptyState
         icon="rocket"
         title="Impulsionar ainda não está disponível"
-        description="Sua vaga já aparece no mural de graça. Avisamos quando der para colocá-la no topo."
+        description="Sua vaga já aparece no mural de graça. Por enquanto, não dá para colocá-la no topo."
         actionLabel="Voltar para a vaga"
         onAction={onBack}
       />
