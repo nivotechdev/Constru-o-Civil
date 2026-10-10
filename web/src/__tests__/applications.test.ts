@@ -35,6 +35,7 @@ describe('transition table', () => {
         'em_analise -recusar/construtora-> nao_selecionado',
         'em_analise -recusar/sistema-> nao_selecionado',
         'pre_selecionado -desfazer_aprovacao/construtora-> em_analise',
+        'nao_selecionado -desfazer_recusa/construtora-> em_analise',
         'pre_selecionado -contratar/construtora-> contratado',
         'pre_selecionado -desistir/trabalhador-> desistiu',
         'contratado -desistir/trabalhador-> desistiu',
@@ -119,6 +120,19 @@ describe('status machine in the services', () => {
     expect(status('BC-4998', 'rafael')).toBe('em_analise');
     // The unread "pré-selecionado" notice is taken back.
     expect(noticesFor('joel')).toEqual([]);
+  });
+
+  it('L22: a refusal can be undone for 10 minutes; the unseen notice is taken back', async () => {
+    await asCompany();
+    await run(m.apps.reject('BC-4998', 'rafael'));
+    expect(noticesFor('rafael').map((n) => n.kind)).toEqual(['nao_selecionado']);
+    await run(m.apps.undoReject('BC-4998', 'rafael'));
+    expect(status('BC-4998', 'rafael')).toBe('em_analise');
+    expect(noticesFor('rafael')).toEqual([]);
+    // Too late.
+    await run(m.apps.reject('BC-4998', 'bruno'));
+    vi.setSystemTime(Date.now() + 11 * 60_000);
+    await expect(run(m.apps.undoReject('BC-4998', 'bruno'))).rejects.toMatchObject({ code: 'conflito' });
   });
 
   it('Y03: a place that opens (cancelled hire) brings back the automatic refusals, told "A vaga reabriu"', async () => {

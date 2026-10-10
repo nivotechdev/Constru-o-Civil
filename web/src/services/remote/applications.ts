@@ -38,6 +38,12 @@ export const markInReview = (jobId: string, workerId: string) => transition(jobI
 export const approve = (jobId: string, workerId: string) => transition(jobId, workerId, 'aprovar');
 export const reject = (jobId: string, workerId: string) => transition(jobId, workerId, 'recusar');
 export const undoApproval = (jobId: string, workerId: string) => transition(jobId, workerId, 'desfazer_aprovacao');
+/** L22: RPC undo_reject (only a refusal by the company in the last 10 minutes, on an open job). */
+export async function undoReject(jobId: string, workerId: string): Promise<void> {
+  const client = await db();
+  await request(() => client.rpc('undo_reject', { p_job_id: jobId, p_worker_id: workerId }));
+  await loadJob(jobId);
+}
 export const confirmHire = (jobId: string, workerId: string) => transition(jobId, workerId, 'contratar');
 export const cancelHire = (jobId: string, workerId: string, reason: string) =>
   transition(jobId, workerId, 'cancelar_contratacao', reason);

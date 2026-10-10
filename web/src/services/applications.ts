@@ -479,6 +479,46 @@ export async function undoApproval(jobId: string, workerId: string): Promise<voi
   });
 }
 
+/** How long after refusing a candidate the company can still undo it (L22). */
+export const UNDO_REJECT_MINUTES = 10;
+
+/**
+ * L22: undoes a refusal the company just made: the candidate goes back to "em análise". The "não foi dessa
+ * vez" notice is taken back if unseen; otherwise the worker hears it went back to review. Backend: RPC
+ * undo_reject (same rules).
+ */
+export async function undoReject(jobId: string, workerId: string): Promise<void> {
+  if (!IS_DEMO) return remote.undoReject(jobId, workerId);
+  await mockLatency(400);
+  const db = store.getDb();
+  const job = companyJob(db, jobId);
+  const app = findApp(db, jobId, workerId);
+  const refusal = [...app.events].reverse().find((e) => e.status === 'nao_selecionado');
+  const recent = refusal && Date.now() - new Date(refusal.at).getTime() <= UNDO_REJECT_MINUTES * 60_000;
+  if (app.status !== 'nao_selecionado' || refusal?.by !== 'construtora' || !recent)
+    throw serviceError('conflito', 'Não dá mais para desfazer essa recusa.');
+  if (jobState(db, job) !== 'aberta' && jobState(db, job) !== 'cheia')
+    throw serviceError('conflito', 'Essa vaga já foi encerrada.');
+  const at = now();
+  store.transact((d) => {
+    const next = step(d, app, 'desfazer_recusa', 'construtora', at);
+    const unseen = (n: Database['notifications'][number]) =>
+      n.kind === 'nao_selecionado' && n.workerId === workerId && n.target === '/vaga/' + jobId && !n.readAt;
+    if (next.notifications.some(unseen))
+      return { ...next, notifications: next.notifications.filter((n) => !unseen(n)) };
+    return withNotification(
+      next,
+      toWorker(app, {
+        kind: 'candidatura_em_analise',
+        title: 'Sua candidatura voltou para análise',
+        text: `${companyOf(d, job).name} ainda está decidindo sobre ${jobTitle(job)}.`,
+        target: '/vaga/' + jobId
+      }),
+      at
+    );
+  });
+}
+
 /** Confirms the hire of a picked candidate. Backend: transition contratar; notifies the worker. */
 export async function confirmHire(jobId: string, workerId: string): Promise<void> {
   if (!IS_DEMO) return remote.confirmHire(jobId, workerId);

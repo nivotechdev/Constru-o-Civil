@@ -32,7 +32,6 @@ import {
   workerOf,
   type JobState
 } from '../../services/selectors';
-import { getDb } from '../../services/store';
 import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
@@ -44,6 +43,7 @@ import { boostBlocker, isBoosted } from '../../services/payments';
 import { dateTimeLabel } from '../../utils/dates';
 import { jobPhotos } from '../../utils/jobPhotos';
 import { FEATURES } from '../../services/features';
+import { toastApproved, toastRejected } from './decisionToasts';
 
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
@@ -283,13 +283,7 @@ export default function JobManage({ params }: ScreenProps) {
                           ? (e) => {
                               e.stopPropagation();
                               approve(job.id, worker.id)
-                                .then(() =>
-                                  showToast(
-                                    jobState(getDb(), job) === 'cheia'
-                                      ? `${worker.name.split(' ')[0]} aprovado. Todas as vagas foram preenchidas.`
-                                      : `${worker.name.split(' ')[0]} aprovado. O WhatsApp está liberado.`
-                                  )
-                                )
+                                .then(() => toastApproved(job.id, worker))
                                 .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
                             }
                           : null
@@ -299,7 +293,7 @@ export default function JobManage({ params }: ScreenProps) {
                           ? (e) => {
                               e.stopPropagation();
                               reject(job.id, worker.id)
-                                .then(() => showToast('Candidato recusado'))
+                                .then(() => toastRejected(job.id, worker))
                                 .catch((err: unknown) => showToast(errorMessage(err), { tone: 'error' }));
                             }
                           : null

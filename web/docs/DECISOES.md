@@ -674,3 +674,12 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   quando a mesma vaga volta pelo mural.
 - Perfil da construtora: saíram "N diárias pagas pela plataforma" (a plataforma não paga diárias) e o tempo
   de resposta (não é calculado). Ficam os números reais: bicos concluídos, vagas abertas, avaliações.
+
+### L01 + L22 — "Aprovado · Desfazer" e "Recusado · Desfazer"
+
+- Aprovar ou recusar (na lista do Gerenciar vaga ou no perfil do candidato) mostra o toast com **Desfazer** por
+  7 segundos. A decisão vale na hora (o WhatsApp libera na hora), e desfazer tira o aviso do trabalhador se
+  ele ainda não viu; se viu, ele recebe "Sua candidatura voltou para análise" — o aviso é sempre coerente.
+  Preferimos isso a atrasar a decisão: uma decisão "pendurada" no aparelho se perderia se o app fechasse.
+- Desfazer recusa é a transição nova `desfazer_recusa` (RPC `undo_reject`): só a recusa feita pela própria
+  construtora, até 10 minutos depois, com a vaga aberta.

@@ -28,6 +28,7 @@ import type { Job, Worker } from '../../types/models';
 import { ContactButton } from '../../components/ContactButton';
 import { candidateBadge } from '../../utils/applicationStatus';
 import { dateText } from '../../utils/jobInfo';
+import { toastApproved, toastRejected } from './decisionToasts';
 
 type Confirm = 'contratar' | 'cancelar' | 'concluir' | 'falta' | null;
 
@@ -49,15 +50,11 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
     setConfirm(null);
     showToast(message);
   };
-  const doApprove = useAction(approve, () => {
-    const fresh = getDb();
-    showToast(
-      jobState(fresh, fresh.jobs[job.id]) === 'cheia'
-        ? `${first} aprovado. Todas as vagas foram preenchidas.`
-        : `${first} aprovado. O WhatsApp está liberado para os dois.`
-    );
+  const doApprove = useAction(approve, () => toastApproved(job.id, worker));
+  const doReject = useAction(reject, () => {
+    toastRejected(job.id, worker);
+    navigate('/vaga-gerenciar/' + job.id);
   });
-  const doReject = useAction(reject, () => navigate('/vaga-gerenciar/' + job.id));
   const doUndo = useAction(undoApproval, done('Aprovação desfeita'));
   const doHire = useAction(confirmHire, done('Contratação confirmada. Avisamos o trabalhador.'));
   const doCancel = useAction(cancelHire, () => {

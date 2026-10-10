@@ -9,6 +9,7 @@ export type ApplicationAction =
   | 'aprovar'
   | 'recusar'
   | 'desfazer_aprovacao'
+  | 'desfazer_recusa'
   | 'contratar'
   | 'desistir'
   | 'cancelar_contratacao'
@@ -48,6 +49,12 @@ export const TRANSITIONS: Record<ApplicationAction, Transition> = {
     to: 'nao_selecionado',
     by: ['construtora', 'sistema'],
     where: 'Recusar, ou automático ao preencher a última vaga / encerrar a vaga'
+  },
+  desfazer_recusa: {
+    from: ['nao_selecionado'],
+    to: 'em_analise',
+    by: ['construtora'],
+    where: 'Toast "Recusado · Desfazer" (até 10 minutos depois de recusar)'
   },
   desfazer_aprovacao: {
     from: ['pre_selecionado'],

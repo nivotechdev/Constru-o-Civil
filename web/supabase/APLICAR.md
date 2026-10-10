@@ -188,6 +188,15 @@ cada); mudar o pagamento avisa os candidatos.
 select count(*) from public.jobs where payment_method is null;                                  -- 0
 ```
 
+### 16. `20261012000200_l22_desfazer_recusa.sql` (L22)
+
+Transição `desfazer_recusa` e RPC `undo_reject` (só a recusa da própria construtora nos últimos 10 minutos,
+em vaga aberta).
+
+```sql
+select count(*) from pg_proc where proname = 'undo_reject';                                       -- 1
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
