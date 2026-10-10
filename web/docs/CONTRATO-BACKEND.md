@@ -57,8 +57,11 @@ dessas funções, mantendo **assinatura, retorno e erros**. Nenhuma tela precisa
 | `notifications`      | `AppNotification`      | de um trabalhador **ou** de uma construtora; `target` = rota que abre             |
 | `boost_payments`     | `BoostPayment`         | PIX/cartão; só `confirmado` define `jobs.boost_ends_at`                           |
 
-As migrations SQL antigas em `web/supabase/` são um rascunho anterior a esta fase e **não** refletem
-estas tabelas; as migrations novas saem daqui e de `types/supabase.ts`.
+As tabelas reais estão nas migrations de `web/supabase/migrations/` (as três de 2026-10-09 e as da rodada 2,
+2026-10-10 a 2026-10-14); `types/database.generated.ts` é gerado delas e o `typecheck` confere `types/supabase.ts`
+contra ele (X14). Tabelas da rodada 2: `application_attempts` (spam, X15), `whatsapp_verifications` (Y25),
+`job_alerts` (Y28), `company_members` (F18), `job_invites` (F13), `reports` e `blocks` (F04), `notification_prefs`
+(F06), `identity_submissions` (F07), `push_subscriptions` (X03), `payment_webhook_events` (Z02), `app_config` (Z12).
 
 ## Máquina de status da candidatura
 
@@ -78,6 +81,8 @@ Fonte única: `services/applicationMachine.ts` (`TRANSITIONS`). O banco deve apl
 | `cancelar_contratacao` | `pre_selecionado`,`contratado` | `cancelado_pela_construtora` | construtora          | Perfil do candidato › Cancelar (com motivo)          |
 | `concluir`             | `contratado`                   | `concluida`                  | construtora, sistema | Marcar diária como concluída; automático após a data |
 | `marcar_falta`         | `contratado`                   | `nao_compareceu`             | construtora          | Perfil do candidato › Não compareceu                 |
+| `desfazer_recusa`      | `nao_selecionado`              | `em_analise`                 | construtora          | "Desfazer" no aviso de recusa (L22)                  |
+| `expirar`              | `pre_selecionado`              | `expirada`                   | sistema              | a vaga venceu sem confirmar a contratação (Y04)      |
 
 - Avaliar **não** muda o status: em `concluida`, cada lado avalia uma vez (`worker_reviewed`,
   `company_reviewed`).
@@ -211,6 +216,28 @@ WhatsApp a trabalhadores do ofício por perto — o envio é do back-end).
 
 Texto, versão e data dos Termos e da Política (rascunho para revisão jurídica). No real, servir a versão
 vigente de uma tabela; o cadastro grava a versão aceita em `accounts.terms_version`.
+
+## Rodada 2 — funções de serviço novas
+
+Mesma regra: cada função tem o corpo de demonstração e o real, com as mesmas assinaturas e erros.
+
+| Serviço            | Funções novas                                                                                                                               | No banco                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `auth.ts`          | `changePassword`, `changeEmail`, `sendWhatsAppCode`/`verifyWhatsAppCode`, `signInWithGoogle`, `completeOAuthSignUp`, `abandonPasswordReset` | Auth; `create_my_account`; Edge Function `codigo-whatsapp`                        |
+| `applications.ts`  | `undoReject`, `confirmPresence`, `loadMoreMyApplications`, `loadMoreHistory`; `submitApplication` diz `enviada`/`ja_enviada`                | `transition_application`, `undo_reject`, `confirm_presence`                       |
+| `jobs.ts`          | `loadPublicJob` (vaga aberta sem login), `loadMoreFeed`                                                                                     | `public_job_card`, `feed_jobs`                                                    |
+| `profiles.ts`      | `changeWhatsApp`, `checkMyCompany`, `updatePostCaption`, `saveMyProfileImages`                                                              | `change_whatsapp`, Edge Function `verificar-cnpj`, grants por coluna              |
+| `notifications.ts` | `loadMoreNotifications`, `myPrefs`/`loadNotificationPrefs`/`saveNotificationPrefs`; `unreadCount` usa o número do servidor                  | `my_unread_count`, `save_notification_prefs`, `notify()` respeita o silenciado    |
+| `payments.ts`      | `myPayments`, `loadMyPayments`, `receiptText`                                                                                               | `boost_payments` (leitura da própria construtora)                                 |
+| `alerts.ts`        | `loadMyJobAlert`, `saveJobAlert`, `deleteJobAlert`                                                                                          | `save_job_alert`, `delete_job_alert`, gatilho `notify_job_alerts` (5 por dia)     |
+| `invites.ts`       | `loadInvites`, `inviteWorker`, `answerInvite`                                                                                               | `invite_worker`, `answer_invite`                                                  |
+| `safety.ts`        | `reportContent`, `loadMyBlocks`, `blockAccount`, `unblockAccount`                                                                           | `report_content`, `block_account`, `unblock_account`, gatilhos de bloqueio        |
+| `identity.ts`      | `loadMyIdentity`, `submitIdentity` (+ `demoApproveIdentity`, só demonstração)                                                               | bucket privado `identidade`, `submit_identity`, `my_identity`                     |
+| `push.ts`          | `pushState`, `enablePush`, `disablePush`, `syncPushSubscription` (só modo real, com VAPID)                                                  | `save_push_subscription`, `delete_push_subscription`, Edge Function `enviar-push` |
+| `contacts.ts`      | `getContact` guardado por candidatura e situação (W09)                                                                                      | `get_contact`                                                                     |
+
+Só para a equipe (service_role, sem tela no app): `set_company_verification`, `set_identity_status`,
+`funnel_daily`, `orphan_storage_objects`. Rotinas: ver SUPABASE.md.
 
 ## Modo de demonstração
 

@@ -156,3 +156,37 @@ as regras estão em `DECISOES.md` e as funções de serviço em `CONTRATO-BACKEN
 
 Agora a sessão (`bicos.sessao` no `localStorage`) sobrevive ao F5; os dados continuam no store em
 memória e voltam ao seed.
+
+## 8. Rodada 2 (fases A–E) — o que mudou
+
+As rotas agora são **caminhos de verdade** (`/vaga/BC-1`, X17); os links antigos com `#/` continuam abrindo. Regras
+em `DECISOES.md`, funções em `CONTRATO-BACKEND.md`, banco e serviços externos em `SUPABASE.md`.
+
+### Rotas novas
+
+| Rota                        | Tela                 | Acesso      | O que faz                                                                                 |
+| --------------------------- | -------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| `/v/:id`                    | PublicJob            | pública     | vaga compartilhada, sem login e sem endereço exato (F09)                                  |
+| `/completar-cadastro`       | CompleteSignup       | pública     | lado, documento, WhatsApp e termos de quem entrou pelo Google (L13)                       |
+| `/ajuda`                    | Help                 | pública     | perguntas frequentes e suporte por WhatsApp/e-mail (Z05/F05)                              |
+| `/whatsapp`                 | ChangeWhatsApp       | logado      | trocar o WhatsApp, com código quando configurado (Y25)                                    |
+| `/configuracoes/senha`      | ChangePassword       | logado      | trocar a senha com a atual (L15)                                                          |
+| `/configuracoes/email`      | ChangeEmail          | logado      | trocar o e-mail, vale depois do link (F08)                                                |
+| `/configuracoes/bloqueados` | BlockedAccounts      | logado      | contas bloqueadas, com desbloquear (F04)                                                  |
+| `/configuracoes/avisos`     | NotificationSettings | logado      | o que chega no sino e no celular; ativar push com explicação antes (F06/X03)              |
+| `/perfil/verificar`         | VerifyIdentity       | trabalhador | selfie + documento para o selo "Verificado" (F07)                                         |
+| `/publicar-de-novo/:id`     | RepublishJob         | construtora | formulário preenchido a partir de uma vaga encerrada, com datas novas (F03)               |
+| `/minhas-vagas`             | MyJobs               | construtora | vagas abertas, cheias e encerradas, com "Carregar mais" (Y01/X01); `/historico` abre nela |
+| `/pagamentos`               | Payments             | construtora | impulsionamentos pagos e recibos (F11)                                                    |
+
+### Rotas que mudaram
+
+- `/vaga/:id`: situação da candidatura com data e motivo (X06), total da vaga (W03), forma de pagamento da vaga (L18),
+  distância dizendo de onde é medida (X19), compartilhar, denunciar e bloquear (F09/F04), convite (F13).
+- `/enviado/:id`: lê a candidatura e volta ao detalhe se ela não existir (X07).
+- `/minhas-candidaturas`, `/notificacoes`: "Carregar mais" (X01); o número do sino vem do servidor (X03).
+- `/vaga-gerenciar/:id`: aprovar/recusar sem duplo toque (W06), "Desfazer" a recusa (L22), convite a trabalhadores.
+- `/vaga-editar/:id`: mantém o ponto do endereço, consulta o CEP ao abrir (X10), limites do W08.
+- `/esqueci-senha`, `/redefinir-senha`: "Já abri o link" só na demonstração; mesma regra de senha; sessão do link
+  abandonada é encerrada (X11).
+- Todas: diálogos com foco preso e Esc (X05), app instalável e aberto sem sinal (X02).
