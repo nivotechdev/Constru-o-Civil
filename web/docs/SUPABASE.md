@@ -73,6 +73,8 @@ editar vaga (avisa os candidatos), encerrar (recusa quem esperava). O teste acho
 2. **E-mail**: manter "Confirm email" ligado. Para produção, configurar SMTP próprio (o serviço padrão
    do Supabase tem cota baixa — ver `SETUP-SUPABASE.md` do app antigo).
 3. Senha mínima: o app pede 8 caracteres; deixe o mínimo do Auth em 8 ou menos.
+4. **Leaked password protection** (Authentication › Policies): ligar — recusa senhas que já vazaram
+   (HaveIBeenPwned). Disponível a partir do plano Pro; no gratuito o aviso do advisor fica (X13).
 
 ## 5. O que ainda depende de serviço externo
 

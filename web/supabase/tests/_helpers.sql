@@ -112,3 +112,13 @@ create or replace function pg_temp.status_of(p_job text, p_worker uuid)
 returns text language sql as $$
   select status::text from public.applications where job_id = p_job and worker_id = p_worker
 $$;
+
+-- X13: funções novas do `postgres` não nascem executáveis por todos; os utilitários do teste sim.
+do $$
+declare
+  f record;
+begin
+  for f in select p.oid::regprocedure as sig from pg_proc p where p.pronamespace = pg_my_temp_schema() loop
+    execute format('grant execute on function %s to public', f.sig);
+  end loop;
+end $$;
