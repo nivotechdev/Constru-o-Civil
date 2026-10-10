@@ -760,3 +760,18 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Rascunhos: adiado.** Um rascunho de vaga que sobrevive a sair da tela contraria a regra do Y21 (formulário
   é da visita) e, para valer entre aparelhos, pede uma tabela de rascunhos no servidor. Fica para depois do
   lançamento; hoje "Publicar de novo" cobre o caso mais comum (repetir uma vaga).
+
+### L10 — Verificação da construtora (o resto)
+
+- Status `pendente | verificada | reprovada`: Y24.
+- **Verificação automática**: ao concluir o perfil (e pelo botão "Verificar agora" enquanto pendente), a Edge
+  Function **`verificar-cnpj`** consulta o CNPJ na BrasilAPI (dados públicos da Receita, sem chave): situação
+  "ATIVA" → verificada (selo e aviso); baixada/inapta/suspensa/nula → reprovada; CPF, CNPJ não encontrado ou
+  serviço fora → continua pendente para a equipe. Até 5 consultas por dia por construtora. O CNPJ completo sai
+  do banco só para a função (`company_cnpj_for_check`, service_role). Na demonstração, CNPJ válido verifica na
+  hora.
+- **Reprovada não publica** (o banco recusa com "Fale com a gente pela Ajuda").
+- **Decisão: pendente publica normalmente**, em vez de deixar a vaga "em análise". A conferência manual depende
+  de uma pessoa da equipe e o recrutador com CPF (autônomo) não tem CNPJ para a checagem automática; segurar as
+  vagas deixaria o mural vazio no lançamento. O selo "Verificada" é o que diferencia; se a equipe quiser
+  segurar as vagas de pendentes, é só uma linha em `publish_job` / `feed_jobs`.

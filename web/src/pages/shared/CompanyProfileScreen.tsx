@@ -37,6 +37,8 @@ import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { CompanyAvatar } from '../../components/Avatar';
 import { holdsSlot } from '../../services/applicationMachine';
 import type { Company } from '../../types/models';
+import { checkMyCompany } from '../../services/profiles';
+import { FieldError } from '../../components/FieldError';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -269,6 +271,15 @@ function statusBadge(db: Database, job: Job): StatusBadge {
 
 // Y24: where the Bicos team's check of the company stands — never a "Verificada" that didn't happen.
 function VerificationRow({ company }: { company: Company }) {
+  const check = useAction(checkMyCompany, (status) =>
+    showToast(
+      status === 'verificada'
+        ? 'Empresa verificada'
+        : status === 'reprovada'
+          ? 'Não conseguimos verificar a empresa'
+          : 'Ainda não deu para confirmar. Nossa equipe vai conferir.'
+    )
+  );
   const status = company.verification ?? (company.verified ? 'verificada' : 'pendente');
   const when = company.verifiedAt
     ? new Date(company.verifiedAt).toLocaleDateString('pt-BR')
@@ -291,8 +302,20 @@ function VerificationRow({ company }: { company: Company }) {
         <>
           <Badge label="Verificação pendente" tone="warning" icon="clock" />
           <span className="text-xs text-concrete-500">
-            Ainda vamos conferir os dados da empresa. Você já pode publicar vagas; o selo aparece quando terminarmos.
+            {company.cnpj
+              ? 'Conferimos o CNPJ na Receita. Você já pode publicar vagas; o selo aparece quando der certo.'
+              : 'Com CPF, a conferência é feita pela nossa equipe. Você já pode publicar vagas.'}
           </span>
+          {company.cnpj ? (
+            <Button
+              label="Verificar agora"
+              variant="secondary"
+              size="sm"
+              loading={check.loading}
+              onClick={() => void check.run()}
+            />
+          ) : null}
+          {check.error ? <FieldError message={check.error} /> : null}
         </>
       )}
     </div>

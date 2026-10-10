@@ -232,6 +232,15 @@ select jobname, schedule from cron.job where jobname = 'bicos-lembrar-presenca';
 select has_column_privilege('authenticated', 'public.companies', 'contact_name', 'update');      -- true
 ```
 
+### 21. `20261012000700_l10_cnpj_receita.sql` (L10)
+
+`company_cnpj_for_check` (o CNPJ completo, só para o service_role) para a Edge Function `verificar-cnpj`
+(BrasilAPI), e `publish_job` recusando construtora reprovada.
+
+```sql
+select has_function_privilege('authenticated', 'public.company_cnpj_for_check(uuid)', 'execute'); -- false
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -6,7 +6,7 @@ import type { WorkerPost } from '../../types/models';
 import type { TableUpdate } from '../../types/supabase';
 import { serviceError } from '../errors';
 import * as store from '../store';
-import { db, request } from './client';
+import { db, invokeFunction, request } from './client';
 import { apply, COMPANY_COLUMNS, putCompanies, putPosts, putWorkers, WORKER_COLUMNS } from './merge';
 import { removeMedia, uploadMedia, type Progress } from './storage';
 
@@ -169,4 +169,10 @@ export async function changeWhatsApp(phone: string): Promise<void> {
   store.updateAccount(s.accountId, { whatsapp: answer.whatsapp, whatsappVerifiedAt: answer.verified_at });
   if (s.workerId) store.updateWorker(s.workerId, { whatsapp: answer.whatsapp });
   if (s.companyId) store.updateCompany(s.companyId, { whatsapp: answer.whatsapp });
+}
+
+/** L10: Edge Function verificar-cnpj. */
+export async function checkMyCompany(): Promise<'pendente' | 'verificada' | 'reprovada'> {
+  const answer = await invokeFunction<{ status?: 'pendente' | 'verificada' | 'reprovada' }>('verificar-cnpj', {});
+  return answer?.status ?? 'pendente';
 }

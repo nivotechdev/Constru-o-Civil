@@ -1,6 +1,6 @@
 // Worker and company profiles: reading them and the logged-in account editing its own. Each function
 // says what the real backend does there (docs/CONTRATO-BACKEND.md).
-import type { Company, Worker, WorkerPost } from '../types/models';
+import type { Company, CompanyVerification, Worker, WorkerPost } from '../types/models';
 import { getOficio } from './catalog';
 import { cityByLabel } from './cities';
 import { serviceError } from './errors';
@@ -12,6 +12,7 @@ import * as remote from './remote/profiles';
 import * as remoteData from './remote/data';
 import { isValidMobile, maskPhone } from '../utils/format';
 import { demoVerifiedPhones } from './auth';
+import { isValidCnpj } from '../utils/document';
 
 /** A worker's public profile (+ reviews, posts). Backend: select the worker by id. */
 export async function loadWorkerProfile(_workerId: string): Promise<void> {
@@ -153,4 +154,28 @@ export async function deletePortfolioPost(postId: string): Promise<void> {
   if (!post) throw serviceError('nao_encontrado', 'Esse post não existe mais.');
   if (post.workerId !== currentWorkerId()) throw serviceError('nao_autorizado', 'Esse post não é seu.');
   store.deleteWorkerPost(postId);
+}
+
+/**
+ * L10: asks for the automatic check of the company (CNPJ "ativa" at the Receita, via BrasilAPI). Answers
+ * where the check stands. A CPF, an unknown CNPJ or the service being down leave it "pendente" for the
+ * team. Backend: Edge Function verificar-cnpj. Demo: a valid CNPJ is verified at once.
+ */
+export async function checkMyCompany(): Promise<CompanyVerification> {
+  const id = currentCompanyId();
+  if (!IS_DEMO) {
+    const answer = await remote.checkMyCompany();
+    store.updateCompany(id, {
+      verification: answer,
+      verified: answer === 'verificada',
+      ...(answer === 'verificada' ? { verifiedAt: new Date().toISOString() } : {})
+    });
+    return answer;
+  }
+  await mockLatency(800);
+  const company = store.getDb().companies[id];
+  if (!company || (company.verification ?? 'pendente') !== 'pendente') return company?.verification ?? 'pendente';
+  if (!isValidCnpj(company.cnpj ?? '')) return 'pendente';
+  store.updateCompany(id, { verification: 'verificada', verified: true, verifiedAt: new Date().toISOString() });
+  return 'verificada';
 }

@@ -305,3 +305,39 @@ describe('L15/F08: password and e-mail from Configurações (demo)', () => {
     expect(store.getSession()?.email).toBe('jorge.novo@x.com');
   });
 });
+
+describe('L10: automatic company check (demo)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('a valid CNPJ is verified; a recruiter with CPF stays pending', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    const profiles = await import('../services/profiles');
+    const store = await import('../services/store');
+    const run = async <T>(p: Promise<T>) => {
+      const r = p.then((v) => v);
+      await vi.runAllTimersAsync();
+      return r;
+    };
+    const signUp = (doc: string, email: string) =>
+      run(
+        auth.signUp({
+          role: 'recrutador',
+          name: 'Obra Teste',
+          doc,
+          email,
+          whatsapp: '(11) 98842-3310',
+          password: 'abcdefgh1',
+          acceptedTermsVersion: '1.0',
+          adult: true
+        })
+      );
+    await signUp('11.444.777/0001-61', 'cnpj@x.com');
+    expect(await run(profiles.checkMyCompany())).toBe('verificada');
+    expect(store.getDb().companies[store.getSession()!.companyId!].verified).toBe(true);
+    await run(auth.signOut());
+    await signUp('123.456.789-09', 'cpf@x.com');
+    expect(await run(profiles.checkMyCompany())).toBe('pendente');
+  });
+});

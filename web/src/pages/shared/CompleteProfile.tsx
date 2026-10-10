@@ -16,6 +16,7 @@ import { showToast } from '../../services/toast';
 import { SpecialtiesField } from '../../components/SpecialtiesField';
 import { askSignOut } from '../../services/sharedUI';
 import { errorMessage } from '../../services/errors';
+import { checkMyCompany } from '../../services/profiles';
 
 /**
  * The pictures chosen while completing the profile, saved once the profile is (Z12). The profile is
@@ -178,6 +179,8 @@ function WorkerFlow() {
           .then(() => savePictures({ foto: ui.photo, capa: ui.capa }))
           .then(() => {
             setUi({ saving: false });
+            // L10: the automatic CNPJ check runs in the background (the profile shows the result).
+            void checkMyCompany().catch(() => undefined);
             navigate('/mural', { replace: true });
           })
           .catch((e: unknown) => setUi({ saving: false, saveError: errorMessage(e) }));
