@@ -2,10 +2,14 @@
 import type { Job } from '../types/models';
 import { jobTitle } from '../services/catalog';
 import { formatPay } from './format';
+import { routeUrl } from '../services/router';
 
 /** The job's public link (opens without signing in: /v/:id). */
-export function jobShareUrl(jobId: string, loc: Pick<Location, 'origin' | 'pathname'> = window.location): string {
-  return `${loc.origin}${loc.pathname}#/v/${jobId}`;
+export function jobShareUrl(
+  jobId: string,
+  loc: Pick<Location, 'origin' | 'pathname' | 'protocol'> = window.location
+): string {
+  return routeUrl('/v/' + jobId, loc);
 }
 
 export function jobShareText(job: Pick<Job, 'oficioId' | 'title' | 'pay' | 'address'>): string {

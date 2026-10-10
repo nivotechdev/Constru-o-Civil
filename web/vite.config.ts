@@ -24,7 +24,9 @@ export default defineConfig(({ mode }) => {
   const standalone = mode === 'standalone';
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
-    base: './',
+    // X17: routes are real paths (`/vaga/BC-1`), so the files are referenced from the site's root (or
+    // VITE_BASE when it is served under a folder). The standalone preview keeps relative paths.
+    base: standalone ? './' : (env.VITE_BASE ?? '/'),
     plugins: [
       react(),
       siteUrl(env.VITE_SITE_URL ?? ''),
@@ -42,8 +44,8 @@ export default defineConfig(({ mode }) => {
                 short_name: 'Bicos',
                 description: 'Diárias de obra perto de você: construtoras e trabalhadores da construção civil.',
                 lang: 'pt-BR',
-                start_url: './',
-                scope: './',
+                start_url: '.',
+                scope: '.',
                 display: 'standalone',
                 theme_color: '#1D4BED',
                 background_color: '#1D4BED',

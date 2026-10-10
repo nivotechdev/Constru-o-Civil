@@ -2,6 +2,7 @@
 // they are sent to Sentry's store endpoint with no personal data: no e-mail, no names, no URLs with ids.
 // Without the DSN nothing leaves the device.
 import { IS_DEMO } from './mode';
+import { currentPath } from './router';
 
 const DSN = (import.meta.env as ImportMetaEnv).VITE_SENTRY_DSN ?? '';
 
@@ -18,7 +19,7 @@ function parseDsn(dsn: string): Parsed | null {
 
 /** The route without ids ("/vaga/:id"), so a report never carries which job or person it was about. */
 function scrubbedRoute(): string {
-  const hash = typeof location !== 'undefined' ? location.hash.replace(/^#/, '') : '';
+  const hash = typeof location !== 'undefined' ? currentPath() : '';
   return (
     hash
       .replace(/BC-\d+/g, ':vaga')

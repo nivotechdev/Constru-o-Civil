@@ -67,8 +67,9 @@ editar vaga (avisa os candidatos), encerrar (recusa quem esperava). O teste acho
 ## 4. Configurações do painel (Authentication)
 
 1. **URL Configuration**: em _Site URL_ e _Redirect URLs_, o endereço onde o app novo estiver publicado
-   (ex.: `https://bicos.nivotech.com.br/`). Os links de confirmação e de nova senha voltam para ele
-   (sem `#/rota`: o app trata o `#access_token=…` antes do roteador, como o app antigo).
+   (ex.: `https://bicos.nivotech.com.br/`; em _Redirect URLs_ também `https://bicos.nivotech.com.br/**`).
+   Os links de confirmação e de nova senha voltam para a raiz; o app trata o `#access_token=…` antes do
+   roteador e troca pela rota de verdade (`/redefinir-senha`, `/mural`…) — X17.
 2. **E-mail**: manter "Confirm email" ligado. Para produção, configurar SMTP próprio (o serviço padrão
    do Supabase tem cota baixa — ver `SETUP-SUPABASE.md` do app antigo).
 3. Senha mínima: o app pede 8 caracteres; deixe o mínimo do Auth em 8 ou menos.

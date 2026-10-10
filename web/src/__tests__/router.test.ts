@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { compileRoute, matchRoute } from '../services/router';
 import { isChunkError } from '../components/ErrorBoundary';
 import { screen } from '../routes';
@@ -51,5 +51,43 @@ describe('Z10: no white screen', () => {
     expect(isChunkError(new TypeError('Failed to fetch dynamically imported module: x.js'))).toBe(true);
     expect(isChunkError(new TypeError('Importing a module script failed.'))).toBe(true);
     expect(isChunkError(new Error('Cannot read properties of undefined'))).toBe(false);
+  });
+});
+
+describe('X17: real URLs', () => {
+  it('paths over HTTP, hash when opened from disk', async () => {
+    const { routeUrl, usesPaths } = await import('../services/router');
+    expect(usesPaths({ protocol: 'https:' })).toBe(true);
+    expect(usesPaths({ protocol: 'file:' })).toBe(false);
+    expect(routeUrl('/v/BC-1', { origin: 'https://bicos.app', pathname: '/mural', protocol: 'https:' })).toBe(
+      'https://bicos.app/v/BC-1'
+    );
+    expect(routeUrl('/v/BC-1', { origin: 'null', pathname: '/x/index.html', protocol: 'file:' })).toBe(
+      'null/x/index.html#/v/BC-1'
+    );
+  });
+
+  it('navigates with the History API; an old #/ link is rewritten as a path', async () => {
+    vi.resetModules();
+    const loc = { protocol: 'https:', origin: 'https://bicos.app', pathname: '/', search: '', hash: '#/vaga/BC-7' };
+    const set = (_: unknown, __: string, url: string) => {
+      const u = new URL(url, 'https://bicos.app');
+      Object.assign(loc, { pathname: u.pathname, hash: u.hash });
+    };
+    const listeners: Record<string, () => void> = {};
+    vi.stubGlobal('window', { location: loc, addEventListener: (e: string, fn: () => void) => (listeners[e] = fn) });
+    vi.stubGlobal('location', loc);
+    vi.stubGlobal('history', { pushState: set, replaceState: set });
+    const router = await import('../services/router');
+    expect(router.currentPath()).toBe('/vaga/BC-7');
+    router.startRouter();
+    expect(loc).toMatchObject({ pathname: '/vaga/BC-7', hash: '' });
+    expect(Object.keys(listeners)).toEqual(['popstate']);
+    router.navigate('/mural');
+    expect(loc.pathname).toBe('/mural');
+    expect(router.getLocation().path).toBe('/mural');
+    router.goBack();
+    expect(router.currentPath()).toBe('/vaga/BC-7');
+    vi.unstubAllGlobals();
   });
 });

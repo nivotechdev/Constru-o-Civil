@@ -11,7 +11,7 @@ import type { RealtimeChannel, User } from '@supabase/supabase-js';
 import type { NotificationKind, Role } from '../../types/models';
 import type { TableRow } from '../../types/supabase';
 import { clearQueries, refreshCandidacies, runQuery } from '../queries';
-import { navigate, resetHistory } from '../router';
+import { navigate, replaceUrl, resetHistory, routeUrl } from '../router';
 import { clearSessionData, getSession, setSessionAccount, setUI, upsertAccount } from '../store';
 import { showToast } from '../toast';
 import { db, request, SESSION_ENDED, setSessionEndedHandler } from './client';
@@ -30,8 +30,9 @@ import { clearPaging } from '../paging';
 import { isCandidacyNotice } from '../notifications';
 
 /** Where the links sent by e-mail come back to: this page, without a route (see handleAuthRedirect). */
+/** Where the e-mail links come back to: the app's root (X17: `https://site/`, no route in the hash). */
 export function authRedirectUrl(): string {
-  return globalThis.location ? globalThis.location.origin + globalThis.location.pathname : '';
+  return globalThis.location ? routeUrl('/').replace(/#\/$/, '') : '';
 }
 
 let channel: RealtimeChannel | null = null;
@@ -225,9 +226,8 @@ async function handleAuthRedirect(): Promise<void> {
   const fragment = loc.hash.replace(/^#/, '');
   if (!fragment || fragment.startsWith('/')) return;
   const params = new URLSearchParams(fragment);
-  const base = loc.pathname + loc.search;
   if (params.get('error') || params.get('error_code')) {
-    globalThis.history.replaceState(null, '', base + '#/login');
+    replaceUrl('/login');
     notice = 'Esse link não vale mais (ele vence depois de um tempo ou de usado). Entre ou peça um novo.';
     return;
   }
@@ -239,7 +239,7 @@ async function handleAuthRedirect(): Promise<void> {
   recovering = recovery;
   const client = await db();
   const { error } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-  globalThis.history.replaceState(null, '', base + (recovery ? '#/redefinir-senha' : '#/'));
+  replaceUrl(recovery ? '/redefinir-senha' : '/');
   if (error) notice = 'Esse link não vale mais. Entre ou peça um novo.';
   else if (emailChange) notice = 'E-mail trocado. Use o novo para entrar.';
   else if (!recovery) notice = 'E-mail confirmado. Bem-vindo à Bicos!';

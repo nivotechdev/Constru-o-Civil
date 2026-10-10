@@ -140,7 +140,9 @@ describe('profile edit checks (L11)', () => {
 describe('sharing a job (F09)', () => {
   it('links to the public page and says what and where', async () => {
     const { jobShareUrl, jobShareText } = await import('../utils/share');
-    expect(jobShareUrl('BC-1', { origin: 'https://bicos.app', pathname: '/' })).toBe('https://bicos.app/#/v/BC-1');
+    expect(jobShareUrl('BC-1', { origin: 'https://bicos.app', pathname: '/', protocol: 'https:' })).toBe(
+      'https://bicos.app/v/BC-1'
+    );
     expect(
       jobShareText({
         oficioId: 'pintor',

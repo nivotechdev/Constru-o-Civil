@@ -800,7 +800,7 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - Botão **Compartilhar** no detalhe da vaga e no Gerenciar (vaga aberta): abre o menu de compartilhar do
   celular (Web Share API) ou, sem ele, o WhatsApp com o texto pronto ("Pintor em Tatuapé · R$ 200 por diária.
   Vi na Bicos: <link>").
-- O link é **`#/v/<id>`**, uma página que abre **sem login** (RPC `public_job_card`, liberada para anon): título,
+- O link é **`/v/<id>`** (era `#/v/<id>` antes do X17; os links antigos continuam abrindo), uma página que abre **sem login** (RPC `public_job_card`, liberada para anon): título,
   valor, área (bairro/cidade), datas, horário, pagamento, descrição, a construtora com nota e selo. Nunca o
   endereço exato nem contato. "Entrar para me candidatar" e "Criar minha conta" voltam para a vaga depois do
   login. Quem já está logado vai direto para a vaga. Vaga excluída: "Essa vaga não existe mais".
@@ -917,3 +917,18 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   limitação simulada (padrão) o Desempenho sai **81**: o simulador atribui a maior pintura ao React porque,
   sem limitação, o app monta antes da primeira pintura. O Lighthouse 12 não tem mais a categoria "PWA"; a
   instalação foi conferida pelo manifest + service worker ativo (teste com Playwright: registra, abre sem rede).
+
+### X17 — URLs de verdade
+
+- Servido por HTTP, o roteador usa **caminhos reais** (History API): `/mural`, `/vaga/BC-4821`, `/v/BC-4821`
+  — links compartilháveis e indexáveis. A prévia `standalone` aberta do disco (file://) continua com `#/`.
+- Os arquivos são referenciados a partir da raiz (`base: '/'`, ou `VITE_BASE` se o app ficar numa pasta).
+- **Servidor**: todo caminho que não for arquivo responde com `index.html`. Cloudflare Pages faz isso sozinho
+  (sem `404.html` ele trata o projeto como SPA); no Netlify, `/* /index.html 200` em `_redirects`; no nginx,
+  `try_files $uri /index.html`. O service worker (X02) também responde as navegações com o app.
+- Links antigos (`/#/vaga/BC-1`, já enviados no WhatsApp) abrem e são reescritos como caminho.
+- Links de e-mail do Auth: voltam para a raiz com `#access_token=…`; o app guarda a sessão e troca a URL pela
+  rota (`/redefinir-senha` ou `/`) antes de o roteador começar. Em _Redirect URLs_ do painel: o domínio e
+  `domínio/**` (SUPABASE.md).
+- A pilha própria de "voltar" continua (o "Voltar" do app não sai do app); o botão voltar do navegador
+  funciona pelo `popstate`.
