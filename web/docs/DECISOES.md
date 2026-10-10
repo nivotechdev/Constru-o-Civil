@@ -712,3 +712,15 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - "Confirme seu e-mail": **Corrigir e-mail** (sai do cadastro pendente e começa de novo; o cadastro nunca
   confirmado é limpo depois e o documento fica livre — Z07/Z08) e reenvio só depois de **60 segundos**, com a
   contagem no botão. O reenvio do código do WhatsApp também passou a 60 segundos (L14).
+
+### L14 — Cadastro
+
+- Caixa **"Tenho 18 anos ou mais"** (os termos exigem), separada do aceite dos termos; o servidor recusa o
+  cadastro sem ela (`maior_de_idade` nos metadados, conferido no gatilho do Auth).
+- Dígito verificador: Y17. Reenvio do código em 60 s, com limite de tentativas no servidor (Y25:
+  3 códigos por número e 10 por IP a cada hora; 8 conferências por número a cada 15 min).
+- **Duplicidade no próprio passo: decidido não fazer para o documento.** Conferir "esse CPF já tem conta"
+  antes de criar a conta é exatamente a enumeração que o Z07 fechou. O documento é conferido na criação, e a
+  recusa volta ao passo do documento com a mensagem genérica. O e-mail repetido é dito na criação (o Supabase
+  já revela isso no cadastro) e volta ao passo do e-mail. WhatsApp repetido é permitido (a mesma pessoa pode
+  ter conta de trabalhador e de construtora com o mesmo celular).

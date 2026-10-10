@@ -37,7 +37,7 @@ select pg_temp.fails($$select pg_temp.new_user('30000000-0000-0000-0000-00000000
 -- Cadastro nunca confirmado com o documento: o novo cadastro libera o documento.
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at)
 values ('30000000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-        'pendente@bicos.test', '{"role":"trabalhador","nome":"Pendente","documento":"11144477735","whatsapp":"11988887777"}', now(), now());
+        'pendente@bicos.test', '{"role":"trabalhador","nome":"Pendente","documento":"11144477735","whatsapp":"11988887777","maior_de_idade":true}', now(), now());
 select pg_temp.new_user('30000000-0000-0000-0000-0000000000a4', 'trabalhador', 'Quem confirmou', '111.444.777-35');
 select pg_temp.ok(not exists (select 1 from auth.users where id = '30000000-0000-0000-0000-0000000000a3'),
   'cadastro pendente com o mesmo documento é liberado');

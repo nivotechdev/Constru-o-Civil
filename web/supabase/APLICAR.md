@@ -206,6 +206,14 @@ para o que for gravado daqui em diante).
 select conname from pg_constraint where conname in ('workers_name_length', 'companies_name_length'); -- 2 linhas
 ```
 
+### 18. `20261012000400_l14_maior_idade.sql` (L14)
+
+O cadastro com lado definido precisa trazer `maior_de_idade: true` nos metadados ("Tenho 18 anos ou mais").
+
+```sql
+select prosrc like '%maior_de_idade%' from pg_proc where proname = 'claim_document_v2';           -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

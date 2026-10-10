@@ -146,6 +146,9 @@ interface SignupUI {
   confirmError: string | null;
   accepted: boolean;
   acceptError: boolean;
+  /** L14: the terms require 18+. */
+  adult: boolean;
+  adultError: boolean;
   /** When the last WhatsApp code was sent (ms), for the resend countdown. */
   codeSentAt: number;
   resending: boolean;
@@ -213,6 +216,8 @@ export default function Signup({ params }: ScreenProps) {
     confirmError: null,
     accepted: false,
     acceptError: false,
+    adult: false,
+    adultError: false,
     codeSentAt: 0,
     resending: false,
     resent: false,
@@ -334,11 +339,11 @@ export default function Signup({ params }: ScreenProps) {
       setUi({ confirmError: 'As senhas não são iguais. Confira os dois campos.' });
       return;
     }
-    if (!ui.accepted) {
-      setUi({ acceptError: true });
+    if (!ui.adult || !ui.accepted) {
+      setUi({ adultError: !ui.adult, acceptError: !ui.accepted });
       return;
     }
-    setUi({ submitting: true, acceptError: false, submitError: null });
+    setUi({ submitting: true, acceptError: false, adultError: false, submitError: null });
     signUp(
       {
         role,
@@ -347,7 +352,8 @@ export default function Signup({ params }: ScreenProps) {
         email: ui.values.email || '',
         whatsapp: ui.values.whatsapp || '',
         password,
-        acceptedTermsVersion: TERMS_VERSION
+        acceptedTermsVersion: TERMS_VERSION,
+        adult: true
       },
       captcha.getToken
     )
@@ -470,6 +476,18 @@ export default function Signup({ params }: ScreenProps) {
             <div className="flex flex-col gap-5">
               <PasswordStrength password={password} />
               <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
+                <Checkbox
+                  label="Tenho 18 anos ou mais"
+                  checked={ui.adult}
+                  onChange={(v) => setUi({ adult: v, adultError: false })}
+                />
+                {ui.adultError ? (
+                  <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
+                    A Bicos é só para maiores de 18 anos.
+                  </span>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-1">
                 <Checkbox
                   label="Li e aceito os Termos de uso e a Política de privacidade"
                   checked={ui.accepted}

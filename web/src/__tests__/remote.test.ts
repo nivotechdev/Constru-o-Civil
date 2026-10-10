@@ -286,7 +286,8 @@ describe('remote: sign-in and sign-up', () => {
       email: 'Novo@Exemplo.com',
       whatsapp: '(11) 98888-7777',
       password: 'segredo123',
-      acceptedTermsVersion: '1.0'
+      acceptedTermsVersion: '1.0',
+      adult: true
     });
     expect(result).toEqual({ ok: true });
     const sent = fake.calls.find((c) => c.name === 'signUp')?.args as { email: string; options: { data: object } };
@@ -297,7 +298,8 @@ describe('remote: sign-in and sign-up', () => {
       tipo: 'pedreiro',
       documento: '12345678909',
       whatsapp: '11988887777',
-      terms_version: '1.0'
+      terms_version: '1.0',
+      maior_de_idade: true
     });
     expect(fake.calls.some((c) => c.kind === 'rpc')).toBe(false); // Z07: no document oracle
     expect(m.guards.homeFor(m.store.getSession()!)).toBe('/verificar-email');
@@ -317,7 +319,8 @@ describe('remote: sign-in and sign-up', () => {
       email: 'novo@exemplo.com',
       whatsapp: '11988887777',
       password: 'segredo123',
-      acceptedTermsVersion: '1.0'
+      acceptedTermsVersion: '1.0',
+      adult: true
     };
     expect(await m.auth.signUp(data)).toEqual({ ok: false, reason: 'recusado' });
 

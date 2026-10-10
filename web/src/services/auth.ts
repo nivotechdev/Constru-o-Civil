@@ -115,6 +115,8 @@ export interface SignUpData {
   password: string;
   /** The version of the terms/privacy policy the person accepted (see services/legal.ts). */
   acceptedTermsVersion: string;
+  /** L14: "Tenho 18 anos ou mais" (the terms require it; the server refuses without it). */
+  adult: boolean;
 }
 
 /**
@@ -142,6 +144,7 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
   if (!IS_DEMO) return remote.signUp(data, captcha);
   await mockLatency(700);
   const accounts = Object.values(getDb().accounts);
+  if (!data.adult) return { ok: false, reason: 'recusado' };
   // Y17: like the server, an invalid document (or none) is refused.
   const validDoc = data.role === 'recrutador' ? isValidCnpj(data.doc) || isValidCpf(data.doc) : isValidCpf(data.doc);
   if (!validDoc) return { ok: false, reason: 'recusado' };

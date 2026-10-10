@@ -95,7 +95,8 @@ describe('accounts (mock auth)', () => {
         email: 'ana@exemplo.com',
         whatsapp: '(11) 91234-5678',
         password: 'abcdefgh1',
-        acceptedTermsVersion: '1.0'
+        acceptedTermsVersion: '1.0',
+        adult: true
       })
     );
     expect(result).toEqual({ ok: true });
@@ -128,7 +129,8 @@ describe('accounts (mock auth)', () => {
         email: 'ANA@exemplo.com',
         whatsapp: '(11) 91234-5678',
         password: 'abcdefgh1',
-        acceptedTermsVersion: '1.0'
+        acceptedTermsVersion: '1.0',
+        adult: true
       })
     );
     expect(again).toEqual({ ok: false, reason: 'email-taken' });

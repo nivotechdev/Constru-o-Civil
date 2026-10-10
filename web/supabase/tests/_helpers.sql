@@ -59,7 +59,7 @@ begin
   values (p_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
           'teste+' || p_id || '@bicos.test', now(),
           jsonb_build_object('role', p_role, 'nome', p_name, 'documento', p_document, 'whatsapp', '11988887777',
-                             'terms_version', '1.0'),
+                             'terms_version', '1.0', 'maior_de_idade', true),
           now(), now());
   update public.accounts set profile_completed_at = now() where id = p_id;
   update public.workers set oficio_id = 'pedreiro' where id = p_id;

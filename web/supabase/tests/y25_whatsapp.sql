@@ -14,7 +14,7 @@ select public.mark_whatsapp_verified('11977776666');
 select pg_temp.new_user('72000000-0000-0000-0000-0000000000a1', 'trabalhador', 'Zap Confirmado');
 insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at, raw_user_meta_data, created_at, updated_at)
 values ('72000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-        'zap2@bicos.test', now(), '{"role": "trabalhador", "nome": "Com Código", "documento": "39053344705", "whatsapp": "(11) 97777-6666"}', now(), now());
+        'zap2@bicos.test', now(), '{"role": "trabalhador", "nome": "Com Código", "documento": "39053344705", "whatsapp": "(11) 97777-6666", "maior_de_idade": true}', now(), now());
 select pg_temp.ok((select whatsapp_verified_at is not null from public.accounts where id = '72000000-0000-0000-0000-0000000000a2'),
   'cadastro com código confirmado');
 
