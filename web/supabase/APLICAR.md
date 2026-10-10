@@ -178,6 +178,16 @@ select count(*) from pg_trigger where tgname = 'jobs_notify_alerts';            
 select 'bico_novo' = any(enum_range(null::public.notification_kind)::text[]);                   -- true
 ```
 
+### 15. `20261012000100_l18_pagamento.sql` (L18 + P06)
+
+Colunas `jobs.payment_method` / `payment_note` (as vagas que já existem ficam com `pix_dia`, o texto que o app
+mostrava); `publish_job` e `update_job` leem os campos novos e conferem os requisitos (até 12, 60 caracteres
+cada); mudar o pagamento avisa os candidatos.
+
+```sql
+select count(*) from public.jobs where payment_method is null;                                  -- 0
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -608,6 +608,7 @@ export const JOBS: Record<string, Job> = {
     slots: 4,
     description:
       'Reboco e regularização de duas paredes externas e acabamento em massa corrida numa reforma residencial. Material já está no canteiro.',
+    payment: 'pix_dia',
     requirements: ['Experiência com reboco e massa corrida', 'Botina e capacete próprios', 'Chegar 10 minutos antes']
   },
   'BC-4822': {
@@ -625,6 +626,7 @@ export const JOBS: Record<string, Job> = {
     photos: ['img/jobs/pintor-1.jpg', 'img/jobs/pintor-2.jpg'],
     slots: 1,
     description: 'Pintura interna em parede lisa de apartamento recém-reformado, duas demãos de tinta acrílica branca.',
+    payment: 'pix_dia',
     requirements: ['Pintura interna, parede lisa', 'Rolo e pincel próprios', 'Tinta e lixa fornecidas pela obra']
   },
   'BC-4855': {
@@ -641,6 +643,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     description:
       'Instalação elétrica residencial em casa em reforma: troca de disjuntores, tomadas e pontos de luz em três cômodos.',
+    payment: 'pix_dia',
     requirements: [
       'Instalação elétrica residencial',
       'Ferramentas próprias',
@@ -661,6 +664,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     description:
       'Carga e descarga de material de construção e limpeza do piso ao fim do expediente, em obra residencial de dois pavimentos.',
+    payment: 'pix_dia',
     requirements: ['Carregar material e limpar o piso', 'Botina própria', 'Capacete fornecido pela obra']
   },
   'BC-4835': {
@@ -676,6 +680,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     description: 'Assentamento de porcelanato 60x60 em sala e cozinha, com nivelamento e rejunte incluídos.',
+    payment: 'pix_dia',
     requirements: [
       'Assentamento de porcelanato 60x60',
       'Desempenadeira e nível próprios',
@@ -696,6 +701,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     description:
       'Montagem da ferragem de laje de um pavimento, seguindo projeto estrutural fornecido pela construtora.',
+    payment: 'pix_dia',
     requirements: ['Montagem de ferragem de laje', 'Botina, capacete e luva próprios', 'Experiência com vergalhão']
   },
   'BC-4848': {
@@ -711,6 +717,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'fimdesemana',
     slots: 1,
     description: 'Descarregar um caminhão de material de construção e organizar no canteiro. Serviço de meio período.',
+    payment: 'pix_dia',
     requirements: ['Descarregar caminhão de material', 'Botina própria', 'Sem experiência exigida']
   },
   'BC-4998': {
@@ -727,6 +734,7 @@ export const JOBS: Record<string, Job> = {
     slots: 2,
     description:
       'Carga e descarga de material de construção e limpeza do piso ao fim do expediente, em obra residencial de dois pavimentos.',
+    payment: 'pix_dia',
     requirements: ['Carregar material e limpar o piso', 'Botina própria']
   },
   'BC-4995': {
@@ -742,6 +750,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     description: 'Assentamento de porcelanato 60x60 em sala e cozinha, com nivelamento e rejunte incluídos.',
+    payment: 'pix_dia',
     requirements: ['Assentamento de porcelanato 60x60', 'Desempenadeira e nível próprios']
   },
   'BC-5010': {
@@ -759,6 +768,7 @@ export const JOBS: Record<string, Job> = {
     photos: ['img/jobs/eletricista-1.jpg', 'img/jobs/eletricista-2.jpg'],
     slots: 1,
     description: 'Troca da fiação de um apartamento de dois quartos e instalação de quadro de distribuição novo.',
+    payment: 'pix_dia',
     requirements: ['NR-10 em dia', 'Ferramentas próprias', 'Material fornecido pela obra']
   },
   'BC-5011': {
@@ -774,6 +784,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 2,
     description: 'Pintura de fachada de sobrado, com andaime já montado pela obra.',
+    payment: 'pix_dia',
     requirements: ['Experiência com pintura externa', 'Rolo, pincel e trincha próprios', 'EPI fornecido pela obra']
   },
   'BC-5012': {
@@ -790,6 +801,7 @@ export const JOBS: Record<string, Job> = {
     urgent: true,
     slots: 1,
     description: 'Vazamento na prumada do banheiro. Trocar a tubulação de água fria e testar a pressão.',
+    payment: 'pix_dia',
     requirements: ['Experiência com PVC e PPR', 'Ferramentas próprias']
   },
   'BC-5013': {
@@ -805,6 +817,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'fimdesemana',
     slots: 2,
     description: 'Apoio ao pedreiro no preparo de massa e transporte de blocos para o segundo andar.',
+    payment: 'pix_dia',
     requirements: ['Botina própria', 'Capacete e luvas fornecidos pela obra']
   },
   'BC-5014': {
@@ -821,6 +834,7 @@ export const JOBS: Record<string, Job> = {
     photos: ['img/jobs/azulejista-1.jpg', 'img/jobs/azulejista-2.jpg'],
     slots: 1,
     description: 'Revestimento de banheiro inteiro com porcelanato 60x120, incluindo recortes para nichos.',
+    payment: 'pix_dia',
     requirements: ['Experiência com peça grande', 'Cortador e nível a laser próprios']
   },
   'BC-5015': {
@@ -836,6 +850,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 2,
     description: 'Montagem de fôrmas de madeira para a laje do térreo.',
+    payment: 'pix_dia',
     requirements: ['Experiência com fôrma de laje', 'Serrote, martelo e trena próprios']
   },
   'BC-5016': {
@@ -852,6 +867,7 @@ export const JOBS: Record<string, Job> = {
     photos: ['img/jobs/pedreiro-1.jpg', 'img/jobs/pedreiro-3.jpg', 'img/jobs/pedreiro-2.jpg'],
     slots: 1,
     description: 'Levantamento de muro de divisa com bloco de concreto, cerca de 20 metros.',
+    payment: 'pix_dia',
     requirements: ['Experiência com alvenaria', 'Colher e prumo próprios']
   },
   'BC-5017': {
@@ -868,6 +884,7 @@ export const JOBS: Record<string, Job> = {
     urgent: true,
     slots: 1,
     description: 'Limpeza pós-obra de uma casa térrea: retirada de entulho e varrição.',
+    payment: 'pix_dia',
     requirements: ['Sem experiência exigida', 'Botina própria']
   },
   'BC-5018': {
@@ -883,6 +900,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     description: 'Instalação de forro de gesso em sala e dois quartos, com sanca aberta na sala.',
+    payment: 'pix_dia',
     requirements: ['Experiência com forro e sanca', 'Ferramentas próprias']
   },
   'BC-5019': {
@@ -898,6 +916,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'qualquer',
     slots: 1,
     description: 'Pintura interna de apartamento de 60 m², com massa corrida nos pontos danificados.',
+    payment: 'pix_dia',
     requirements: ['Rolo e pincel próprios', 'Tinta fornecida pela obra']
   },
   'BC-5020': {
@@ -913,6 +932,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     description: 'Instalação de iluminação em LED e tomadas numa loja de 80 m².',
+    payment: 'pix_dia',
     requirements: ['NR-10 em dia', 'Ferramentas próprias']
   },
   'BC-5021': {
@@ -928,6 +948,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     description: 'Coordenar uma equipe de quatro pessoas na reforma completa de um apartamento.',
+    payment: 'pix_dia',
     requirements: ['Experiência comprovada como mestre', 'Leitura de projeto']
   },
   'BC-5022': {
@@ -944,6 +965,7 @@ export const JOBS: Record<string, Job> = {
     urgent: true,
     slots: 2,
     description: 'Carga e descarga de sacos de cimento e areia para a concretagem de sábado.',
+    payment: 'pix_dia',
     requirements: ['Botina própria']
   },
   'BC-5023': {
@@ -959,6 +981,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'fimdesemana',
     slots: 1,
     description: 'Instalação de aquecedor a gás e ligação das tubulações de água quente.',
+    payment: 'pix_dia',
     requirements: ['Experiência com aquecedor a gás', 'Ferramentas próprias']
   },
   'BC-5024': {
@@ -974,6 +997,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     description: 'Assentamento de rodapé e soleiras de granito, com acabamento em rejunte epóxi.',
+    payment: 'pix_dia',
     requirements: ['Experiência com granito', 'Nível e esquadro próprios']
   },
   'BC-5025': {
@@ -989,6 +1013,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 2,
     description: 'Troca de telhas quebradas e revisão das calhas de um galpão.',
+    payment: 'pix_dia',
     requirements: ['Experiência em altura', 'Cinto de segurança fornecido pela obra']
   },
   'BC-5026': {
@@ -1004,6 +1029,7 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 3,
     description: 'Pintura das áreas comuns de um condomínio: escadas e corredores de quatro andares.',
+    payment: 'pix_dia',
     requirements: ['Rolo e pincel próprios', 'Tinta fornecida pela obra']
   },
   // closed / historical
@@ -1021,6 +1047,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     closed: true,
     description: 'Descarregar material de construção na entrada da obra e organizar no canteiro.',
+    payment: 'pix_dia',
     requirements: ['Descarregar material', 'Botina própria']
   },
   'BC-4703': {
@@ -1037,6 +1064,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     closed: true,
     description: 'Limpeza geral do piso e carga de material de construção durante a diária.',
+    payment: 'pix_dia',
     requirements: ['Limpeza de piso e carga de material', 'Botina própria']
   },
   'BC-4698': {
@@ -1053,6 +1081,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     closed: true,
     description: 'Pintura interna em parede lisa, duas demãos de tinta acrílica.',
+    payment: 'pix_dia',
     requirements: ['Pintura interna', 'Rolo e pincel próprios']
   },
   'BC-4960': {
@@ -1069,6 +1098,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     closed: true,
     description: 'Pintura interna em parede lisa, duas demãos de tinta acrílica.',
+    payment: 'pix_dia',
     requirements: ['Pintura interna', 'Rolo e pincel próprios']
   },
   'BC-4944': {
@@ -1087,6 +1117,7 @@ export const JOBS: Record<string, Job> = {
     semContratacao: true,
     description:
       'Montagem da ferragem de laje de um pavimento, seguindo projeto estrutural fornecido pela construtora.',
+    payment: 'pix_dia',
     requirements: ['Montagem de ferragem de laje']
   },
   'BC-4918': {
@@ -1103,6 +1134,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     closed: true,
     description: 'Reboco e regularização de parede externa numa reforma residencial.',
+    payment: 'pix_dia',
     requirements: ['Experiência com reboco e massa corrida']
   },
   'BC-4899': {
@@ -1119,6 +1151,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     closed: true,
     description: 'Acabamento em massa corrida antes da pintura, numa reforma residencial.',
+    payment: 'pix_dia',
     requirements: ['Experiência com reboco e massa corrida']
   },
   'BC-4870': {
@@ -1135,6 +1168,7 @@ export const JOBS: Record<string, Job> = {
     slots: 1,
     closed: true,
     description: 'Carga de material de construção e limpeza do piso ao fim do expediente.',
+    payment: 'pix_dia',
     requirements: ['Carregar material e limpar o piso']
   }
 };

@@ -252,6 +252,8 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
   setIf(job, 'closed', row.closed);
   setIf(job, 'semContratacao', row.sem_contratacao);
   setIf(job, 'createdAt', row.created_at);
+  setIf(job, 'payment', row.payment_method);
+  setIf(job, 'paymentNote', row.payment_note);
   return job;
 }
 
@@ -307,6 +309,8 @@ export function jobToRow(job: Job, deletedAt: string | null = null): TableInsert
     sem_contratacao: Boolean(job.semContratacao),
     description: job.description,
     requirements: job.requirements,
+    payment_method: job.payment ?? null,
+    payment_note: job.paymentNote ?? null,
     deleted_at: deletedAt,
     ...(job.createdAt ? { created_at: job.createdAt } : {})
   };

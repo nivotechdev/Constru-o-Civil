@@ -662,3 +662,15 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   não mais "Pedreiro · 4.8".
 - Publicar/editar vaga: além da lista pronta, "Outro item" para escrever um requisito (até 60 caracteres,
   sem repetir, até 12 no total; o banco confere o mesmo limite).
+
+### L18 — Pagamento da diária como campo da vaga; sem métricas inventadas
+
+- Publicar/editar vaga pergunta **"Como você paga a diária"**: PIX no fim de cada diária, PIX no fim do bico,
+  dinheiro ou outro jeito (com explicação de até 80 caracteres). Detalhe da vaga e Gerenciar mostram o que foi
+  escolhido no lugar do texto fixo "Pagamento em PIX no fim da diária".
+- As vagas que já existiam ficam com "PIX no fim de cada diária" — era o que o app mostrava para todas.
+- Mudar a forma de pagamento avisa os candidatos ("mudou pagamento"), como mudar o valor.
+- O mural (`feed_jobs`) não traz o pagamento; o detalhe lê a vaga inteira, e o merge não apaga o pagamento
+  quando a mesma vaga volta pelo mural.
+- Perfil da construtora: saíram "N diárias pagas pela plataforma" (a plataforma não paga diárias) e o tempo
+  de resposta (não é calculado). Ficam os números reais: bicos concluídos, vagas abertas, avaliações.

@@ -4,7 +4,7 @@ import { locate, maskCEP, onlyDigits } from '../../services/address';
 import { getOficio } from '../../services/catalog';
 import { DEFAULT_CITY } from '../../services/defaults';
 import type { JobDraft } from '../../services/jobs';
-import type { DiasKey, Job } from '../../types/models';
+import type { DiasKey, Job, WagePayment } from '../../types/models';
 import { isValidISODate, isValidTime, todayISO, daysBetween } from '../../utils/dates';
 import { countDiarias, DIAS } from '../../utils/jobInfo';
 
@@ -36,6 +36,9 @@ export interface JobForm {
   detalhe: string;
   /** Free: the company needs people fast (the mural shows "Urgente" and puts it before the others). */
   urgente: boolean;
+  /** L18: how the diária is paid, and (for "outro") how in words. */
+  pagamento: WagePayment;
+  pagamentoObs: string;
 }
 
 export type FieldKey =
@@ -52,6 +55,7 @@ export type FieldKey =
   | 'diarias'
   | 'vagas'
   | 'valor'
+  | 'pagamento'
   | 'detalhe';
 export type FormErrors = Partial<Record<FieldKey, string | null>>;
 
@@ -82,7 +86,9 @@ export function emptyForm(): JobForm {
     negociavel: false,
     requisitos: ['Botina e capacete próprios'],
     detalhe: '',
-    urgente: false
+    urgente: false,
+    pagamento: 'pix_dia',
+    pagamentoObs: ''
   };
 }
 
@@ -110,7 +116,9 @@ export function formFromJob(job: Job): JobForm {
     negociavel: job.pay == null,
     requisitos: [...job.requirements],
     detalhe: job.description,
-    urgente: Boolean(job.urgent)
+    urgente: Boolean(job.urgent),
+    pagamento: job.payment ?? 'pix_dia',
+    pagamentoObs: job.paymentNote ?? ''
   };
 }
 
@@ -178,6 +186,8 @@ export function validateStep2(f: JobForm): FormErrors {
     if (!f.valor.trim()) e.valor = 'Informe o valor da diária, ou marque como a combinar.';
     else if (!n || n < MIN_PAY) e.valor = `Informe um valor de R$ ${MIN_PAY} ou mais.`;
   }
+  if (f.pagamento === 'outro' && !f.pagamentoObs.trim()) e.pagamento = 'Conte como a diária vai ser paga.';
+  else if (f.pagamentoObs.trim().length > 80) e.pagamento = 'Use até 80 caracteres para explicar o pagamento.';
   if (!f.detalhe.trim()) e.detalhe = 'Descreva o serviço da vaga.';
   return e;
 }
@@ -211,7 +221,9 @@ export function draftFromForm(f: JobForm): JobDraft {
     requirements: f.requisitos,
     description: f.detalhe.trim(),
     photos: f.fotos,
-    urgent: f.urgente
+    urgent: f.urgente,
+    payment: f.pagamento,
+    ...(f.pagamento === 'outro' ? { paymentNote: f.pagamentoObs.trim() } : {})
   };
 }
 

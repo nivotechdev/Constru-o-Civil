@@ -186,6 +186,10 @@ export interface Job {
   semContratacao?: boolean;
   description: string;
   requirements: string[];
+  /** L18: how the diária is paid (absent on jobs from before: "combined directly"). */
+  payment?: WagePayment;
+  /** Only with `payment: 'outro'`: how, in the company's words. */
+  paymentNote?: string;
   /** When it was published (ISO); a job with the date to be arranged expires 30 days later (Y04). */
   createdAt?: string;
 }
@@ -247,6 +251,9 @@ export interface WorkerPost {
   /** ISO date, YYYY-MM-DD. */
   date: string;
 }
+
+/** L18: how the company pays the diária. */
+export type WagePayment = 'pix_dia' | 'pix_fim' | 'dinheiro' | 'outro';
 
 /** The Bicos team's check of a company (Y24). Every company starts "pendente". */
 export type CompanyVerification = 'pendente' | 'verificada' | 'reprovada';

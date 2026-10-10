@@ -36,7 +36,7 @@ import { getDb } from '../../services/store';
 import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
-import { diasInfo, durationText, hoursText, placeText, streetText, whenText } from '../../utils/jobInfo';
+import { diasInfo, durationText, hoursText, paymentText, placeText, streetText, whenText } from '../../utils/jobInfo';
 import { jobTitle, oficioNome } from '../../services/catalog';
 import { workerDistance, workerPlace } from '../../utils/workerInfo';
 import { ContactButton } from '../../components/ContactButton';
@@ -236,11 +236,7 @@ export default function JobManage({ params }: ScreenProps) {
                 <InfoRow icon="map-pin" main={streetText(job)} sub={`${placeText(job)} · CEP ${job.address.cep}`} />
                 {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
                 <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
-                <InfoRow
-                  icon="hand-coins"
-                  main="Pagamento em PIX no fim da diária"
-                  sub="Combinado direto com o trabalhador"
-                />
+                <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com o trabalhador" />
               </div>
             </Card>
           </div>

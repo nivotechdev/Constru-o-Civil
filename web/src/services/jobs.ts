@@ -82,6 +82,8 @@ export async function publishJob(draft: JobDraft): Promise<string> {
 export function significantChanges(job: Job, draft: JobDraft): string[] {
   const changes: string[] = [];
   if (job.pay !== draft.pay) changes.push('valor');
+  if ((job.payment ?? null) !== (draft.payment ?? null) || (job.paymentNote ?? null) !== (draft.paymentNote ?? null))
+    changes.push('pagamento');
   if (
     job.dateToArrange !== draft.dateToArrange ||
     job.startDate !== draft.startDate ||

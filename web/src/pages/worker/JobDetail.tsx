@@ -32,7 +32,7 @@ import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
 import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, type FeedUI } from './feed/feedUI';
 import { formatKm } from '../../utils/geo';
-import { diasInfo, durationText, hoursText, placeText, streetText, whenText } from '../../utils/jobInfo';
+import { diasInfo, durationText, hoursText, paymentText, placeText, streetText, whenText } from '../../utils/jobInfo';
 import { CompanyAvatar } from '../../components/Avatar';
 
 export default function JobDetail({ params }: ScreenProps) {
@@ -182,11 +182,7 @@ export default function JobDetail({ params }: ScreenProps) {
                 {exact ? <MapLinks job={job} /> : null}
                 {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
                 <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
-                <InfoRow
-                  icon="hand-coins"
-                  main="Pagamento em PIX no fim da diária"
-                  sub="Combinado direto com a construtora"
-                />
+                <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com a construtora" />
               </div>
             </Card>
           </Section>
@@ -223,7 +219,7 @@ export default function JobDetail({ params }: ScreenProps) {
             {actions()}
             <div className="flex items-start gap-2 text-sm text-concrete-500">
               <Icon name="hand-coins" size={18} color="var(--text-subtle)" />
-              <span>Pagamento em PIX no fim da diária, combinado direto com a construtora.</span>
+              <span>{`${paymentText(job)}, combinado direto com a construtora.`}</span>
             </div>
           </div>
         </aside>

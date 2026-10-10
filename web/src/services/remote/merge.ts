@@ -24,7 +24,7 @@ export const WORKER_COLUMNS =
   'id, name, initials, oficio_id, city, neighborhood, lat, lon, rating, review_count, jobs_done, novo, verified, specialties, facts, photo_url, cover_url, created_at';
 /** What anyone may read of a job (Z06): the exact address comes from get_job_addresses. */
 export const JOB_COLUMNS =
-  'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, created_at, updated_at, deleted_at';
+  'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, payment_method, payment_note, created_at, updated_at, deleted_at';
 export const COMPANY_COLUMNS =
   'id, name, cnpj, tipo_obra, location, rating, review_count, verified, verified_since, verification_status, verified_at, since_label, respond_time, paid_count, logo_url, cover_url, created_at';
 
@@ -103,7 +103,13 @@ export const putJobs =
         old.uf === row.uf &&
         round2(old.lat) === row.area_lat &&
         round2(old.lon) === row.area_lon;
-      jobs[row.id] = sameArea ? { ...fresh, address: old } : fresh;
+      // The mural (feed_jobs) doesn't bring the payment (L18): keep what the job's own read brought.
+      const prev = db.jobs[row.id];
+      const payment =
+        !('payment_method' in row) && prev?.payment
+          ? { payment: prev.payment, ...(prev.paymentNote ? { paymentNote: prev.paymentNote } : {}) }
+          : {};
+      jobs[row.id] = { ...(sameArea ? { ...fresh, address: old } : fresh), ...payment };
       if (row.deleted_at) deleted.add(row.id);
       else deleted.delete(row.id);
     }

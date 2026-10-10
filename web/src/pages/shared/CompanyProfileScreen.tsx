@@ -151,16 +151,6 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           <Card padding="md">
             <div className="flex flex-col gap-3.5">
               <div className="flex gap-2.5 items-center">
-                <Icon name="hand-coins" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">{`${company.paidCount || 0} diárias pagas pela plataforma`}</span>
-              </div>
-              {company.respondTime ? (
-                <div className="flex gap-2.5 items-center">
-                  <Icon name="message-circle" size={20} color="var(--text-subtle)" />
-                  <span className="text-sm text-concrete-700">{company.respondTime}</span>
-                </div>
-              ) : null}
-              <div className="flex gap-2.5 items-center">
                 <Icon name="hammer" size={20} color="var(--text-subtle)" />
                 <span className="text-sm text-concrete-700">{`${openJobs.length} vagas abertas agora`}</span>
               </div>

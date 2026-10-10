@@ -25,7 +25,7 @@ import { resetUI } from '../../services/store';
 import type { DiasKey, Job } from '../../types/models';
 import { cx } from '../../utils/cx';
 import { todayISO } from '../../utils/dates';
-import { DIAS, DIAS_ORDEM, durationText } from '../../utils/jobInfo';
+import { DIAS, DIAS_ORDEM, durationText, WAGE_PAYMENTS } from '../../utils/jobInfo';
 import { toggleItem } from '../../utils/list';
 import { FEATURES } from '../../services/features';
 import {
@@ -448,6 +448,31 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
             </span>
             <Button label="Definir um valor" variant="ghost" size="sm" onClick={() => set({ negociavel: false })} />
           </div>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-2.5">
+        <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Como você paga a diária</div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Como você paga a diária">
+          {WAGE_PAYMENTS.map((p) => (
+            <Tag
+              key={p.id}
+              label={p.label}
+              selected={f.pagamento === p.id}
+              onClick={() => set({ pagamento: p.id }, 'pagamento')}
+            />
+          ))}
+        </div>
+        {f.pagamento === 'outro' ? (
+          <Input
+            id="create-job-pagamento"
+            label="Como vai ser"
+            placeholder="Ex.: metade no início, metade no fim"
+            value={f.pagamentoObs}
+            error={ui.errors.pagamento}
+            onInput={(v) => set({ pagamentoObs: v.slice(0, 80) }, 'pagamento')}
+          />
+        ) : ui.errors.pagamento ? (
+          <FieldError message={ui.errors.pagamento} />
         ) : null}
       </div>
       <div className="flex flex-col gap-2.5">

@@ -2,7 +2,7 @@
 // dates, times and address): "Hoje", "Amanhã" and "Sex, 25 set" are worked out from the date, never
 // stored. Dates and hours are optional (a job can leave them to be arranged with the worker); `dias`
 // says which part of the week the job can happen on.
-import type { DiasKey, Job, JobAddress } from '../types/models';
+import type { DiasKey, Job, JobAddress, WagePayment } from '../types/models';
 import { addDays, dayLabel, parseISODate, timeLabel, todayISO, weekday } from './dates';
 import { formatBRL } from './format';
 
@@ -171,4 +171,20 @@ export function isBoosted(job: { boostEndsAt?: string | null }, now: Date = new 
 export function jobTotal(job: { pay: number | null; diarias: number }, people = 1): string {
   if (job.pay == null) return 'A combinar';
   return formatBRL(job.pay * Math.max(job.diarias || 1, 1) * Math.max(people, 1));
+}
+
+/** L18: the ways a diária can be paid, as the form offers them. */
+export const WAGE_PAYMENTS: { id: WagePayment; label: string }[] = [
+  { id: 'pix_dia', label: 'PIX no fim de cada diária' },
+  { id: 'pix_fim', label: 'PIX no fim do bico' },
+  { id: 'dinheiro', label: 'Dinheiro' },
+  { id: 'outro', label: 'Outro jeito' }
+];
+
+/** How the job's diária is paid, as the detail screens say it. */
+export function paymentText(job: Pick<Job, 'payment' | 'paymentNote'>): string {
+  if (!job.payment) return 'Pagamento combinado direto';
+  if (job.payment === 'outro') return job.paymentNote || 'Pagamento combinado direto';
+  const label = WAGE_PAYMENTS.find((p) => p.id === job.payment)?.label ?? '';
+  return job.payment === 'dinheiro' ? 'Pagamento em dinheiro' : 'Pagamento por ' + label;
 }

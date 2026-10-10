@@ -26,6 +26,7 @@ import type {
   DiasKey,
   CompanyVerification,
   NotificationKind,
+  WagePayment,
   PaymentMethod,
   PaymentStatus,
   Role,
@@ -135,6 +136,9 @@ type JobRow = {
   sem_contratacao: boolean;
   description: string;
   requirements: string[];
+  /** L18: 'pix_dia' | 'pix_fim' | 'dinheiro' | 'outro' (null on jobs from before). */
+  payment_method: WagePayment | null;
+  payment_note: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

@@ -104,6 +104,8 @@ const jobRow = (id: string, companyId: string, slots = 1) => ({
   sem_contratacao: false,
   description: 'Pintura de fachada.',
   requirements: [],
+  payment_method: null,
+  payment_note: null,
   created_at: NOW,
   updated_at: NOW,
   deleted_at: null,

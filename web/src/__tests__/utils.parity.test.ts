@@ -104,3 +104,21 @@ describe('written requirement (P06)', () => {
     expect(addRequirement(['EPI'], '  ')).toEqual(['EPI']);
   });
 });
+
+describe('payment of the diária (L18)', () => {
+  it('the form asks how; "outro" needs words; the draft and the texts carry it', async () => {
+    const { emptyForm, validateStep2, draftFromForm } = await import('../pages/recruiter/jobForm');
+    const { paymentText } = await import('../utils/jobInfo');
+    const { draftRow } = await import('../services/remote/jobs');
+    const f = { ...emptyForm(), valor: '200', detalhe: 'Reboco' };
+    expect(validateStep2(f).pagamento).toBeUndefined();
+    expect(validateStep2({ ...f, pagamento: 'outro' }).pagamento).toBe('Conte como a diária vai ser paga.');
+    const draft = draftFromForm({ ...f, pagamento: 'outro', pagamentoObs: ' Metade no início ' });
+    expect([draft.payment, draft.paymentNote]).toEqual(['outro', 'Metade no início']);
+    expect(draftRow(draft)).toMatchObject({ payment_method: 'outro', payment_note: 'Metade no início' });
+    expect(draftFromForm({ ...f, pagamento: 'pix_fim', pagamentoObs: 'sobra' }).paymentNote).toBeUndefined();
+    expect(paymentText({ payment: 'pix_fim' })).toBe('Pagamento por PIX no fim do bico');
+    expect(paymentText({ payment: 'dinheiro' })).toBe('Pagamento em dinheiro');
+    expect(paymentText({})).toBe('Pagamento combinado direto');
+  });
+});
