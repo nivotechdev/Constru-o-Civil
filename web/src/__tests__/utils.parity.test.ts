@@ -167,3 +167,14 @@ describe('professional profile (F10)', () => {
     expect(workerFacts({ jobsDone: 0 })).toEqual([]);
   });
 });
+
+describe('portfolio files (F16)', () => {
+  it('photo up to 10 MB, video up to 50 MB', async () => {
+    const { portfolioFileProblem } = await import('../utils/media');
+    const MB = 1024 * 1024;
+    expect(await portfolioFileProblem({ type: 'image/jpeg', size: 9 * MB })).toBeNull();
+    expect(await portfolioFileProblem({ type: 'image/jpeg', size: 11 * MB })).toBe('Foto de até 10 MB.');
+    expect(await portfolioFileProblem({ type: 'video/mp4', size: 51 * MB })).toMatch(/50 MB/);
+    expect(await portfolioFileProblem({ type: 'application/pdf', size: MB })).toBe('Escolha uma foto ou um vídeo.');
+  });
+});

@@ -852,3 +852,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - "No celular" (um interruptor por grupo) aparece quando o push estiver ligado (X03); a escolha já fica salva em
   `push_groups`. O pedido de permissão explicado antes do pedido do navegador entra com o X03.
 - E-mail por tipo: adiado — o app ainda não manda avisos por e-mail (só os do Auth).
+
+### F16 — Portfólio
+
+- Tocar num post abre a **tela cheia**, com deslizar (ou as setas / teclado) para o próximo; o dono **edita a
+  legenda** ali. Legenda com até 280 caracteres e contador (banco confere).
+- Ao escolher o arquivo: **foto até 10 MB** (comprimida antes de enviar, Z12) e **vídeo até 60 segundos e 50
+  MB** (a duração é lida no aparelho; o Storage recusa acima de 50 MB). O botão mostra o **progresso do envio**.

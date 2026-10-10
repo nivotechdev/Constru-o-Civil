@@ -13,6 +13,7 @@ import * as remoteData from './remote/data';
 import { isValidMobile, maskPhone } from '../utils/format';
 import { demoVerifiedPhones } from './auth';
 import { isValidCnpj } from '../utils/document';
+import { MAX_CAPTION } from '../utils/media';
 
 /** A worker's public profile (+ reviews, posts). Backend: select the worker by id. */
 export async function loadWorkerProfile(_workerId: string): Promise<void> {
@@ -173,10 +174,30 @@ export async function saveMyProfileImages(
 }
 
 /** Publishes a photo/video on the worker's portfolio. Backend: upload to Storage, insert worker_posts. */
-export async function addPortfolioPost(post: Pick<WorkerPost, 'mediaUrl' | 'mediaType' | 'caption'>): Promise<void> {
-  if (!IS_DEMO) return remote.addPortfolioPost(post);
+export async function addPortfolioPost(
+  post: Pick<WorkerPost, 'mediaUrl' | 'mediaType' | 'caption'>,
+  onProgress?: (fraction: number) => void
+): Promise<void> {
+  if (post.caption.length > MAX_CAPTION) throw serviceError('validacao', `Use até ${MAX_CAPTION} caracteres.`);
+  if (!IS_DEMO) return remote.addPortfolioPost(post, onProgress);
   await mockLatency(800);
+  onProgress?.(1);
   store.addWorkerPost(currentWorkerId(), post);
+}
+
+/** F16: changes a post's caption (own posts only). Backend: update worker_posts.caption. */
+export async function updatePostCaption(postId: string, caption: string): Promise<void> {
+  const text = caption.trim();
+  if (text.length > MAX_CAPTION) throw serviceError('validacao', `Use até ${MAX_CAPTION} caracteres.`);
+  const post = store.getDb().workerPosts.find((p) => p.id === postId);
+  if (!post) throw serviceError('nao_encontrado', 'Esse post não existe mais.');
+  if (post.workerId !== currentWorkerId()) throw serviceError('nao_autorizado', 'Esse post não é seu.');
+  if (!IS_DEMO) await remote.updatePostCaption(postId, text);
+  else await mockLatency(300);
+  store.transact((d) => ({
+    ...d,
+    workerPosts: d.workerPosts.map((p) => (p.id === postId ? { ...p, caption: text } : p))
+  }));
 }
 
 /** Removes one of the worker's posts. Backend: delete from worker_posts (own posts only). */

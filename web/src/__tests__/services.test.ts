@@ -361,3 +361,29 @@ describe('F09: the public job page (demo)', () => {
     expect(await run(jobs.loadPublicJob('BC-4821'))).toBeNull();
   });
 });
+
+describe('F16: editing a post caption (demo)', () => {
+  afterEach(() => vi.useRealTimers());
+  it('only the owner, up to 280 characters', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    const profiles = await import('../services/profiles');
+    const store = await import('../services/store');
+    const run = async <T>(p: Promise<T>) => {
+      const r = p.then(
+        (v) => ({ ok: true as const, v }),
+        (e: unknown) => ({ ok: false as const, e: e as Error })
+      );
+      await vi.runAllTimersAsync();
+      return r;
+    };
+    await run(auth.signIn('trabalhador@bicos.demo', 'bicos123'));
+    const mine = store.getDb().workerPosts.find((p) => p.workerId === store.getSession()?.workerId)!;
+    const other = store.getDb().workerPosts.find((p) => p.workerId !== store.getSession()?.workerId);
+    expect((await run(profiles.updatePostCaption(mine.id, ' Reboco novo '))).ok).toBe(true);
+    expect(store.getDb().workerPosts.find((p) => p.id === mine.id)?.caption).toBe('Reboco novo');
+    expect((await run(profiles.updatePostCaption(mine.id, 'x'.repeat(281)))).ok).toBe(false);
+    if (other) expect((await run(profiles.updatePostCaption(other.id, 'oi'))).ok).toBe(false);
+  });
+});

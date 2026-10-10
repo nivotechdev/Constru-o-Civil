@@ -78,10 +78,13 @@ async function reloadPosts(workerId: string): Promise<void> {
   apply(putPosts(workerId, rows));
 }
 
-export async function addPortfolioPost(post: Pick<WorkerPost, 'mediaUrl' | 'mediaType' | 'caption'>): Promise<void> {
+export async function addPortfolioPost(
+  post: Pick<WorkerPost, 'mediaUrl' | 'mediaType' | 'caption'>,
+  onProgress?: Progress
+): Promise<void> {
   const s = session();
   if (!s.workerId) throw serviceError('nao_autorizado', 'Só a conta de trabalhador tem portfólio.');
-  const mediaUrl = post.mediaUrl ? await uploadMedia(post.mediaUrl, 'portfolio') : null;
+  const mediaUrl = post.mediaUrl ? await uploadMedia(post.mediaUrl, 'portfolio', onProgress) : null;
   const client = await db();
   await request(() =>
     client.from('worker_posts').insert({
@@ -180,4 +183,10 @@ export async function changeWhatsApp(phone: string): Promise<void> {
 export async function checkMyCompany(): Promise<'pendente' | 'verificada' | 'reprovada'> {
   const answer = await invokeFunction<{ status?: 'pendente' | 'verificada' | 'reprovada' }>('verificar-cnpj', {});
   return answer?.status ?? 'pendente';
+}
+
+/** F16: the post's caption (RLS: own posts). */
+export async function updatePostCaption(postId: string, caption: string): Promise<void> {
+  const client = await db();
+  await request(() => client.from('worker_posts').update({ caption }).eq('id', postId));
 }

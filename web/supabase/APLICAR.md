@@ -306,6 +306,14 @@ select count(*) from pg_trigger where tgname in ('applications_refuse_blocked', 
 select count(*) from pg_proc where proname in ('save_notification_prefs', 'notification_group');   -- 2
 ```
 
+### 29. `20261013000600_f16_portfolio.sql` (F16)
+
+Legenda do post com até 280 caracteres e editável pelo dono (grant de `update (caption)` + política).
+
+```sql
+select has_column_privilege('authenticated', 'public.worker_posts', 'caption', 'update');          -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -19,6 +19,8 @@ import type { Worker, WorkerPost } from '../../types/models';
 import { resetFileInput } from '../../utils/fileInput';
 import { formatPostDate } from '../../utils/format';
 import { ReportSheet } from '../../components/SafetyMenu';
+import { PostViewer } from './PostViewer';
+import { MAX_CAPTION, portfolioFileProblem } from '../../utils/media';
 
 const POSTS_KEY = 'worker-posts';
 
@@ -35,6 +37,7 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
   const db = useDb();
   const [ui, setUi] = useScreenUI<PostsUI>(POSTS_KEY + ':' + worker.id, POSTS_DEFAULTS);
   const posts = postsForWorker(db, worker.id);
+  const [viewing, setViewing] = useState<number | null>(null);
   const remove = useAction(deletePortfolioPost, () => {
     setUi({ deleteId: null });
     showToast('Post excluído');
@@ -71,11 +74,18 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
         />
       ) : (
         <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} isOwn={isOwn} onDelete={() => setUi({ deleteId: p.id })} />
+          {posts.map((p, i) => (
+            <PostCard
+              key={p.id}
+              post={p}
+              isOwn={isOwn}
+              onOpen={() => setViewing(i)}
+              onDelete={() => setUi({ deleteId: p.id })}
+            />
           ))}
         </div>
       )}
+      <PostViewer posts={posts} index={viewing} isOwn={isOwn} onIndex={setViewing} />
       {isOwn ? <Composer ui={ui} setUi={setUi} /> : null}
       {isOwn ? (
         <Dialog
@@ -100,7 +110,17 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
   );
 }
 
-function PostCard({ post, isOwn, onDelete }: { post: WorkerPost; isOwn: boolean; onDelete: () => void }) {
+function PostCard({
+  post,
+  isOwn,
+  onOpen,
+  onDelete
+}: {
+  post: WorkerPost;
+  isOwn: boolean;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
   const [reporting, setReporting] = useState(false);
   return (
     <div className="flex flex-col rounded-card overflow-hidden border border-concrete-200 bg-white">
@@ -113,12 +133,19 @@ function PostCard({ post, isOwn, onDelete }: { post: WorkerPost; isOwn: boolean;
               className="w-full h-72 lg:h-auto lg:aspect-square object-cover bg-concrete-900"
             />
           ) : (
-            <img src={post.mediaUrl} alt="" className="w-full h-72 lg:h-auto lg:aspect-square object-cover" />
+            <button type="button" className="block w-full" aria-label="Ver em tela cheia" onClick={onOpen}>
+              <img src={post.mediaUrl} alt="" className="w-full h-72 lg:h-auto lg:aspect-square object-cover" />
+            </button>
           )
         ) : (
-          <div className="w-full h-72 lg:h-auto lg:aspect-square bg-concrete-200 flex items-center justify-center">
+          <button
+            type="button"
+            aria-label="Ver em tela cheia"
+            onClick={onOpen}
+            className="w-full h-72 lg:h-auto lg:aspect-square bg-concrete-200 flex items-center justify-center"
+          >
             <Icon name="camera" size={32} color="var(--text-subtle)" />
-          </div>
+          </button>
         )}
         {post.mediaType === 'video' ? (
           <span className="absolute top-2.5 left-2.5">
@@ -166,10 +193,22 @@ interface ComposerProps {
 
 function Composer({ ui, setUi }: ComposerProps) {
   const closeAndReset = () => setUi({ composing: false, mediaUrl: null, mediaType: 'image', caption: '' });
-  const publish = useAction(addPortfolioPost, () => {
-    closeAndReset();
-    showToast('Post publicado');
-  });
+  const [progress, setProgress] = useState<number | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const publish = useAction(
+    async (post: Parameters<typeof addPortfolioPost>[0]) => {
+      setProgress(0);
+      try {
+        await addPortfolioPost(post, setProgress);
+      } finally {
+        setProgress(null);
+      }
+    },
+    () => {
+      closeAndReset();
+      showToast('Post publicado');
+    }
+  );
 
   return (
     <Sheet open={ui.composing} title="Publicar trabalho" onClose={closeAndReset}>
@@ -185,9 +224,14 @@ function Composer({ ui, setUi }: ComposerProps) {
             const file = e.target.files && e.target.files[0];
             if (!file) return;
             resetFileInput(e.target);
-            setUi({
-              mediaUrl: mediaUrl(file),
-              mediaType: file.type.indexOf('video') === 0 ? 'video' : 'image'
+            // F16: photo up to 10 MB, video up to 60 s / 50 MB.
+            void portfolioFileProblem(file).then((problem) => {
+              setFileError(problem);
+              if (problem) return;
+              setUi({
+                mediaUrl: mediaUrl(file),
+                mediaType: file.type.indexOf('video') === 0 ? 'video' : 'image'
+              });
             });
           }}
         />
@@ -201,6 +245,7 @@ function Composer({ ui, setUi }: ComposerProps) {
           <span className="flex flex-col items-center gap-1.5 text-concrete-500 px-3 text-center">
             <Icon name="camera" size={24} />
             <span className="text-xs font-semibold">Toque para escolher uma foto ou vídeo</span>
+            <span className="text-xs">Foto até 10 MB · vídeo até 60 segundos</span>
           </span>
         )}
       </label>
@@ -214,12 +259,14 @@ function Composer({ ui, setUi }: ComposerProps) {
           placeholder="Conte o que foi feito nesse bico..."
           value={ui.caption}
           className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none transition-colors duration-150"
-          onInput={(v) => setUi({ caption: v })}
+          onInput={(v) => setUi({ caption: v.slice(0, MAX_CAPTION) })}
         />
+        <span className="text-xs text-concrete-500 self-end">{`${ui.caption.length}/${MAX_CAPTION}`}</span>
       </div>
+      {fileError ? <FieldError message={fileError} /> : null}
       {publish.error ? <FieldError message={publish.error} /> : null}
       <Button
-        label="Publicar"
+        label={progress !== null && progress < 1 ? `Enviando… ${Math.round(progress * 100)}%` : 'Publicar'}
         size="lg"
         fullWidth
         disabled={!ui.mediaUrl}
