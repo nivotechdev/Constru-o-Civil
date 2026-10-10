@@ -51,10 +51,12 @@ jobs:
         run: |
           npx --yes lighthouse@12.8.2 --version
           (npx vite preview --port 4173 --strictPort &) && sleep 3
-          npx --yes lighthouse@12.8.2 http://localhost:4173/ --quiet --form-factor=mobile \
-            --throttling-method=devtools --chrome-flags="--headless=new --no-sandbox" \
-            --output=json --output-path=lighthouse.json
-          node scripts/lighthouse-check.mjs lighthouse.json
+          for i in 1 2 3; do
+            npx --yes lighthouse@12.8.2 http://localhost:4173/ --quiet --form-factor=mobile \
+              --throttling-method=devtools --chrome-flags="--headless=new --no-sandbox" \
+              --output=json --output-path=lighthouse-$i.json
+          done
+          node scripts/lighthouse-check.mjs lighthouse-1.json lighthouse-2.json lighthouse-3.json
       - name: Acessibilidade (axe, WCAG 2.1 AA)
         run: |
           npm i --no-save axe-core@4.10.3
@@ -65,7 +67,7 @@ jobs:
         if: always()
         with:
           name: lighthouse
-          path: web/lighthouse.json
+          path: web/lighthouse-*.json
           if-no-files-found: ignore
 
   sql:

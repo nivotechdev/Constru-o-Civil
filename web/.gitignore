@@ -11,3 +11,4 @@ scripts/parity/.font-cache/
 dist-real/
 deno.lock
 preview/
+lighthouse*.json
