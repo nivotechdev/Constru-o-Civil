@@ -1122,3 +1122,20 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - Feito no Z11 (`enterSession` divide a mesma leitura entre o login e o aviso `SIGNED_IN` do Auth, e o canal do
   Realtime é aberto uma vez). Agora há teste que simula os dois chegando juntos (com o banco lento) e confere uma
   leitura da conta e um canal; o teste falha se a divisão for removida.
+
+### X21 — Observabilidade
+
+- **Erros no app**: já existia (`services/monitoring.ts`): com `VITE_SENTRY_DSN`, erros não tratados e os da tela de
+  erro vão para o Sentry com a rota sem ids e sem dados pessoais; sem a variável, nada sai do aparelho.
+- **Erros nas Edge Functions**: todas passam por `monitored()` (`_shared/monitoring.ts`): erro não tratado vira
+  500 com mensagem amigável, vai para o log da função e, com o segredo `SENTRY_DSN`, para o Sentry — sem corpo do
+  pedido nem cabeçalhos; e-mails e números longos (CPF, telefone) são apagados da mensagem.
+- **Funil**: `funnel_daily(de, até)` no banco conta por dia cadastros iniciados (Auth), e-mails confirmados,
+  cadastros concluídos, vagas publicadas, candidaturas, aprovações, contratações, diárias concluídas,
+  impulsionamentos pagos e a receita — **a partir dos dados que o banco já guarda, sem rastrear pessoas** (por isso
+  não depende de consentimento; nenhuma ferramenta de terceiros). Só service_role (painel/SQL Editor).
+- A Política de privacidade ganhou uma linha dizendo isso (contagem sem identificar ninguém e registro de erros sem
+  dados pessoais). É um esclarecimento, sem mudar a versão aceita no cadastro — se o jurídico preferir, sobe a versão
+  em `services/legal.ts` e todos aceitam de novo.
+- Analytics de navegação (telas vistas, cliques) por pessoa: **adiado** — exigiria banner de consentimento e uma
+  ferramenta; o funil acima responde às perguntas do produto sem isso.

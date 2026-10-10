@@ -87,6 +87,7 @@ export const PRIVACY: LegalDocument = {
       body: [
         'Mostrar vagas perto de você, ligar construtoras e trabalhadores e manter a segurança da plataforma.',
         'Seu WhatsApp só aparece para o outro lado quando a construtora aprova a candidatura.',
+        'Contar, sem identificar ninguém, quantos cadastros, vagas e contratações acontecem por dia, e registrar erros técnicos (sem nome, e-mail, documento ou telefone) para corrigir falhas.',
         'Não vendemos seus dados.'
       ]
     },

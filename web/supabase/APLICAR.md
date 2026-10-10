@@ -398,6 +398,16 @@ select has_function_privilege('service_role', 'public.orphan_storage_objects(int
 select jobname, schedule from cron.job where jobname = 'bicos-limpar-arquivos';                        -- 40 4 * * *
 ```
 
+### 35. `20261014000500_x21_funil.sql` (X21)
+
+`funnel_daily(de, até)`: o funil por dia (cadastros iniciados, e-mails confirmados, cadastros concluídos, vagas,
+candidaturas, aprovações, contratações, diárias concluídas, impulsionamentos pagos e receita), contado do que o
+banco já tem. Só service_role.
+
+```sql
+select * from public.funnel_daily(current_date - 6, current_date);   -- 7 linhas
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

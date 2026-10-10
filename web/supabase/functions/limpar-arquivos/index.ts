@@ -6,6 +6,7 @@
 // Segredo: CLEANUP_SECRET (o mesmo guardado no Vault como bicos_cleanup_secret).
 // Respostas: 200 { apagados } · 401 { erro: 'segredo' } · 502 { erro: 'falha' }.
 import { adminClient, json } from '../_shared/http.ts';
+import { monitored } from '../_shared/monitoring.ts';
 
 const SECRET = Deno.env.get('CLEANUP_SECRET') ?? '';
 
@@ -16,28 +17,30 @@ function same(a: string, b: string): boolean {
   return diff === 0;
 }
 
-Deno.serve(async (req) => {
-  if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
-  if (!SECRET || !same(req.headers.get('x-webhook-secret') ?? '', SECRET)) return json({ erro: 'segredo' }, 401);
-  const admin = adminClient();
-  let removed = 0;
-  // Até 5 rodadas de 500 por chamada; o que sobrar sai no dia seguinte.
-  for (let round = 0; round < 5; round++) {
-    const { data, error } = await admin.rpc('orphan_storage_objects', { p_limit: 500 });
-    if (error) return json({ erro: 'falha', apagados: removed }, 502);
-    const rows = (data ?? []) as { bucket: string; name: string }[];
-    if (!rows.length) break;
-    const byBucket = new Map<string, string[]>();
-    for (const r of rows) byBucket.set(r.bucket, [...(byBucket.get(r.bucket) ?? []), r.name]);
-    for (const [bucket, names] of byBucket) {
-      for (let i = 0; i < names.length; i += 100) {
-        const chunk = names.slice(i, i + 100);
-        const { error: rmError } = await admin.storage.from(bucket).remove(chunk);
-        if (rmError) return json({ erro: 'falha', apagados: removed }, 502);
-        removed += chunk.length;
+Deno.serve(
+  monitored('limpar-arquivos', async (req) => {
+    if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
+    if (!SECRET || !same(req.headers.get('x-webhook-secret') ?? '', SECRET)) return json({ erro: 'segredo' }, 401);
+    const admin = adminClient();
+    let removed = 0;
+    // Até 5 rodadas de 500 por chamada; o que sobrar sai no dia seguinte.
+    for (let round = 0; round < 5; round++) {
+      const { data, error } = await admin.rpc('orphan_storage_objects', { p_limit: 500 });
+      if (error) return json({ erro: 'falha', apagados: removed }, 502);
+      const rows = (data ?? []) as { bucket: string; name: string }[];
+      if (!rows.length) break;
+      const byBucket = new Map<string, string[]>();
+      for (const r of rows) byBucket.set(r.bucket, [...(byBucket.get(r.bucket) ?? []), r.name]);
+      for (const [bucket, names] of byBucket) {
+        for (let i = 0; i < names.length; i += 100) {
+          const chunk = names.slice(i, i + 100);
+          const { error: rmError } = await admin.storage.from(bucket).remove(chunk);
+          if (rmError) return json({ erro: 'falha', apagados: removed }, 502);
+          removed += chunk.length;
+        }
       }
+      if (rows.length < 500) break;
     }
-    if (rows.length < 500) break;
-  }
-  return json({ apagados: removed });
-});
+    return json({ apagados: removed });
+  })
+);

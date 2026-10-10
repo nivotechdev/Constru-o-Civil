@@ -1474,6 +1474,22 @@ export type Database = {
       finish_sign_up: { Args: { p: Json }; Returns: undefined };
       first_name: { Args: { p_name: string }; Returns: string };
       fold_text: { Args: { p: string }; Returns: string };
+      funnel_daily: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          dia: string;
+          cadastros_iniciados: number;
+          emails_confirmados: number;
+          cadastros_concluidos: number;
+          vagas_publicadas: number;
+          candidaturas: number;
+          aprovacoes: number;
+          contratacoes: number;
+          diarias_concluidas: number;
+          impulsionamentos_pagos: number;
+          receita_centavos: number;
+        }[];
+      };
       get_contact: { Args: { p_application_id: string }; Returns: { name: string; phone: string }[] };
       get_job_addresses: {
         Args: { p_job_ids: string[] };

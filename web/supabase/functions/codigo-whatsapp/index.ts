@@ -13,6 +13,7 @@
 // 429 { erro: 'muitas-tentativas' } · 503 { erro: 'codigo-desligado' } · 502 { erro: 'falha' }.
 import { captchaOk } from '../_shared/captcha.ts';
 import { adminClient, clientIp, CORS, json, requestUser } from '../_shared/http.ts';
+import { monitored } from '../_shared/monitoring.ts';
 
 const SID = Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
 const TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') ?? '';
@@ -34,56 +35,58 @@ async function twilio(path: string, form: Record<string, string>): Promise<{ sta
   return (await res.json()) as { status?: string };
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
-  if (!SID || !TOKEN || !SERVICE)
-    return json({ erro: 'codigo-desligado', mensagem: 'A confirmação por código ainda não está disponível.' }, 503);
+Deno.serve(
+  monitored('codigo-whatsapp', async (req) => {
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
+    if (!SID || !TOKEN || !SERVICE)
+      return json({ erro: 'codigo-desligado', mensagem: 'A confirmação por código ainda não está disponível.' }, 503);
 
-  let body: { acao?: string; telefone?: string; codigo?: string; captchaToken?: unknown };
-  try {
-    body = await req.json();
-  } catch {
-    return json({ erro: 'telefone' }, 400);
-  }
-  const phone = String(body.telefone ?? '').replace(/\D/g, '');
-  if (!/^[1-9][1-9]9\d{8}$/.test(phone))
-    return json({ erro: 'telefone', mensagem: 'Confira o número: celular com DDD, 11 números.' }, 400);
-  const ip = clientIp(req);
-  const admin = adminClient();
-  const hit = (key: string, max: number, window: string) =>
-    admin.rpc('rate_limit_hit', { p_key: key, p_max: max, p_window: window });
+    let body: { acao?: string; telefone?: string; codigo?: string; captchaToken?: unknown };
+    try {
+      body = await req.json();
+    } catch {
+      return json({ erro: 'telefone' }, 400);
+    }
+    const phone = String(body.telefone ?? '').replace(/\D/g, '');
+    if (!/^[1-9][1-9]9\d{8}$/.test(phone))
+      return json({ erro: 'telefone', mensagem: 'Confira o número: celular com DDD, 11 números.' }, 400);
+    const ip = clientIp(req);
+    const admin = adminClient();
+    const hit = (key: string, max: number, window: string) =>
+      admin.rpc('rate_limit_hit', { p_key: key, p_max: max, p_window: window });
 
-  if (body.acao === 'enviar') {
-    if (!(await captchaOk(body.captchaToken, ip))) return json({ erro: 'captcha' }, 400);
-    const limits = await Promise.all([hit('zap:' + phone, 3, '1 hour'), hit('zap-ip:' + ip, 10, '1 hour')]);
-    if (limits.some((r) => r.error)) return json({ erro: 'falha' }, 502);
-    if (limits.some((r) => r.data === true))
-      return json(
-        { erro: 'muitas-tentativas', mensagem: 'Muitos códigos pedidos. Espere uma hora e tente de novo.' },
-        429
-      );
-    const sent = await twilio('Verifications', { To: '+55' + phone, Channel: CHANNEL, Locale: 'pt-BR' });
-    return sent ? json({ ok: true }) : json({ erro: 'falha' }, 502);
-  }
+    if (body.acao === 'enviar') {
+      if (!(await captchaOk(body.captchaToken, ip))) return json({ erro: 'captcha' }, 400);
+      const limits = await Promise.all([hit('zap:' + phone, 3, '1 hour'), hit('zap-ip:' + ip, 10, '1 hour')]);
+      if (limits.some((r) => r.error)) return json({ erro: 'falha' }, 502);
+      if (limits.some((r) => r.data === true))
+        return json(
+          { erro: 'muitas-tentativas', mensagem: 'Muitos códigos pedidos. Espere uma hora e tente de novo.' },
+          429
+        );
+      const sent = await twilio('Verifications', { To: '+55' + phone, Channel: CHANNEL, Locale: 'pt-BR' });
+      return sent ? json({ ok: true }) : json({ erro: 'falha' }, 502);
+    }
 
-  if (body.acao === 'conferir') {
-    const code = String(body.codigo ?? '');
-    if (!/^\d{4,8}$/.test(code)) return json({ ok: false });
-    const limit = await hit('zap-conferir:' + phone, 8, '15 minutes');
-    if (limit.error) return json({ erro: 'falha' }, 502);
-    if (limit.data === true)
-      return json(
-        { erro: 'muitas-tentativas', mensagem: 'Muitas tentativas. Peça um código novo daqui a pouco.' },
-        429
-      );
-    const check = await twilio('VerificationCheck', { To: '+55' + phone, Code: code });
-    if (!check) return json({ erro: 'falha' }, 502);
-    if (check.status !== 'approved') return json({ ok: false });
-    const user = await requestUser(req);
-    const { error } = await admin.rpc('mark_whatsapp_verified', { p_phone: phone, p_user: user?.id ?? null });
-    return error ? json({ erro: 'falha' }, 502) : json({ ok: true });
-  }
+    if (body.acao === 'conferir') {
+      const code = String(body.codigo ?? '');
+      if (!/^\d{4,8}$/.test(code)) return json({ ok: false });
+      const limit = await hit('zap-conferir:' + phone, 8, '15 minutes');
+      if (limit.error) return json({ erro: 'falha' }, 502);
+      if (limit.data === true)
+        return json(
+          { erro: 'muitas-tentativas', mensagem: 'Muitas tentativas. Peça um código novo daqui a pouco.' },
+          429
+        );
+      const check = await twilio('VerificationCheck', { To: '+55' + phone, Code: code });
+      if (!check) return json({ erro: 'falha' }, 502);
+      if (check.status !== 'approved') return json({ ok: false });
+      const user = await requestUser(req);
+      const { error } = await admin.rpc('mark_whatsapp_verified', { p_phone: phone, p_user: user?.id ?? null });
+      return error ? json({ erro: 'falha' }, 502) : json({ ok: true });
+    }
 
-  return json({ erro: 'acao' }, 400);
-});
+    return json({ erro: 'acao' }, 400);
+  })
+);
