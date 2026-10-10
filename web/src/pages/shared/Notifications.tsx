@@ -1,11 +1,14 @@
 import { BackBar } from '../../components/BackBar';
+import { NOTIFICATIONS_PAGE } from '../../services/paging';
+import { usePaging } from '../../hooks/usePaging';
+import { LoadMore } from '../../components/LoadMore';
 import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/icons/Icon';
 import { NOTIFICATION_LOOK } from '../../components/notificationLook';
 import { QueryView } from '../../components/QueryView';
 import { ListSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
-import { loadNotifications } from '../../services/notifications';
+import { loadMoreNotifications, loadNotifications } from '../../services/notifications';
 import { useNotifications } from '../../hooks/useNotifications';
 import { goBack } from '../../services/router';
 import { cx } from '../../utils/cx';
@@ -14,6 +17,7 @@ import { relativeTime } from '../../utils/dates';
 export default function Notifications() {
   const { list, unread, markAllRead, open } = useNotifications();
   const query = useQuery('notifications', loadNotifications);
+  const paging = usePaging(NOTIFICATIONS_PAGE, loadMoreNotifications);
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
       <BackBar title="Notificações" onBack={() => goBack('/mural')} />
@@ -73,6 +77,7 @@ export default function Notifications() {
                   )}
                 </button>
               ))}
+              <LoadMore paging={paging} />
             </div>
           )
         }

@@ -8,6 +8,11 @@ export interface Paging {
   error: string | null;
 }
 
+/** The paged lists besides the mural (X01). */
+export const MY_APPLICATIONS_PAGE = 'my-applications';
+export const HISTORY_PAGE = 'history';
+export const NOTIFICATIONS_PAGE = 'notifications';
+
 const EMPTY: Paging = { hasMore: false, cursor: null, loadingMore: false, error: null };
 let pages = new Map<string, Paging>();
 const listeners = new Set<() => void>();

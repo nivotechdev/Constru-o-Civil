@@ -515,6 +515,11 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Y11**: a busca procura na cidade escolhida (ou no raio); "Buscar em todas as cidades" amplia. A tela diz
   onde está procurando.
 - **L17**: a busca de pessoas mostra construtoras para todos e trabalhadores só para construtoras.
+- **"Carregar mais" também em** Minhas candidaturas (as em andamento vêm todas; as encerradas em páginas de
+  30, das mais recentes), Minhas vagas › Encerradas (as abertas vêm todas) e Notificações (páginas de 30; o
+  número do sino é o do servidor, X03). Cursor por data + ids da última data (sem `offset`).
+- No mural, o **carrossel de fotos de cada cartão só é montado quando o cartão chega perto da tela**
+  (`IntersectionObserver`, 400 px de folga); antes disso, só o fundo do cartão.
 
 ## Y12 — Aviso de candidatura atualiza as telas
 

@@ -6,7 +6,7 @@ import type { Json, TableRow } from '../../types/supabase';
 import { jobFromReadRow, type JobRowRead } from '../supabaseMappers';
 import { getDb, getSession } from '../store';
 import { feedKey, type FeedQuery } from '../feedQuery';
-import { getPaging, setPaging } from '../paging';
+import { getPaging, HISTORY_PAGE, MY_APPLICATIONS_PAGE, NOTIFICATIONS_PAGE, setPaging } from '../paging';
 import { cityByLabel } from '../cities';
 import { DEFAULT_CITY, DEFAULT_POINT } from '../defaults';
 import { db, request } from './client';
@@ -19,6 +19,7 @@ import {
   JOB_COLUMNS,
   putJobAddresses,
   putJobs,
+  appendNotifications,
   putNotifications,
   putUnreadTotal,
   putPayments,
@@ -289,13 +290,78 @@ export async function loadSavedJobs(): Promise<void> {
 // ---- candidacies ----
 
 /** The worker's candidacies, with their jobs and companies. */
+// X01: the candidacies still going on all come at once; the finished ones in pages (newest first).
+const LIVE_STATUSES = ['enviada', 'em_analise', 'pre_selecionado', 'contratado'] as const;
+const DONE_STATUSES = [
+  'concluida',
+  'nao_selecionado',
+  'desistiu',
+  'cancelado_pela_construtora',
+  'nao_compareceu',
+  'expirada'
+] as const;
+const PAGE = 30;
+
+/** The rows of a page that weren't on the previous one (the cursor row repeats with `lte`). */
+function nextPage<T extends { id: string }>(key: string, rows: T[], at: (row: T) => string): T[] {
+  const seen = new Set((getPaging(key).cursor as { ids?: string[] } | null)?.ids ?? []);
+  const fresh = rows.filter((r) => !seen.has(r.id));
+  const last = rows[rows.length - 1];
+  setPaging(key, {
+    hasMore: rows.length === PAGE,
+    cursor: last ? { at: at(last), ids: rows.filter((r) => at(r) === at(last)).map((r) => r.id) } : null
+  });
+  return fresh;
+}
+const cursorAt = (key: string) => (getPaging(key).cursor as { at?: string } | null)?.at ?? null;
+
 export async function loadMyApplications(): Promise<void> {
   const { workerId } = me();
   if (!workerId) return;
   await concludeMine();
   const client = await db();
-  const apps = await request(() => client.from('applications').select('*').eq('worker_id', workerId));
-  apply(...(await applicationsWithContext(apps, (a) => a.workerId === workerId)));
+  const [live, done] = await Promise.all([
+    request(() =>
+      client
+        .from('applications')
+        .select('*')
+        .eq('worker_id', workerId)
+        .in('status', [...LIVE_STATUSES])
+    ),
+    request(() =>
+      client
+        .from('applications')
+        .select('*')
+        .eq('worker_id', workerId)
+        .in('status', [...DONE_STATUSES])
+        .order('status_changed_at', { ascending: false })
+        .limit(PAGE)
+    )
+  ]);
+  setPaging(MY_APPLICATIONS_PAGE, { cursor: null });
+  const page = nextPage(MY_APPLICATIONS_PAGE, done, (a) => a.status_changed_at);
+  apply(...(await applicationsWithContext([...live, ...page], (a) => a.workerId === workerId)));
+}
+
+/** "Carregar mais" in Minhas candidaturas: older finished candidacies. */
+export async function loadMoreMyApplications(): Promise<void> {
+  const { workerId } = me();
+  const at = cursorAt(MY_APPLICATIONS_PAGE);
+  if (!workerId || !at) return;
+  const client = await db();
+  const rows = await request(() =>
+    client
+      .from('applications')
+      .select('*')
+      .eq('worker_id', workerId)
+      .in('status', [...DONE_STATUSES])
+      .lte('status_changed_at', at)
+      .order('status_changed_at', { ascending: false })
+      .limit(PAGE)
+  );
+  const page = nextPage(MY_APPLICATIONS_PAGE, rows, (a) => a.status_changed_at);
+  const ids = new Set(page.map((a) => a.id));
+  apply(...(await applicationsWithContext(page, (a) => ids.has(a.id))));
 }
 
 /** A job's candidates (+ their profiles), for its company. */
@@ -310,14 +376,45 @@ export async function loadHistory(): Promise<void> {
   if (!companyId) return;
   await concludeMine();
   const client = await db();
-  const jobs = await request(() =>
+  // X01: the open jobs all at once; the closed ones in pages, newest first.
+  const [open, closed] = await Promise.all([
+    request(() => client.from('jobs').select(JOB_COLUMNS).eq('company_id', companyId).eq('closed', false)),
+    request(() =>
+      client
+        .from('jobs')
+        .select(JOB_COLUMNS)
+        .eq('company_id', companyId)
+        .eq('closed', true)
+        .order('created_at', { ascending: false })
+        .limit(PAGE)
+    )
+  ]);
+  setPaging(HISTORY_PAGE, { cursor: null });
+  await putCompanyJobs([...open, ...nextPage(HISTORY_PAGE, closed, (j) => j.created_at)]);
+}
+
+/** "Carregar mais" in Minhas vagas › Encerradas. */
+export async function loadMoreHistory(): Promise<void> {
+  const { companyId } = me();
+  const at = cursorAt(HISTORY_PAGE);
+  if (!companyId || !at) return;
+  const client = await db();
+  const rows = await request(() =>
     client
       .from('jobs')
       .select(JOB_COLUMNS)
       .eq('company_id', companyId)
+      .eq('closed', true)
+      .lte('created_at', at)
       .order('created_at', { ascending: false })
-      .limit(300)
+      .limit(PAGE)
   );
+  await putCompanyJobs(nextPage(HISTORY_PAGE, rows, (j) => j.created_at));
+}
+
+/** Some of the company's jobs with their candidates. */
+async function putCompanyJobs(jobs: JobRow[]): Promise<void> {
+  const client = await db();
   const ids = jobs.map((j) => j.id);
   const apps = ids.length ? await request(() => client.from('applications').select('*').in('job_id', ids)) : [];
   const idSet = new Set(ids);
@@ -395,10 +492,23 @@ export async function loadCompanyProfile(companyId: string): Promise<void> {
 export async function loadNotifications(): Promise<void> {
   const client = await db();
   const [rows, unread] = await Promise.all([
-    request(() => client.from('notifications').select('*').order('created_at', { ascending: false }).limit(100)),
+    request(() => client.from('notifications').select('*').order('created_at', { ascending: false }).limit(PAGE)),
     request(() => client.rpc('my_unread_count'))
   ]);
+  setPaging(NOTIFICATIONS_PAGE, { cursor: null });
+  nextPage(NOTIFICATIONS_PAGE, rows, (n) => n.created_at);
   apply(putNotifications(rows), putUnreadTotal(unread ?? 0));
+}
+
+/** "Carregar mais" in Notificações (X01). */
+export async function loadMoreNotifications(): Promise<void> {
+  const at = cursorAt(NOTIFICATIONS_PAGE);
+  if (!at) return;
+  const client = await db();
+  const rows = await request(() =>
+    client.from('notifications').select('*').lte('created_at', at).order('created_at', { ascending: false }).limit(PAGE)
+  );
+  apply(appendNotifications(nextPage(NOTIFICATIONS_PAGE, rows, (n) => n.created_at)));
 }
 
 /** X03: only the bell's number (after a notice read on another device). */

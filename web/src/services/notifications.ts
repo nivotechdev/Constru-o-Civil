@@ -86,6 +86,11 @@ export async function loadNotifications(): Promise<void> {
   await mockLatency(350);
 }
 
+/** X01: older notifications ("Carregar mais"). */
+export async function loadMoreNotifications(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadMoreNotifications();
+}
+
 /** Marks every notification as read. Backend: update notifications set read_at = now() for me. */
 export async function markAllNotificationsRead(): Promise<void> {
   if (!IS_DEMO) return remote.markAllNotificationsRead();

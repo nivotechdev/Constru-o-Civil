@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import type { Job } from '../types/models';
 import { cx } from '../utils/cx';
@@ -40,7 +40,29 @@ export function PhotoCarousel({
     );
   }
   // A new set of photos starts a fresh carousel (the legacy app rebuilt it on every render).
-  return <Slides key={photos.join('\n')} job={job} photos={photos} frame={frame} compact={compact} />;
+  const slides = <Slides key={photos.join('\n')} job={job} photos={photos} frame={frame} compact={compact} />;
+  // X01: on the mural a tile's carousel (and its photos) is only built when the tile comes near the screen.
+  return compact ? <WhenNear frame={frame}>{slides}</WhenNear> : slides;
+}
+
+function WhenNear({ frame, children }: { frame: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined');
+  useEffect(() => {
+    if (near || !ref.current) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '400px 0px' }
+    );
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [near]);
+  return near ? children : <div ref={ref} className={frame} />;
 }
 
 interface SlidesProps {

@@ -179,6 +179,17 @@ export const putNotifications =
   (rows: TableRow<'notifications'>[]): Recipe =>
   (db) => ({ ...db, notifications: rows.map(notificationFromRow) });
 
+/** Older notifications ("Carregar mais"), after the ones already there. */
+export const appendNotifications =
+  (rows: TableRow<'notifications'>[]): Recipe =>
+  (db) => {
+    const have = new Set(db.notifications.map((n) => n.id));
+    return {
+      ...db,
+      notifications: [...db.notifications, ...rows.filter((r) => !have.has(r.id)).map(notificationFromRow)]
+    };
+  };
+
 /** One new notification (from the realtime channel), unless it is already there. */
 export const addNotification =
   (row: TableRow<'notifications'>): Recipe =>

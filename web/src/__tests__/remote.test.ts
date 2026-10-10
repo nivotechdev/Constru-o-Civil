@@ -670,6 +670,34 @@ describe('remote: data and actions', () => {
     vi.unstubAllEnvs();
   });
 
+  it('X01: notifications come in pages of 30 with "Carregar mais"', async () => {
+    const rows = Array.from({ length: 35 }, (_, i) => ({
+      id: 'n' + String(i).padStart(2, '0'),
+      worker_id: 'u-ana',
+      company_id: null,
+      kind: 'vaga_editada',
+      title: 'Aviso ' + i,
+      body: '',
+      target: null,
+      created_at: `2026-10-${String(1 + Math.floor(i / 3)).padStart(2, '0')}T12:00:0${i % 3}Z`,
+      read_at: null
+    }));
+    const fake = server('ana', {
+      tables: { notifications: rows },
+      rpc: { my_unread_count: () => ({ data: 35, error: null }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const notifications = await import('../services/notifications');
+    const paging = await import('../services/paging');
+    await notifications.loadNotifications();
+    expect(m.store.getDb().notifications).toHaveLength(30);
+    expect(paging.getPaging(paging.NOTIFICATIONS_PAGE).hasMore).toBe(true);
+    await notifications.loadMoreNotifications();
+    expect(new Set(m.store.getDb().notifications.map((n) => n.id)).size).toBe(35);
+    expect(paging.getPaging(paging.NOTIFICATIONS_PAGE).hasMore).toBe(false);
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

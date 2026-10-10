@@ -116,6 +116,11 @@ export async function loadMyApplications(): Promise<void> {
   concludeFinishedJobs();
 }
 
+/** X01: older finished candidacies ("Carregar mais"). The demo has everything already. */
+export async function loadMoreMyApplications(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadMoreMyApplications();
+}
+
 /** A job's candidates (+ their profiles), for the company. Backend: select applications where job = id. */
 export async function loadJobCandidates(_jobId: string): Promise<void> {
   if (!IS_DEMO) return remoteData.loadJobCandidates(_jobId);
@@ -128,6 +133,11 @@ export async function loadHistory(): Promise<void> {
   if (!IS_DEMO) return remoteData.loadHistory();
   await mockLatency(400);
   concludeFinishedJobs();
+}
+
+/** X01: older closed jobs ("Carregar mais" in Minhas vagas). */
+export async function loadMoreHistory(): Promise<void> {
+  if (!IS_DEMO) return remoteData.loadMoreHistory();
 }
 
 // ---- helpers ----

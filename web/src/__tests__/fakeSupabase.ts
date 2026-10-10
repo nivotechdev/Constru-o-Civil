@@ -32,6 +32,7 @@ function applyFilters(rows: Row[], ops: unknown[][]): Row[] {
     if (op === 'in') out = out.filter((r) => (b as unknown[]).includes(r[a as string]));
     if (op === 'is') out = out.filter((r) => (r[a as string] ?? null) === b);
     if (op === 'neq') out = out.filter((r) => r[a as string] !== b);
+    if (op === 'lte') out = out.filter((r) => String(r[a as string]) <= String(b));
     if (op === 'ilike') {
       const re = new RegExp(
         '^' +
@@ -87,7 +88,15 @@ export function fakeSupabase(options: FakeOptions = {}) {
         return matched[0] ? ok(matched[0]) : { data: null, error: { code: 'PGRST116', message: 'no rows' } };
       }
       if (ops.some((o) => o[0] === 'maybeSingle')) return ok(matched[0] ?? null);
-      return ok(matched);
+      // order() and limit(), like PostgREST (the services page with them: X01).
+      let out = matched;
+      for (const [op, col, opts] of ops) {
+        if (op !== 'order') continue;
+        const asc = (opts as { ascending?: boolean } | undefined)?.ascending !== false;
+        out = [...out].sort((x, y) => (String(x[col as string]) < String(y[col as string]) ? -1 : 1) * (asc ? 1 : -1));
+      }
+      const limit = ops.find((o) => o[0] === 'limit');
+      return ok(limit ? out.slice(0, limit[1] as number) : out);
     };
     const chain: Record<string, unknown> = {};
     for (const m of [
@@ -100,6 +109,7 @@ export function fakeSupabase(options: FakeOptions = {}) {
       'in',
       'is',
       'neq',
+      'lte',
       'ilike',
       'or',
       'order',

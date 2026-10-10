@@ -1,5 +1,8 @@
 // "Minhas vagas" (F01) and the history by job (L07): the company's jobs in tabs — Abertas, Cheias,
 // Encerradas — each with its situation, the new candidates and the next step. The mural stays in "Início".
+import { HISTORY_PAGE } from '../../services/paging';
+import { usePaging } from '../../hooks/usePaging';
+import { LoadMore } from '../../components/LoadMore';
 import { useState } from 'react';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
@@ -10,7 +13,7 @@ import { ListSkeleton } from '../../components/Skeleton';
 import { WorkerAvatar } from '../../components/Avatar';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
-import { loadHistory } from '../../services/applications';
+import { loadHistory, loadMoreHistory } from '../../services/applications';
 import { jobTitle } from '../../services/catalog';
 import { navigate } from '../../services/router';
 import {
@@ -43,6 +46,7 @@ function tabOf(db: Database, job: Job): Tab {
 export default function MyJobs({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('history', loadHistory);
+  const paging = usePaging(HISTORY_PAGE, loadMoreHistory);
   const [tab, setTab] = useState<Tab>(params.tab === 'encerradas' || params.tab === 'cheias' ? params.tab : 'abertas');
   const companyId = currentCompanyId();
   const mine = allJobs(db)
@@ -78,7 +82,7 @@ export default function MyJobs({ params }: ScreenProps) {
         </div>
         <QueryView query={query} skeleton={<ListSkeleton />}>
           {() =>
-            list.length === 0 ? (
+            list.length === 0 && !(tab === 'encerradas' && paging.hasMore) ? (
               <EmptyState
                 icon="hard-hat"
                 title={
@@ -97,10 +101,14 @@ export default function MyJobs({ params }: ScreenProps) {
                 onAction={tab === 'encerradas' ? undefined : () => navigate('/criar-vaga')}
               />
             ) : (
-              <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5">
-                {list.map((job) => (
-                  <JobCard key={job.id} db={db} job={job} />
-                ))}
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5">
+                  {list.map((job) => (
+                    <JobCard key={job.id} db={db} job={job} />
+                  ))}
+                </div>
+                {/* X01: older closed jobs come in pages. */}
+                {tab === 'encerradas' ? <LoadMore paging={paging} /> : null}
               </div>
             )
           }

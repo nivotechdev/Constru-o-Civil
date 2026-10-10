@@ -1,4 +1,7 @@
 import { Card } from '../../components/Card';
+import { MY_APPLICATIONS_PAGE } from '../../services/paging';
+import { usePaging } from '../../hooks/usePaging';
+import { LoadMore } from '../../components/LoadMore';
 import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/icons/Icon';
 import { JobTile, TileGrid } from '../../components/JobTile';
@@ -6,7 +9,7 @@ import { QueryView } from '../../components/QueryView';
 import { TileGridSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
-import { loadMyApplications } from '../../services/applications';
+import { loadMoreMyApplications, loadMyApplications } from '../../services/applications';
 import { navigate } from '../../services/router';
 import { applicationsForWorker, companyOf, currentWorker, getJob, savedJobs } from '../../services/selectors';
 import type { Application } from '../../types/models';
@@ -17,6 +20,7 @@ import { isInProgress, needsWorker, statusInfo } from '../../utils/applicationSt
 export default function MyApplications() {
   const db = useDb();
   const query = useQuery('my-applications', loadMyApplications);
+  const paging = usePaging(MY_APPLICATIONS_PAGE, loadMoreMyApplications);
   const worker = currentWorker(db);
   const apps = applicationsForWorker(db, worker.id);
   const needs = apps.filter((a) => needsWorker(a, getJob(db, a.jobId)));
@@ -47,7 +51,7 @@ export default function MyApplications() {
     <div className="flex flex-col">
       <div className="sticky top-0 z-20 flex items-center justify-between min-h-14 px-4 sm:px-0 bg-white border-b border-concrete-200 lg:static lg:bg-transparent lg:border-0 lg:pb-2">
         <h1 className="font-display font-semibold text-xl lg:text-[1.75rem] text-concrete-900">Minhas candidaturas</h1>
-        {query.status === 'ready' ? (
+        {query.status === 'ready' && !paging.hasMore ? (
           <span className="text-sm text-concrete-500">
             {apps.length === 1 ? '1 no total' : `${apps.length} no total`}
           </span>
@@ -106,6 +110,7 @@ export default function MyApplications() {
                     <TileGrid>{closed.map((a) => appCard(a, true))}</TileGrid>
                   </div>
                 ) : null}
+                <LoadMore paging={paging} />
               </div>
             )
           }
