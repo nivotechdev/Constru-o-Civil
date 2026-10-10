@@ -879,6 +879,41 @@ describe('Z11: opening the app with the real backend', () => {
     expect(m.store.getUI('login', {})).toMatchObject({ identifier: 'ana@exemplo.com' });
   });
 
+  it('L13: a Google account without a side goes to "Completar cadastro" and keeps the session', async () => {
+    const hashes: string[] = [];
+    vi.stubGlobal('window', { location: { pathname: '/', search: '', hash: '' }, addEventListener: () => undefined });
+    vi.stubGlobal('history', { replaceState: (_s: unknown, _t: string, url: string) => hashes.push(url) });
+    const google = { ...authUser('u-google', 'g@y.z'), app_metadata: { provider: 'google' } };
+    const fake = fakeSupabase({
+      tables: { accounts: [] },
+      auth: { getSession: () => ({ data: { session: { user: google } }, error: null }) },
+      rpc: { create_my_account: () => ({ data: null, error: null }) }
+    });
+    const { session, m } = await boot(fake);
+    await session.startRemoteSession();
+    expect(hashes.at(-1)).toContain('#/completar-cadastro');
+    expect(fake.calls.some((c) => c.name === 'signOut')).toBe(false);
+    await m.auth
+      .completeOAuthSignUp({
+        role: 'trabalhador',
+        name: 'Pelo Google',
+        doc: '390.533.447-05',
+        whatsapp: '(11) 98888-7777',
+        acceptedTermsVersion: '1.0',
+        adult: true
+      })
+      .catch(() => undefined);
+    expect(fake.calls.find((c) => c.name === 'create_my_account')?.args).toEqual({
+      p_role: 'trabalhador',
+      p_name: 'Pelo Google',
+      p_document: '39053344705',
+      p_whatsapp: '11988887777',
+      p_terms_version: '1.0',
+      p_adult: true,
+      p_contact_name: null
+    });
+  });
+
   it('Y27: a session whose account has no row is signed out with the reason', async () => {
     const fake = fakeSupabase({
       tables: { accounts: [] },

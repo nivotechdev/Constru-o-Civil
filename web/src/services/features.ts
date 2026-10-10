@@ -12,10 +12,8 @@ export const FEATURES = {
   payments: IS_DEMO || (env.VITE_PAGAMENTOS === 'mercadopago' && Boolean(env.VITE_MP_PUBLIC_KEY)),
   /** Captcha (Cloudflare Turnstile) on sign-up and on the document login. Not in the demo. */
   captcha: !IS_DEMO && Boolean(env.VITE_TURNSTILE_SITE_KEY),
-  /** "Continuar com o Google". */
-  googleLogin: IS_DEMO || on(env.VITE_LOGIN_GOOGLE),
-  /** "Continuar com o celular" (code by SMS). */
-  phoneLogin: IS_DEMO || on(env.VITE_LOGIN_CELULAR),
+  /** "Continuar com o Google" (L13): needs the Google provider in Supabase Auth. Not in the demo (no OAuth). */
+  googleLogin: !IS_DEMO && on(env.VITE_LOGIN_GOOGLE),
   /** The WhatsApp number confirmed by a code. */
   whatsappCode: IS_DEMO || on(env.VITE_CODIGO_WHATSAPP),
   /** Notifications on the phone (Web Push). */

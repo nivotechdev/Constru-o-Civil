@@ -286,3 +286,32 @@ export async function changeEmail(email: string, password: string): Promise<void
     throw toServiceError(error);
   }
 }
+
+// ---- Google (L13) ----
+
+export async function signInWithGoogle(): Promise<void> {
+  const client = await db();
+  const { error } = await client.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: authRedirectUrl() }
+  });
+  if (error) throw toServiceError(error);
+}
+
+export async function completeOAuthSignUp(data: import('../auth').OAuthSignUpData): Promise<void> {
+  const client = await db();
+  await request(() =>
+    client.rpc('create_my_account', {
+      p_role: data.role,
+      p_name: data.name.trim(),
+      p_document: digits(data.doc),
+      p_whatsapp: digits(data.whatsapp),
+      p_terms_version: data.acceptedTermsVersion,
+      p_adult: data.adult,
+      p_contact_name: data.contactName?.trim() || null
+    })
+  );
+  const { data: session } = await client.auth.getSession();
+  if (!session.session) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
+  await enterSession(session.session.user);
+}

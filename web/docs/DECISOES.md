@@ -775,3 +775,15 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   de uma pessoa da equipe e o recrutador com CPF (autônomo) não tem CNPJ para a checagem automática; segurar as
   vagas deixaria o mural vazio no lançamento. O selo "Verificada" é o que diferencia; se a equipe quiser
   segurar as vagas de pendentes, é só uma linha em `publish_job` / `feed_jobs`.
+
+### L13 — Entrar com o Google (atrás de flag); celular adiado
+
+- **"Continuar com o Google"** aparece só com `VITE_LOGIN_GOOGLE=1` e o provedor Google ligado no Supabase Auth
+  (SUPABASE.md). Na demonstração e sem configurar, o botão some (antes aparecia e só mostrava aviso).
+- Quem entra pelo Google pela primeira vez não tem lado: o app mantém a sessão e abre **"Completar cadastro"**
+  (lado, nome, CPF/CNPJ, WhatsApp, responsável da construtora, 18+ e termos) → RPC `create_my_account`, com as
+  mesmas regras e a mesma recusa genérica do documento (Z07) → segue para o "Completar perfil" de sempre.
+- **Entrar pelo celular: adiado.** Precisa do provedor de SMS no Supabase Auth e de ligar o telefone às contas
+  que já existem (no Supabase, uma conta por telefone é outro usuário); sem isso, cada login pelo celular
+  criaria uma conta nova. O celular já é confirmado por código (Y25), e o login continua por e-mail ou CPF/CNPJ.
+  O botão não aparece.

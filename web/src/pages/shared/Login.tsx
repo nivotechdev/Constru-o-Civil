@@ -4,7 +4,13 @@ import { FieldError } from '../../components/FieldError';
 import { GoogleIcon, Icon } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
-import { DEMO_ACCOUNTS, resendConfirmationEmail, signIn, type SignInError } from '../../services/auth';
+import {
+  DEMO_ACCOUNTS,
+  resendConfirmationEmail,
+  signIn,
+  signInWithGoogle,
+  type SignInError
+} from '../../services/auth';
 import { errorMessage, ServiceError } from '../../services/errors';
 import { RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { navigate } from '../../services/router';
@@ -46,10 +52,6 @@ const LOGIN_DEFAULTS: LoginUI = {
 const SIGN_IN_ERRORS: Record<Exclude<SignInError, 'email-nao-confirmado'>, string> = {
   credenciais: 'E-mail, CPF/CNPJ ou senha incorretos. Confira e tente de novo, ou toque em "Esqueci minha senha".'
 };
-
-const UNAVAILABLE = DEMO_ACCOUNTS.length
-  ? 'Na demonstração, entre com e-mail e senha. Use uma das contas de teste abaixo.'
-  : 'Por enquanto, entre com seu e-mail (ou CPF/CNPJ) e senha.';
 
 export default function Login() {
   const [ui, setUi] = useUI<LoginUI>('login', LOGIN_DEFAULTS);
@@ -138,7 +140,7 @@ export default function Login() {
           {ui.error ? <FieldError message={ui.error} /> : null}
           {ui.unconfirmed ? <Unconfirmed ui={ui} setUi={setUi} /> : null}
           <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
-          {FEATURES.googleLogin || FEATURES.phoneLogin ? (
+          {FEATURES.googleLogin ? (
             <div className="flex items-center gap-3 py-1">
               <span className="flex-1 h-px bg-concrete-200" />
               <span className="text-xs text-concrete-500">ou</span>
@@ -151,16 +153,7 @@ export default function Login() {
               variant="secondary"
               fullWidth
               iconLeftNode={<GoogleIcon size={20} />}
-              onClick={() => setUi({ error: UNAVAILABLE })}
-            />
-          ) : null}
-          {FEATURES.phoneLogin ? (
-            <Button
-              label="Continuar com o celular"
-              variant="secondary"
-              fullWidth
-              iconLeft="phone-call"
-              onClick={() => setUi({ error: UNAVAILABLE })}
+              onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))}
             />
           ) : null}
         </div>

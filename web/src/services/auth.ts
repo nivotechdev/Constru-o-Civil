@@ -282,6 +282,37 @@ export async function resetPassword(_newPassword: string): Promise<void> {
   await mockLatency(600);
 }
 
+// ---- Google (L13) ----
+
+/** "Continuar com o Google": leaves for Google and comes back signed in. Backend: Supabase OAuth. */
+export async function signInWithGoogle(): Promise<void> {
+  if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
+  return remote.signInWithGoogle();
+}
+
+export interface OAuthSignUpData {
+  role: Role;
+  name: string;
+  doc: string;
+  whatsapp: string;
+  acceptedTermsVersion: string;
+  adult: boolean;
+  contactName?: string;
+}
+
+/**
+ * L13: a Google account without a side yet chooses it and gives the same data as the e-mail sign-up.
+ * Backend: RPC create_my_account (same rules), then the session starts as usual.
+ */
+export async function completeOAuthSignUp(data: OAuthSignUpData): Promise<void> {
+  if (!data.adult) throw serviceError('validacao', 'A Bicos é só para maiores de 18 anos.');
+  const validDoc = data.role === 'recrutador' ? isValidCnpj(data.doc) || isValidCpf(data.doc) : isValidCpf(data.doc);
+  if (!validDoc)
+    throw serviceError('validacao', data.role === 'recrutador' ? 'CNPJ ou CPF inválido.' : 'CPF inválido.');
+  if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, crie a conta pelo cadastro.');
+  return remote.completeOAuthSignUp(data);
+}
+
 // ---- account settings ----
 
 /**

@@ -356,6 +356,18 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      create_my_account: {
+        Args: {
+          p_role: Role;
+          p_name: string;
+          p_document: string;
+          p_whatsapp: string;
+          p_terms_version: string;
+          p_adult: boolean;
+          p_contact_name: string | null;
+        };
+        Returns: undefined;
+      };
       confirm_presence: { Args: { p_job_id: string }; Returns: undefined };
       undo_reject: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
       save_job_alert: {

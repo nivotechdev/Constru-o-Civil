@@ -266,6 +266,24 @@ function flushNotice(): void {
 }
 
 /** Y27: the session points to an account the app doesn't have — sign out and say why. */
+/** L13: signed in with Google (or another provider) — the account may still have to be completed. */
+function isOAuthUser(user: User | null | undefined): boolean {
+  const provider = (user?.app_metadata as { provider?: string } | undefined)?.provider;
+  return Boolean(provider && provider !== 'email');
+}
+
+/**
+ * A session without its account row. A Google account that never chose its side goes to "Completar
+ * cadastro" (L13), keeping the session; anything else is a broken session (Y27).
+ */
+async function missingAccount(user: User | null): Promise<void> {
+  if (isOAuthUser(user)) {
+    navigate('/completar-cadastro', { replace: true });
+    return;
+  }
+  await dropBrokenSession();
+}
+
 async function dropBrokenSession(): Promise<void> {
   const client = await db();
   await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
@@ -312,6 +330,8 @@ export async function startRemoteSession(): Promise<void> {
   await restore();
 }
 
+let lastUser: User | null = null;
+
 async function restore(): Promise<void> {
   const client = await db();
   setBootStatus('starting');
@@ -323,6 +343,7 @@ async function restore(): Promise<void> {
     try {
       const { data } = await withTimeout(client.auth.getSession(), 5000);
       user = data.session?.user ?? null;
+      lastUser = user;
     } catch {
       if (hasStoredSession()) return goOffline();
     }
@@ -341,7 +362,7 @@ async function restore(): Promise<void> {
       setBootStatus('ready');
       const fresh = user;
       enterSession(fresh).catch((e: unknown) => {
-        if (e instanceof MissingAccountError) void dropBrokenSession().then(flushNotice);
+        if (e instanceof MissingAccountError) void missingAccount(fresh).then(flushNotice);
       });
       return;
     }
@@ -349,7 +370,7 @@ async function restore(): Promise<void> {
     setBootStatus('ready');
   } catch (e) {
     if (e instanceof MissingAccountError) {
-      await dropBrokenSession();
+      await missingAccount(lastUser);
       setBootStatus('ready');
     } else return goOffline();
   } finally {
@@ -393,7 +414,10 @@ function listenToAuth(client: Awaited<ReturnType<typeof db>>): void {
       if (session && (event === 'SIGNED_IN' || event === 'USER_UPDATED') && !recovering) {
         const confirmedNow = Boolean(session.user.email_confirmed_at) && current && !current.emailConfirmed;
         if (!current || current.accountId !== session.user.id || confirmedNow)
-          enterSession(session.user).catch(() => undefined);
+          enterSession(session.user).catch((e: unknown) => {
+            if (e instanceof MissingAccountError && isOAuthUser(session.user))
+              navigate('/completar-cadastro', { replace: true });
+          });
       }
     });
   });

@@ -241,6 +241,15 @@ select has_column_privilege('authenticated', 'public.companies', 'contact_name',
 select has_function_privilege('authenticated', 'public.company_cnpj_for_check(uuid)', 'execute'); -- false
 ```
 
+### 22. `20261012000800_l13_conta_google.sql` (L13)
+
+RPC `create_my_account` para a conta nova pelo Google completar lado, nome, CPF/CNPJ, WhatsApp, 18+ e termos
+(as mesmas regras do cadastro por e-mail).
+
+```sql
+select count(*) from pg_proc where proname = 'create_my_account';                                 -- 1
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
