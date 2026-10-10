@@ -33,7 +33,7 @@ export default function Privacy() {
               <div className="flex flex-col gap-1">
                 <span className="font-semibold text-concrete-900">Exportar meus dados</span>
                 <span className="text-sm text-concrete-600">
-                  Perfil, candidaturas, avaliações e mensagens em um arquivo único.
+                  Perfil, candidaturas, avaliações e avisos em um arquivo único.
                 </span>
               </div>
             </div>

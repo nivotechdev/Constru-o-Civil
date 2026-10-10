@@ -15,7 +15,6 @@ export default function ChooseProfile() {
         <div className="flex flex-col gap-2.5">
           <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Criar conta</span>
           <h1 className="font-display font-bold text-3xl text-concrete-900">Como você vai usar o Bicos?</h1>
-          <p className="text-base text-concrete-700">Dá para trocar depois no seu perfil.</p>
         </div>
         <div className="flex flex-col gap-3">
           <RadioCard

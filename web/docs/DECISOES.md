@@ -646,3 +646,12 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   regra em `services/alerts.ts` para a demonstração), **no máximo 5 por dia** por pessoa. O push no celular
   entra com o X03.
 - A busca por raio usa o centro da área da vaga (nunca o endereço exato), como o mural.
+
+## Fase C — pendências antigas
+
+### P08, F14, L16 — Textos
+
+- Indicador de força da senha num componente só (`PasswordStrength`): campo vazio mostra "8 caracteres ou
+  mais", nunca "Senha fraca" (cadastro, nova senha). A tela de nova senha guarda a senha só no estado local.
+- "Escolher perfil" não promete mais "Dá para trocar depois no seu perfil" (não dá).
+- Configurações e Privacidade não falam mais de "mensagens" nem de "bicos urgentes" (não existem como tal).

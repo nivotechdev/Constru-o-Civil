@@ -2,32 +2,23 @@ import { Button } from '../../components/Button';
 import { IconButton } from '../../components/IconButton';
 import { PasswordInput } from '../../components/Input';
 import { ResultIcon } from '../../components/ResultIcon';
-import { useScreenUI } from '../../hooks/useStore';
+import { useState } from 'react';
+import { PasswordStrength } from '../../components/PasswordStrength';
 import { resetPassword } from '../../services/auth';
 import { goBack, navigate } from '../../services/router';
 import { errorMessage } from '../../services/errors';
-import { passwordStrength, STRENGTH_LABEL, strengthBarColor } from '../../utils/format';
-
-interface ResetUI {
-  senha: string;
-  confirm: string;
-  visible: boolean;
-  error: string | null;
-  done: boolean;
-  submitting: boolean;
-}
 
 export default function ResetPassword() {
-  const [ui, setUi] = useScreenUI<ResetUI>('reset-password', {
+  // Y22: the new password lives only in this screen.
+  const [ui, setState] = useState({
     senha: '',
     confirm: '',
     visible: false,
-    error: null,
+    error: null as string | null,
     done: false,
     submitting: false
   });
-  const strength = passwordStrength(ui.senha);
-  const strengthColor = strengthBarColor(strength);
+  const setUi = (patch: Partial<typeof ui>) => setState((s) => ({ ...s, ...patch }));
 
   if (ui.done) {
     return (
@@ -58,17 +49,7 @@ export default function ResetPassword() {
           onToggleVisible={() => setUi({ visible: !ui.visible })}
           onInput={(v) => setUi({ senha: v, error: null })}
         />
-        <div className="flex items-center gap-3">
-          <span className="flex-1 h-1 rounded-full bg-concrete-200 overflow-hidden">
-            <span
-              className={`block h-full rounded-full ${strengthColor}`}
-              style={{ width: (strength / 3) * 100 + '%' }}
-            />
-          </span>
-          <span className="text-sm text-concrete-500 whitespace-nowrap">
-            {STRENGTH_LABEL[strength] || 'Senha fraca'}
-          </span>
-        </div>
+        <PasswordStrength password={ui.senha} />
         <PasswordInput
           id="reset-confirm"
           label="Confirme a senha nova"

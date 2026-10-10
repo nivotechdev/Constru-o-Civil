@@ -69,7 +69,7 @@ export default function Settings() {
           <Row
             icon="bell"
             label="Notificações"
-            description="Bicos urgentes, candidaturas e mensagens"
+            description="Candidaturas, avaliações e avisos da Bicos"
             onClick={() => navigate('/notificacoes')}
           />
           <Row

@@ -12,20 +12,12 @@ import type { ScreenProps } from '../../types/screen';
 import { currentPath, goBack as routerGoBack, navigate } from '../../services/router';
 import { resetUI, setUI } from '../../services/store';
 import type { Role } from '../../types/models';
-import {
-  isValidEmail,
-  maskCNPJ,
-  maskCPF,
-  isValidMobile,
-  maskPhone,
-  passwordStrength,
-  STRENGTH_LABEL,
-  strengthBarColor
-} from '../../utils/format';
+import { isValidEmail, maskCNPJ, maskCPF, isValidMobile, maskPhone } from '../../utils/format';
 import { WhatsAppCode } from './WhatsAppCode';
 import { useCaptcha } from '../../components/Captcha';
 import { errorMessage } from '../../services/errors';
 import { isValidCnpj, isValidCpf } from '../../utils/document';
+import { PasswordStrength } from '../../components/PasswordStrength';
 
 type FieldId = 'nome' | 'razao' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
 
@@ -385,10 +377,6 @@ export default function Signup({ params }: ScreenProps) {
       .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
   }
 
-  const strength = passwordStrength(password);
-  const strengthColor = strengthBarColor(strength);
-  const strengthTextColor = strength === 3 ? 'text-success-500' : strength ? 'text-warning-500' : 'text-concrete-500';
-
   return (
     <div className="min-h-screen flex flex-col bg-white lg:min-h-0 lg:h-[calc(100vh-5rem)] lg:max-w-app lg:mx-auto lg:shadow-card lg:my-10 lg:rounded-card lg:overflow-hidden">
       <div className="sticky top-0 z-10 bg-white border-b border-concrete-200 px-2 pb-3">
@@ -480,17 +468,7 @@ export default function Signup({ params }: ScreenProps) {
               onEnter={continueByEnter}
             />
             <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-3">
-                <span className="flex-1 h-1 rounded-full bg-concrete-200 overflow-hidden">
-                  <span
-                    className={`block h-full rounded-full ${strengthColor} transition-all`}
-                    style={{ width: (strength / 3) * 100 + '%' }}
-                  />
-                </span>
-                <span className={`text-sm whitespace-nowrap ${strengthTextColor}`}>
-                  {STRENGTH_LABEL[strength] || 'Senha fraca'}
-                </span>
-              </div>
+              <PasswordStrength password={password} />
               <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
                 <Checkbox
                   label="Li e aceito os Termos de uso e a Política de privacidade"
