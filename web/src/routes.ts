@@ -72,6 +72,7 @@ const ChangePassword = screen(() => import('./pages/shared/ChangePassword'));
 const ChangeEmail = screen(() => import('./pages/shared/ChangeEmail'));
 const CompleteSignup = screen(() => import('./pages/shared/CompleteSignup'));
 const PublicJob = screen(() => import('./pages/shared/PublicJob'));
+const VerifyIdentity = screen(() => import('./pages/worker/VerifyIdentity'));
 const BlockedAccounts = screen(() => import('./pages/shared/BlockedAccounts'));
 const NotificationSettings = screen(() => import('./pages/shared/NotificationSettings'));
 const Reviews = screen(() => import('./pages/shared/ReviewsScreen'));
@@ -148,6 +149,7 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
 
   compileRoute('/perfil', worker(WorkerProfile)),
   compileRoute('/perfil/editar', worker(EditWorkerProfile)),
+  compileRoute('/perfil/verificar', worker(VerifyIdentity)),
   compileRoute('/trabalhador/:id', app(WorkerProfile)),
   compileRoute('/trabalhador/:id/:jobId', company(WorkerProfile)),
 

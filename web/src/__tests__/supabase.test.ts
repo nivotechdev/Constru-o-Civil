@@ -59,6 +59,7 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       facts: [],
       photo_url: null,
       cover_url: null,
+      identity_status: 'nao_enviado',
       availability: null,
       years_experience: null,
       desired_pay: null,

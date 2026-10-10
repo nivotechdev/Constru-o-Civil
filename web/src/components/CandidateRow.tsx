@@ -3,6 +3,7 @@ import type { Worker } from '../types/models';
 import type { StatusBadge } from '../types/ui';
 import { cx } from '../utils/cx';
 import { Badge } from './Badge';
+import { Icon } from './icons/Icon';
 import { IconButton } from './IconButton';
 import { Rating } from './Rating';
 import { WorkerAvatar } from './Avatar';
@@ -51,6 +52,12 @@ export function CandidateRow({
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-concrete-900 truncate">{worker.name}</span>
+          {worker.verified ? (
+            <span className="shrink-0 inline-flex" title="Identidade verificada">
+              <Icon name="shield-check" size={15} color="var(--text-brand)" />
+              <span className="sr-only">Verificado</span>
+            </span>
+          ) : null}
           {isNew ? (
             <span className="shrink-0 px-2 py-0.5 rounded-full bg-accent-50 text-accent-600 text-[0.6875rem] font-bold">
               Novo

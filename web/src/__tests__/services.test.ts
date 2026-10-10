@@ -387,3 +387,33 @@ describe('F16: editing a post caption (demo)', () => {
     if (other) expect((await run(profiles.updatePostCaption(other.id, 'oi'))).ok).toBe(false);
   });
 });
+
+describe('F07: identity check (demo)', () => {
+  afterEach(() => vi.useRealTimers());
+  it('não enviado → em análise → verificado (the badge follows)', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    const identity = await import('../services/identity');
+    const store = await import('../services/store');
+    const run = async <T>(p: Promise<T>) => {
+      const r = p.then(
+        (v) => ({ ok: true as const, v }),
+        (e: unknown) => ({ ok: false as const, e: e as Error })
+      );
+      await vi.runAllTimersAsync();
+      return r;
+    };
+    await run(auth.signIn('trabalhador@bicos.demo', 'bicos123'));
+    const id = store.getSession()!.workerId!;
+    store.updateWorker(id, { identity: undefined, verified: false });
+    expect(identity.identityOf(store.getDb().workers[id])).toBe('nao_enviado');
+    expect((await run(identity.submitIdentity('', 'blob:doc'))).ok).toBe(false);
+    expect((await run(identity.submitIdentity('blob:selfie', 'blob:doc'))).ok).toBe(true);
+    expect(identity.identityOf(store.getDb().workers[id])).toBe('em_analise');
+    expect(store.getDb().workers[id].verified).toBe(false);
+    await run(identity.demoApproveIdentity());
+    expect(identity.identityOf(store.getDb().workers[id])).toBe('verificado');
+    expect(store.getDb().workers[id].verified).toBe(true);
+  });
+});

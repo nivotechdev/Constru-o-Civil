@@ -17,6 +17,7 @@ const NARROW_SCREENS = new Set([
   '/criar-vaga',
   '/vaga-editar/:id',
   '/perfil/editar',
+  '/perfil/verificar',
   '/empresa/editar',
   '/configuracoes',
   '/configuracoes/privacidade',

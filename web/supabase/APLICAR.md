@@ -314,6 +314,18 @@ Legenda do post com até 280 caracteres e editável pelo dono (grant de `update 
 select has_column_privilege('authenticated', 'public.worker_posts', 'caption', 'update');          -- true
 ```
 
+### 30. `20261013000700_f07_identidade.sql` (F07)
+
+Bucket privado `identidade` (cada trabalhador só envia na própria pasta; ninguém lê pelo app),
+`workers.identity_status`/`identity_reason`, `identity_submissions`, `submit_identity`, `my_identity` e
+`set_identity_status` (só `service_role`, para a equipe decidir). `verified` acompanha `identity_status`.
+
+```sql
+select public from storage.buckets where id = 'identidade';                                        -- false
+select count(*) from pg_proc where proname in ('submit_identity', 'my_identity', 'set_identity_status'); -- 3
+select has_function_privilege('authenticated', 'public.set_identity_status(uuid, text, text)', 'execute'); -- false
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

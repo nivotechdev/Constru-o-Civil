@@ -859,3 +859,17 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   legenda** ali. Legenda com até 280 caracteres e contador (banco confere).
 - Ao escolher o arquivo: **foto até 10 MB** (comprimida antes de enviar, Z12) e **vídeo até 60 segundos e 50
   MB** (a duração é lida no aparelho; o Storage recusa acima de 50 MB). O botão mostra o **progresso do envio**.
+
+### F07 — Verificação de identidade do trabalhador
+
+- Perfil › cartão **Verificar identidade** (`/perfil/verificar`): selfie (câmera frontal) + foto do documento
+  (câmera traseira). Estados: não enviado, **em análise**, **verificado**, **recusado** (com o motivo e "enviar
+  de novo").
+- As fotos vão para o bucket **privado** `identidade`, na pasta da própria conta; ninguém lê pelo app (só a
+  equipe, com `service_role`). A decisão é `set_identity_status(worker, status, motivo)` — chamada pelo painel
+  da equipe / SQL Editor; o trabalhador recebe um aviso no sino. Sem verificação automática por terceiros
+  (serviço pago; fica para depois, com bandeira).
+- O selo "Verificado" (`workers.verified`) passa a significar exatamente "identidade verificada" (gatilho
+  mantém os dois em sincronia). "Novo na plataforma" **não esconde** mais "Verificado": os dois aparecem no
+  perfil, e a lista de candidatos mostra o escudo ao lado do nome.
+- Demonstração: um botão "Aprovar (demonstração)" faz o papel da equipe; não existe no modo real.

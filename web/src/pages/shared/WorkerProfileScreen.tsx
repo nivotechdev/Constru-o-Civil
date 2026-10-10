@@ -22,6 +22,8 @@ import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { WorkerAvatar } from '../../components/Avatar';
 import { InviteSheet } from '../recruiter/InviteSheet';
 import { SafetyMenu } from '../../components/SafetyMenu';
+import { identityOf } from '../../services/identity';
+import type { Worker } from '../../types/models';
 
 export default function WorkerProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -138,12 +140,16 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
               iconLeft="pencil"
               onClick={() => navigate('/perfil/editar')}
             />
-          ) : worker.novo ? (
-            <Badge label="Novo na plataforma" tone="accent" />
-          ) : worker.verified ? (
-            <Badge label="Verificado" tone="success" icon="shield-check" />
+          ) : worker.novo || worker.verified ? (
+            // F07: "Novo" no longer hides "Verificado" — both show.
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              {worker.verified ? <Badge label="Verificado" tone="success" icon="shield-check" /> : null}
+              {worker.novo ? <Badge label="Novo na plataforma" tone="accent" /> : null}
+            </div>
           ) : null}
         </div>
+
+        {isOwn ? <IdentityCard worker={worker} /> : null}
 
         <div className="flex flex-col gap-2.5">
           <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Especialidades</span>
@@ -213,5 +219,26 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
         <InviteSheet worker={worker} open={inviting} onClose={() => setInviting(false)} />
       ) : null}
     </div>
+  );
+}
+
+// F07: the worker's own call to verify the identity, with where it stands.
+function IdentityCard({ worker }: { worker: Worker }) {
+  const status = identityOf(worker);
+  if (status === 'verificado') return null;
+  const text =
+    status === 'em_analise'
+      ? 'Sua identidade está em análise. Avisamos quando terminar.'
+      : status === 'recusado'
+        ? 'A verificação não foi aprovada. Veja o motivo e envie de novo.'
+        : 'Verifique sua identidade e ganhe o selo "Verificado". As construtoras confiam mais.';
+  return (
+    <Card tone="sunken" padding="sm" onClick={() => navigate('/perfil/verificar')}>
+      <div className="flex items-center gap-2.5">
+        <Icon name="shield-check" size={18} color="var(--text-subtle)" />
+        <span className="flex-1 text-sm text-concrete-700">{text}</span>
+        <Icon name="chevron-right" size={16} color="var(--text-subtle)" />
+      </div>
+    </Card>
   );
 }

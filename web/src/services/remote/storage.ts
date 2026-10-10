@@ -130,3 +130,30 @@ export async function removeMedia(urls: (string | null | undefined)[], bucket: B
     .remove(paths)
     .then(undefined, () => undefined);
 }
+
+/**
+ * F07: a photo to the PRIVATE bucket `identidade` (own folder). Answers the path inside the bucket — there
+ * is no public address; only the team reads it.
+ */
+export async function uploadPrivatePhoto(url: string): Promise<string> {
+  let blob: Blob;
+  try {
+    blob = await (await fetch(url)).blob();
+    const { compressImage } = await import('../../utils/image');
+    blob = await compressImage(blob);
+  } catch {
+    throw serviceError('validacao', 'Não conseguimos abrir essa foto. Tire de novo.');
+  }
+  const userId = await currentUserId();
+  const ext = EXTENSIONS[blob.type] ?? 'jpg';
+  const path = `${userId}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const client = await db();
+  const { error } = await client.storage
+    .from('identidade')
+    .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+  if (error) {
+    if (/network|fetch/i.test(error.message)) throw serviceError('offline');
+    throw serviceError('falha_demo', 'Não deu para enviar a foto agora. Tente de novo.');
+  }
+  return path;
+}

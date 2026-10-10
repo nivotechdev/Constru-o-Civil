@@ -162,6 +162,7 @@ export function workerFromRow(row: TableRow<'workers'>, reviews: ReviewRow[] = [
   setIf(worker, 'novo', row.novo);
   setIf(worker, 'photoUrl', row.photo_url);
   setIf(worker, 'coverUrl', row.cover_url);
+  if (row.identity_status && row.identity_status !== 'nao_enviado') worker.identity = row.identity_status;
   setIf(worker, 'availability', row.availability);
   setIf(worker, 'yearsExperience', row.years_experience);
   setIf(worker, 'desiredPay', row.desired_pay);
@@ -190,6 +191,7 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
     facts: worker.facts,
     photo_url: worker.photoUrl ?? null,
     cover_url: worker.coverUrl ?? null,
+    identity_status: worker.identity ?? (worker.verified ? 'verificado' : 'nao_enviado'),
     availability: worker.availability ?? null,
     years_experience: worker.yearsExperience ?? null,
     desired_pay: worker.desiredPay ?? null,

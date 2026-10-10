@@ -127,6 +127,10 @@ export interface Worker {
   specialties: string[];
   /** Old hand-written facts: no longer shown (F10 builds them from the fields below). */
   facts: string[];
+  /** F07: where the identity check stands (the "Verificado" badge means "verificado"). */
+  identity?: IdentityStatus;
+  /** F07: why it was refused (only the worker's own). */
+  identityReason?: string;
   /** F10: the professional profile. */
   availability?: WorkerAvailability;
   yearsExperience?: number;
@@ -286,6 +290,9 @@ export interface JobInvite {
   status: 'pendente' | 'aceito' | 'recusado';
   createdAt: string;
 }
+
+/** F07 */
+export type IdentityStatus = 'nao_enviado' | 'em_analise' | 'verificado' | 'recusado';
 
 /** F10: the days a worker takes jobs. */
 export type WorkerAvailability = 'semana' | 'fimdesemana' | 'qualquer';

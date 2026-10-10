@@ -28,6 +28,7 @@ import type {
   NotificationKind,
   WagePayment,
   WorkerAvailability,
+  IdentityStatus,
   ReportTarget,
   ReportReason,
   PaymentMethod,
@@ -108,6 +109,8 @@ type WorkerRow = {
   facts: string[];
   photo_url: string | null;
   cover_url: string | null;
+  /** F07 */
+  identity_status: IdentityStatus;
   /** F10: the professional profile. */
   availability: WorkerAvailability | null;
   years_experience: number | null;
@@ -361,7 +364,16 @@ export interface SupabaseDatabase {
       >;
       workers: Table<
         WorkerRow,
-        'id' | 'rating' | 'review_count' | 'jobs_done' | 'novo' | 'verified' | 'specialties' | 'facts' | 'created_at'
+        | 'id'
+        | 'rating'
+        | 'review_count'
+        | 'jobs_done'
+        | 'novo'
+        | 'verified'
+        | 'specialties'
+        | 'facts'
+        | 'created_at'
+        | 'identity_status'
       >;
       jobs: Table<
         JobRow,
@@ -392,6 +404,11 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      submit_identity: { Args: { p_selfie_path: string; p_document_path: string }; Returns: undefined };
+      my_identity: {
+        Args: never;
+        Returns: { status: IdentityStatus; reason: string | null; submitted_at: string | null }[];
+      };
       save_notification_prefs: { Args: { p_muted: string[]; p_push: string[] }; Returns: undefined };
       report_content: {
         Args: { p_target_type: ReportTarget; p_target_id: string; p_reason: ReportReason; p_details: string | null };

@@ -560,6 +560,27 @@ describe('remote: data and actions', () => {
     expect(m.store.getDb().companies['u-outra'].name).toBe('Outra Construtora');
   });
 
+  it('F07: the two photos go to the private bucket and the paths to submit_identity; the status comes back', async () => {
+    const fake = server('ana', {
+      rpc: { my_identity: () => ({ data: [{ status: 'recusado', reason: 'Foto borrada' }], error: null }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const identity = await import('../services/identity');
+    vi.stubGlobal('fetch', async () => new Response(new Blob(['x'], { type: 'image/jpeg' })));
+    await identity.submitIdentity('blob:local/selfie', 'blob:local/doc');
+    vi.unstubAllGlobals();
+    const uploads = fake.calls.filter((c) => c.kind === 'storage');
+    expect(uploads.map((u) => u.name)).toEqual(['identidade', 'identidade']);
+    uploads.forEach((u) => expect(String(u.args)).toMatch(/^u-ana\//));
+    const args = fake.calls.find((c) => c.name === 'submit_identity')?.args as Record<string, unknown>;
+    expect(args.p_selfie_path).toBe(uploads[0].args);
+    expect(args.p_document_path).toBe(uploads[1].args);
+    expect(m.store.getDb().workers['u-ana'].identity).toBe('em_analise');
+    await identity.loadMyIdentity();
+    expect(m.store.getDb().workers['u-ana']).toMatchObject({ identity: 'recusado', identityReason: 'Foto borrada' });
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

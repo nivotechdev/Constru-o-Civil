@@ -311,6 +311,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 23,
     jobsDone: 23,
     verified: true,
+    identity: 'verificado',
     specialties: ['Acabamento', 'Alvenaria', 'Reboco', 'Assentamento'],
     availability: 'qualquer',
     yearsExperience: 12,
@@ -367,6 +368,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 17,
     jobsDone: 17,
     verified: true,
+    identity: 'verificado',
     specialties: ['Carga de material', 'Limpeza de obra'],
     facts: ['17 diárias pagas pela plataforma', 'RG e CPF conferidos em 5 ago', 'Responde em 55 min, em média'],
     reviews: [
@@ -393,6 +395,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 52,
     jobsDone: 52,
     verified: true,
+    identity: 'verificado',
     specialties: ['Porcelanato 60x60', 'Rejunte', 'Nivelamento'],
     facts: ['52 diárias pagas pela plataforma', 'RG e CPF conferidos em 8 abr', 'Responde em 15 min, em média'],
     reviews: [
@@ -419,6 +422,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 28,
     jobsDone: 28,
     verified: true,
+    identity: 'verificado',
     specialties: ['Carga de material', 'Massa'],
     facts: ['28 diárias pagas pela plataforma', 'RG e CPF conferidos em 15 jun', 'Nunca faltou a uma diária combinada'],
     reviews: [
@@ -445,6 +449,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 41,
     jobsDone: 41,
     verified: true,
+    identity: 'verificado',
     specialties: ['Carga de material', 'Limpeza de obra', 'Massa'],
     facts: ['41 diárias pagas pela plataforma', 'RG e CPF conferidos em 30 jul', 'Responde em 1h10, em média'],
     reviews: [
@@ -491,6 +496,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 31,
     jobsDone: 31,
     verified: true,
+    identity: 'verificado',
     specialties: ['Reboco', 'Contrapiso'],
     facts: ['31 diárias pagas pela plataforma', 'RG e CPF conferidos em 21 jul', 'Responde em 35 min, em média'],
     reviews: [
@@ -517,6 +523,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 9,
     jobsDone: 9,
     verified: true,
+    identity: 'verificado',
     specialties: ['Massa corrida', 'Acabamento'],
     facts: ['9 diárias pagas pela plataforma', 'RG e CPF conferidos em 2 set', 'Faltou a 1 diária combinada em julho'],
     reviews: [
@@ -543,6 +550,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 64,
     jobsDone: 64,
     verified: true,
+    identity: 'verificado',
     specialties: ['Alvenaria estrutural', 'Contrapiso', 'Reboco'],
     facts: ['64 diárias pagas pela plataforma', 'RG e CPF conferidos em 4 mar', 'Responde em 25 min, em média'],
     reviews: [
@@ -589,6 +597,7 @@ export const WORKERS: Record<string, Worker> = {
     reviewCount: 19,
     jobsDone: 19,
     verified: true,
+    identity: 'verificado',
     specialties: ['Carga de material', 'Limpeza de obra'],
     facts: ['19 diárias pagas pela plataforma', 'RG e CPF conferidos em 3 mai'],
     reviews: []
