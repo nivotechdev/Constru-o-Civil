@@ -23,6 +23,25 @@ export interface Contact {
  * definer) that checks the same thing before reading the private phone column.
  */
 export async function getContact(applicationId: string): Promise<Contact> {
+  // W09: one read per candidacy and situation (picked → hired changes the ready-made message), per account.
+  const session = getSession();
+  const status = getDb().applications.find((a) => a.id === applicationId)?.status ?? '';
+  const key = `${session?.accountId ?? ''}:${applicationId}:${status}`;
+  const cached = contactCache.get(key);
+  if (cached) return cached;
+  const contact = await readContact(applicationId);
+  contactCache.set(key, contact);
+  return contact;
+}
+
+const contactCache = new Map<string, Contact>();
+
+/** Forgets the cached contacts (leaving the account). */
+export function clearContactCache(): void {
+  contactCache.clear();
+}
+
+async function readContact(applicationId: string): Promise<Contact> {
   if (!IS_DEMO) return remote.getContact(applicationId);
   await mockLatency(250);
   const db = getDb();

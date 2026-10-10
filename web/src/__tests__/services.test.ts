@@ -155,12 +155,17 @@ describe('simulated backend calls keep the legacy delays', () => {
       }
     }));
     expect(alerts.alertSummary(store.getDb().jobAlerts!['w-alerta'])).toBe('Pintor · São Paulo, SP · até 5 km');
+    // W09: the next code after the highest one used (existing or deleted).
+    const used = [...Object.keys(store.getDb().jobs), ...store.getDb().deletedJobIds].map(
+      (k) => Number(k.slice(3)) || 0
+    );
+    const next = 'BC-' + Math.max(5100, ...used.map((n) => n + 1));
     const id = await settlesAfter(jobs.publishJob(draft), 700);
-    expect(id).toBe('BC-5500');
-    expect(sel.getJob(store.getDb(), id)).toEqual({ ...draft, id: 'BC-5500', companyId: seed.CURRENT_COMPANY_ID });
+    expect(id).toBe(next);
+    expect(sel.getJob(store.getDb(), id)).toEqual({ ...draft, id: next, companyId: seed.CURRENT_COMPANY_ID });
     const notices = store.getDb().notifications.filter((n) => n.kind === 'bico_novo');
     expect(notices).toMatchObject([
-      { workerId: 'w-alerta', target: '/vaga/BC-5500', title: 'Bico novo perto de você' }
+      { workerId: 'w-alerta', target: '/vaga/' + next, title: 'Bico novo perto de você' }
     ]);
   });
 });

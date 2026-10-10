@@ -84,3 +84,21 @@ describe('F15: the company contact person', () => {
     ).toMatch(/^Olá, Ana! Aqui é Jorge/);
   });
 });
+
+describe('W09: the WhatsApp contact is read once per candidacy and situation', () => {
+  it('a second tap uses the cached contact', async () => {
+    vi.resetModules();
+    const store = await import('../services/store');
+    const contacts = await import('../services/contacts');
+    const latency = await import('../services/mockLatency');
+    const spy = vi.spyOn(latency, 'mockLatency').mockResolvedValue(undefined);
+    const app = store.getDb().applications.find((a) => a.status === 'pre_selecionado' || a.status === 'contratado');
+    if (!app) return;
+    const company = store.getDb().jobs[app.jobId].companyId;
+    store.setSessionAccount(Object.values(store.getDb().accounts).find((a) => a.companyId === company)!.id);
+    const first = await contacts.getContact(app.id);
+    const calls = spy.mock.calls.length;
+    expect(await contacts.getContact(app.id)).toEqual(first);
+    expect(spy.mock.calls.length).toBe(calls);
+  });
+});

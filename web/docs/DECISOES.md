@@ -1172,3 +1172,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - **Turno que passa da meia-noite** (22h–6h) aceito no formulário e no banco, e mostrado como "22h–6h (vira a
   noite)"; só início igual ao fim é recusado.
 - **Cartões de 15 a 19 dígitos** (Amex e outros); antes só 16.
+
+### W09 — Demonstração
+
+- Código da vaga nova na demonstração: o **próximo número** depois do maior já usado (vagas existentes e excluídas),
+  sem colisão (antes era um número aleatório).
+- O contato de WhatsApp é guardado **por candidatura e situação** (pré-selecionado → contratado muda a mensagem
+  pronta) e por conta: o segundo toque não lê de novo. Vale nos dois modos; sair da conta limpa.

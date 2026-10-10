@@ -86,9 +86,14 @@ export async function loadSavedJobs(): Promise<void> {
 /** What the publish form sends; the backend fills in the id and the company. */
 export type JobDraft = Omit<Job, 'id' | 'companyId'>;
 
-// Demo ids: "BC-" + a number, like the seed jobs'.
+// Demo ids: "BC-" + a number, like the seed jobs' — W09: the next number after the highest one ever used (no
+// collision with a job that exists or was deleted).
 function nextJobId(): string {
-  return 'BC-' + (5100 + Math.floor(Math.random() * 800));
+  const db = store.getDb();
+  const used = [...Object.keys(db.jobs), ...db.deletedJobIds]
+    .map((id) => Number(/^BC-(\d+)$/.exec(id)?.[1] ?? 0))
+    .filter((n) => Number.isFinite(n));
+  return 'BC-' + Math.max(5100, ...used.map((n) => n + 1));
 }
 
 function ownJob(jobId: string): Job {

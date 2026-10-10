@@ -28,6 +28,7 @@ import {
 } from './merge';
 import { setBootStatus, withTimeout } from '../boot';
 import { clearPaging } from '../paging';
+import { clearContactCache } from '../contacts';
 import { isCandidacyNotice } from '../notifications';
 
 /** Where the links sent by e-mail come back to: this page, without a route (see handleAuthRedirect). */
@@ -265,6 +266,7 @@ export async function leaveSession(): Promise<void> {
   clearAccountCache();
   await stopRealtime().catch(() => undefined);
   clearSessionData();
+  clearContactCache();
   clearQueries();
   clearPaging();
   resetHistory();
