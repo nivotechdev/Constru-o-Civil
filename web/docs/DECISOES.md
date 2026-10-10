@@ -888,3 +888,32 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 | F05 | Tela **Ajuda** (`/ajuda`): perguntas frequentes, WhatsApp e e-mail do suporte; os textos "fale com o suporte" apontam para ela. |
 | P05 | Perfil da construtora: "Suas vagas" e "Excluir vaga".                                                                           |
 | P06 | Requisito escrito livre além da lista (commit P04/P06).                                                                         |
+
+---
+
+# Fase D — qualidade de app profissional
+
+### X02 — App instalável e leve (PWA)
+
+- `vite-plugin-pwa`: **manifest** (nome, ícones 192/512 e maskable, `theme-color` azul, `display: standalone`) e
+  **service worker** que guarda o app no celular (scripts, estilos, fontes, ícones). Sem sinal, o app abre e
+  mostra as telas de "sem internet" (Z11) em vez da página de erro do navegador — essa é a "página offline":
+  mais útil que uma página estática, porque mostra o que já estava carregado.
+- Fotos (buckets públicos do Storage e as da demonstração): cache no aparelho (até 300, 30 dias). Banco, Auth e
+  Edge Functions **sempre** vão à rede (nada de dado velho de vaga ou candidatura).
+- Versão nova publicada: um aviso "Tem uma versão nova da Bicos — **Atualizar**" (`services/pwa.ts`); nada é
+  trocado debaixo de uma tela aberta. O app aberto por dias confere de hora em hora.
+- Ícones e a imagem de prévia são desenhados por `scripts/make-icons.mjs` (martelo branco no azul da marca).
+  Prévia do link (`og:` + `twitter:card`) com a imagem 1200×630; a URL absoluta vem de `VITE_SITE_URL`. A
+  prévia **por vaga** (título e diária no WhatsApp) precisa de renderização no servidor (Cloudflare Worker ou
+  Edge Function lendo `public_job_card`) — adiado até o domínio existir.
+- **Fontes servidas pelo próprio app** (`@fontsource`, só o subconjunto latino e os pesos usados), sem Google
+  Fonts; as duas da primeira tela vão com `preload`.
+- A tela de carregamento do `index.html` agora **é igual** à tela inicial (mesmo nome, mesma frase, mesmos
+  tamanhos): a primeira pintura já é a maior, e a troca para o React não mexe nada.
+- `robots.txt`. A prévia `standalone` (file://) não tem service worker.
+- **Lighthouse (celular, `vite preview`)** — com limitação real de rede/CPU (`--throttling-method=devtools`):
+  Desempenho **96**, Acessibilidade **100**, Boas práticas **100**, SEO **100** (com o robots.txt). Com a
+  limitação simulada (padrão) o Desempenho sai **81**: o simulador atribui a maior pintura ao React porque,
+  sem limitação, o app monta antes da primeira pintura. O Lighthouse 12 não tem mais a categoria "PWA"; a
+  instalação foi conferida pelo manifest + service worker ativo (teste com Playwright: registra, abre sem rede).

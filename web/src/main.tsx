@@ -5,6 +5,15 @@ import { setBootStatus } from './services/boot';
 import { installGlobalErrorReporting } from './services/monitoring';
 import { IS_DEMO } from './services/mode';
 import { currentPath, navigate, startRouter } from './services/router';
+import { startServiceWorker } from './services/pwa';
+import '@fontsource/barlow/latin-600.css';
+import '@fontsource/barlow/latin-700.css';
+import '@fontsource/plus-jakarta-sans/latin-400.css';
+import '@fontsource/plus-jakarta-sans/latin-500.css';
+import '@fontsource/plus-jakarta-sans/latin-600.css';
+import '@fontsource/plus-jakarta-sans/latin-700.css';
+import '@fontsource/space-mono/latin-400.css';
+import '@fontsource/space-mono/latin-700.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/tailwind.css';
@@ -41,3 +50,4 @@ function startRoutes(): void {
 }
 
 start();
+startServiceWorker();
