@@ -152,3 +152,19 @@ export async function deleteAccount(password: string, confirmCommitments: boolea
   await invokeFunction('excluir-conta', { confirmCommitments });
   await signOut();
 }
+
+/** F11: the company's payments (RLS: own company). */
+export async function loadMyPayments(): Promise<void> {
+  const companyId = store.getSession()?.companyId;
+  if (!companyId) return;
+  const client = await db();
+  const rows = await request(() =>
+    client
+      .from('boost_payments')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .limit(100)
+  );
+  apply(putPayments(rows));
+}

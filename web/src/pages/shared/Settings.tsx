@@ -7,6 +7,7 @@ import { isFailureMode, setFailureMode, subscribeFailureMode } from '../../servi
 import { IS_DEMO } from '../../services/mode';
 import { goBack, navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
+import { FEATURES } from '../../services/features';
 
 interface RowProps {
   icon: IconName;
@@ -74,6 +75,14 @@ export default function Settings() {
             description="Candidaturas, avaliações e avisos da Bicos"
             onClick={() => navigate('/notificacoes')}
           />
+          {role === 'recrutador' && FEATURES.payments ? (
+            <Row
+              icon="receipt"
+              label="Pagamentos"
+              description="Impulsionamentos, recibos e reembolsos"
+              onClick={() => navigate('/pagamentos')}
+            />
+          ) : null}
           <Row
             icon="shield-check"
             label="Privacidade e dados"

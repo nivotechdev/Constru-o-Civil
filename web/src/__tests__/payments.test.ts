@@ -69,6 +69,19 @@ describe('boost payments', () => {
     expect((await settle(m.pay.startPixPayment('BC-4998', '24h'))).ok).toBe(false);
   });
 
+  it('F11: the company lists its payments and gets a receipt of a paid one', async () => {
+    await signIn();
+    const started = await settle(m.pay.startPixPayment('BC-4998', '24h'));
+    if (!started.ok) throw started.e;
+    await settle(m.pay.simulatePixPaid(started.v.id));
+    const list = m.pay.myPayments(m.store.getDb());
+    expect(list[0]).toMatchObject({ id: started.v.id, status: 'confirmado' });
+    const text = m.pay.receiptText(list[0], m.store.getDb().jobs['BC-4998'], 'Construtora Meridiano');
+    expect(text).toContain('RECIBO');
+    expect(text).toContain('Valor: R$ 12,00');
+    expect(text).toContain('Construtora: Construtora Meridiano');
+  });
+
   it('PIX: an unpaid code expires and can no longer be confirmed', async () => {
     await signIn();
     const started = await settle(m.pay.startPixPayment('BC-4998', '24h'));

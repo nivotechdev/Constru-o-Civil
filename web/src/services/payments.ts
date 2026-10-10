@@ -248,3 +248,39 @@ export async function payWithCard(jobId: string, planId: BoostPlanId, charge: Ca
     throw serviceError('conflito', 'O banco recusou o cartão. Confira os dados ou use outro cartão ou o PIX.');
   return store.getDb().boostPayments.find((x) => x.id === payment.id) as BoostPayment;
 }
+
+// ---- F11: the company's payments ----
+
+/** The company's boost payments, newest first. */
+export function myPayments(db: Database, companyId: string = currentCompanyId()): BoostPayment[] {
+  return db.boostPayments
+    .filter((p) => p.companyId === companyId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Loads the company's payments. Backend: select boost_payments (RLS: own company), up to 100. */
+export async function loadMyPayments(): Promise<void> {
+  if (!IS_DEMO) return remote.loadMyPayments();
+  await mockLatency(300);
+}
+
+/** F11: a receipt of a confirmed payment, as plain text (downloaded as a file). */
+export function receiptText(payment: BoostPayment, job: Job | undefined, companyName: string): string {
+  const plan = BOOST_PLANS.find((p) => p.id === payment.plan);
+  const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('pt-BR') : '—');
+  return [
+    'BICOS — RECIBO DE IMPULSIONAMENTO',
+    '',
+    `Pagamento: ${payment.id}`,
+    `Construtora: ${companyName}`,
+    `Vaga: ${job ? `${jobTitle(job)} (${job.id})` : payment.jobId}`,
+    `Plano: ${plan?.label ?? payment.plan}`,
+    `Valor: R$ ${(payment.amountCents / 100).toFixed(2).replace('.', ',')}`,
+    `Forma: ${payment.method === 'pix' ? 'PIX' : `Cartão${payment.cardLast4 ? ` final ${payment.cardLast4}` : ''}`}`,
+    `Confirmado em: ${when(payment.confirmedAt)}`,
+    `Destaque até: ${when(payment.boostEndsAt)}`,
+    '',
+    'NivoTech · nivotech.dev@gmail.com',
+    'Este recibo não substitui nota fiscal.'
+  ].join('\n');
+}

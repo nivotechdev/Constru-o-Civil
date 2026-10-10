@@ -814,3 +814,12 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   plataforma", "RG e CPF conferidos…") deixaram de aparecer — não eram verdade no app.
 - A construtora (e a própria pessoa) vê **faltas e desistências** (RPC `worker_track_record`), como o diálogo
   de falta promete. Perfil sem nada preenchido mostra ao dono um convite para completar.
+
+### F11 — Pagamentos da construtora
+
+- Configurações › **Pagamentos** (só construtora e só com pagamento ligado): os impulsionamentos com plano,
+  data, valor e status (aguardando, pago, recusado, PIX venceu, cancelado, reembolso em análise). Pago →
+  **"Baixar recibo"** (arquivo de texto com plano, valor, forma, datas e "não substitui nota fiscal");
+  aguardando → volta ao pagamento; reembolso → fala com a gente.
+- **Dados de faturamento / nota fiscal: adiado** — a NivoTech ainda não tem CNPJ para emitir nota; quando
+  tiver, entram o formulário de dados de faturamento e a nota pelo provedor de pagamento.
