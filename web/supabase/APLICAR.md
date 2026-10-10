@@ -250,6 +250,16 @@ RPC `create_my_account` para a conta nova pelo Google completar lado, nome, CPF/
 select count(*) from pg_proc where proname = 'create_my_account';                                 -- 1
 ```
 
+### 23. `20261012000900_f18_membros.sql` (F18)
+
+Tabela `company_members` (construtora × pessoa × papel `dono | recrutador`), preenchida com a própria conta de
+cada construtora como dona; sem tela por enquanto.
+
+```sql
+select count(*) = (select count(*) from public.accounts where company_id is not null)
+  from public.company_members where role = 'dono';                                              -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

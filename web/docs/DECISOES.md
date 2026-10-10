@@ -787,3 +787,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   que já existem (no Supabase, uma conta por telefone é outro usuário); sem isso, cada login pelo celular
   criaria uma conta nova. O celular já é confirmado por código (Y25), e o login continua por e-mail ou CPF/CNPJ.
   O botão não aparece.
+
+### F18 — Membros da construtora (só o modelo)
+
+- Tabela `company_members` (empresa, pessoa, papel `dono` ou `recrutador`), com a própria conta de cada
+  construtora como dona (as novas entram por gatilho). Sem tela agora: hoje a conta da construtora continua
+  sendo a empresa (`accounts.company_id = id`), e `my_company_id()` não mudou. Quando houver "convidar
+  pessoa", ela passa a ler desta tabela e as políticas das vagas aceitam qualquer membro.
