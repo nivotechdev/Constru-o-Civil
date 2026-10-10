@@ -197,6 +197,15 @@ em vaga aberta).
 select count(*) from pg_proc where proname = 'undo_reject';                                       -- 1
 ```
 
+### 17. `20261012000300_l11_validacao_perfil.sql` (L11)
+
+Nome de trabalhador e construtora entre 3 e 80 caracteres, até 10 especialidades (restrições `NOT VALID`: valem
+para o que for gravado daqui em diante).
+
+```sql
+select conname from pg_constraint where conname in ('workers_name_length', 'companies_name_length'); -- 2 linhas
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

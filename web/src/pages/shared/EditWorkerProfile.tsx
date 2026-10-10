@@ -11,12 +11,13 @@ import { Select } from '../../components/Select';
 import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
 import { OFICIO_OPTIONS } from '../../services/catalog';
-import { saveMyProfileImages, updateMyWorkerProfile, type ProfileImages } from '../../services/profiles';
+import { profileErrors, saveMyProfileImages, updateMyWorkerProfile, type ProfileImages } from '../../services/profiles';
 import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { SpecialtiesField } from '../../components/SpecialtiesField';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
+import { serviceError } from '../../services/errors';
 
 /** Frees the local copies of pictures that were picked and then dropped. */
 function revoke(urls: (string | null | undefined)[]) {
@@ -41,9 +42,20 @@ export default function EditWorkerProfile() {
   // Leaving without saving drops the pictures picked here.
   useEffect(() => () => revoke(Object.values(picked.current)), []);
 
+  // L11: only what changed is checked and sent; each field shows its own problem.
+  const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
+  const changes = {
+    ...(draft.name !== worker.name ? { name: draft.name } : {}),
+    ...(draft.oficioId !== worker.oficioId ? { oficioId: draft.oficioId } : {}),
+    ...(draft.city !== worker.city ? { city: draft.city } : {}),
+    ...(draft.specialties.join('|') !== worker.specialties.join('|') ? { specialties: draft.specialties } : {})
+  };
   const save = useAction(
     async () => {
-      await updateMyWorkerProfile(draft);
+      const found = profileErrors(changes, 'trabalhador');
+      setErrors(found);
+      if (Object.keys(found).length) throw serviceError('validacao', 'Confira os campos marcados.');
+      await updateMyWorkerProfile(changes);
       setProgress(Object.keys(images).length ? 0 : null);
       try {
         await saveMyProfileImages(images, setProgress);
@@ -101,14 +113,22 @@ export default function EditWorkerProfile() {
             icon="user"
             autoComplete="name"
             value={draft.name}
-            onInput={(v) => setDraft((d) => ({ ...d, name: v }))}
+            error={errors.name}
+            onInput={(v) => {
+              setDraft((d) => ({ ...d, name: v }));
+              setErrors((e) => ({ ...e, name: undefined }));
+            }}
           />
           <Select
             label="Seu ofício principal"
             placeholder="Escolha seu ofício"
             options={OFICIO_OPTIONS}
             value={draft.oficioId}
-            onChange={(v) => setDraft((d) => ({ ...d, oficioId: v }))}
+            error={errors.oficioId}
+            onChange={(v) => {
+              setDraft((d) => ({ ...d, oficioId: v }));
+              setErrors((e) => ({ ...e, oficioId: undefined }));
+            }}
           />
           <LocationButton title="Onde você quer trabalhar" location={draft.city} onClick={() => setPickerOpen(true)} />
           <WhatsAppRow label="Seu WhatsApp" />

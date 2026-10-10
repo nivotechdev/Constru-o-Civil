@@ -11,11 +11,18 @@ import { Select } from '../../components/Select';
 import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
 import { TIPOS_OBRA } from '../../services/catalog';
-import { saveMyProfileImages, updateMyCompanyProfile, type ProfileImages } from '../../services/profiles';
+import {
+  profileErrors,
+  saveMyProfileImages,
+  updateMyCompanyProfile,
+  type ProfileImages
+} from '../../services/profiles';
 import { goBack, navigate } from '../../services/router';
 import { currentCompany } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
+import { serviceError } from '../../services/errors';
+import { CityPicker, LocationButton } from '../../components/CityPicker';
 
 function revoke(urls: (string | null | undefined)[]) {
   for (const u of urls) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
@@ -36,9 +43,20 @@ export default function EditCompanyProfile() {
   }, [images]);
   useEffect(() => () => revoke(Object.values(picked.current)), []);
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // L11: only what changed is checked and sent; each field shows its own problem.
+  const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
+  const changes = {
+    ...(draft.name !== company.name ? { name: draft.name } : {}),
+    ...(draft.tipoObra !== company.tipoObra ? { tipoObra: draft.tipoObra } : {}),
+    ...(draft.location !== company.location ? { location: draft.location } : {})
+  };
   const save = useAction(
     async () => {
-      await updateMyCompanyProfile(draft);
+      const found = profileErrors(changes, 'recrutador');
+      setErrors(found);
+      if (Object.keys(found).length) throw serviceError('validacao', 'Confira os campos marcados.');
+      await updateMyCompanyProfile(changes);
       setProgress(Object.keys(images).length ? 0 : null);
       try {
         await saveMyProfileImages(images, setProgress);
@@ -97,7 +115,11 @@ export default function EditCompanyProfile() {
             autoComplete="organization"
             hint="É esse nome que aparece no seu perfil e nas vagas que você publicar."
             value={draft.name}
-            onInput={(v) => setDraft((d) => ({ ...d, name: v }))}
+            error={errors.name}
+            onInput={(v) => {
+              setDraft((d) => ({ ...d, name: v }));
+              setErrors((e) => ({ ...e, name: undefined }));
+            }}
           />
           {company.cnpj ? (
             <div className="flex flex-col gap-1.5 w-full">
@@ -117,13 +139,9 @@ export default function EditCompanyProfile() {
             value={draft.tipoObra}
             onChange={(v) => setDraft((d) => ({ ...d, tipoObra: v }))}
           />
-          <Input
-            id="edit-company-location"
-            label="Região onde você contrata"
-            icon="map-pin"
-            value={draft.location}
-            onInput={(v) => setDraft((d) => ({ ...d, location: v }))}
-          />
+          {/* L12: the city comes from the list, like everywhere else. */}
+          <LocationButton title="Onde ficam suas obras" location={draft.location} onClick={() => setPickerOpen(true)} />
+          {errors.location ? <FieldError message={errors.location} /> : null}
           <WhatsAppRow label="WhatsApp de contato" />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
@@ -140,6 +158,19 @@ export default function EditCompanyProfile() {
           </div>
         </div>
       </form>
+      {/* Outside the form: Enter in its search box must not save the profile. */}
+      <CityPicker
+        open={pickerOpen}
+        title="Onde ficam suas obras"
+        value={draft.location}
+        stateKey="edit-company-city"
+        onChoose={(label) => {
+          setDraft((d) => ({ ...d, location: label }));
+          setErrors((e) => ({ ...e, location: undefined }));
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </div>
   );
 }

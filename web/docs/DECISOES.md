@@ -689,3 +689,14 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - Cada um vê as próprias avaliações a partir do próprio perfil ("Ver avaliações", voltando para o perfil).
   Além disso, construtoras veem as de trabalhadores e trabalhadores veem as de construtoras.
 - "Ver avaliações" só aparece onde a pessoa pode ver e quando há avaliação (antes levava a um cadeado).
+
+### L11 + L12 — Editar perfil e empresa
+
+- Mesma conferência nos dois modos (`profileErrors`): nome completo (trabalhador com nome e sobrenome), ofício
+  e cidade da lista, até 80 caracteres; o erro aparece **no campo**. Só o que mudou é conferido e enviado (os
+  perfis antigos não travam por um campo que a pessoa não mexeu). O banco também recusa nome fora de 3–80 e
+  mais de 10 especialidades.
+- Já estavam feitos: foto e capa (Z12), especialidades (Y23), Cancelar descarta (Y21), WhatsApp com código
+  (Y25).
+- **L12**: "Editar empresa" escolhe a cidade das obras na lista (`CityPicker`), como no "Completar perfil",
+  no lugar do texto livre "Região onde você contrata".

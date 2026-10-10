@@ -27,14 +27,34 @@ export async function loadCompanyProfile(_companyId: string): Promise<void> {
 
 export type WorkerProfilePatch = Partial<Pick<Worker, 'name' | 'oficioId' | 'city' | 'specialties'>>;
 
+/** L11: the problems of a profile edit, per field (the same in both modes; the database checks too). */
+export function profileErrors(
+  patch: { name?: string; oficioId?: string; city?: string; location?: string },
+  role: 'trabalhador' | 'recrutador'
+): Partial<Record<'name' | 'oficioId' | 'city' | 'location', string>> {
+  const e: Partial<Record<'name' | 'oficioId' | 'city' | 'location', string>> = {};
+  if (patch.name !== undefined) {
+    const name = patch.name.trim();
+    if (name.length < 3) e.name = role === 'trabalhador' ? 'Informe seu nome completo.' : 'Informe o nome da empresa.';
+    else if (name.length > 80) e.name = 'Use até 80 caracteres.';
+    else if (role === 'trabalhador' && name.split(/\s+/).length < 2) e.name = 'Informe nome e sobrenome.';
+  }
+  if (patch.oficioId !== undefined && !getOficio(patch.oficioId)) e.oficioId = 'Escolha seu ofício na lista.';
+  if (patch.city !== undefined && !cityByLabel(patch.city)) e.city = 'Escolha a cidade na lista.';
+  if (patch.location !== undefined && !cityByLabel(patch.location)) e.location = 'Escolha a cidade na lista.';
+  return e;
+}
+
+function checkProfile(patch: Parameters<typeof profileErrors>[0], role: 'trabalhador' | 'recrutador'): void {
+  const first = Object.values(profileErrors(patch, role))[0];
+  if (first) throw serviceError('validacao', first);
+}
+
 /** Saves the logged-in worker's profile. Backend: update workers where id = my worker. */
 export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<void> {
+  checkProfile(patch, 'trabalhador');
   if (!IS_DEMO) return remote.updateMyWorkerProfile(patch);
   await mockLatency(600);
-  if (patch.name !== undefined && patch.name.trim().length < 3)
-    throw serviceError('validacao', 'Informe seu nome completo.');
-  if (patch.oficioId !== undefined && !getOficio(patch.oficioId))
-    throw serviceError('validacao', 'Escolha seu ofício na lista.');
   const worker = store.getDb().workers[currentWorkerId()];
   // A new city moves the worker's base to its centre (the neighbourhood is no longer known).
   if (patch.city !== undefined && worker && patch.city !== worker.city) {
@@ -70,10 +90,9 @@ export async function changeWhatsApp(phone: string): Promise<void> {
 
 /** Saves the logged-in company's profile. Backend: update companies where id = my company. */
 export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promise<void> {
+  checkProfile(patch, 'recrutador');
   if (!IS_DEMO) return remote.updateMyCompanyProfile(patch);
   await mockLatency(600);
-  if (patch.name !== undefined && patch.name.trim().length < 3)
-    throw serviceError('validacao', 'Informe o nome da empresa.');
   store.updateCompany(currentCompanyId(), patch);
 }
 
