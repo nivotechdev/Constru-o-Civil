@@ -873,3 +873,18 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   mantém os dois em sincronia). "Novo na plataforma" **não esconde** mais "Verificado": os dois aparecem no
   perfil, e a lista de candidatos mostra o escudo ao lado do nome.
 - Demonstração: um botão "Aprovar (demonstração)" faz o papel da equipe; não existe no modo real.
+
+### Fase C — itens resolvidos junto com outros IDs
+
+| ID  | Onde ficou                                                                                                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- |
+| L03 | Coberto pelo Y07 (vaga indisponível sem "Quero esse bico"; mesma checagem no banco).                                            |
+| L04 | "Você avançou" mostra o endereço completo e **Abrir no mapa** (Google Maps / Waze) — Z06, `MapLinks`.                           |
+| L06 | Coberto pelo Y09 (resumo do bico com texto por situação e total certo).                                                         |
+| L08 | Coberto pelo Z03 (impulsionada/urgente no topo, sem o plano de WhatsApp).                                                       |
+| L19 | Coberto pelo Z06 (endereço exato só para a dona e para quem foi escolhido).                                                     |
+| L21 | Coberto pelo Z12 (fotos de perfil, capa e logo no Storage, com compressão e progresso).                                         |
+| F03 | **Publicar de novo** numa vaga encerrada abre o formulário preenchido, com datas novas (commit do Y09).                         |
+| F05 | Tela **Ajuda** (`/ajuda`): perguntas frequentes, WhatsApp e e-mail do suporte; os textos "fale com o suporte" apontam para ela. |
+| P05 | Perfil da construtora: "Suas vagas" e "Excluir vaga".                                                                           |
+| P06 | Requisito escrito livre além da lista (commit P04/P06).                                                                         |
