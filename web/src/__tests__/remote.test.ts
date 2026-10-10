@@ -513,6 +513,34 @@ describe('remote: data and actions', () => {
     expect(fake.calls.filter((c) => c.name === 'signInWithPassword')).toHaveLength(3);
   });
 
+  it('the professional profile is saved and the company sees no-shows and give-ups (F10)', async () => {
+    let fake = server('ana');
+    let m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const profiles = await import('../services/profiles');
+    await profiles.updateMyWorkerProfile({
+      availability: 'semana',
+      yearsExperience: 12,
+      desiredPay: null,
+      bio: ' Oi '
+    });
+    const update = fake.calls.find((c) => c.name === 'workers' && c.ops?.some((o) => o[0] === 'update'));
+    expect(update?.ops?.find((o) => o[0] === 'update')?.[1]).toEqual({
+      availability: 'semana',
+      years_experience: 12,
+      desired_pay: null,
+      bio: 'Oi'
+    });
+
+    fake = server('obra', {
+      rpc: { worker_track_record: () => ({ data: [{ worker_id: 'u-ana', faltas: 2, desistencias: 1 }], error: null }) }
+    });
+    m = await load(fake);
+    await m.auth.signIn('obra@exemplo.com', 'segredo123');
+    await (await import('../services/profiles')).loadWorkerProfile('u-ana');
+    expect(m.selectors.trackRecord(m.store.getDb(), 'u-ana')).toEqual({ faltas: 2, desistencias: 1 });
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

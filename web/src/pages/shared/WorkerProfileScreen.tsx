@@ -12,10 +12,10 @@ import { Rating } from '../../components/Rating';
 import { useDb, useRole } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import { currentCompanyId, currentWorker, getJob, getWorker } from '../../services/selectors';
+import { currentCompanyId, currentWorker, getJob, getWorker, trackRecord } from '../../services/selectors';
 import { CandidateActions } from '../recruiter/CandidateActions';
 import { oficioNome } from '../../services/catalog';
-import { workerPlace } from '../../utils/workerInfo';
+import { workerFacts, workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { WorkerAvatar } from '../../components/Avatar';
@@ -44,6 +44,11 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
   // Only the recruiter who owns this job may see candidate-review context (approve/reject, slots left).
   const jobId = jobForCtx && role === 'recrutador' && jobForCtx.companyId === currentCompanyId() ? jobIdRaw : null;
   const job = jobId ? getJob(db, jobId) : undefined;
+
+  const facts = workerFacts(worker);
+  // F10: companies (and the worker) see the no-shows and give-ups.
+  const showTrack = isOwn || role === 'recrutador';
+  const track = trackRecord(db, worker.id);
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
@@ -131,15 +136,38 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
           </div>
         </div>
 
-        {!isOwn && worker.facts && worker.facts.length ? (
+        {worker.bio ? <p className="text-concrete-700 whitespace-pre-line">{worker.bio}</p> : null}
+
+        {facts.length || showTrack ? (
           <Card padding="md">
             <div className="flex flex-col gap-3.5">
-              {worker.facts.map((f) => (
+              {facts.map((f) => (
                 <div key={f} className="flex gap-2.5 items-center">
                   <Icon name="circle-check" size={18} color="var(--text-subtle)" />
                   <span className="text-sm text-concrete-700">{f}</span>
                 </div>
               ))}
+              {showTrack ? (
+                <div className="flex gap-2.5 items-center">
+                  <Icon
+                    name={track.faltas || track.desistencias ? 'calendar-x' : 'calendar-check'}
+                    size={18}
+                    color="var(--text-subtle)"
+                  />
+                  <span className="text-sm text-concrete-700">
+                    {`${track.faltas} ${track.faltas === 1 ? 'falta' : 'faltas'} · ${track.desistencias} ${track.desistencias === 1 ? 'desistência' : 'desistências'}`}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          </Card>
+        ) : isOwn ? (
+          <Card tone="sunken" padding="sm" onClick={() => navigate('/perfil/editar')}>
+            <div className="flex items-center gap-2.5">
+              <Icon name="pencil" size={18} color="var(--text-subtle)" />
+              <span className="flex-1 text-sm text-concrete-700">
+                Conte sua experiência, os dias que você pode e a diária que pede. As construtoras veem isso.
+              </span>
             </div>
           </Card>
         ) : null}

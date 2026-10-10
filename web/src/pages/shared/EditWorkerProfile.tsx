@@ -18,6 +18,9 @@ import { showToast } from '../../services/toast';
 import { SpecialtiesField } from '../../components/SpecialtiesField';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
+import { TextArea } from '../../components/TextArea';
+import { AVAILABILITY_OPTIONS } from '../../utils/workerInfo';
+import { Tag } from '../../components/Tag';
 
 /** Frees the local copies of pictures that were picked and then dropped. */
 function revoke(urls: (string | null | undefined)[]) {
@@ -30,8 +33,15 @@ export default function EditWorkerProfile() {
     name: worker.name,
     oficioId: worker.oficioId,
     city: worker.city,
-    specialties: [...worker.specialties]
+    specialties: [...worker.specialties],
+    // F10: the professional profile (numbers as typed).
+    availability: worker.availability ?? null,
+    years: worker.yearsExperience != null ? String(worker.yearsExperience) : '',
+    pay: worker.desiredPay != null ? String(worker.desiredPay) : '',
+    travelKm: worker.travelKm ?? null,
+    bio: worker.bio ?? ''
   }));
+  const num = (v: string) => (v.trim() === '' ? null : Number(v));
   const [images, setImages] = useState<ProfileImages>({});
   const [pickerOpen, setPickerOpen] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
@@ -48,7 +58,12 @@ export default function EditWorkerProfile() {
     ...(draft.name !== worker.name ? { name: draft.name } : {}),
     ...(draft.oficioId !== worker.oficioId ? { oficioId: draft.oficioId } : {}),
     ...(draft.city !== worker.city ? { city: draft.city } : {}),
-    ...(draft.specialties.join('|') !== worker.specialties.join('|') ? { specialties: draft.specialties } : {})
+    ...(draft.specialties.join('|') !== worker.specialties.join('|') ? { specialties: draft.specialties } : {}),
+    ...(draft.availability && draft.availability !== worker.availability ? { availability: draft.availability } : {}),
+    ...(num(draft.years) !== (worker.yearsExperience ?? null) ? { yearsExperience: num(draft.years) } : {}),
+    ...(num(draft.pay) !== (worker.desiredPay ?? null) ? { desiredPay: num(draft.pay) } : {}),
+    ...(draft.travelKm !== (worker.travelKm ?? null) ? { travelKm: draft.travelKm } : {}),
+    ...(draft.bio !== (worker.bio ?? '') ? { bio: draft.bio } : {})
   };
   const save = useAction(
     async () => {
@@ -132,6 +147,70 @@ export default function EditWorkerProfile() {
           />
           <LocationButton title="Onde você quer trabalhar" location={draft.city} onClick={() => setPickerOpen(true)} />
           <WhatsAppRow label="Seu WhatsApp" />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="edit-worker-bio" className="text-sm font-semibold text-concrete-900">
+              Sobre você
+            </label>
+            <TextArea
+              id="edit-worker-bio"
+              rows={3}
+              placeholder="Ex.: Faço reboco, contrapiso e acabamento há 12 anos. Tenho ferramenta própria."
+              value={draft.bio}
+              className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+              onInput={(v) => setDraft((d) => ({ ...d, bio: v.slice(0, 280) }))}
+            />
+            <span className="text-xs text-concrete-500 self-end">{`${draft.bio.length}/280`}</span>
+            {errors.bio ? <FieldError message={errors.bio} /> : null}
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <span className="text-sm font-semibold text-concrete-900">Dias que você pode</span>
+            <div className="flex flex-wrap gap-2">
+              {AVAILABILITY_OPTIONS.map((o) => (
+                <Tag
+                  key={o.id}
+                  label={o.label}
+                  selected={draft.availability === o.id}
+                  onClick={() => setDraft((d) => ({ ...d, availability: o.id }))}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
+              <Input
+                id="edit-worker-years"
+                label="Anos de experiência"
+                inputMode="numeric"
+                value={draft.years}
+                error={errors.yearsExperience}
+                onInput={(v) => setDraft((d) => ({ ...d, years: v.replace(/\D/g, '').slice(0, 2) }))}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Input
+                id="edit-worker-pay"
+                label="Diária que você pede"
+                suffix="reais"
+                inputMode="numeric"
+                value={draft.pay}
+                error={errors.desiredPay}
+                onInput={(v) => setDraft((d) => ({ ...d, pay: v.replace(/\D/g, '').slice(0, 4) }))}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <span className="text-sm font-semibold text-concrete-900">Até onde você vai</span>
+            <div className="flex flex-wrap gap-2">
+              {[5, 10, 20, 50].map((km) => (
+                <Tag
+                  key={km}
+                  label={`Até ${km} km`}
+                  selected={draft.travelKm === km}
+                  onClick={() => setDraft((d) => ({ ...d, travelKm: d.travelKm === km ? null : km }))}
+                />
+              ))}
+            </div>
+          </div>
           <SpecialtiesField
             id="editar-especialidade"
             value={draft.specialties}

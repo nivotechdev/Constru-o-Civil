@@ -125,7 +125,16 @@ export interface Worker {
   novo?: boolean;
   verified: boolean;
   specialties: string[];
+  /** Old hand-written facts: no longer shown (F10 builds them from the fields below). */
   facts: string[];
+  /** F10: the professional profile. */
+  availability?: WorkerAvailability;
+  yearsExperience?: number;
+  /** The diária the worker asks for (R$). */
+  desiredPay?: number;
+  /** How far the worker goes (km). */
+  travelKm?: number;
+  bio?: string;
   /** Profile photo and cover picture, in the app's Storage (Z12); absent = none chosen. */
   photoUrl?: string | null;
   coverUrl?: string | null;
@@ -256,6 +265,9 @@ export interface WorkerPost {
   date: string;
 }
 
+/** F10: the days a worker takes jobs. */
+export type WorkerAvailability = 'semana' | 'fimdesemana' | 'qualquer';
+
 /** L18: how the company pays the diária. */
 export type WagePayment = 'pix_dia' | 'pix_fim' | 'dinheiro' | 'outro';
 
@@ -370,6 +382,8 @@ export interface Database {
    * job has comes from here instead (services/selectors.ts uses it for jobs that aren't the session's).
    */
   jobStats?: Record<string, JobStats>;
+  /** F10: no-shows and give-ups per worker (the companies see them). */
+  workerTrack?: Record<string, { faltas: number; desistencias: number }>;
   /** Y28: "Avisar quando aparecer bico novo", per worker (the real backend loads only the session's). */
   jobAlerts?: Record<string, JobAlert>;
 }

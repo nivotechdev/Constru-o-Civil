@@ -151,3 +151,19 @@ describe('sharing a job (F09)', () => {
     ).toBe('Pintor em Tatuapé · R$ 200 por diária. Vi na Bicos:');
   });
 });
+
+describe('professional profile (F10)', () => {
+  it('the facts come from the fields', async () => {
+    const { workerFacts } = await import('../utils/workerInfo');
+    expect(
+      workerFacts({ availability: 'semana', yearsExperience: 12, desiredPay: 200, travelKm: 15, jobsDone: 1 })
+    ).toEqual([
+      '12 anos de experiência',
+      'Disponível: dias de semana',
+      'Diária a partir de R$ 200',
+      'Vai até 15 km de casa',
+      '1 bico concluído na Bicos'
+    ]);
+    expect(workerFacts({ jobsDone: 0 })).toEqual([]);
+  });
+});

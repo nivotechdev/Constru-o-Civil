@@ -27,6 +27,7 @@ import type {
   CompanyVerification,
   NotificationKind,
   WagePayment,
+  WorkerAvailability,
   PaymentMethod,
   PaymentStatus,
   Role,
@@ -105,6 +106,12 @@ type WorkerRow = {
   facts: string[];
   photo_url: string | null;
   cover_url: string | null;
+  /** F10: the professional profile. */
+  availability: WorkerAvailability | null;
+  years_experience: number | null;
+  desired_pay: number | null;
+  travel_km: number | null;
+  bio: string | null;
   created_at: string;
 };
 
@@ -356,6 +363,10 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      worker_track_record: {
+        Args: { p_worker_ids: string[] };
+        Returns: { worker_id: string; faltas: number; desistencias: number }[];
+      };
       public_job_card: { Args: { p_job_id: string }; Returns: Json };
       create_my_account: {
         Args: {

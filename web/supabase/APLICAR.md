@@ -269,6 +269,15 @@ contato; excluída não abre.
 select has_function_privilege('anon', 'public.public_job_card(text)', 'execute');                  -- true
 ```
 
+### 25. `20261013000200_f10_perfil_profissional.sql` (F10)
+
+Colunas do perfil profissional em `workers` (dias, anos de experiência, diária pretendida, distância, bio) e a
+RPC `worker_track_record` (faltas e desistências, para construtoras e para a própria pessoa).
+
+```sql
+select has_column_privilege('authenticated', 'public.workers', 'bio', 'update');                 -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

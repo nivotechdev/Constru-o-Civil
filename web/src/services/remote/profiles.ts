@@ -24,6 +24,11 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   if (patch.name !== undefined) update.name = patch.name.trim();
   if (patch.oficioId !== undefined) update.oficio_id = patch.oficioId;
   if (patch.specialties !== undefined) update.specialties = patch.specialties;
+  if (patch.availability !== undefined) update.availability = patch.availability;
+  if (patch.yearsExperience !== undefined) update.years_experience = patch.yearsExperience;
+  if (patch.desiredPay !== undefined) update.desired_pay = patch.desiredPay;
+  if (patch.travelKm !== undefined) update.travel_km = patch.travelKm;
+  if (patch.bio !== undefined) update.bio = patch.bio.trim() || null;
   if (patch.city !== undefined && patch.city !== worker?.city) {
     // A new city moves the worker's base to its centre (the neighbourhood is no longer known).
     const { cityByLabel } = await import('../cities');

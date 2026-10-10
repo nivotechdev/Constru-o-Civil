@@ -26,14 +26,40 @@ export async function loadCompanyProfile(_companyId: string): Promise<void> {
   await mockLatency(350);
 }
 
-export type WorkerProfilePatch = Partial<Pick<Worker, 'name' | 'oficioId' | 'city' | 'specialties'>>;
+export type WorkerProfilePatch = Partial<
+  Pick<Worker, 'name' | 'oficioId' | 'city' | 'specialties' | 'availability' | 'bio'> & {
+    /** `null` clears the field. */
+    yearsExperience: number | null;
+    desiredPay: number | null;
+    travelKm: number | null;
+  }
+>;
+
+type ProfileField =
+  'name' | 'oficioId' | 'city' | 'location' | 'contactName' | 'yearsExperience' | 'desiredPay' | 'travelKm' | 'bio';
 
 /** L11: the problems of a profile edit, per field (the same in both modes; the database checks too). */
 export function profileErrors(
-  patch: { name?: string; oficioId?: string; city?: string; location?: string; contactName?: string },
+  patch: {
+    name?: string;
+    oficioId?: string;
+    city?: string;
+    location?: string;
+    contactName?: string;
+    yearsExperience?: number | null;
+    desiredPay?: number | null;
+    travelKm?: number | null;
+    bio?: string;
+  },
   role: 'trabalhador' | 'recrutador'
-): Partial<Record<'name' | 'oficioId' | 'city' | 'location' | 'contactName', string>> {
-  const e: Partial<Record<'name' | 'oficioId' | 'city' | 'location' | 'contactName', string>> = {};
+): Partial<Record<ProfileField, string>> {
+  const e: Partial<Record<ProfileField, string>> = {};
+  // F10
+  if (patch.yearsExperience != null && (patch.yearsExperience < 0 || patch.yearsExperience > 60))
+    e.yearsExperience = 'De 0 a 60 anos.';
+  if (patch.desiredPay != null && (patch.desiredPay < 80 || patch.desiredPay > 2000))
+    e.desiredPay = 'De R$ 80 a R$ 2.000.';
+  if (patch.bio !== undefined && patch.bio.length > 280) e.bio = 'Use até 280 caracteres.';
   if (patch.name !== undefined) {
     const name = patch.name.trim();
     if (name.length < 3) e.name = role === 'trabalhador' ? 'Informe seu nome completo.' : 'Informe o nome da empresa.';
@@ -62,14 +88,21 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   if (!IS_DEMO) return remote.updateMyWorkerProfile(patch);
   await mockLatency(600);
   const worker = store.getDb().workers[currentWorkerId()];
+  // null clears a number of the professional profile (F10).
+  const { yearsExperience, desiredPay, travelKm, ...rest } = patch;
+  const numbers: Partial<Worker> = {
+    ...(yearsExperience !== undefined ? { yearsExperience: yearsExperience ?? undefined } : {}),
+    ...(desiredPay !== undefined ? { desiredPay: desiredPay ?? undefined } : {}),
+    ...(travelKm !== undefined ? { travelKm: travelKm ?? undefined } : {})
+  };
   // A new city moves the worker's base to its centre (the neighbourhood is no longer known).
   if (patch.city !== undefined && worker && patch.city !== worker.city) {
     const center = cityByLabel(patch.city);
     if (!center) throw serviceError('validacao', 'Escolha a cidade na lista.');
-    store.updateWorker(worker.id, { ...patch, neighborhood: null, lat: center.lat, lon: center.lon });
+    store.updateWorker(worker.id, { ...rest, ...numbers, neighborhood: null, lat: center.lat, lon: center.lon });
     return;
   }
-  store.updateWorker(currentWorkerId(), patch);
+  store.updateWorker(currentWorkerId(), { ...rest, ...numbers });
 }
 
 export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'tipoObra' | 'location' | 'contactName'>>;

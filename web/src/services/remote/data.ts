@@ -328,6 +328,16 @@ export async function loadHistory(): Promise<void> {
 /** A worker's profile with reviews and portfolio; for a company, also its candidacies on her jobs. */
 export async function loadWorkerProfile(workerId: string): Promise<void> {
   const client = await db();
+  // F10: companies (and the worker) see the no-shows and give-ups, counted on the server.
+  if (me().companyId || me().workerId === workerId) {
+    const rows = (await request(() => client.rpc('worker_track_record', { p_worker_ids: [workerId] }))) ?? [];
+    const row = rows[0];
+    if (row)
+      apply((d) => ({
+        ...d,
+        workerTrack: { ...(d.workerTrack ?? {}), [workerId]: { faltas: row.faltas, desistencias: row.desistencias } }
+      }));
+  }
   const [workers, reviews, posts] = await Promise.all([
     workersById([workerId]),
     request(() =>

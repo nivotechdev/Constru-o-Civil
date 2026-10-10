@@ -312,6 +312,11 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 23,
     verified: true,
     specialties: ['Acabamento', 'Alvenaria', 'Reboco', 'Assentamento'],
+    availability: 'qualquer',
+    yearsExperience: 12,
+    desiredPay: 200,
+    travelKm: 20,
+    bio: 'Pedreiro de acabamento há 12 anos. Reboco, massa corrida e assentamento de piso. Tenho ferramenta própria.',
     facts: [
       '23 diárias pagas pela plataforma',
       'RG e CPF conferidos em 12 ago',

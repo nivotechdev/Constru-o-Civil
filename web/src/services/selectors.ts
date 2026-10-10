@@ -153,3 +153,14 @@ export function jobOutcome(db: Database, job: Job, now: Date = new Date()): stri
   if (team.length && team.every((a) => a.status === 'concluida')) return 'Concluída';
   return team.length ? 'Encerrada com contratação' : 'Encerrada sem contratação';
 }
+
+/** F10: a worker's no-shows and give-ups (from the server's count when loaded, else the candidacies here). */
+export function trackRecord(db: Database, workerId: string): { faltas: number; desistencias: number } {
+  const known = db.workerTrack?.[workerId];
+  if (known) return known;
+  const apps = db.applications.filter((a) => a.workerId === workerId);
+  return {
+    faltas: apps.filter((a) => a.status === 'nao_compareceu').length,
+    desistencias: apps.filter((a) => a.status === 'desistiu').length
+  };
+}

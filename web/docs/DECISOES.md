@@ -804,3 +804,13 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   valor, área (bairro/cidade), datas, horário, pagamento, descrição, a construtora com nota e selo. Nunca o
   endereço exato nem contato. "Entrar para me candidatar" e "Criar minha conta" voltam para a vaga depois do
   login. Quem já está logado vai direto para a vaga. Vaga excluída: "Essa vaga não existe mais".
+
+### F10 — Perfil profissional do trabalhador
+
+- "Editar perfil" ganhou: **Sobre você** (até 280 caracteres), **dias que você pode** (semana, fim de semana,
+  qualquer dia), **anos de experiência**, **diária que você pede** e **até onde você vai** (5/10/20/50 km).
+- Os "fatos" do perfil passam a vir desses campos ("12 anos de experiência", "Diária a partir de R$ 200", "Vai
+  até 20 km de casa", "23 bicos concluídos na Bicos"). Os fatos antigos escritos à mão ("diárias pagas pela
+  plataforma", "RG e CPF conferidos…") deixaram de aparecer — não eram verdade no app.
+- A construtora (e a própria pessoa) vê **faltas e desistências** (RPC `worker_track_record`), como o diálogo
+  de falta promete. Perfil sem nada preenchido mostra ao dono um convite para completar.
