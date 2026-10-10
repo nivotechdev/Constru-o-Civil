@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
@@ -12,11 +13,13 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack } from '../../services/router';
 import { dayLabel, toISODate } from '../../utils/dates';
 import { getCompany, getWorker } from '../../services/selectors';
+import { ReportSheet } from '../../components/SafetyMenu';
 
 export default function ReviewsScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
   const session = useSession();
+  const [reporting, setReporting] = useState<string | null>(null);
   const type = params.type === 'construtora' ? 'construtora' : 'trabalhador';
   const mine = type === 'trabalhador' ? session?.workerId === params.id : session?.companyId === params.id;
   const backTarget = mine
@@ -98,13 +101,29 @@ export default function ReviewsScreen({ params }: ScreenProps) {
                     </div>
                   ) : null}
                   {r.comment ? <span className="text-sm text-concrete-700">{r.comment}</span> : null}
-                  <span className="text-xs text-concrete-400">{dayLabel(toISODate(new Date(r.createdAt)))}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-concrete-400">{dayLabel(toISODate(new Date(r.createdAt)))}</span>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-concrete-500 hover:text-danger-500"
+                      onClick={() => setReporting(r.id)}
+                    >
+                      Denunciar
+                    </button>
+                  </div>
                 </div>
               </Card>
             ))}
           </div>
         )}
       </div>
+      <ReportSheet
+        open={reporting !== null}
+        onClose={() => setReporting(null)}
+        target="avaliacao"
+        targetId={reporting ?? ''}
+        what="a avaliação"
+      />
     </div>
   );
 }

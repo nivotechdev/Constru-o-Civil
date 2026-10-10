@@ -441,3 +441,15 @@ export async function loadPublicJob(jobId: string): Promise<import('../jobs').Pu
     open: aberta
   };
 }
+
+/** F04: the accounts the session blocked, with their names (companies or workers). */
+export async function loadMyBlocks(): Promise<void> {
+  const client = await db();
+  const rows = await request(() => client.from('blocks').select('blocked_id'));
+  const ids = rows.map((r) => r.blocked_id);
+  const [companies, workers] = await Promise.all([companiesById(ids), workersById(ids)]);
+  apply(putCompanies(companies, undefined, accountId()), putWorkers(workers, undefined, accountId()), (d) => ({
+    ...d,
+    blockedIds: ids
+  }));
+}

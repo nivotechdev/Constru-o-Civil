@@ -23,6 +23,8 @@ const NARROW_SCREENS = new Set([
   '/configuracoes/excluir-conta',
   '/configuracoes/senha',
   '/configuracoes/email',
+  '/configuracoes/bloqueados',
+  '/pagamentos',
   '/whatsapp',
   '/notificacoes',
   '/confirmar/:id',

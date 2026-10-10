@@ -287,6 +287,16 @@ convites por dia) e `answer_invite` (aceitar vira candidatura pelas regras de se
 select count(*) from pg_proc where proname in ('invite_worker', 'answer_invite');                  -- 2
 ```
 
+### 27. `20261013000400_f04_denuncia_bloqueio.sql` (F04)
+
+Tabelas `reports` e `blocks` (cada um lê os seus), RPCs `report_content`, `block_account`, `unblock_account`, e
+gatilhos que recusam candidatura e convite através de um bloqueio. As denúncias ficam para a equipe ler no
+painel (`select * from public.reports where status = 'aberta' order by created_at`).
+
+```sql
+select count(*) from pg_trigger where tgname in ('applications_refuse_blocked', 'job_invites_refuse_blocked'); -- 2
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

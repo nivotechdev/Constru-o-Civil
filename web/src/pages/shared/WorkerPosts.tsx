@@ -1,3 +1,4 @@
+import { useState } from 'react';
 // The worker's portfolio on their profile: photo/video posts (Instagram-style, no likes or comments),
 // with the composer and the delete confirmation for their own profile.
 import { Badge } from '../../components/Badge';
@@ -17,6 +18,7 @@ import { postsForWorker } from '../../services/selectors';
 import type { Worker, WorkerPost } from '../../types/models';
 import { resetFileInput } from '../../utils/fileInput';
 import { formatPostDate } from '../../utils/format';
+import { ReportSheet } from '../../components/SafetyMenu';
 
 const POSTS_KEY = 'worker-posts';
 
@@ -99,6 +101,7 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
 }
 
 function PostCard({ post, isOwn, onDelete }: { post: WorkerPost; isOwn: boolean; onDelete: () => void }) {
+  const [reporting, setReporting] = useState(false);
   return (
     <div className="flex flex-col rounded-card overflow-hidden border border-concrete-200 bg-white">
       <div className="relative">
@@ -130,8 +133,28 @@ function PostCard({ post, isOwn, onDelete }: { post: WorkerPost; isOwn: boolean;
       </div>
       <div className="flex flex-col gap-1.5 p-3.5">
         {post.caption ? <p className="text-sm text-concrete-800 leading-relaxed">{post.caption}</p> : null}
-        <span className="text-xs text-concrete-400">{formatPostDate(post.date)}</span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-concrete-400">{formatPostDate(post.date)}</span>
+          {!isOwn ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-concrete-500 hover:text-danger-500"
+              onClick={() => setReporting(true)}
+            >
+              Denunciar
+            </button>
+          ) : null}
+        </div>
       </div>
+      {!isOwn ? (
+        <ReportSheet
+          open={reporting}
+          onClose={() => setReporting(false)}
+          target="post"
+          targetId={post.id}
+          what="o post"
+        />
+      ) : null}
     </div>
   );
 }

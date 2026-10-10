@@ -22,6 +22,7 @@ import {
   type FeedUI
 } from './feedUI';
 import { MobileFeed } from './MobileFeed';
+import { isBlocked, loadMyBlocks, notBlocked } from '../../../services/safety';
 
 /**
  * The mural. Both layouts are in the page (CSS shows one), so the lists they show are worked out
@@ -56,7 +57,12 @@ export default function Feed() {
   const paging = usePaging(key, () => loadMoreFeed(feedQuery));
 
   // Open jobs: not closed, not full, and whose last day hasn't passed (expired jobs leave the mural).
-  const open = useMemo(() => activeJobs(db).filter((j) => !isJobClosed(db, j) && !isExpired(j)), [db]);
+  // F04: blocked companies stay out of the mural and the search.
+  useQuery('blocks', loadMyBlocks);
+  const open = useMemo(
+    () => activeJobs(db).filter((j) => !isJobClosed(db, j) && !isExpired(j) && notBlocked(db)(j)),
+    [db]
+  );
   const ordered = useMemo(
     () =>
       orderJobs(
@@ -67,10 +73,15 @@ export default function Feed() {
       ),
     [open, role, location, oficio, dist, quando, sort, from]
   );
-  const found = useMemo(
-    () => (q ? searchMatches(db, open, q, role, from, { location, allCities }) : null),
-    [db, open, q, role, from, location, allCities]
-  );
+  const found = useMemo(() => {
+    if (!q) return null;
+    const m = searchMatches(db, open, q, role, from, { location, allCities });
+    return {
+      ...m,
+      companies: m.companies.filter((c) => !isBlocked(db, c.id)),
+      workers: m.workers.filter((w) => !isBlocked(db, w.id))
+    };
+  }, [db, open, q, role, from, location, allCities]);
   const chips = useMemo(
     () => activeFilters({ location, oficio, dist, quando }, home),
     [location, oficio, dist, quando, home]

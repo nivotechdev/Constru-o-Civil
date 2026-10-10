@@ -39,6 +39,7 @@ import { holdsSlot } from '../../services/applicationMachine';
 import type { Company } from '../../types/models';
 import { checkMyCompany } from '../../services/profiles';
 import { FieldError } from '../../components/FieldError';
+import { SafetyMenu } from '../../components/SafetyMenu';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -83,9 +84,20 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           <div className="h-60 bg-concrete-200 lg:rounded-card" />
         )}
         {!isOwn ? (
-          <div className="absolute top-2 left-2">
-            <IconButton icon="arrow-left" label="Voltar" variant="solid" onClick={() => goBack('/mural')} />
-          </div>
+          <>
+            <div className="absolute top-2 left-2">
+              <IconButton icon="arrow-left" label="Voltar" variant="solid" onClick={() => goBack('/mural')} />
+            </div>
+            <div className="absolute top-2 right-2">
+              <SafetyMenu
+                solid
+                target="perfil"
+                targetId={company.id}
+                what="o perfil"
+                block={{ id: company.id, name: company.name, onBlocked: () => navigate('/mural', { replace: true }) }}
+              />
+            </div>
+          </>
         ) : (
           <div className="absolute top-2 right-2">
             <AccountMenuButton role="recrutador" />

@@ -831,3 +831,15 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 - O trabalhador recebe o aviso e, no detalhe da vaga, o cartão "<construtora> convidou você" com **Aceitar
   convite** (vira candidatura, com as mesmas regras de "Quero esse bico") ou **Recusar**. A construtora é
   avisada da resposta.
+
+### F04 — Denunciar e bloquear
+
+- Bandeira no detalhe da vaga (trabalhador) e nos perfis de construtora e trabalhador: **Denunciar** (motivo:
+  golpe, ofensa, informação falsa, trabalho perigoso, spam, outro + detalhes) e **Bloquear**. Avaliações e
+  posts têm "Denunciar". A denúncia vai para `reports` (a equipe lê pelo painel); repetir atualiza; até 20 por
+  dia.
+- Bloquear (`blocks`): as candidaturas e convites pendentes entre os dois saem, e o banco recusa novas
+  candidaturas e convites nos dois sentidos (gatilhos). O app tira os bloqueados do mural e da busca. Lista em
+  Configurações › **Contas bloqueadas**, com "Desbloquear".
+- Uma contratação já confirmada não é desfeita pelo bloqueio (a pessoa pode estar indo trabalhar); para isso
+  existem cancelar e desistir.

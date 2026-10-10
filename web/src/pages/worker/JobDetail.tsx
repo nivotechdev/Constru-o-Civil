@@ -38,6 +38,7 @@ import { shareJob } from '../../utils/share';
 import { IconButton } from '../../components/IconButton';
 import { answerInvite, inviteFor, loadInvites } from '../../services/invites';
 import { FieldError } from '../../components/FieldError';
+import { SafetyMenu } from '../../components/SafetyMenu';
 
 export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
@@ -115,11 +116,21 @@ export default function JobDetail({ params }: ScreenProps) {
         title="Detalhe da vaga"
         onBack={() => goBack('/mural')}
         actions={
-          <IconButton
-            icon="share-2"
-            label="Compartilhar vaga"
-            onClick={() => void shareJob(job).catch(() => undefined)}
-          />
+          <>
+            <IconButton
+              icon="share-2"
+              label="Compartilhar vaga"
+              onClick={() => void shareJob(job).catch(() => undefined)}
+            />
+            {role === 'trabalhador' ? (
+              <SafetyMenu
+                target="vaga"
+                targetId={job.id}
+                what="a vaga"
+                block={{ id: company.id, name: company.name, onBlocked: () => navigate('/mural', { replace: true }) }}
+              />
+            ) : null}
+          </>
         }
       />
       <div className="flex flex-col gap-4 px-4 sm:px-0 py-4 pb-28 lg:pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-10">

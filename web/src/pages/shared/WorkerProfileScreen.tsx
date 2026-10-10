@@ -21,6 +21,7 @@ import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { WorkerAvatar } from '../../components/Avatar';
 import { InviteSheet } from '../recruiter/InviteSheet';
+import { SafetyMenu } from '../../components/SafetyMenu';
 
 export default function WorkerProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -68,6 +69,25 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
               label="Voltar"
               variant="solid"
               onClick={() => goBack(jobId ? '/vaga-gerenciar/' + jobId : '/mural')}
+            />
+          </div>
+        ) : null}
+        {!isOwn ? (
+          <div className="absolute top-2 right-2">
+            <SafetyMenu
+              solid
+              target="perfil"
+              targetId={worker.id}
+              what="o perfil"
+              block={
+                role === 'recrutador'
+                  ? {
+                      id: worker.id,
+                      name: worker.name.split(' ')[0],
+                      onBlocked: () => navigate('/mural', { replace: true })
+                    }
+                  : undefined
+              }
             />
           </div>
         ) : (

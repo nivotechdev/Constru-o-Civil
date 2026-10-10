@@ -541,6 +541,25 @@ describe('remote: data and actions', () => {
     expect(m.selectors.trackRecord(m.store.getDb(), 'u-ana')).toEqual({ faltas: 2, desistencias: 1 });
   });
 
+  it('report and block go to the server; the blocked list comes with names (F04)', async () => {
+    const fake = server('ana', { tables: { blocks: [{ blocker_id: 'u-ana', blocked_id: 'u-outra' }] } });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const safety = await import('../services/safety');
+    await safety.reportContent('vaga', 'BC-5001', 'golpe', ' pediu pix ');
+    await safety.blockAccount('u-obra');
+    expect(fake.calls.find((c) => c.name === 'report_content')?.args).toEqual({
+      p_target_type: 'vaga',
+      p_target_id: 'BC-5001',
+      p_reason: 'golpe',
+      p_details: 'pediu pix'
+    });
+    expect(fake.calls.find((c) => c.name === 'block_account')?.args).toEqual({ p_account: 'u-obra' });
+    await safety.loadMyBlocks();
+    expect(safety.blockedIds(m.store.getDb())).toEqual(['u-outra']);
+    expect(m.store.getDb().companies['u-outra'].name).toBe('Outra Construtora');
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

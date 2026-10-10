@@ -28,6 +28,8 @@ import type {
   NotificationKind,
   WagePayment,
   WorkerAvailability,
+  ReportTarget,
+  ReportReason,
   PaymentMethod,
   PaymentStatus,
   Role,
@@ -273,6 +275,9 @@ interface Relationship {
   referencedColumns: string[];
 }
 
+/** F04: who blocked whom (select: the blocker's own). */
+type BlockRow = { blocker_id: string; blocked_id: string; created_at: string };
+
 /** F13: an invitation (select: each side its own; written by invite_worker / answer_invite). */
 type JobInviteRow = {
   job_id: string;
@@ -326,6 +331,7 @@ export const RELATIONSHIPS = {
   worker_posts: [fk('worker_posts', 'worker_id', 'workers')],
   job_alerts: [fk('job_alerts', 'worker_id', 'workers', true)],
   job_invites: [fk('job_invites', 'job_id', 'jobs'), fk('job_invites', 'worker_id', 'workers')],
+  blocks: [],
   application_events: [fk('application_events', 'application_id', 'applications')],
   notifications: [fk('notifications', 'worker_id', 'workers'), fk('notifications', 'company_id', 'companies')],
   boost_payments: [fk('boost_payments', 'job_id', 'jobs'), fk('boost_payments', 'company_id', 'companies')]
@@ -337,6 +343,7 @@ export interface SupabaseDatabase {
       accounts: Table<AccountRow, 'created_at'>;
       job_alerts: Table<JobAlertRow, 'created_at' | 'updated_at'>;
       job_invites: Table<JobInviteRow, 'status' | 'created_at'>;
+      blocks: Table<BlockRow, 'created_at'>;
       oficios: Table<OficioRow, 'sinonimos'>;
       companies: Table<
         CompanyRow,
@@ -375,6 +382,12 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      report_content: {
+        Args: { p_target_type: ReportTarget; p_target_id: string; p_reason: ReportReason; p_details: string | null };
+        Returns: undefined;
+      };
+      block_account: { Args: { p_account: string }; Returns: undefined };
+      unblock_account: { Args: { p_account: string }; Returns: undefined };
       invite_worker: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
       answer_invite: { Args: { p_job_id: string; p_accept: boolean }; Returns: undefined };
       worker_track_record: {

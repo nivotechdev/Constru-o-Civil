@@ -147,6 +147,19 @@ describe('status machine in the services', () => {
     expect(m.store.getDb().notifications.some((n) => n.kind === 'convite' && n.companyId === 'meridiano')).toBe(true);
   });
 
+  it('F04: blocking ends the pending candidacy and hides the account; reports are recorded', async () => {
+    const safety = await import('../services/safety');
+    await asCompany();
+    expect(status('BC-4998', 'rafael')).toBe('em_analise');
+    await run(safety.blockAccount('rafael'));
+    expect(status('BC-4998', 'rafael')).toBeNull();
+    expect(safety.isBlocked(m.store.getDb(), 'rafael')).toBe(true);
+    await run(safety.reportContent('perfil', 'rafael', 'ofensa', 'xingou'));
+    expect(safety.demoReports).toContainEqual({ target: 'perfil', id: 'rafael', reason: 'ofensa' });
+    await run(safety.unblockAccount('rafael'));
+    expect(safety.isBlocked(m.store.getDb(), 'rafael')).toBe(false);
+  });
+
   it('L07: each closed job says how it ended', async () => {
     await asCompany();
     const db = m.store.getDb();

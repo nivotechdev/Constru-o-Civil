@@ -84,6 +84,12 @@ export default function Settings() {
             />
           ) : null}
           <Row
+            icon="ban"
+            label="Contas bloqueadas"
+            description="Quem você bloqueou"
+            onClick={() => navigate('/configuracoes/bloqueados')}
+          />
+          <Row
             icon="shield-check"
             label="Privacidade e dados"
             description="Exportar ou excluir sua conta"

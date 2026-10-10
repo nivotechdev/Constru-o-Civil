@@ -265,6 +265,10 @@ export interface WorkerPost {
   date: string;
 }
 
+/** F04: what can be reported, and why. */
+export type ReportTarget = 'vaga' | 'perfil' | 'avaliacao' | 'post';
+export type ReportReason = 'golpe' | 'ofensa' | 'falso' | 'perigoso' | 'spam' | 'outro';
+
 /** F13: a company invited a worker to an open job. */
 export interface JobInvite {
   jobId: string;
@@ -392,6 +396,8 @@ export interface Database {
    * job has comes from here instead (services/selectors.ts uses it for jobs that aren't the session's).
    */
   jobStats?: Record<string, JobStats>;
+  /** F04: the accounts the session blocked (hidden from the mural and the search). */
+  blockedIds?: string[];
   /** F13: invitations from companies to workers (each side loads its own). */
   invites?: JobInvite[];
   /** F10: no-shows and give-ups per worker (the companies see them). */
