@@ -948,3 +948,26 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   para testes, aplicar as mesmas migrations e apontar um build de staging para ele (`VITE_SUPABASE_URL` do
   staging). Não criei porque um projeto novo entra na conta/cobrança da organização. O "Branching" do
   Supabase é a alternativa paga. Os testes SQL já rodam isolados no CI, sem tocar o banco de produção.
+
+### X13 — Avisos de segurança do Supabase
+
+- Advisors rodados no banco real e anexados em `docs/ADVISORS.md`, com o que resolve cada um.
+- Migration `x13_avisos_seguranca`: **PostGIS reinstalado em `extensions`** (o PostGIS não aceita mudar de
+  schema; o banco não tinha nenhum ponto gravado na coluna antiga — conferido — e `jobs.area_geog` é
+  calculada); `search_path` fixo nas três funções antigas; **visitante não executa nenhuma função security
+  definer** além da vaga pública; funções novas do `postgres` nascem fechadas (cada migration dá o grant que
+  precisa).
+- O aviso de funções security definer executáveis por quem está logado **não se aplica**: é o desenho exigido
+  (regras no banco, via RPC com `search_path` fixo). "Leaked password protection" é uma chave do painel
+  (plano Pro) — SUPABASE.md.
+
+### X15 — RLS sem função por linha e limite contra spam
+
+- `applications`: a construtora vê as candidaturas por `job_id in (select my_job_ids())` (calculado uma vez por
+  consulta), não mais `is_my_job(job_id)` por linha; `application_events` pelo mesmo critério. `my_job_ids` é
+  security definer para não reaplicar a política de `jobs`, que olha `applications` (seria recursão).
+- Índices das chaves estrangeiras que faltavam. As políticas das tabelas do app antigo saíram (já estavam
+  fechadas desde o Z08; sem política a RLS recusa tudo) — zera os avisos de desempenho delas.
+- **Spam**: cada candidatura enviada fica registrada (`application_attempts`, sem acesso pela API, limpa todo
+  dia). Até **30 por dia** e **3 vezes a mesma vaga por dia** (candidatar → retirar → candidatar avisava a
+  construtora a cada vez). A mensagem aparece no app como qualquer recusa do servidor.

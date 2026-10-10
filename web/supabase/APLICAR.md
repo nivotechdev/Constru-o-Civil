@@ -343,6 +343,37 @@ select count(*) from pg_proc where proname in ('submit_identity', 'my_identity',
 select has_function_privilege('authenticated', 'public.set_identity_status(uuid, text, text)', 'execute'); -- false
 ```
 
+### 31. `20261014000100_x13_avisos_seguranca.sql` (X13)
+
+PostGIS reinstalado no schema `extensions` (sai o ERRO de `spatial_ref_sys` e o aviso de extensão no
+`public`; `jobs.area_geog` é recalculada e `vagas.localizacao`, vazia, volta vazia), `search_path` fixo nas
+três funções antigas, nenhuma função security definer executável por visitante além de `public_job_card`, e
+funções novas não nascem abertas. **Tem `DROP EXTENSION postgis CASCADE`**: rode no SQL Editor (ou pelo CLI),
+de preferência num horário sem uso.
+
+```sql
+select n.nspname from pg_extension e join pg_namespace n on n.oid = e.extnamespace where e.extname = 'postgis'; -- extensions
+select to_regclass('public.spatial_ref_sys');                                                                    -- null
+select array_agg(proname) from pg_proc where pronamespace = 'public'::regnamespace and prosecdef
+   and has_function_privilege('anon', oid, 'execute');                                                          -- {public_job_card}
+select count(*) from public.jobs where area_geog is null;                                                        -- 0
+```
+
+### 32. `20261014000200_x15_rls_desempenho.sql` (X15)
+
+Políticas de `applications`/`application_events` sem função por linha (`my_job_ids()`), índices das chaves
+estrangeiras, políticas do app antigo removidas (as tabelas já estavam fechadas desde o Z08) e limite contra
+spam de candidatar/retirar (30 por dia; 3 vezes a mesma vaga por dia).
+
+```sql
+select count(*) from pg_policies where schemaname = 'public'
+   and tablename in ('profiles', 'vagas', 'candidaturas', 'avaliacoes', 'vagas_salvas', 'publicacoes_trabalhador', 'consentimentos'); -- 0
+select tgname from pg_trigger where tgname = 'limit_application_spam';                                           -- 1 linha
+```
+
+Depois das duas: **Advisors** (Database › Advisors) — segurança sem ERROR; os avisos que sobram estão
+explicados em `docs/ADVISORS.md`.
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
