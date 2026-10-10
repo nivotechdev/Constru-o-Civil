@@ -1083,3 +1083,12 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   decisão** (F07, guardar só o necessário). Arquivos de antes do app novo ficam.
 - Para ligar: publicar `limpar-arquivos` com `--no-verify-jwt`, segredo `CLEANUP_SECRET` em Edge Functions ›
   Secrets e no Vault `bicos_cleanup_url` (URL da função) e `bicos_cleanup_secret` (o mesmo segredo).
+
+### X10 — Endereço ao editar a vaga
+
+- Editar a vaga sem mexer no endereço (CEP, rua, número, cidade) **mantém o ponto salvo**; mudou o endereço, ele é
+  localizado de novo.
+- Ao abrir a edição, o **CEP é consultado de novo** (o ponto de uma rua/número novo vem dele); os campos ficam como
+  salvos.
+- Cidade que o mapa não conhece (fora da lista e sem CEP achado) **não vira (0, 0)**: o passo 1 pede para escolher a
+  cidade da lista.

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { CityPicker, LocationButton } from '../../components/CityPicker';
@@ -123,6 +123,13 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       });
   }
 
+  // X10: editing, the CEP is looked up again on opening (the map point of a changed number comes from it);
+  // the street and the rest stay as saved.
+  useEffect(() => {
+    if (!job || onlyDigits(job.address.cep).length !== 8) return;
+    lookupCep(job.address.cep).catch(() => undefined);
+  }, [job]);
+
   function onCep(v: string) {
     const cep = maskCEP(v);
     set({ cep }, 'cep');
@@ -135,7 +142,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
 
   function advance() {
     if (ui.step === 1) {
-      const errors = validateStep1(f, new Date(), limits);
+      const errors = validateStep1(f, new Date(), limits, job);
       if (hasErrors(errors)) {
         setUi({ errors });
         return;
@@ -150,7 +157,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
     }
     if (ui.publishing) return;
     setUi({ publishing: true, publishError: null });
-    const draft = draftFromForm(f);
+    const draft = draftFromForm(f, job);
     const saving = job
       ? updateJob(job.id, draft).then(() => {
           resetUI(KEY);
@@ -167,8 +174,8 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
   const diarias = formDiarias(f);
   // Editing a job people applied to: a new pay, date or address is told to them.
   const warnChanges =
-    job && candidates.length && !hasErrors(validateStep1(f, new Date(), limits))
-      ? significantChanges(job, draftFromForm(f))
+    job && candidates.length && !hasErrors(validateStep1(f, new Date(), limits, job))
+      ? significantChanges(job, draftFromForm(f, job))
       : [];
   const cepHint =
     ui.cepStatus === 'loading'

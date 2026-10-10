@@ -82,3 +82,24 @@ describe('editing a job', () => {
     expect(!r.ok && r.e.message).toMatch(/encerrada/);
   });
 });
+
+describe('X10: the job point when editing', () => {
+  it('an unchanged address keeps the saved point; a new number places it again; an unknown city is refused', async () => {
+    vi.resetModules();
+    const store = await import('../services/store');
+    const job = { ...store.getDb().jobs['BC-4821'] };
+    job.address = { ...job.address, lat: -23.123456, lon: -46.654321 };
+    const same = draftFromForm({ ...formFromJob(job), detalhe: 'Outro texto.' }, job);
+    expect([same.address.lat, same.address.lon]).toEqual([-23.123456, -46.654321]);
+    const moved = draftFromForm({ ...formFromJob(job), number: '999' }, job);
+    expect(moved.address.lat).not.toBe(-23.123456);
+    expect(moved.address.lat).not.toBe(0);
+    const nowhere = validateStep1(
+      { ...formFromJob(job), cep: '99999-999', city: 'Cidade Inventada, ZZ' },
+      new Date(),
+      {},
+      job
+    );
+    expect(nowhere.city).toMatch(/mapa/);
+  });
+});

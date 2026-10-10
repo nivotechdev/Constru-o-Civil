@@ -138,7 +138,7 @@ export interface EditLimits {
 }
 
 // Step 1: what, where, when and how many.
-export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLimits = {}): FormErrors {
+export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLimits = {}, original?: Job): FormErrors {
   const e: FormErrors = {};
   if (!getOficio(f.oficioId)) e.oficio = 'Escolha o ofício que a vaga precisa.';
   if (onlyDigits(f.cep).length !== 8) e.cep = 'Digite o CEP da obra (8 números).';
@@ -146,6 +146,8 @@ export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLi
   if (!f.number.trim()) e.number = 'Informe o número (ou "s/n").';
   if (!f.neighborhood.trim()) e.neighborhood = 'Informe o bairro.';
   if (!f.city.trim()) e.city = 'Escolha a cidade da obra.';
+  // X10: a city the map doesn't know would put the job at (0, 0), far from everyone.
+  else if (!e.cep && !formPoint(f, original)) e.city = 'Não achamos essa cidade no mapa. Escolha a cidade da lista.';
   if (!f.dias) e.dias = 'Escolha em que dias o bico pode acontecer.';
 
   if (!f.dateToArrange) {
@@ -192,10 +194,28 @@ export function validateStep2(f: JobForm): FormErrors {
   return e;
 }
 
+/** X10: the address as the map knows it didn't change (so the saved point stays). */
+function sameAddress(f: JobForm, job: Job): boolean {
+  const a = job.address;
+  return (
+    onlyDigits(f.cep) === onlyDigits(a.cep) &&
+    f.street.trim() === a.street &&
+    f.number.trim() === a.number &&
+    f.city === `${a.city}, ${a.uf}`
+  );
+}
+
+/** Where the form's address is: the saved point when editing an unchanged address, else located again. */
+export function formPoint(f: JobForm, original?: Job): { lat: number; lon: number } | null {
+  if (original && sameAddress(f, original)) return { lat: original.address.lat, lon: original.address.lon };
+  return locate({ cep: f.cep, street: f.street, number: f.number, city: f.city });
+}
+
 /** What the form sends to the service (call only after both steps validate). */
-export function draftFromForm(f: JobForm): JobDraft {
+export function draftFromForm(f: JobForm, original?: Job): JobDraft {
   const [cityName, uf = ''] = f.city.split(',').map((x) => x.trim());
-  const point = locate({ cep: f.cep, street: f.street, number: f.number, city: f.city }) ?? { lat: 0, lon: 0 };
+  // X10: never (0, 0) — validateStep1 refuses an address the map can't place.
+  const point = formPoint(f, original) ?? { lat: original?.address.lat ?? 0, lon: original?.address.lon ?? 0 };
   return {
     oficioId: f.oficioId,
     title: f.titulo.trim() || null,
