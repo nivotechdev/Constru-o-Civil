@@ -3,7 +3,7 @@
 // (jobs.loadFeed, applications.loadMyApplications…), via the read cache in services/queries.ts.
 import type { Application } from '../../types/models';
 import type { Json, TableRow } from '../../types/supabase';
-import type { JobRowRead } from '../supabaseMappers';
+import { jobFromReadRow, type JobRowRead } from '../supabaseMappers';
 import { getDb, getSession } from '../store';
 import { feedKey, type FeedQuery } from '../feedQuery';
 import { getPaging, setPaging } from '../paging';
@@ -395,4 +395,39 @@ export async function loadNotifications(): Promise<void> {
 export async function loadDeletionImpact(): Promise<void> {
   if (me().workerId) await loadMyApplications();
   else await loadHistory();
+}
+
+/** F09: RPC public_job_card (works without a session). */
+export async function loadPublicJob(jobId: string): Promise<import('../jobs').PublicJob | null> {
+  const client = await db();
+  const card = (await request(() => client.rpc('public_job_card', { p_job_id: jobId }))) as
+    | (JobRowRead & {
+        aberta: boolean;
+        company: { name: string; logo_url: string | null; rating: number; review_count: number; verified: boolean };
+      })
+    | null;
+  if (!card) return null;
+  const { aberta, company, ...row } = card;
+  const job = jobFromReadRow({
+    ...row,
+    company_id: '',
+    area_lat: 0,
+    area_lon: 0,
+    boost_ends_at: null,
+    closed: false,
+    sem_contratacao: false,
+    updated_at: row.created_at,
+    deleted_at: null
+  } as JobRowRead);
+  return {
+    job,
+    company: {
+      name: company.name,
+      logoUrl: company.logo_url,
+      rating: company.rating,
+      reviewCount: company.review_count,
+      verified: company.verified
+    },
+    open: aberta
+  };
 }

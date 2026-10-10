@@ -260,6 +260,15 @@ select count(*) = (select count(*) from public.accounts where company_id is not 
   from public.company_members where role = 'dono';                                              -- true
 ```
 
+### 24. `20261013000100_f09_vaga_publica.sql` (F09)
+
+RPC `public_job_card` (também para `anon`): a vaga do link compartilhado, só com a área, sem endereço exato nem
+contato; excluída não abre.
+
+```sql
+select has_function_privilege('anon', 'public.public_job_card(text)', 'execute');                  -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

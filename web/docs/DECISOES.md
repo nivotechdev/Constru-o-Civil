@@ -794,3 +794,13 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   construtora como dona (as novas entram por gatilho). Sem tela agora: hoje a conta da construtora continua
   sendo a empresa (`accounts.company_id = id`), e `my_company_id()` não mudou. Quando houver "convidar
   pessoa", ela passa a ler desta tabela e as políticas das vagas aceitam qualquer membro.
+
+### F09 — Compartilhar vaga e página pública
+
+- Botão **Compartilhar** no detalhe da vaga e no Gerenciar (vaga aberta): abre o menu de compartilhar do
+  celular (Web Share API) ou, sem ele, o WhatsApp com o texto pronto ("Pintor em Tatuapé · R$ 200 por diária.
+  Vi na Bicos: <link>").
+- O link é **`#/v/<id>`**, uma página que abre **sem login** (RPC `public_job_card`, liberada para anon): título,
+  valor, área (bairro/cidade), datas, horário, pagamento, descrição, a construtora com nota e selo. Nunca o
+  endereço exato nem contato. "Entrar para me candidatar" e "Criar minha conta" voltam para a vaga depois do
+  login. Quem já está logado vai direto para a vaga. Vaga excluída: "Essa vaga não existe mais".

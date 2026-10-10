@@ -341,3 +341,23 @@ describe('L10: automatic company check (demo)', () => {
     expect(await run(profiles.checkMyCompany())).toBe('pendente');
   });
 });
+
+describe('F09: the public job page (demo)', () => {
+  afterEach(() => vi.useRealTimers());
+  it('shows the area, never the exact address; a deleted job does not open', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const jobs = await import('../services/jobs');
+    const store = await import('../services/store');
+    const run = async <T>(p: Promise<T>) => {
+      const r = p.then((v) => v);
+      await vi.runAllTimersAsync();
+      return r;
+    };
+    const card = await run(jobs.loadPublicJob('BC-4821'));
+    expect(card?.job.address).toMatchObject({ street: '', number: '', cep: '', exact: false });
+    expect(card?.company.name).toBe('Construtora Meridiano');
+    store.deleteJobPost('BC-4821');
+    expect(await run(jobs.loadPublicJob('BC-4821'))).toBeNull();
+  });
+});

@@ -44,6 +44,8 @@ import { dateTimeLabel } from '../../utils/dates';
 import { jobPhotos } from '../../utils/jobPhotos';
 import { FEATURES } from '../../services/features';
 import { toastApproved, toastRejected } from './decisionToasts';
+import { shareJob } from '../../utils/share';
+import { IconButton } from '../../components/IconButton';
 
 export default function JobManage({ params }: ScreenProps) {
   const db = useDb();
@@ -200,7 +202,19 @@ export default function JobManage({ params }: ScreenProps) {
 
   return (
     <div className="flex flex-col">
-      <BackBar title="Sua vaga" onBack={() => goBack('/mural')} />
+      <BackBar
+        title="Sua vaga"
+        onBack={() => goBack('/minhas-vagas')}
+        actions={
+          state === 'aberta' ? (
+            <IconButton
+              icon="share-2"
+              label="Compartilhar vaga"
+              onClick={() => void shareJob(job).catch(() => undefined)}
+            />
+          ) : null
+        }
+      />
       <div className="flex flex-col gap-4 px-4 sm:px-0 py-4 pb-28 lg:pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-10">
         <div className="flex flex-col gap-4 lg:gap-6">
           <div className="flex flex-col gap-1.5">

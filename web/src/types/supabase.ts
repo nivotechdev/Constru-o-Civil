@@ -356,6 +356,7 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      public_job_card: { Args: { p_job_id: string }; Returns: Json };
       create_my_account: {
         Args: {
           p_role: Role;

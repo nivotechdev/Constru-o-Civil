@@ -1,13 +1,13 @@
 // Jobs: reading the mural and a job, publishing, saving, closing and deleting. Each function says what
 // the real backend does there (docs/CONTRATO-BACKEND.md); the mock applies the change to the store.
-import type { Database, Job } from '../types/models';
+import type { Company, Database, Job } from '../types/models';
 import { closeJobApplications, reopenAutoRejected } from './applications';
 import { holdsSlot, isPending, occupiesSlot, transition } from './applicationMachine';
 import { jobTitle } from './catalog';
 import { withNotification } from './notifications';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
-import { currentCompanyId, getJob, isJobSaved } from './selectors';
+import { currentCompanyId, getJob, isJobSaved, jobState } from './selectors';
 import * as store from './store';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/jobs';
@@ -40,6 +40,39 @@ export async function loadMoreFeed(q: FeedQuery): Promise<void> {
 export async function loadJob(_jobId: string): Promise<void> {
   if (!IS_DEMO) return remoteData.loadJob(_jobId);
   await mockLatency(300);
+}
+
+/** F09: a job as the public page shows it (no exact address, no contact). */
+export interface PublicJob {
+  job: Job;
+  company: Pick<Company, 'name' | 'logoUrl' | 'rating' | 'reviewCount' | 'verified'>;
+  /** Still taking candidates. */
+  open: boolean;
+}
+
+/**
+ * F09: the job behind a shared link, for someone who may not be signed in. `null` when it doesn't exist
+ * or was deleted. Backend: RPC public_job_card (anon may call it).
+ */
+export async function loadPublicJob(jobId: string): Promise<PublicJob | null> {
+  if (!IS_DEMO) return remoteData.loadPublicJob(jobId);
+  await mockLatency(300);
+  const db = store.getDb();
+  const job = db.jobs[jobId];
+  if (!job || db.deletedJobIds.includes(jobId)) return null;
+  const company = db.companies[job.companyId];
+  const area = { ...job.address, street: '', number: '', complement: null, cep: '', exact: false };
+  return {
+    job: { ...job, address: area },
+    company: {
+      name: company?.name ?? '',
+      logoUrl: company?.logoUrl ?? null,
+      rating: company?.rating ?? 0,
+      reviewCount: company?.reviewCount ?? 0,
+      verified: Boolean(company?.verified)
+    },
+    open: jobState(db, job) === 'aberta'
+  };
 }
 
 /** The worker's saved jobs. Backend: select saved_jobs join jobs for the logged-in worker. */

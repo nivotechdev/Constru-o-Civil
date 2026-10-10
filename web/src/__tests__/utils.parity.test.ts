@@ -136,3 +136,18 @@ describe('profile edit checks (L11)', () => {
     expect(profileErrors({ location: 'São Paulo, SP' }, 'recrutador')).toEqual({});
   });
 });
+
+describe('sharing a job (F09)', () => {
+  it('links to the public page and says what and where', async () => {
+    const { jobShareUrl, jobShareText } = await import('../utils/share');
+    expect(jobShareUrl('BC-1', { origin: 'https://bicos.app', pathname: '/' })).toBe('https://bicos.app/#/v/BC-1');
+    expect(
+      jobShareText({
+        oficioId: 'pintor',
+        title: null,
+        pay: 200,
+        address: { neighborhood: 'Tatuapé', city: 'São Paulo' } as never
+      })
+    ).toBe('Pintor em Tatuapé · R$ 200 por diária. Vi na Bicos:');
+  });
+});
