@@ -278,6 +278,15 @@ RPC `worker_track_record` (faltas e desistências, para construtoras e para a pr
 select has_column_privilege('authenticated', 'public.workers', 'bio', 'update');                 -- true
 ```
 
+### 26. `20261013000300_f13_convite.sql` (F13)
+
+Tabela `job_invites` (cada lado lê os seus) e RPCs `invite_worker` (vaga aberta, sem candidatura, até 20
+convites por dia) e `answer_invite` (aceitar vira candidatura pelas regras de sempre).
+
+```sql
+select count(*) from pg_proc where proname in ('invite_worker', 'answer_invite');                  -- 2
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

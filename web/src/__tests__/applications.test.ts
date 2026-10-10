@@ -134,6 +134,19 @@ describe('status machine in the services', () => {
     ).toBe(true);
   });
 
+  it('F13: the company invites; accepting becomes a candidacy and the company hears it', async () => {
+    const inv = await import('../services/invites');
+    await asCompany();
+    await run(inv.inviteWorker('BC-4998', 'jorge'));
+    await expect(run(inv.inviteWorker('BC-4998', 'jorge'))).rejects.toMatchObject({ code: 'conflito' });
+    expect(noticesFor('jorge').some((n) => n.kind === 'convite')).toBe(true);
+    await asWorker();
+    await run(inv.answerInvite('BC-4998', true));
+    expect(status('BC-4998', 'jorge')).toBe('enviada');
+    expect(inv.inviteFor(m.store.getDb(), 'BC-4998', 'jorge')?.status).toBe('aceito');
+    expect(m.store.getDb().notifications.some((n) => n.kind === 'convite' && n.companyId === 'meridiano')).toBe(true);
+  });
+
   it('L07: each closed job says how it ended', async () => {
     await asCompany();
     const db = m.store.getDb();

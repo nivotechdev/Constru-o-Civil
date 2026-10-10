@@ -265,6 +265,15 @@ export interface WorkerPost {
   date: string;
 }
 
+/** F13: a company invited a worker to an open job. */
+export interface JobInvite {
+  jobId: string;
+  workerId: string;
+  companyId: string;
+  status: 'pendente' | 'aceito' | 'recusado';
+  createdAt: string;
+}
+
 /** F10: the days a worker takes jobs. */
 export type WorkerAvailability = 'semana' | 'fimdesemana' | 'qualquer';
 
@@ -292,7 +301,8 @@ export type NotificationKind =
   | 'bico_fechado'
   | 'verificacao'
   | 'bico_novo'
-  | 'confirmar_presenca';
+  | 'confirmar_presenca'
+  | 'convite';
 
 /** A notice for one worker or one company (exactly one of `workerId`/`companyId` is set). */
 export interface AppNotification {
@@ -382,6 +392,8 @@ export interface Database {
    * job has comes from here instead (services/selectors.ts uses it for jobs that aren't the session's).
    */
   jobStats?: Record<string, JobStats>;
+  /** F13: invitations from companies to workers (each side loads its own). */
+  invites?: JobInvite[];
   /** F10: no-shows and give-ups per worker (the companies see them). */
   workerTrack?: Record<string, { faltas: number; desistencias: number }>;
   /** Y28: "Avisar quando aparecer bico novo", per worker (the real backend loads only the session's). */

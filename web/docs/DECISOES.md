@@ -823,3 +823,11 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   aguardando → volta ao pagamento; reembolso → fala com a gente.
 - **Dados de faturamento / nota fiscal: adiado** — a NivoTech ainda não tem CNPJ para emitir nota; quando
   tiver, entram o formulário de dados de faturamento e a nota pelo provedor de pagamento.
+
+### F13 — Convidar trabalhador para uma vaga
+
+- No perfil de um trabalhador (vindo da busca), a construtora tem **"Convidar para uma vaga"**: lista as vagas
+  abertas dela com "Convidar", "Convidado", "Aceitou/Recusou" ou "Já se candidatou". Até 20 convites por dia.
+- O trabalhador recebe o aviso e, no detalhe da vaga, o cartão "<construtora> convidou você" com **Aceitar
+  convite** (vira candidatura, com as mesmas regras de "Quero esse bico") ou **Recusar**. A construtora é
+  avisada da resposta.

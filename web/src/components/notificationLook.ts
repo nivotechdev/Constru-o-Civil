@@ -33,5 +33,6 @@ export const NOTIFICATION_LOOK: Record<NotificationKind, Look> = {
   bico_fechado: { icon: 'circle-check', ...SUCCESS },
   verificacao: { icon: 'shield-check', ...BRAND },
   bico_novo: { icon: 'bell', ...BRAND },
-  confirmar_presenca: { icon: 'calendar-check', ...SUCCESS }
+  confirmar_presenca: { icon: 'calendar-check', ...SUCCESS },
+  convite: { icon: 'mail', ...ACCENT }
 };

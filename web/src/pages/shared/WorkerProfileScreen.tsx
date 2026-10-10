@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -19,10 +20,12 @@ import { workerFacts, workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { WorkerAvatar } from '../../components/Avatar';
+import { InviteSheet } from '../recruiter/InviteSheet';
 
 export default function WorkerProfileScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
+  const [inviting, setInviting] = useState(false);
 
   const isOwn = !params.id;
   const workerId = isOwn ? currentWorker(db).id : params.id;
@@ -172,6 +175,10 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
           </Card>
         ) : null}
 
+        {!isOwn && !jobId && role === 'recrutador' ? (
+          <Button label="Convidar para uma vaga" iconLeft="mail" fullWidth onClick={() => setInviting(true)} />
+        ) : null}
+
         <WorkerPosts worker={worker} isOwn={isOwn} />
 
         {!isOwn && jobId ? (
@@ -182,6 +189,9 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
       </div>
 
       {!isOwn && job ? <CandidateActions job={job} worker={worker} /> : null}
+      {!isOwn && role === 'recrutador' ? (
+        <InviteSheet worker={worker} open={inviting} onClose={() => setInviting(false)} />
+      ) : null}
     </div>
   );
 }

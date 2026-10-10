@@ -36,6 +36,8 @@ import { diasInfo, durationText, hoursText, paymentText, placeText, streetText, 
 import { CompanyAvatar } from '../../components/Avatar';
 import { shareJob } from '../../utils/share';
 import { IconButton } from '../../components/IconButton';
+import { answerInvite, inviteFor, loadInvites } from '../../services/invites';
+import { FieldError } from '../../components/FieldError';
 
 export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
@@ -43,6 +45,9 @@ export default function JobDetail({ params }: ScreenProps) {
   const [ui, setUi] = useScreenUI<{ confirmCancel: boolean }>('job-detail:' + params.id, { confirmCancel: false });
   const [feed] = useUI<FeedUI>(FEED_KEY, () => feedDefaults(db, role));
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
+  // F13: an invitation from the company to this worker.
+  useQuery(role === 'trabalhador' ? 'invites:' + params.id : null, () => loadInvites({ jobId: params.id }));
+  const answer = useAction(answerInvite, (_r) => undefined);
   const withdraw = useAction(withdrawApplication, () => {
     setUi({ confirmCancel: false });
     showToast('Candidatura cancelada');
@@ -63,6 +68,7 @@ export default function JobDetail({ params }: ScreenProps) {
   const worker = currentWorker(db);
   const application = role === 'trabalhador' ? applicationFor(db, job.id, worker.id) : null;
   const canCancel = application && (application.status === 'enviada' || application.status === 'em_analise');
+  const invite = role === 'trabalhador' ? inviteFor(db, job.id, worker.id) : null;
   // Y07: a job that doesn't take candidates says why, with no "Quero esse bico".
   const unavailable = unavailableText(jobState(db, job));
   const dias = diasInfo(job);
@@ -118,6 +124,38 @@ export default function JobDetail({ params }: ScreenProps) {
       />
       <div className="flex flex-col gap-4 px-4 sm:px-0 py-4 pb-28 lg:pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-10">
         <div className="flex flex-col gap-4 lg:gap-6">
+          {invite && invite.status === 'pendente' && !application && !unavailable ? (
+            <Card padding="md" className="border-brand-200">
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2.5 items-start">
+                  <Icon name="mail" size={20} color="var(--text-brand)" />
+                  <span className="text-concrete-900">
+                    <strong>{company.name}</strong> convidou você para essa vaga.
+                  </span>
+                </div>
+                {answer.error ? <FieldError message={answer.error} /> : null}
+                <div className="flex gap-2">
+                  <Button
+                    label="Recusar"
+                    variant="secondary"
+                    className="flex-1"
+                    loading={answer.loading}
+                    onClick={() =>
+                      void answer
+                        .run(job.id, false)
+                        .then((ok) => ok && showToast('Convite recusado. Avisamos a construtora.'))
+                    }
+                  />
+                  <Button
+                    label="Aceitar convite"
+                    className="flex-[1.4]"
+                    loading={answer.loading}
+                    onClick={() => void answer.run(job.id, true).then((ok) => ok && navigate('/enviado/' + job.id))}
+                  />
+                </div>
+              </div>
+            </Card>
+          ) : null}
           <Card padding="none">
             <div className="relative">
               <PhotoCarousel job={job} className="h-72 sm:h-80 lg:h-[26rem] rounded-t-card" />
