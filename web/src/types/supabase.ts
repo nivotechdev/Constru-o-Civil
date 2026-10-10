@@ -259,6 +259,19 @@ interface Relationship {
   referencedColumns: string[];
 }
 
+/** Y28: the worker's alert for new jobs (select own; written by save_job_alert / delete_job_alert). */
+type JobAlertRow = {
+  worker_id: string;
+  city: string;
+  uf: string;
+  lat: number;
+  lon: number;
+  radius_km: number | null;
+  oficio_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /** A table: `Defaulted` are the columns the database fills in when an insert leaves them out. */
 interface Table<R, Defaulted extends keyof R = never> {
   Row: R;
@@ -287,6 +300,7 @@ export const RELATIONSHIPS = {
     fk('reviews', 'job_id', 'jobs')
   ],
   worker_posts: [fk('worker_posts', 'worker_id', 'workers')],
+  job_alerts: [fk('job_alerts', 'worker_id', 'workers', true)],
   application_events: [fk('application_events', 'application_id', 'applications')],
   notifications: [fk('notifications', 'worker_id', 'workers'), fk('notifications', 'company_id', 'companies')],
   boost_payments: [fk('boost_payments', 'job_id', 'jobs'), fk('boost_payments', 'company_id', 'companies')]
@@ -296,6 +310,7 @@ export interface SupabaseDatabase {
   public: {
     Tables: {
       accounts: Table<AccountRow, 'created_at'>;
+      job_alerts: Table<JobAlertRow, 'created_at' | 'updated_at'>;
       oficios: Table<OficioRow, 'sinonimos'>;
       companies: Table<
         CompanyRow,
@@ -334,6 +349,18 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      save_job_alert: {
+        Args: {
+          p_city: string;
+          p_uf: string;
+          p_lat: number;
+          p_lon: number;
+          p_radius_km: number | null;
+          p_oficio: string | null;
+        };
+        Returns: undefined;
+      };
+      delete_job_alert: { Args: never; Returns: undefined };
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       ensure_my_account: { Args: never; Returns: undefined };
       finish_sign_up: { Args: { p: Json }; Returns: undefined };

@@ -460,6 +460,36 @@ describe('remote: data and actions', () => {
     expect(m.store.getDb().companies['u-obra'].whatsapp).toBe('21988881111');
   });
 
+  it('the new-job alert is saved and read on the server (Y28)', async () => {
+    const fake = server('ana', {
+      tables: {
+        job_alerts: [
+          { worker_id: 'u-ana', city: 'São Paulo', uf: 'SP', lat: -23.5, lon: -46.6, radius_km: null, oficio_id: null }
+        ]
+      }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const alerts = await import('../services/alerts');
+    await alerts.loadMyJobAlert();
+    expect(alerts.myJobAlert(m.store.getDb(), m.store.getSession())).toMatchObject({
+      city: 'São Paulo, SP',
+      radiusKm: null
+    });
+    await alerts.saveJobAlert({ city: 'Campinas, SP', lat: -22.9, lon: -47.06, radiusKm: 10, oficioId: 'pintor' });
+    expect(fake.calls.find((c) => c.name === 'save_job_alert')?.args).toEqual({
+      p_city: 'Campinas',
+      p_uf: 'SP',
+      p_lat: -22.9,
+      p_lon: -47.06,
+      p_radius_km: 10,
+      p_oficio: 'pintor'
+    });
+    await alerts.deleteJobAlert();
+    expect(fake.calls.some((c) => c.name === 'delete_job_alert')).toBe(true);
+    expect(alerts.myJobAlert(m.store.getDb(), m.store.getSession())).toBeNull();
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

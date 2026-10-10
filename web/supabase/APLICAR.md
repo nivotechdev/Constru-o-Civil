@@ -167,6 +167,17 @@ select public.whatsapp_valid('11988887777'), public.whatsapp_valid('1188887777')
 select has_column_privilege('authenticated', 'public.companies', 'whatsapp', 'update');          -- false
 ```
 
+### 14. `20261011000700_y28_alerta_bico.sql` (Y28)
+
+Tabela `job_alerts` (um aviso por trabalhador: cidade ou raio, ofício opcional), RPCs `save_job_alert` /
+`delete_job_alert`, e o gatilho `jobs_notify_alerts` que avisa "Bico novo perto de você" em cada vaga nova que
+bate (até 5 por dia por pessoa).
+
+```sql
+select count(*) from pg_trigger where tgname = 'jobs_notify_alerts';                              -- 1
+select 'bico_novo' = any(enum_range(null::public.notification_kind)::text[]);                   -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -5,7 +5,21 @@ import { Sheet } from '../../../components/Modal';
 import { Switch } from '../../../components/Switch';
 import { Tag } from '../../../components/Tag';
 import { OFICIO_OPTIONS } from '../../../services/catalog';
-import { noFilters, setFeed, SORTS, type FeedUI } from './feedUI';
+import { noFilters, radiusOf, setFeed, SORTS, type FeedUI } from './feedUI';
+import type { GeoPoint, Role } from '../../../types/models';
+import { FieldError } from '../../../components/FieldError';
+import { useAction } from '../../../hooks/useAction';
+import { useQuery } from '../../../hooks/useQuery';
+import { useDb, useSession } from '../../../hooks/useStore';
+import {
+  alertSummary,
+  deleteJobAlert,
+  loadMyJobAlert,
+  myJobAlert,
+  saveJobAlert,
+  type JobAlertInput
+} from '../../../services/alerts';
+import { showToast } from '../../../services/toast';
 
 function FilterGroup({
   title,
@@ -33,7 +47,20 @@ function FilterGroup({
 }
 
 /** One filter panel for both layouts: a bottom sheet on phones, a dialog on desktop. */
-export function FiltersSheet({ ui, count, home }: { ui: FeedUI; count: number; home: string }) {
+export function FiltersSheet({
+  ui,
+  count,
+  home,
+  role,
+  from
+}: {
+  ui: FeedUI;
+  count: number;
+  home: string;
+  role: Role;
+  /** Where distances are measured from (the alert keeps it). */
+  from: GeoPoint;
+}) {
   return (
     <Sheet open={ui.filtersOpen} title="Filtros" onClose={() => setFeed({ filtersOpen: false })}>
       <LocationButton
@@ -68,14 +95,7 @@ export function FiltersSheet({ ui, count, home }: { ui: FeedUI; count: number; h
         active={ui.quando}
         onSelect={(v) => setFeed({ quando: ui.quando === v ? null : v })}
       />
-      <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
-        <Switch
-          label="Avisar quando aparecer bico novo"
-          description="Chega uma notificação quando surgir vaga com esses filtros perto de você."
-          checked={ui.notifyUrgent}
-          onChange={(v) => setFeed({ notifyUrgent: v })}
-        />
-      </div>
+      {role === 'trabalhador' && ui.filtersOpen ? <JobAlertSwitch ui={ui} from={from} /> : null}
       <div className="flex gap-3 pt-1">
         <Button label="Limpar" variant="secondary" className="flex-1" onClick={() => setFeed(noFilters(home))} />
         <Button
@@ -85,5 +105,58 @@ export function FiltersSheet({ ui, count, home }: { ui: FeedUI; count: number; h
         />
       </div>
     </Sheet>
+  );
+}
+
+// Y28: the alert lives on the server — on with these filters, off, or brought up to date with them.
+function JobAlertSwitch({ ui, from }: { ui: FeedUI; from: GeoPoint }) {
+  const db = useDb();
+  const session = useSession();
+  const query = useQuery('job-alert', loadMyJobAlert);
+  const alert = myJobAlert(db, session);
+  const current: JobAlertInput = {
+    city: ui.location,
+    lat: from.lat,
+    lon: from.lon,
+    radiusKm: radiusOf(ui.dist),
+    oficioId: ui.oficio
+  };
+  const differs =
+    alert !== null &&
+    (alert.city !== current.city || alert.radiusKm !== current.radiusKm || alert.oficioId !== current.oficioId);
+  const toggle = useAction(
+    (on: boolean) => (on ? saveJobAlert(current) : deleteJobAlert()).then(() => on),
+    (on) => showToast(on ? 'Aviso ligado' : 'Aviso desligado')
+  );
+  const update = useAction(
+    () => saveJobAlert(current),
+    () => showToast('Aviso atualizado')
+  );
+  const error = toggle.error ?? update.error ?? (query.status === 'error' ? query.error : null);
+  return (
+    <div className="flex flex-col gap-1.5 pt-1 border-t border-concrete-200">
+      <Switch
+        label="Avisar quando aparecer bico novo"
+        description={
+          alert
+            ? `Ligado: ${alertSummary(alert)}.`
+            : `Chega uma notificação quando surgir vaga assim: ${alertSummary(current)}.`
+        }
+        checked={alert !== null}
+        onChange={(on) => {
+          if (query.status === 'ready') void toggle.run(on);
+        }}
+      />
+      {differs ? (
+        <Button
+          label="Usar estes filtros no aviso"
+          variant="ghost"
+          size="sm"
+          loading={update.loading}
+          onClick={() => void update.run()}
+        />
+      ) : null}
+      {error ? <FieldError message={error} /> : null}
+    </div>
   );
 }

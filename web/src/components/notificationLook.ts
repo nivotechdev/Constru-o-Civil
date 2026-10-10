@@ -31,5 +31,6 @@ export const NOTIFICATION_LOOK: Record<NotificationKind, Look> = {
   impulsionamento: { icon: 'rocket', ...BRAND },
   bico_urgente: { icon: 'zap', ...DANGER },
   bico_fechado: { icon: 'circle-check', ...SUCCESS },
-  verificacao: { icon: 'shield-check', ...BRAND }
+  verificacao: { icon: 'shield-check', ...BRAND },
+  bico_novo: { icon: 'bell', ...BRAND }
 };

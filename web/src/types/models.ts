@@ -267,7 +267,8 @@ export type NotificationKind =
   | 'impulsionamento'
   | 'bico_urgente'
   | 'bico_fechado'
-  | 'verificacao';
+  | 'verificacao'
+  | 'bico_novo';
 
 /** A notice for one worker or one company (exactly one of `workerId`/`companyId` is set). */
 export interface AppNotification {
@@ -357,6 +358,20 @@ export interface Database {
    * job has comes from here instead (services/selectors.ts uses it for jobs that aren't the session's).
    */
   jobStats?: Record<string, JobStats>;
+  /** Y28: "Avisar quando aparecer bico novo", per worker (the real backend loads only the session's). */
+  jobAlerts?: Record<string, JobAlert>;
+}
+
+/** A worker's alert for new jobs (Y28): a city — or a radius around a point — and an optional trade. */
+export interface JobAlert {
+  workerId: string;
+  /** "Name, UF". */
+  city: string;
+  lat: number;
+  lon: number;
+  /** null = the whole city. */
+  radiusKm: number | null;
+  oficioId: string | null;
 }
 
 /** A job's candidates, counted (who they are stays private). */

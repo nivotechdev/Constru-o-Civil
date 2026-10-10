@@ -636,3 +636,13 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 
 - Os dois passos do "Completar perfil" (trabalhador e construtora) têm "Sair e entrar com outra conta", que
   abre o mesmo diálogo de sair da conta. Falha ao salvar mostra a mensagem real do erro.
+
+## Y28 — "Avisar quando aparecer bico novo" funciona
+
+- O interruptor nos Filtros (só para trabalhador) **salva um aviso no servidor** (`job_alerts`): a cidade
+  escolhida — ou o raio, a partir do mesmo ponto do mural — e o ofício do filtro, se houver. Um por pessoa;
+  desligar apaga. Se os filtros mudarem com o aviso ligado, aparece "Usar estes filtros no aviso".
+- Cada vaga nova que bate gera a notificação "Bico novo perto de você" (gatilho `notify_job_alerts`; mesma
+  regra em `services/alerts.ts` para a demonstração), **no máximo 5 por dia** por pessoa. O push no celular
+  entra com o X03.
+- A busca por raio usa o centro da área da vaga (nunca o endereço exato), como o mural.

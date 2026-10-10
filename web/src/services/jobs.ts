@@ -13,6 +13,7 @@ import { IS_DEMO } from './mode';
 import * as remote from './remote/jobs';
 import * as remoteData from './remote/data';
 import { feedKey, type FeedQuery } from './feedQuery';
+import { withAlertNotices } from './alerts';
 
 // ---- reads ----
 
@@ -71,6 +72,9 @@ export async function publishJob(draft: JobDraft): Promise<string> {
   await mockLatency(700);
   const id = nextJobId();
   store.createJob({ ...draft, id, companyId: currentCompanyId() });
+  // Y28: workers whose alert matches hear about it (the trigger notify_job_alerts, in the backend).
+  const job = store.getDb().jobs[id];
+  if (job) store.transact((d) => withAlertNotices(d, job, new Date().toISOString()));
   return id;
 }
 

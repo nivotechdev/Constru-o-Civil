@@ -31,7 +31,6 @@ export interface FeedUI {
   dist: string;
   quando: string | null;
   sort: Sort;
-  notifyUrgent: boolean;
   /** The search looks in every city, not only `location` (L17). */
   allCities: boolean;
 }
@@ -64,7 +63,6 @@ export function feedDefaults(db: Database, role: Role): FeedUI {
     dist: ALL_CITY,
     quando: null,
     sort: 'perto',
-    notifyUrgent: true,
     allCities: false
   };
 }

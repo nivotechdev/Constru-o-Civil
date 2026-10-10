@@ -81,7 +81,7 @@ export default function Feed() {
     <div>
       <MobileFeed {...layout} />
       <DesktopFeed {...layout} />
-      <FiltersSheet ui={ui} count={ordered.length} home={home} />
+      <FiltersSheet ui={ui} count={ordered.length} home={home} role={role} from={from} />
       <CityPicker
         open={ui.pickerOpen}
         title="Onde você quer trabalhar"

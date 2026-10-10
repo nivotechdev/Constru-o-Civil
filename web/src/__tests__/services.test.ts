@@ -130,9 +130,37 @@ describe('simulated backend calls keep the legacy delays', () => {
       description: 'Pintura interna.',
       photos: []
     };
+    // Y28: a worker with an alert for painters near Tatuapé, another for electricians.
+    const alerts = await import('../services/alerts');
+    store.transact((d) => ({
+      ...d,
+      jobAlerts: {
+        'w-alerta': {
+          workerId: 'w-alerta',
+          city: 'São Paulo, SP',
+          lat: -23.54,
+          lon: -46.57,
+          radiusKm: 5,
+          oficioId: 'pintor'
+        },
+        outro: {
+          workerId: 'outro',
+          city: 'São Paulo, SP',
+          lat: -23.54,
+          lon: -46.57,
+          radiusKm: null,
+          oficioId: 'eletricista'
+        }
+      }
+    }));
+    expect(alerts.alertSummary(store.getDb().jobAlerts!['w-alerta'])).toBe('Pintor · São Paulo, SP · até 5 km');
     const id = await settlesAfter(jobs.publishJob(draft), 700);
     expect(id).toBe('BC-5500');
     expect(sel.getJob(store.getDb(), id)).toEqual({ ...draft, id: 'BC-5500', companyId: seed.CURRENT_COMPANY_ID });
+    const notices = store.getDb().notifications.filter((n) => n.kind === 'bico_novo');
+    expect(notices).toMatchObject([
+      { workerId: 'w-alerta', target: '/vaga/BC-5500', title: 'Bico novo perto de você' }
+    ]);
   });
 });
 
