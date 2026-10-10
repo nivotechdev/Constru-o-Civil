@@ -97,6 +97,12 @@ export function whenText(job: Schedule, now: Date = new Date()): string {
   return hasHours ? `${dateText(job, now)} · ${hoursText(job)}` : dateText(job, now);
 }
 
+/** W03: what the whole job pays (diária × diárias) — only when there is more than one diária and a fixed pay. */
+export function totalText(job: Pick<Job, 'pay' | 'diarias'>): string | null {
+  if (job.pay == null || job.diarias <= 1) return null;
+  return `${formatBRL(job.pay * job.diarias)} por ${job.diarias} diárias`;
+}
+
 /** "1 diária", "3 diárias". */
 export function durationText(job: Pick<Job, 'diarias'>): string {
   return job.diarias === 1 ? '1 diária' : `${job.diarias} diárias`;

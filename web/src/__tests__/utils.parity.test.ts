@@ -189,10 +189,25 @@ describe('W02: a job already going on', () => {
   it('says only until when', async () => {
     const { dateText } = await import('../utils/jobInfo');
     const now = new Date(2026, 9, 14, 10);
-    const job = { dateToArrange: false, startDate: '2026-10-13', endDate: '2026-10-16' };
+    const job = {
+      dateToArrange: false,
+      startDate: '2026-10-13',
+      endDate: '2026-10-16',
+      startTime: null,
+      endTime: null
+    };
     expect(dateText(job, now)).toBe('Até 16 out');
     expect(dateText({ ...job, endDate: '2026-10-14' }, now)).toBe('Até hoje');
     expect(dateText({ ...job, startDate: '2026-10-15' }, now)).toBe('Amanhã até 16 out');
     expect(dateText({ ...job, startDate: '2026-10-01', endDate: '2026-10-03' }, now)).toMatch(/até 3 out/);
+  });
+});
+
+describe('W03: the whole job', () => {
+  it('diária × diárias, only with a fixed pay and more than one diária', async () => {
+    const { totalText } = await import('../utils/jobInfo');
+    expect(totalText({ pay: 220, diarias: 3 })).toBe('R$ 660 por 3 diárias');
+    expect(totalText({ pay: 220, diarias: 1 })).toBeNull();
+    expect(totalText({ pay: null, diarias: 5 })).toBeNull();
   });
 });

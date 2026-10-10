@@ -16,7 +16,7 @@ import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorker, getJob, jobState, unavailableText } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle, oficioNome } from '../../services/catalog';
-import { dateText } from '../../utils/jobInfo';
+import { dateText, totalText } from '../../utils/jobInfo';
 import { WorkerAvatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { Rating } from '../../components/Rating';
@@ -76,6 +76,7 @@ export default function ConfirmApplication({ params }: ScreenProps) {
               <div className="flex-1 bg-concrete-100 rounded-control p-3 flex flex-col gap-0.5">
                 <span className="text-xs text-concrete-500">Diária</span>
                 <span className="font-mono font-bold text-2xl text-concrete-900">{formatPay(job.pay)}</span>
+                {totalText(job) ? <span className="text-xs text-concrete-700">{`Total ${totalText(job)}`}</span> : null}
               </div>
               <div className="flex-1 bg-concrete-100 rounded-control p-3 flex flex-col gap-0.5">
                 <span className="text-xs text-concrete-500">Data</span>

@@ -33,7 +33,16 @@ import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
 import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, originText, type FeedUI } from './feed/feedUI';
 import { formatKm } from '../../utils/geo';
-import { diasInfo, durationText, hoursText, paymentText, placeText, streetText, whenText } from '../../utils/jobInfo';
+import {
+  diasInfo,
+  durationText,
+  hoursText,
+  paymentText,
+  placeText,
+  streetText,
+  totalText,
+  whenText
+} from '../../utils/jobInfo';
 import { CompanyAvatar } from '../../components/Avatar';
 import { shareJob } from '../../utils/share';
 import { IconButton } from '../../components/IconButton';
@@ -218,10 +227,16 @@ export default function JobDetail({ params }: ScreenProps) {
                   <span className="text-xs font-bold tracking-[0.08em] uppercase text-brand-600">Diária</span>
                   <span className="font-mono font-bold text-4xl text-concrete-900">{formatPay(job.pay)}</span>
                 </div>
-                <span className="text-sm text-concrete-700 text-right">
-                  Pago no fim
-                  <br />
-                  da diária
+                {/* X12/W03: the job's own payment form, and the total when it has several diárias. */}
+                <span className="text-sm text-concrete-700 text-right max-w-[11rem]">
+                  {totalText(job) ? (
+                    <>
+                      <span className="block font-semibold text-concrete-900">{`Total ${totalText(job)}`}</span>
+                      {paymentText(job)}
+                    </>
+                  ) : (
+                    paymentText(job)
+                  )}
                 </span>
               </div>
               <div className="flex items-center gap-2 pt-4 border-t border-brand-200">
@@ -253,18 +268,21 @@ export default function JobDetail({ params }: ScreenProps) {
             </Card>
           </Section>
 
-          <Section title="O que precisa levar">
-            <Card padding="md">
-              <div className="flex flex-col gap-3">
-                {job.requirements.map((r) => (
-                  <div key={r} className="flex gap-2.5 items-center">
-                    <Icon name="circle-check" size={20} color="var(--green-500)" />
-                    <span className="text-concrete-700">{r}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </Section>
+          {/* W04: nothing to bring, no empty section. */}
+          {job.requirements.length ? (
+            <Section title="O que precisa levar">
+              <Card padding="md">
+                <div className="flex flex-col gap-3">
+                  {job.requirements.map((r) => (
+                    <div key={r} className="flex gap-2.5 items-center">
+                      <Icon name="circle-check" size={20} color="var(--green-500)" />
+                      <span className="text-concrete-700">{r}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </Section>
+          ) : null}
         </div>
 
         <aside className="hidden lg:block lg:sticky lg:top-28">
@@ -275,6 +293,7 @@ export default function JobDetail({ params }: ScreenProps) {
                 <span className="font-mono font-bold text-3xl text-concrete-900">{formatPay(job.pay)}</span>
                 {job.pay == null ? null : <span className="text-concrete-500">por dia</span>}
               </div>
+              {totalText(job) ? <span className="text-sm text-concrete-700">{`Total: ${totalText(job)}`}</span> : null}
             </div>
             <div className="flex flex-col rounded-xl border border-concrete-200 divide-y divide-concrete-200">
               <SummaryRow icon="calendar" label="Quando" value={whenText(job)} />
