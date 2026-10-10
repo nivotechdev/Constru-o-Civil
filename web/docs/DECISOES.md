@@ -724,3 +724,13 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   recusa volta ao passo do documento com a mensagem genérica. O e-mail repetido é dito na criação (o Supabase
   já revela isso no cadastro) e volta ao passo do e-mail. WhatsApp repetido é permitido (a mesma pessoa pode
   ter conta de trabalhador e de construtora com o mesmo celular).
+
+### L05 + F12 — "Precisa de você" e confirmar presença
+
+- "Minhas candidaturas" abre com o grupo **Precisa de você**: diária concluída para avaliar, pré-seleção para
+  falar com a construtora e contratação para hoje/amanhã ainda sem confirmação. Depois "Em andamento" e
+  "Encerradas".
+- **Confirmar presença**: em "Você avançou", o contratado vê "Confirmar que vou" (e o "Não vou poder ir" que já
+  existia). A construtora recebe o aviso e vê o selo "Confirmou que vai" no candidato. Na véspera, às 18h,
+  quem ainda não confirmou recebe "Amanhã tem bico" (rotina diária no banco; a demonstração não tem relógio
+  de rotina, então não manda lembrete). Mudar as datas da vaga zera as confirmações.

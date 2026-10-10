@@ -240,6 +240,8 @@ export interface Application {
   /** Each side reviews the other once the diária is concluded. */
   workerReviewed: boolean;
   companyReviewed: boolean;
+  /** F12: when the hired worker confirmed they'll go (reset when the job's dates change). */
+  presenceConfirmedAt?: string | null;
 }
 
 export interface WorkerPost {
@@ -275,7 +277,8 @@ export type NotificationKind =
   | 'bico_urgente'
   | 'bico_fechado'
   | 'verificacao'
-  | 'bico_novo';
+  | 'bico_novo'
+  | 'confirmar_presenca';
 
 /** A notice for one worker or one company (exactly one of `workerId`/`companyId` is set). */
 export interface AppNotification {

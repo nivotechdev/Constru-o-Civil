@@ -122,6 +122,18 @@ describe('status machine in the services', () => {
     expect(noticesFor('joel')).toEqual([]);
   });
 
+  it('F12: the hired worker confirms they will go and the company is told', async () => {
+    await asCompany();
+    await run(m.apps.confirmHire('BC-4821', 'jorge'));
+    await asWorker();
+    await run(m.apps.confirmPresence('BC-4821'));
+    const app = m.sel.applicationFor(m.store.getDb(), 'BC-4821', 'jorge');
+    expect(app?.presenceConfirmedAt).toBeTruthy();
+    expect(
+      m.store.getDb().notifications.some((n) => n.kind === 'confirmar_presenca' && n.companyId === 'meridiano')
+    ).toBe(true);
+  });
+
   it('L22: a refusal can be undone for 10 minutes; the unseen notice is taken back', async () => {
     await asCompany();
     await run(m.apps.reject('BC-4998', 'rafael'));
@@ -274,5 +286,21 @@ describe('status machine in the services', () => {
     // BC-4855 isn't Meridiano's: nothing changes.
     await run(m.apps.markInReview('BC-4855', 'jorge'));
     expect(status('BC-4855', 'jorge')).toBe('enviada');
+  });
+});
+
+describe('F12 + L05: presence and "Precisa de você"', () => {
+  it('a hire for tomorrow needs the worker until they confirm; the company sees who confirmed', async () => {
+    const { needsWorker, candidateBadge } = await import('../utils/applicationStatus');
+    const job = { startDate: '2026-10-11', dateToArrange: false };
+    const hired = { status: 'contratado' as const, workerReviewed: false, presenceConfirmedAt: null };
+    expect(needsWorker(hired, job, '2026-10-10')).toBe(true);
+    expect(needsWorker(hired, job, '2026-10-05')).toBe(false);
+    expect(needsWorker({ ...hired, presenceConfirmedAt: '2026-10-10T10:00:00Z' }, job, '2026-10-10')).toBe(false);
+    expect(needsWorker({ status: 'concluida', workerReviewed: false }, null)).toBe(true);
+    expect(needsWorker({ status: 'pre_selecionado', workerReviewed: false }, null)).toBe(true);
+    expect(candidateBadge({ status: 'contratado', companyReviewed: false, presenceConfirmedAt: 'x' }).label).toBe(
+      'Confirmou que vai'
+    );
   });
 });

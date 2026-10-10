@@ -479,6 +479,40 @@ export async function undoApproval(jobId: string, workerId: string): Promise<voi
   });
 }
 
+/**
+ * F12: the hired worker confirms they'll go; the company is told. Backend: RPC confirm_presence (the
+ * reminder the day before is a daily routine: remind_presence).
+ */
+export async function confirmPresence(jobId: string): Promise<void> {
+  if (!IS_DEMO) return remote.confirmPresence(jobId);
+  await mockLatency(400);
+  const db = store.getDb();
+  const app = findApp(db, jobId, currentWorkerId());
+  const job = db.jobs[jobId];
+  if (!job) throw serviceError('nao_encontrado', 'Essa vaga não existe mais.');
+  if (app.status !== 'contratado') throw serviceError('conflito', 'Só quem está contratado confirma presença.');
+  if (app.presenceConfirmedAt) return;
+  const at = now();
+  const worker = db.workers[app.workerId];
+  store.transact((d) =>
+    withNotification(
+      {
+        ...d,
+        applications: d.applications.map((a) => (a.id === app.id ? { ...a, presenceConfirmedAt: at } : a))
+      },
+      {
+        kind: 'confirmar_presenca',
+        title: `${(worker?.name ?? 'O trabalhador').split(' ')[0]} confirmou que vai`,
+        text: `${jobTitle(job)}.`,
+        workerId: null,
+        companyId: job.companyId,
+        target: '/vaga-gerenciar/' + jobId
+      },
+      at
+    )
+  );
+}
+
 /** How long after refusing a candidate the company can still undo it (L22). */
 export const UNDO_REJECT_MINUTES = 10;
 

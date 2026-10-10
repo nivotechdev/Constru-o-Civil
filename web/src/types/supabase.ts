@@ -171,6 +171,7 @@ type ApplicationRow = {
   auto_rejected: boolean;
   worker_reviewed: boolean;
   company_reviewed: boolean;
+  presence_confirmed_at: string | null;
 };
 
 type ApplicationEventRow = {
@@ -353,6 +354,7 @@ export interface SupabaseDatabase {
     Views: { [_ in never]: never };
     /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
+      confirm_presence: { Args: { p_job_id: string }; Returns: undefined };
       undo_reject: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
       save_job_alert: {
         Args: {

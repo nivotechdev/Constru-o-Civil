@@ -214,6 +214,15 @@ O cadastro com lado definido precisa trazer `maior_de_idade: true` nos metadados
 select prosrc like '%maior_de_idade%' from pg_proc where proname = 'claim_document_v2';           -- true
 ```
 
+### 19. `20261012000500_f12_presenca.sql` (F12)
+
+`applications.presence_confirmed_at`, RPC `confirm_presence`, lembrete diário às 18h de Brasília
+(`remind_presence`, cron `bicos-lembrar-presenca`) e gatilho que zera as confirmações quando as datas mudam.
+
+```sql
+select jobname, schedule from cron.job where jobname = 'bicos-lembrar-presenca';                -- 0 21 * * *
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

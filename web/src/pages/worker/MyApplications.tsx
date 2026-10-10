@@ -12,14 +12,15 @@ import { applicationsForWorker, companyOf, currentWorker, getJob, savedJobs } fr
 import type { Application } from '../../types/models';
 import { ContactButton } from '../../components/ContactButton';
 import { contactOpen } from '../../services/applicationMachine';
-import { isInProgress, statusInfo } from '../../utils/applicationStatus';
+import { isInProgress, needsWorker, statusInfo } from '../../utils/applicationStatus';
 
 export default function MyApplications() {
   const db = useDb();
   const query = useQuery('my-applications', loadMyApplications);
   const worker = currentWorker(db);
   const apps = applicationsForWorker(db, worker.id);
-  const inProgress = apps.filter((a) => isInProgress(a));
+  const needs = apps.filter((a) => needsWorker(a, getJob(db, a.jobId)));
+  const inProgress = apps.filter((a) => isInProgress(a) && !needsWorker(a, getJob(db, a.jobId)));
   const closed = apps.filter((a) => !isInProgress(a));
   const savedCount = savedJobs(db).length;
 
@@ -84,6 +85,15 @@ export default function MyApplications() {
               />
             ) : (
               <div className="flex flex-col gap-8 pt-2">
+                {needs.length ? (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2 text-xs font-bold tracking-[0.08em] uppercase text-brand-600">
+                      <Icon name="bell" size={14} color="var(--text-brand)" />
+                      Precisa de você
+                    </div>
+                    <TileGrid>{needs.map((a) => appCard(a, false))}</TileGrid>
+                  </div>
+                ) : null}
                 {inProgress.length ? (
                   <div className="flex flex-col gap-4">
                     <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Em andamento</div>

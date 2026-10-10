@@ -16,7 +16,7 @@ import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
-import { giveUp, loadMyApplications } from '../../services/applications';
+import { confirmPresence, giveUp, loadMyApplications } from '../../services/applications';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
@@ -26,6 +26,7 @@ import { MapLinks } from '../../components/MapLinks';
 import { ContactButton } from '../../components/ContactButton';
 import { jobTitle } from '../../services/catalog';
 import { CompanyAvatar } from '../../components/Avatar';
+import { FieldError } from '../../components/FieldError';
 
 const GIVE_UP_REASONS = ['Fiquei doente', 'Peguei outro serviço', 'Problema de transporte', 'Imprevisto na família'];
 
@@ -33,6 +34,7 @@ export default function Selected({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('my-applications', loadMyApplications);
   const [asking, setAsking] = useState(false);
+  const confirm = useAction(confirmPresence, () => showToast('Presença confirmada. Avisamos a construtora.'));
   const quit = useAction(giveUp, () => {
     setAsking(false);
     showToast('Avisamos a construtora. Obrigado por avisar com antecedência.');
@@ -111,6 +113,33 @@ export default function Selected({ params }: ScreenProps) {
             {job.address.street ? <MapLinks job={job} /> : null}
           </div>
         </Card>
+        {isHired && !job.closed && !isExpired(job) ? (
+          hired.presenceConfirmedAt ? (
+            <Card tone="sunken" padding="sm">
+              <div className="flex items-center gap-2.5">
+                <Icon name="calendar-check" size={20} color="var(--green-500)" />
+                <span className="flex-1 text-sm text-concrete-700">Você confirmou que vai. A construtora já sabe.</span>
+              </div>
+            </Card>
+          ) : (
+            <Card padding="md">
+              <div className="flex flex-col gap-3">
+                <span className="font-semibold text-concrete-900">Confirme que você vai</span>
+                <span className="text-sm text-concrete-700">
+                  A construtora vê quem confirmou. Se não puder ir, avise logo abaixo.
+                </span>
+                {confirm.error ? <FieldError message={confirm.error} /> : null}
+                <Button
+                  label="Confirmar que vou"
+                  iconLeft="calendar-check"
+                  fullWidth
+                  loading={confirm.loading}
+                  onClick={() => void confirm.run(job.id)}
+                />
+              </div>
+            </Card>
+          )
+        ) : null}
         <Card tone="sunken" padding="md">
           <div className="flex flex-col gap-3">
             <KeyValue label="Diária combinada" value={formatPay(job.pay)} />

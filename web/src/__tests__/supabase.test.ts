@@ -91,6 +91,7 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       id: r.id ?? ''
     })),
     applications: inserts.applications.map((r): TableRow<'applications'> => ({
+      presence_confirmed_at: null,
       status: 'enviada',
       created_at: CREATED,
       status_changed_at: CREATED,

@@ -1,6 +1,7 @@
 // Single source of truth for how a candidacy's status reads on screen — for the worker (badge + next
 // step on "Minhas candidaturas") and for the company (the candidate's badge on "Gerenciar vaga").
-import type { Application, ApplicationStatus } from '../types/models';
+import type { Application, ApplicationStatus, Job } from '../types/models';
+import { daysBetween, todayISO } from './dates';
 import type { StatusBadge } from '../types/ui';
 
 interface StatusInfo extends StatusBadge {
@@ -64,12 +65,16 @@ export function statusInfo(app: AppLike): StatusInfo {
 }
 
 /** The company's view of a candidate on one of its jobs. */
-export function candidateBadge(app: Pick<Application, 'status' | 'companyReviewed'>): StatusBadge {
+export function candidateBadge(
+  app: Pick<Application, 'status' | 'companyReviewed'> & { presenceConfirmedAt?: string | null }
+): StatusBadge {
   const BADGES: Record<ApplicationStatus, StatusBadge> = {
     enviada: { label: 'Novo', tone: 'brand', icon: 'circle' },
     em_analise: { label: 'Em análise', tone: 'warning', icon: 'clock' },
     pre_selecionado: { label: 'Aprovado', tone: 'success', icon: 'circle-check' },
-    contratado: { label: 'Contratado', tone: 'success', icon: 'handshake' },
+    contratado: app.presenceConfirmedAt
+      ? { label: 'Confirmou que vai', tone: 'success', icon: 'calendar-check' }
+      : { label: 'Contratado', tone: 'success', icon: 'handshake' },
     concluida: app.companyReviewed
       ? { label: 'Diária concluída', tone: 'neutral', icon: 'circle-check' }
       : { label: 'Avaliar', tone: 'accent', icon: 'star' },
@@ -88,4 +93,25 @@ export const IN_PROGRESS = new Set<ApplicationStatus>(['enviada', 'em_analise', 
 /** Still going on, or waiting for the worker's review. */
 export function isInProgress(app: AppLike): boolean {
   return IN_PROGRESS.has(app.status) || (app.status === 'concluida' && !app.workerReviewed);
+}
+
+/**
+ * L05: candidacies waiting for something from the worker — review the diária, talk to the company that
+ * picked them (and confirm they'll go, F12). Shown first, under "Precisa de você".
+ */
+export function needsWorker(
+  app: Pick<Application, 'status' | 'workerReviewed' | 'presenceConfirmedAt'>,
+  job?: Pick<Job, 'startDate' | 'dateToArrange'> | null,
+  today: string = todayISO()
+): boolean {
+  if ((app.status === 'concluida' && !app.workerReviewed) || app.status === 'pre_selecionado') return true;
+  // F12: hired for a job that starts today or tomorrow, and not confirmed yet.
+  return (
+    app.status === 'contratado' &&
+    !app.presenceConfirmedAt &&
+    !!job?.startDate &&
+    !job.dateToArrange &&
+    daysBetween(today, job.startDate) <= 1 &&
+    daysBetween(today, job.startDate) >= 0
+  );
 }

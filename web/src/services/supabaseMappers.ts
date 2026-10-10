@@ -335,7 +335,8 @@ export function applicationFromRow(
       .map((e) => ({ status: e.status, at: e.at, by: e.by, reason: e.reason })),
     autoRejected: row.auto_rejected,
     workerReviewed: row.worker_reviewed,
-    companyReviewed: row.company_reviewed
+    companyReviewed: row.company_reviewed,
+    ...(row.presence_confirmed_at ? { presenceConfirmedAt: row.presence_confirmed_at } : {})
   };
 }
 
@@ -349,7 +350,8 @@ export function applicationToRow(app: Application): TableInsert<'applications'> 
     status_changed_at: app.statusChangedAt,
     auto_rejected: app.autoRejected,
     worker_reviewed: app.workerReviewed,
-    company_reviewed: app.companyReviewed
+    company_reviewed: app.companyReviewed,
+    presence_confirmed_at: app.presenceConfirmedAt ?? null
   };
 }
 

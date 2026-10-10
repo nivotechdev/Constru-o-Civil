@@ -49,3 +49,10 @@ export const cancelHire = (jobId: string, workerId: string, reason: string) =>
   transition(jobId, workerId, 'cancelar_contratacao', reason);
 export const completeWorkday = (jobId: string, workerId: string) => transition(jobId, workerId, 'concluir');
 export const markNoShow = (jobId: string, workerId: string) => transition(jobId, workerId, 'marcar_falta');
+
+/** F12: RPC confirm_presence. */
+export async function confirmPresence(jobId: string): Promise<void> {
+  const client = await db();
+  await request(() => client.rpc('confirm_presence', { p_job_id: jobId }));
+  await loadJob(jobId);
+}
