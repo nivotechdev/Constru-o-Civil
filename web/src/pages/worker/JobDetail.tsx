@@ -31,7 +31,7 @@ import {
 } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
-import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, type FeedUI } from './feed/feedUI';
+import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, originText, type FeedUI } from './feed/feedUI';
 import { formatKm } from '../../utils/geo';
 import { diasInfo, durationText, hoursText, paymentText, placeText, streetText, whenText } from '../../utils/jobInfo';
 import { CompanyAvatar } from '../../components/Avatar';
@@ -74,7 +74,10 @@ export default function JobDetail({ params }: ScreenProps) {
   // Y07: a job that doesn't take candidates says why, with no "Quero esse bico".
   const unavailable = unavailableText(jobState(db, job));
   const dias = diasInfo(job);
-  const distance = role === 'trabalhador' ? formatKm(jobDistance(job, feedOrigin(feed, db, role))) + ' de você' : null;
+  const distance =
+    role === 'trabalhador'
+      ? `${formatKm(jobDistance(job, feedOrigin(feed, db, role)))} ${originText(feed, db, role)}`
+      : null;
   // Z06: the street and number only for the company and the worker it picked or hired.
   const exact = canSeeExactAddress(db, job) && Boolean(job.address.street);
 

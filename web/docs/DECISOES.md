@@ -1109,3 +1109,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 
 - Feito no Y25: tela, serviço e banco aceitam só celular (DDD + 9 + 8 números). Agora o serviço de cadastro também
   confere antes de criar a conta (nos dois modos).
+
+### X19 — Distância honesta e mural que acompanha o perfil
+
+- "X km **de você**" só quando a distância é medida da posição da pessoa ("Usar minha localização"). Medida do bairro
+  do perfil: "X km **do seu bairro**"; da cidade escolhida: "X km **do centro de** Campinas".
+- Trocou a cidade no perfil: o mural que estava na cidade antiga passa para a nova (uma cidade escolhida à mão no
+  mural continua escolhida).

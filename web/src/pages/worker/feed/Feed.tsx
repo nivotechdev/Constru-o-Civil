@@ -45,6 +45,11 @@ export default function Feed() {
   const { location, origin, oficio, dist, quando, sort, allCities } = ui;
   const q = ui.search.trim();
   const home = homeCity(db, role);
+  // X19: the profile moved to another city: a mural still on the old home city follows it.
+  useEffect(() => {
+    if (ui.home === home) return;
+    setFeed(ui.location === (ui.home ?? ui.location) ? { location: home, origin: null, home } : { home });
+  }, [home, ui.home, ui.location]);
   const from = useMemo(() => feedOrigin({ location, origin }, db, role), [location, origin, db, role]);
   // X01: the server lists the mural for these filters; a typed search waits a moment before asking.
   const search = useDebounced(q, 400);

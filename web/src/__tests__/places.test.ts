@@ -197,3 +197,15 @@ describe('Y09/W03: total of the job', () => {
     expect(jobTotal({ pay: 150, diarias: 1 })).toBe('R$ 150');
   });
 });
+
+describe('X19: what a distance is measured from', () => {
+  it('"de você" only with the GPS; the neighbourhood of the profile; else the city centre', async () => {
+    const { originText } = await import('../pages/worker/feed/feedUI');
+    const store = await import('../services/store');
+    const db = store.getDb();
+    expect(originText({ location: 'Campinas, SP', origin: { lat: -22.9, lon: -47 } }, db, 'trabalhador')).toBe(
+      'de você'
+    );
+    expect(originText({ location: 'Campinas, SP', origin: null }, db, 'recrutador')).toBe('do centro de Campinas');
+  });
+});

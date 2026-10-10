@@ -24,6 +24,8 @@ export interface FeedUI {
   location: string;
   /** Exact position from "Usar minha localização" (in `location`); `null` when the city was typed. */
   origin: GeoPoint | null;
+  /** X19: the profile's city when the mural was set up — a new city in the profile moves the mural too. */
+  home?: string;
   filtersOpen: boolean;
   pickerOpen: boolean;
   /** Ofício filter (catalog id). */
@@ -56,6 +58,7 @@ export function feedDefaults(db: Database, role: Role): FeedUI {
   return {
     search: '',
     location: homeCity(db, role),
+    home: homeCity(db, role),
     origin: null,
     filtersOpen: false,
     pickerOpen: false,
@@ -87,6 +90,19 @@ export function feedOrigin(ui: Pick<FeedUI, 'location' | 'origin'>, db: Database
 }
 
 export const jobDistance = (job: Job, from: GeoPoint) => distanceKm(from, job.address);
+
+/**
+ * X19: what a distance is measured from, said honestly — "de você" only for the person's own position; the
+ * neighbourhood of the profile; otherwise the city's centre.
+ */
+export function originText(ui: Pick<FeedUI, 'location' | 'origin'>, db: Database, role: Role): string {
+  if (ui.origin) return 'de você';
+  if (role === 'trabalhador') {
+    const w = currentWorker(db);
+    if (w && w.city === ui.location && w.neighborhood) return 'do seu bairro';
+  }
+  return `do centro de ${ui.location.split(',')[0]}`;
+}
 
 function payNum(job: Job) {
   return job.pay == null ? -1 : job.pay;
