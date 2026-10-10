@@ -1,117 +1,140 @@
 # Supabase — o app ligado ao banco
 
-O front novo (`web/`) usa o **mesmo projeto Supabase do app antigo** (`Nivo Tech Construção Civil`,
-`ppnxdajiihsjaojxokzh`, região São Paulo). As telas não mudaram: cada função de `src/services/` tem
-dois corpos — o de demonstração (dados em memória) e o real (`src/services/remote/`) — e o app escolhe
-um na hora do build.
+O front novo (`web/`) usa o projeto Supabase **`ppnxdajiihsjaojxokzh`** (Nivo Tech Construção Civil, região São
+Paulo), o mesmo do app antigo (que foi desligado no Z08; os dados dele continuam lá). Cada função de
+`src/services/` tem dois corpos — o de demonstração (dados em memória) e o real (`src/services/remote/`) — e o build
+escolhe um. Este arquivo diz **o que está no banco, o que falta aplicar e o que configurar** para cada recurso que
+depende de serviço externo.
 
 ## 1. Demonstração ou real
 
-| Situação                                                          | Modo         | O que acontece                                                                                        |
-| ----------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------- |
-| Sem `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` (prévia, testes) | demonstração | dados de `src/data/seed.ts`, contas de teste, simulações (e-mail, código de WhatsApp, PIX, CEPs)      |
-| Com as duas variáveis no build                                    | real         | contas no Supabase Auth, dados nas tabelas, fotos no Storage, CEP no BrasilAPI/ViaCEP, avisos ao vivo |
+| Situação                                                          | Modo         | O que acontece                                                                               |
+| ----------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------- |
+| Sem `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` (prévia, testes) | demonstração | dados de `src/data/seed.ts`, contas de teste, simulações (e-mail, código, PIX, CEPs, equipe) |
+| Com as duas variáveis no build                                    | real         | contas no Auth, dados nas tabelas, fotos no Storage, CEP no BrasilAPI/ViaCEP, avisos ao vivo |
 
-`src/services/mode.ts` exporta `IS_DEMO`. As poucas dicas de tela que só fazem sentido na demonstração
-(contas de teste no login, "Demonstração: …", interruptor de falhas) somem no modo real.
+`src/services/mode.ts` exporta `IS_DEMO`. Nada simulado existe no modo real (botões "Demonstração: …" somem). Todas
+as variáveis estão explicadas em `web/.env.example` — só valores **públicos** vão para o front; a chave
+`service_role` e os tokens de provedores ficam em **Edge Functions › Secrets**.
 
-Para rodar ligado ao banco: copie `.env.example` para `.env.local`, preencha a URL e a chave **anon**
-(Supabase → Project Settings → API) e rode `npm run dev`. Em produção, defina as duas variáveis no
-ambiente de build da hospedagem. A chave `service_role` **nunca** vai para o front.
+## 2. Situação do banco
 
-## 2. Como o banco está organizado
+| O quê                                                     | Situação                                                                                                         |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `20261009000100/200/300` (esquema, regras, dados)         | **aplicadas** (no histórico com outras versões — ver "Histórico de migrations" em `APLICAR.md`)                  |
+| As 36 migrations de `20261010…` a `20261014…` (fases A–E) | **a aplicar** — `supabase/APLICAR.md` (ordem, o que cada uma faz, consulta de conferência) ou `APLICAR-TUDO.sql` |
+| Edge Function `entrar-com-documento`                      | **publicada**                                                                                                    |
+| Edge Functions novas (tabela da seção 4)                  | **a publicar**                                                                                                   |
 
-As tabelas do front novo ficam **ao lado** das do app antigo, que continuam funcionando como antes.
-Os dois apps dividem o Auth (`auth.users`), o segredo do CPF/CNPJ no Vault e os buckets do Storage.
+Por que não foram aplicadas daqui: o conector do Supabase pede aprovação manual para SQL com `DROP`/`DELETE` e essa
+aprovação não chega numa sessão automática. Tudo foi testado num Postgres igual ao do Supabase: os 37 arquivos de
+`supabase/tests/` passam aplicando as migrations uma a uma **e** aplicando `APLICAR-TUDO.sql` sobre uma cópia do
+esquema de hoje (o CI faz o primeiro a cada push).
 
-| Tabela nova                                                                    | O que guarda                                                                    | Do app antigo, reaproveitado                                  |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `accounts`                                                                     | conta (1:1 com `auth.users`): lado, e-mail confirmado, perfil completo, termos  | CPF/CNPJ cifrado com a mesma chave (`nivotech_documento_key`) |
-| `workers` · `companies`                                                        | perfis (o id é o da conta); WhatsApp **privado** (não sai em `select`)          | —                                                             |
-| `oficios`                                                                      | catálogo único de ofícios                                                       | —                                                             |
-| `jobs`                                                                         | vagas com endereço completo, coordenadas, datas e horários; id curto `BC-5001…` | —                                                             |
-| `applications` · `application_events`                                          | candidatura e histórico (status só muda por RPC)                                | —                                                             |
-| `reviews` · `saved_jobs` · `worker_posts` · `notifications` · `boost_payments` | o resto do contrato                                                             | aceite dos termos registrado em `consentimentos` (LGPD)       |
+`APLICAR-TUDO.sql` (gerado por `node scripts/aplicar-tudo.mjs`): os valores novos de enum numa transação, e o resto
+numa transação só — se algo falhar, nada fica pela metade. **A #31 (X13) reinstala o PostGIS no schema
+`extensions`** (`DROP EXTENSION postgis CASCADE`; conferido que não havia coordenada gravada no app antigo): rode
+num horário sem uso.
 
-- **Regras no banco** (`supabase/migrations/20261009000200_bicos_v2_rules.sql`): RLS em todas as
-  tabelas e RPCs `security definer` para tudo que muda mais de um registro — a máquina de status da
-  candidatura (`transition_application`, a mesma tabela de `applicationMachine.ts`), publicar/editar/
-  encerrar vaga, avaliar, pagar, contato por WhatsApp (`get_contact`), exportar e excluir a conta. As
-  RPCs devolvem erros com código próprio (`BC401/404/409/422`) e a mensagem pronta em português.
-- **Rotinas** (pg_cron, já usado pelo app antigo): concluir diárias vencidas (de hora em hora) e vencer
-  códigos PIX (a cada 10 min).
-- **Contas que já existiam** no app antigo ganham a conta nova com o "Completar perfil" pendente; contas
-  criadas depois em qualquer um dos dois apps ganham as duas linhas no cadastro (gatilho
-  `on_auth_user_created_v2`).
-- **Storage**: `vagas` (novo, fotos das vagas), `portfolio` e `avatars` (do app antigo). Cada conta só
-  grava na própria pasta.
-- **Edge Function** `entrar-com-documento`: entrar com CPF/CNPJ sem o navegador saber o e-mail da conta.
+Depois de aplicar: **Database › Advisors** (Security e Performance). O que sobra e por quê está em
+`docs/ADVISORS.md`.
 
-## 3. Situação da aplicação no projeto
+### Organização
 
-| Parte                                                                                                                                                                                    | Situação                                                                                              |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Tabelas, privilégios, RLS (`…000100_bicos_v2_schema.sql`)                                                                                                                                | **aplicada**                                                                                          |
-| Políticas, gatilhos de conta e no Auth, RPCs de vagas, candidatura, avaliação, pagamento, contato, exportação (`…000200_bicos_v2_rules.sql`)                                             | **aplicada** (em partes)                                                                              |
-| Ofícios, bucket `vagas`, cron, Realtime, contas antigas (`…000300_bicos_v2_data.sql`)                                                                                                    | **aplicada** — as 4 contas antigas já têm conta nova (perfil a completar)                             |
-| Edge Function `entrar-com-documento`                                                                                                                                                     | **publicada**                                                                                         |
-| `supabase/APLICAR-NO-SQL-EDITOR.sql`: decisões da construtora e desistência (`transition_application`), retirar candidatura, excluir vaga, excluir conta, limpeza de cadastro abandonado | **a aplicar** — colar no SQL Editor do painel e rodar (o conector pedia uma aprovação que não chegou) |
+- Tabelas do app: `accounts` (1:1 com `auth.users`), `workers`, `companies`, `company_members`, `oficios`, `jobs`,
+  `applications`, `application_events`, `application_attempts`, `saved_jobs`, `reviews`, `worker_posts`,
+  `notifications`, `notification_prefs`, `push_subscriptions`, `boost_payments`, `payment_webhook_events`,
+  `job_alerts`, `job_invites`, `reports`, `blocks`, `whatsapp_verifications`, `identity_submissions`, `app_config`.
+- **Regras no banco**: RLS em todas as tabelas, grants por coluna (WhatsApp, endereço exato, documento, nota, selo e
+  impulso não saem nem mudam por `select`/`update`), e RPCs `security definer` com `search_path` fixo para tudo que
+  muda mais de um registro. Erros com código próprio (`BC401/404/409/422` → `nao_autorizado`, `nao_encontrado`,
+  `conflito`, `validacao`) e mensagem pronta.
+- **Rotinas (pg_cron)**: concluir diárias (`7 * * * *`), vencer PIX (`*/10`), lembrete de presença (`0 21 * * *`),
+  limpar cadastros nunca confirmados (`23 3 * * *`), limpar registro de tentativas (`17 4 * * *`) e limpar arquivos
+  órfãos (`40 4 * * *`, só com a Edge Function configurada).
+- **Storage**: `avatars`, `portfolio`, `vagas` (públicos para abrir pelo endereço, sem listagem; cada conta só envia
+  na própria pasta) e `identidade` (privado; só a equipe lê).
+- **Vault**: `nivotech_documento_key` (cifra CPF/CNPJ; já existe) e, quando configurados, `bicos_push_url`,
+  `bicos_push_secret`, `bicos_cleanup_url`, `bicos_cleanup_secret`.
+- **Equipe** (painel/SQL Editor, com service_role): `set_company_verification(empresa, status)`,
+  `set_identity_status(trabalhador, status, motivo)`, `funnel_daily(de, até)`; denúncias em `reports`.
 
-Testado direto no banco (numa transação desfeita no fim): cadastro com documento cifrado e mascarado,
-aceite dos termos registrado, publicar vaga (e recusar valor abaixo de R$ 80), PIX gerado e
-confirmado, vaga já impulsionada bloqueada, candidatura, contagem privada no mural, WhatsApp ilegível
-por `select`, contato fechado antes da aprovação, RLS das vagas salvas, avisos, marcar como lidas,
-editar vaga (avisa os candidatos), encerrar (recusa quem esperava). O teste achou e corrigiu um erro em
-`update_job`.
+## 3. Painel › Authentication
 
-## 4. Configurações do painel (Authentication)
+1. **URL Configuration**: _Site URL_ = endereço publicado (ex.: `https://bicos.nivotech.com.br/`); em _Redirect
+   URLs_ também `https://bicos.nivotech.com.br/**`. Os links de e-mail voltam para a raiz; o app guarda a sessão e
+   troca a URL pela rota (`/redefinir-senha`, `/mural`) — X17.
+2. **E-mail**: manter "Confirm email". Para produção, **SMTP próprio** (o do Supabase tem cota baixa). Com a Brevo:
+   Authentication › SMTP Settings → host `smtp-relay.brevo.com`, porta `587`, usuário e chave SMTP da Brevo
+   (Brevo › SMTP & API), remetente de um domínio verificado na Brevo. Os textos dos e-mails ficam em Authentication ›
+   Email Templates.
+3. Senha mínima: o app pede 8 com letras e números; deixe o mínimo do Auth em 8 ou menos.
+4. **Leaked password protection** (Authentication › Policies): ligar (plano Pro).
+5. **Google** (L13): Authentication › Providers › Google com o Client ID/Secret do Google Cloud (tela de consentimento
+   com o domínio publicado; URI de redirecionamento = a "Callback URL" mostrada pelo Supabase). Depois,
+   `VITE_LOGIN_GOOGLE=1` no build.
 
-1. **URL Configuration**: em _Site URL_ e _Redirect URLs_, o endereço onde o app novo estiver publicado
-   (ex.: `https://bicos.nivotech.com.br/`; em _Redirect URLs_ também `https://bicos.nivotech.com.br/**`).
-   Os links de confirmação e de nova senha voltam para a raiz; o app trata o `#access_token=…` antes do
-   roteador e troca pela rota de verdade (`/redefinir-senha`, `/mural`…) — X17.
-2. **E-mail**: manter "Confirm email" ligado. Para produção, configurar SMTP próprio (o serviço padrão
-   do Supabase tem cota baixa — ver `SETUP-SUPABASE.md` do app antigo).
-3. Senha mínima: o app pede 8 caracteres; deixe o mínimo do Auth em 8 ou menos.
-4. **Leaked password protection** (Authentication › Policies): ligar — recusa senhas que já vazaram
-   (HaveIBeenPwned). Disponível a partir do plano Pro; no gratuito o aviso do advisor fica (X13).
+## 4. Edge Functions
 
-## 5. O que ainda depende de serviço externo
+Publicar com o CLI (`supabase functions deploy <nome>`) a partir de `web/supabase/functions`. As marcadas "sem JWT"
+são chamadas pelo banco ou por um provedor e conferem um segredo próprio: publique com `--no-verify-jwt`.
 
-| Recurso                        | No modo real hoje                                                                                         | Para ficar completo                                                        |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Código de WhatsApp no cadastro | o passo do código não aparece; o número fica guardado sem confirmação (`whatsapp_verified_at` vazio)      | provedor (Twilio ou API do WhatsApp) + Edge Function                       |
-| Pagamento do impulsionamento   | cobrança registrada no banco; PIX confirmado pelo botão de simulação, cartão aprovado (final 0000 recusa) | provedor (Mercado Pago, Asaas…) + webhook chamando `confirm_boost_payment` |
-| Exportar meus dados            | o arquivo é gerado no servidor e baixado no aparelho                                                      | (opcional) envio por e-mail                                                |
-| Fotos de perfil e capa         | continuam só no aparelho, como antes (as telas não as leem do perfil)                                     | ligar `photo_url`/`logo_url`/`cover_url` nas telas                         |
-| Entrar com Google / celular    | mensagem "por enquanto, entre com e-mail ou CPF/CNPJ"                                                     | provedores no Auth                                                         |
+| Função                 | Para quê                                                   | Segredos (Edge Functions › Secrets)                                                                        | Sem JWT |
+| ---------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------- |
+| `entrar-com-documento` | entrar com CPF/CNPJ sem expor o e-mail (publicada)         | `TURNSTILE_SECRET` (opcional)                                                                              |         |
+| `excluir-conta`        | exclusão completa, com os arquivos do Storage (Y15)        | —                                                                                                          |         |
+| `codigo-whatsapp`      | código de confirmação do WhatsApp (Twilio Verify, Y25)     | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `TWILIO_VERIFY_CHANNEL` (`whatsapp`/`sms`) |         |
+| `verificar-cnpj`       | consulta do CNPJ na Receita (BrasilAPI, L10)               | `BRASILAPI_URL` (opcional)                                                                                 |         |
+| `criar-cobranca`       | PIX e cartão do impulsionamento (Mercado Pago, Z02)        | `MP_ACCESS_TOKEN`                                                                                          |         |
+| `webhook-pagamento`    | confirmação do Mercado Pago                                | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`                                                                     | sim     |
+| `enviar-push`          | notificação no celular a cada aviso novo (X03)             | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_WEBHOOK_SECRET`                            | sim     |
+| `limpar-arquivos`      | apagar arquivos órfãos e fotos de identidade antigas (X09) | `CLEANUP_SECRET`                                                                                           | sim     |
 
-## 6. Onde está cada coisa no código
+Todas: `APP_ORIGIN` (o endereço publicado, para o CORS), `SENTRY_DSN` e `RELEASE` (opcionais, X21). `SUPABASE_URL`,
+`SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` o Supabase já põe sozinho.
 
-| Arquivo                                                                            | Papel                                                                                |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `src/services/mode.ts`                                                             | `IS_DEMO`                                                                            |
-| `src/services/supabase.ts`                                                         | cliente único (carregado sob demanda), sessão salva, fluxo `implicit`                |
-| `src/services/remote/client.ts`                                                    | tradução de erros (rede, Auth, PostgREST, RPCs) para `ServiceError`                  |
-| `src/services/remote/session.ts`                                                   | restaura a sessão, trata os links do e-mail, conta pendente de confirmação, Realtime |
-| `src/services/remote/data.ts`                                                      | leituras por tela (mural, vaga, candidaturas, histórico, perfis, notificações)       |
-| `src/services/remote/merge.ts`                                                     | junta as linhas lidas no store (puro, testado)                                       |
-| `src/services/remote/{auth,jobs,applications,profiles,actions,address,storage}.ts` | as ações                                                                             |
-| `src/types/supabase.ts`                                                            | tabelas e RPCs tipadas (o `supabase-js` confere colunas e argumentos)                |
-| `supabase/migrations/` · `supabase/functions/`                                     | banco e Edge Function                                                                |
+## 5. Recursos que dependem de serviço externo
 
-Leituras: cada tela carrega só o que mostra; ao voltar a uma tela, ela aparece na hora e se atualiza em
-segundo plano se os dados tiverem mais de 20 s (`services/queries.ts`). As notificações novas chegam
-pelo Realtime.
+Cada um existe por inteiro no código, mas **fica escondido no modo real até ser configurado** (`services/features.ts`);
+na demonstração tudo é simulado.
 
-## 7. Como foi validado
+| Recurso                                | Sem configurar (modo real)                                 | Para ligar                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Impulsionar (Mercado Pago)**         | botão escondido; a vaga aparece no mural de graça          | conta Mercado Pago (CNPJ quando tiver); `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET` nos Secrets; webhook do MP apontando para `.../functions/v1/webhook-pagamento`; publicar `criar-cobranca` e `webhook-pagamento`; no build `VITE_PAGAMENTOS=mercadopago` e `VITE_MP_PUBLIC_KEY`. Testar em sandbox: PIX e cartão.                                                                                 |
+| **Captcha (Cloudflare Turnstile)**     | sem captcha (os limites por número/IP continuam)           | Cloudflare › Turnstile → criar site com o domínio; `TURNSTILE_SECRET` nos Secrets; `VITE_TURNSTILE_SITE_KEY` no build                                                                                                                                                                                                                                                                            |
+| **Código do WhatsApp (Twilio Verify)** | o número fica guardado sem confirmação                     | Twilio › Verify → serviço (canal WhatsApp ou SMS); segredos acima; publicar `codigo-whatsapp`; `VITE_CODIGO_WHATSAPP=1`                                                                                                                                                                                                                                                                          |
+| **Entrar com Google**                  | botão escondido                                            | seção 3, item 5                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Notificações no celular (push)**     | só o sino do app                                           | `npx web-push generate-vapid-keys`; segredos `VAPID_*` e `PUSH_WEBHOOK_SECRET`; publicar `enviar-push` sem JWT; ligar a extensão **pg_net**; no SQL Editor: `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');` e `select vault.create_secret('<PUSH_WEBHOOK_SECRET>', 'bicos_push_secret');`; `VITE_VAPID_PUBLIC_KEY` no build |
+| **Limpeza de arquivos órfãos**         | os arquivos ficam                                          | segredo `CLEANUP_SECRET`; publicar `limpar-arquivos` sem JWT; pg_net ligado; no Vault `bicos_cleanup_url` (URL da função) e `bicos_cleanup_secret`                                                                                                                                                                                                                                               |
+| **Consulta do CNPJ (BrasilAPI)**       | empresa fica "pendente" até a equipe conferir              | publicar `verificar-cnpj` (a BrasilAPI é gratuita, sem chave)                                                                                                                                                                                                                                                                                                                                    |
+| **E-mail próprio (Brevo SMTP)**        | e-mails do Auth pelo serviço padrão (cota baixa)           | seção 3, item 2                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Erros (Sentry)**                     | erros só no console/log                                    | projeto no Sentry; `VITE_SENTRY_DSN` no build e `SENTRY_DSN` nos Secrets                                                                                                                                                                                                                                                                                                                         |
+| **Verificação de identidade (F07)**    | funciona: a equipe aprova/recusa por `set_identity_status` | (opcional, futuro) verificação automática por um provedor pago                                                                                                                                                                                                                                                                                                                                   |
 
-- `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (93 testes: os 81 do modo
-  demonstração e 12 do modo real com um cliente Supabase falso — login por e-mail e por CPF, cadastro,
-  documento/e-mail já usados, mural com contagem privada, decisões por RPC com a mensagem do servidor,
-  salvar vaga com desfazer, cartão que nunca sai do aparelho, contato por WhatsApp).
-- Build nos dois modos. O build real foi aberto no Chromium com as respostas do Supabase simuladas:
-  senha errada mostra "E-mail ou senha incorretos", a certa entra e o mural mostra a vaga do servidor,
-  sem erros na página e com o mesmo visual.
-- O ambiente de desenvolvimento usado não alcança `*.supabase.co` pela rede; o teste com o banco real
-  fica para depois de aplicar as migrations (seção 3).
+## 6. Hospedagem
+
+- Build: `npm run build` → `dist/` (com as variáveis do `.env.example`). As rotas são caminhos de verdade
+  (`/vaga/BC-1`): o servidor responde `index.html` para todo caminho que não for arquivo. **Cloudflare Pages** faz isso
+  sozinho (sem `404.html`); Netlify: `/* /index.html 200` em `_redirects`; nginx: `try_files $uri /index.html`.
+- `VITE_SITE_URL` (prévia do link no WhatsApp) e `APP_ORIGIN` (CORS das funções) = o domínio publicado.
+- Staging separado: recomendado um segundo projeto Supabase (gratuito) com as mesmas migrations; ver DECISOES (X16).
+
+## 7. Onde está cada coisa no código
+
+| Parte                                    | Arquivo                                                                           |
+| ---------------------------------------- | --------------------------------------------------------------------------------- |
+| Escolha do modo                          | `src/services/mode.ts`, `src/services/features.ts`                                |
+| Cliente, erros e chamadas                | `src/services/remote/client.ts`                                                   |
+| Sessão, links de e-mail, Realtime        | `src/services/remote/session.ts`                                                  |
+| Leituras e escritas                      | `src/services/remote/*.ts` (um corpo real para cada serviço de `src/services/`)   |
+| Tipos das tabelas (conferidos com o SQL) | `src/types/supabase.ts` + `src/types/database.generated.ts` (`npm run gen:types`) |
+| Migrations, testes SQL, funções          | `supabase/migrations/`, `supabase/tests/`, `supabase/functions/`                  |
+
+## 8. Como foi validado
+
+- `npm run typecheck`, `lint`, `format:check`, `test` (Vitest, com testes de serviço nos dois modos e um falso
+  Supabase para o modo real) e os três builds — no CI a cada push (`.github/workflows/web.yml`), junto com
+  Lighthouse, axe (acessibilidade) e os testes SQL.
+- Testes SQL (`supabase/tests/*.sql`, cada um termina em `rollback`): um por item com regra no banco, mais
+  `seguranca.sql` (critério de aceite 8: ninguém lê WhatsApp, endereço ou documento de outra pessoa, nem muda status,
+  nota, selo ou impulso por chamada direta; visitante não lê nada disso).
