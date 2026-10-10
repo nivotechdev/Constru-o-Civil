@@ -408,6 +408,15 @@ banco já tem. Só service_role.
 select * from public.funnel_daily(current_date - 6, current_date);   -- 7 linhas
 ```
 
+### 36. `20261014000600_w08_limites_vaga.sql` (W08)
+
+`job_from_draft` com diária até R$ 5.000, descrição de 20 a 1000 letras e turno da noite (22h–6h) aceito; início
+igual ao fim recusado.
+
+```sql
+select prosrc like '%5.000%' from pg_proc where proname = 'job_from_draft';   -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -86,6 +86,12 @@ export async function lookupCep(cep: string): Promise<CepResult | null> {
 /** CEPs found online in this session: their point places the address (see locate). */
 const looked = new Map<string, CepResult>();
 
+/** W08: the city of a CEP already looked up ("Name, UF"), or null when it isn't known here. */
+export function cepCity(cep: string): string | null {
+  const d = onlyDigits(cep);
+  return looked.get(d)?.city ?? CEPS.find((c) => onlyDigits(c.cep) === d)?.city ?? null;
+}
+
 /** Small fixed offset from a text, so two addresses in the same city don't sit on the same point. */
 function offset(seed: string): number {
   let h = 0;

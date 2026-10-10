@@ -9,7 +9,7 @@ insert into t_draft select jsonb_build_object(
   'oficio_id', 'pedreiro', 'pay', 200, 'cep', '03307-000', 'street', 'Rua Teste', 'number', '10',
   'neighborhood', 'Tatuapé', 'city', 'São Paulo', 'uf', 'SP', 'lat', -23.54, 'lon', -46.57,
   'start_date', public.bicos_today() + 2, 'end_date', public.bicos_today() + 3, 'slots', 1,
-  'description', 'Reboco', 'payment_method', 'pix_fim', 'requirements', jsonb_build_array('EPI', 'trena própria'));
+  'description', 'Reboco de duas paredes internas', 'payment_method', 'pix_fim', 'requirements', jsonb_build_array('EPI', 'trena própria'));
 create temp table t_ids (k text primary key, v text);
 grant all on t_ids to authenticated;
 

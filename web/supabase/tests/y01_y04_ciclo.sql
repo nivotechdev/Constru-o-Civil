@@ -22,7 +22,7 @@ select public.transition_application((select v from t_ids where k = 'hoje'), '80
 select public.update_job((select v from t_ids where k = 'hoje'), jsonb_build_object(
   'oficio_id', 'pedreiro', 'pay', 250, 'cep', '03307-000', 'street', 'Rua Teste', 'number', '10',
   'neighborhood', 'Tatuapé', 'city', 'São Paulo', 'uf', 'SP', 'lat', -23.54, 'lon', -46.57,
-  'start_date', (select d from t_today), 'end_date', (select d from t_today) + 1, 'slots', 1, 'description', 'Reboco de parede'));
+  'start_date', (select d from t_today), 'end_date', (select d from t_today) + 1, 'slots', 1, 'description', 'Reboco de parede da cozinha'));
 -- Concluir a única posição encerra a vaga sozinha (Y01).
 select public.transition_application((select v from t_ids where k = 'hoje'), '80000000-0000-0000-0000-0000000000a1', 'concluir');
 select pg_temp.logout();

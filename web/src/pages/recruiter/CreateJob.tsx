@@ -34,6 +34,7 @@ import {
   emptyForm,
   formDiarias,
   formFromJob,
+  MAX_DESCRIPTION,
   MIN_PAY,
   validateStep1,
   validateStep2,
@@ -508,13 +509,14 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           placeholder="Ex.: reboco de duas paredes internas, argamassa e areia já estão no local."
           value={f.detalhe}
           className={cx(
-            'w-full px-3 py-2.5 bg-white rounded-control border outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none transition-colors duration-150',
+            'w-full px-3 py-2.5 bg-white rounded-control border outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150',
             ui.errors.detalhe
               ? 'border-danger-500'
               : 'border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100'
           )}
-          onInput={(v) => set({ detalhe: v }, 'detalhe')}
+          onInput={(v) => set({ detalhe: v.slice(0, MAX_DESCRIPTION) }, 'detalhe')}
         />
+        <span className="text-xs text-concrete-500 self-end">{`${f.detalhe.trim().length}/${MAX_DESCRIPTION}`}</span>
         {ui.errors.detalhe ? (
           <FieldError message={ui.errors.detalhe} />
         ) : (

@@ -151,7 +151,9 @@ describe('publish form', () => {
     expect(Object.values(validateStep1(valid(), NOW)).filter(Boolean)).toEqual([]);
     expect(validateStep1({ ...valid(), startDate: '2026-10-07' }, NOW).startDate).toMatch(/passado/);
     expect(validateStep1({ ...valid(), endDate: '2026-10-07' }, NOW).endDate).toMatch(/depois do início/);
-    expect(validateStep1({ ...valid(), startTime: '17:00', endTime: '07:00' }, NOW).periodo).toMatch(/depois/);
+    // W08: a night shift crosses midnight; the same start and end is refused.
+    expect(validateStep1({ ...valid(), startTime: '22:00', endTime: '06:00' }, NOW).periodo).toBeUndefined();
+    expect(validateStep1({ ...valid(), startTime: '07:00', endTime: '07:00' }, NOW).periodo).toMatch(/iguais/);
     expect(validateStep1({ ...valid(), startTime: '07:00' }, NOW).periodo).toMatch(/início e o fim/);
     expect(validateStep1({ ...valid(), cep: '0330' }, NOW).cep).toBeTruthy();
     // Sat → Sun on weekdays only: no day fits.
@@ -207,5 +209,25 @@ describe('X19: what a distance is measured from', () => {
       'de você'
     );
     expect(originText({ location: 'Campinas, SP', origin: null }, db, 'recrutador')).toBe('do centro de Campinas');
+  });
+});
+
+describe('W08: limits of the publish and payment forms', () => {
+  it('pay ceiling, description length, CEP of another city, cards of 15 to 19 digits, night shift text', async () => {
+    const { validateStep2, validateStep1, emptyForm } = await import('../pages/recruiter/jobForm');
+    const { validateCard } = await import('../utils/card');
+    const { hoursText } = await import('../utils/jobInfo');
+    const base = { ...emptyForm(), valor: '200', detalhe: 'Reboco de duas paredes internas, material no local.' };
+    expect(validateStep2(base).valor).toBeUndefined();
+    expect(validateStep2({ ...base, valor: '50000' }).valor).toMatch(/até R\$ 5\.000/);
+    expect(validateStep2({ ...base, detalhe: 'Reboco' }).detalhe).toMatch(/pelo menos 20/);
+    expect(validateStep2({ ...base, detalhe: 'x'.repeat(1001) }).detalhe).toMatch(/até 1000/);
+    const { EXAMPLE_CEPS } = await import('../services/address');
+    const step1 = validateStep1({ ...emptyForm(), cep: EXAMPLE_CEPS[0], city: 'Recife, PE' });
+    expect(step1.cep).toMatch(/Esse CEP é de/);
+    const card = { name: 'ANA SILVA', expiry: '12/39', cvv: '123' };
+    expect(validateCard({ ...card, number: '378282246310005' }).number).toBeUndefined();
+    expect(validateCard({ ...card, number: '4111 1111 1111' }).number).toMatch(/15 a 19/);
+    expect(hoursText({ startTime: '22:00', endTime: '06:00' } as never)).toBe('22h–6h (vira a noite)');
   });
 });

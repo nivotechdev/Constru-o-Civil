@@ -1,6 +1,6 @@
 // The publish/edit job form: its values, the rules each step checks and the draft it sends. Pure
 // functions (no React), so the rules are tested on their own (src/__tests__/jobForm.test.ts).
-import { locate, maskCEP, onlyDigits } from '../../services/address';
+import { cepCity, locate, maskCEP, onlyDigits } from '../../services/address';
 import { getOficio } from '../../services/catalog';
 import { DEFAULT_CITY } from '../../services/defaults';
 import type { JobDraft } from '../../services/jobs';
@@ -62,6 +62,10 @@ export type FormErrors = Partial<Record<FieldKey, string | null>>;
 /** Longest job one post can cover (beyond that, publish it again). */
 export const MAX_DAYS = 60;
 export const MIN_PAY = 80;
+/** W08: above this a diária is almost surely a typo (the database refuses it too). */
+export const MAX_PAY = 5000;
+export const MIN_DESCRIPTION = 20;
+export const MAX_DESCRIPTION = 1000;
 
 export function emptyForm(): JobForm {
   return {
@@ -146,6 +150,9 @@ export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLi
   if (!f.number.trim()) e.number = 'Informe o número (ou "s/n").';
   if (!f.neighborhood.trim()) e.neighborhood = 'Informe o bairro.';
   if (!f.city.trim()) e.city = 'Escolha a cidade da obra.';
+  // W08: the CEP and the city must be the same place.
+  else if (!e.cep && cepCity(f.cep) && cepCity(f.cep) !== f.city)
+    e.cep = `Esse CEP é de ${cepCity(f.cep)}. Confira o CEP ou a cidade.`;
   // X10: a city the map doesn't know would put the job at (0, 0), far from everyone.
   else if (!e.cep && !formPoint(f, original)) e.city = 'Não achamos essa cidade no mapa. Escolha a cidade da lista.';
   if (!f.dias) e.dias = 'Escolha em que dias o bico pode acontecer.';
@@ -171,7 +178,8 @@ export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLi
   const hasEnd = Boolean(f.endTime);
   if (hasStart !== hasEnd) e.periodo = 'Preencha o início e o fim, ou deixe os dois em branco.';
   else if (hasStart && (!isValidTime(f.startTime) || !isValidTime(f.endTime))) e.periodo = 'Horário inválido.';
-  else if (hasStart && f.startTime >= f.endTime) e.periodo = 'O fim tem que ser depois do início.';
+  // W08: a night shift (22h–6h) goes past midnight; only the same start and end is refused.
+  else if (hasStart && f.startTime === f.endTime) e.periodo = 'O início e o fim não podem ser iguais.';
 
   const vagas = Number(f.vagas);
   if (!vagas || vagas < 1 || vagas > 50) e.vagas = 'Informe quantas pessoas a vaga precisa (de 1 a 50).';
@@ -187,10 +195,15 @@ export function validateStep2(f: JobForm): FormErrors {
     const n = parseInt(f.valor, 10);
     if (!f.valor.trim()) e.valor = 'Informe o valor da diária, ou marque como a combinar.';
     else if (!n || n < MIN_PAY) e.valor = `Informe um valor de R$ ${MIN_PAY} ou mais.`;
+    else if (n > MAX_PAY) e.valor = `Confira o valor: a diária vai até R$ ${MAX_PAY.toLocaleString('pt-BR')}.`;
   }
   if (f.pagamento === 'outro' && !f.pagamentoObs.trim()) e.pagamento = 'Conte como a diária vai ser paga.';
   else if (f.pagamentoObs.trim().length > 80) e.pagamento = 'Use até 80 caracteres para explicar o pagamento.';
-  if (!f.detalhe.trim()) e.detalhe = 'Descreva o serviço da vaga.';
+  const desc = f.detalhe.trim();
+  if (!desc) e.detalhe = 'Descreva o serviço da vaga.';
+  else if (desc.length < MIN_DESCRIPTION)
+    e.detalhe = `Conte um pouco mais (pelo menos ${MIN_DESCRIPTION} letras): o que vai ser feito, onde, materiais.`;
+  else if (desc.length > MAX_DESCRIPTION) e.detalhe = `Use até ${MAX_DESCRIPTION} letras na descrição.`;
   return e;
 }
 

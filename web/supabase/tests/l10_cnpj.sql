@@ -7,7 +7,7 @@ grant all on t_draft to authenticated;
 insert into t_draft select jsonb_build_object(
   'oficio_id', 'pedreiro', 'pay', 200, 'cep', '03307-000', 'street', 'Rua Teste', 'number', '10',
   'neighborhood', 'Tatuapé', 'city', 'São Paulo', 'uf', 'SP', 'lat', -23.54, 'lon', -46.57,
-  'start_date', public.bicos_today() + 2, 'end_date', public.bicos_today() + 3, 'slots', 1, 'description', 'Reboco');
+  'start_date', public.bicos_today() + 2, 'end_date', public.bicos_today() + 3, 'slots', 1, 'description', 'Reboco de duas paredes internas');
 select pg_temp.login('7a000000-0000-0000-0000-0000000000c1');
 select pg_temp.fails($$select public.publish_job((select p from t_draft))$$, 'BC409');
 select pg_temp.fails($$select public.company_cnpj_for_check('7a000000-0000-0000-0000-0000000000c1')$$, '42501');

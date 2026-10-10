@@ -1163,3 +1163,12 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   (sem duplo toque).
 - **W07** "O contato por WhatsApp abre depois que você aprovar" só aparece enquanto o contato ainda está fechado
   para aquela candidatura.
+
+### W08 — Limites de publicar e de pagar
+
+- **Diária até R$ 5.000** (acima é quase sempre erro de digitação) — formulário e banco.
+- **Descrição de 20 a 1000 letras**, com contador — formulário e banco. As vagas antigas da demonstração já passam.
+- **CEP coerente com a cidade**: se o CEP é de outra cidade, o passo 1 avisa ("Esse CEP é de …").
+- **Turno que passa da meia-noite** (22h–6h) aceito no formulário e no banco, e mostrado como "22h–6h (vira a
+  noite)"; só início igual ao fim é recusado.
+- **Cartões de 15 a 19 dígitos** (Amex e outros); antes só 16.

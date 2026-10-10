@@ -86,7 +86,10 @@ export function dateText(job: Schedule, now: Date = new Date()): string {
 
 /** "7h–17h", "7h30–16h", or "Horário a combinar". */
 export function hoursText(job: Schedule): string {
-  return job.startTime && job.endTime ? `${timeLabel(job.startTime)}–${timeLabel(job.endTime)}` : 'Horário a combinar';
+  if (!job.startTime || !job.endTime) return 'Horário a combinar';
+  const range = `${timeLabel(job.startTime)}–${timeLabel(job.endTime)}`;
+  // W08: a night shift ends the next day.
+  return job.endTime < job.startTime ? `${range} (vira a noite)` : range;
 }
 
 /** "Hoje · 7h–17h", "Data a combinar · 7h–17h", "Data e horário a combinar"… */
