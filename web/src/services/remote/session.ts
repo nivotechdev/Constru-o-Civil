@@ -11,7 +11,7 @@ import type { RealtimeChannel, User } from '@supabase/supabase-js';
 import type { NotificationKind, Role } from '../../types/models';
 import type { TableRow } from '../../types/supabase';
 import { clearQueries, refreshCandidacies, runQuery } from '../queries';
-import { navigate, replaceUrl, resetHistory, routeUrl } from '../router';
+import { currentPath, navigate, replaceUrl, resetHistory, routeUrl } from '../router';
 import { clearSessionData, getSession, setSessionAccount, setUI, upsertAccount } from '../store';
 import { showToast } from '../toast';
 import { db, request, SESSION_ENDED, setSessionEndedHandler } from './client';
@@ -40,9 +40,28 @@ let channel: RealtimeChannel | null = null;
 
 // A password-reset link opens a short session only to set the new password (services/remote/auth.ts
 // ends it right after): it must not open the app as a normal sign-in.
+// X11: the flag also lives in the device's storage — a reset link opened and abandoned (tab closed) must
+// not come back later as a normal sign-in.
+const RECOVERY_KEY = 'bicos.recuperacao';
 let recovering = false;
 export function setRecovering(on: boolean): void {
   recovering = on;
+  try {
+    if (on) localStorage.setItem(RECOVERY_KEY, '1');
+    else localStorage.removeItem(RECOVERY_KEY);
+  } catch {
+    /* private mode: the in-memory flag is enough while the tab is open */
+  }
+}
+export function isRecovering(): boolean {
+  return recovering;
+}
+function recoveryLeftBehind(): boolean {
+  try {
+    return localStorage.getItem(RECOVERY_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 let stopReconnectWatch: (() => void) | null = null;
@@ -273,7 +292,7 @@ async function handleAuthRedirect(): Promise<void> {
   if (!accessToken || !refreshToken) return;
   const recovery = params.get('type') === 'recovery';
   const emailChange = params.get('type') === 'email_change';
-  recovering = recovery;
+  if (recovery) setRecovering(true);
   const client = await db();
   const { error } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
   replaceUrl(recovery ? '/redefinir-senha' : '/');
@@ -393,6 +412,19 @@ async function restore(): Promise<void> {
       setBootStatus('ready');
       return;
     }
+    if (recoveryLeftBehind() && currentPath() === '/redefinir-senha') {
+      // The reset screen was reloaded: still the same link's session.
+      recovering = true;
+      setBootStatus('ready');
+      return;
+    }
+    if (recoveryLeftBehind()) {
+      // A reset link opened earlier and never finished: that session is not a sign-in.
+      setRecovering(false);
+      await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      setBootStatus('ready');
+      return;
+    }
     const cached = readCache(user.id);
     if (cached) {
       enterCachedSession(cached);
@@ -440,7 +472,7 @@ function listenToAuth(client: Awaited<ReturnType<typeof db>>): void {
     setTimeout(() => {
       const current = getSession();
       if (event === 'PASSWORD_RECOVERY') {
-        recovering = true;
+        setRecovering(true);
         navigate('/redefinir-senha', { replace: true });
         return;
       }

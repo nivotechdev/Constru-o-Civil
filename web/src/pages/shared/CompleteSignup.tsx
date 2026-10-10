@@ -70,6 +70,7 @@ export default function CompleteSignup() {
           id="completar-nome"
           label={role === 'recrutador' ? 'Nome da empresa' : 'Nome completo'}
           icon={role === 'recrutador' ? 'building-2' : 'user'}
+          autoComplete={role === 'recrutador' ? 'organization' : 'name'}
           value={name}
           onInput={(v) => {
             setName(v);
@@ -81,6 +82,7 @@ export default function CompleteSignup() {
             id="completar-responsavel"
             label="Quem vai falar com os candidatos"
             icon="user"
+            autoComplete="name"
             value={contact}
             onInput={setContact}
           />
@@ -91,6 +93,7 @@ export default function CompleteSignup() {
           icon="id-card"
           mono
           inputMode="numeric"
+          autoComplete="off"
           value={doc}
           onInput={(v) => {
             setDoc(role === 'recrutador' && v.replace(/\D/g, '').length > 11 ? maskCNPJ(v) : maskCPF(v));
@@ -103,6 +106,7 @@ export default function CompleteSignup() {
           icon="phone"
           type="tel"
           inputMode="tel"
+          autoComplete="tel"
           value={whatsapp}
           onInput={(v) => {
             setWhatsapp(maskPhone(v));

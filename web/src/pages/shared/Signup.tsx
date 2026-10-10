@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { passwordProblem } from '../../utils/password';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
@@ -186,11 +187,7 @@ function validateField(field: SignupField, values: Values, role: Role): string |
     return isValidMobile(v) ? null : 'Número inválido. Use o celular com DDD (11 números).';
   }
   if (field.id === 'codigo') return /^\d{6}$/.test(v) ? null : 'Digite os 6 números do código.';
-  if (field.id === 'senha') {
-    if (v.length < 8) return 'Senha curta. Use 8 caracteres ou mais.';
-    if (!/[a-zA-Z]/.test(v) || !/[0-9]/.test(v)) return 'Misture letras e números na senha.';
-    return null;
-  }
+  if (field.id === 'senha') return passwordProblem(v);
   return null;
 }
 
@@ -467,11 +464,13 @@ export default function Signup({ params }: ScreenProps) {
               error={ui.errors.senha}
               visible={ui.passwordVisible}
               onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
+              autoComplete="new-password"
               onInput={setValue}
               onEnter={continueByEnter}
             />
             <PasswordInput
               id={key + '-confirm'}
+              autoComplete="new-password"
               label="Confirme a senha"
               placeholder="Repita a senha"
               value={confirmPassword}
@@ -542,6 +541,7 @@ export default function Signup({ params }: ScreenProps) {
             inputMode={
               field.mask === 'phone' ? 'tel' : field.mask ? 'numeric' : field.type === 'email' ? 'email' : 'text'
             }
+            autoComplete={fieldAutoComplete(field, role)}
             onInput={setValue}
             onEnter={continueByEnter}
             autoFocus
@@ -569,4 +569,14 @@ export default function Signup({ params }: ScreenProps) {
       </div>
     </div>
   );
+}
+
+/** X04: what the browser may fill in each step (documents never: it would offer someone else's). */
+function fieldAutoComplete(field: SignupField, role: Role): string | undefined {
+  if (field.type === 'email') return 'email';
+  if (field.mask === 'phone') return 'tel';
+  if (field.mask) return 'off';
+  if (field.id === 'nome') return role === 'recrutador' ? 'organization' : 'name';
+  if (field.id === 'responsavel') return 'name';
+  return undefined;
 }

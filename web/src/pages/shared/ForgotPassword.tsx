@@ -1,4 +1,5 @@
 import { Button } from '../../components/Button';
+import { IS_DEMO } from '../../services/mode';
 import { IconButton } from '../../components/IconButton';
 import { Input } from '../../components/Input';
 import { ResultIcon } from '../../components/ResultIcon';
@@ -23,6 +24,18 @@ export default function ForgotPassword() {
     submitting: false
   });
 
+  const send = () => {
+    if (!isValidEmail(ui.email)) {
+      setUi({ error: 'E-mail inválido. Confira se tem @ e o domínio.' });
+      return;
+    }
+    if (ui.submitting) return;
+    setUi({ submitting: true, error: null });
+    requestPasswordReset(ui.email)
+      .then(() => setUi({ submitting: false, sent: true }))
+      .catch((e: unknown) => setUi({ submitting: false, error: errorMessage(e) }));
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white lg:max-w-app lg:mx-auto">
       <div className="flex items-center gap-1.5 min-h-14 px-2 border-b border-concrete-200">
@@ -37,7 +50,12 @@ export default function ForgotPassword() {
             Mandamos um link de redefinição para <strong className="text-concrete-900">{ui.email}</strong>. Abra o link
             para criar uma senha nova.
           </p>
-          <Button label="Já abri o link" variant="secondary" onClick={() => navigate('/redefinir-senha')} />
+          {/* X11: in the demo there is no e-mail, so the link is "opened" here; for real, the link opens the app. */}
+          {IS_DEMO ? (
+            <Button label="Já abri o link" variant="secondary" onClick={() => navigate('/redefinir-senha')} />
+          ) : (
+            <Button label="Voltar ao login" variant="secondary" onClick={() => navigate('/login', { replace: true })} />
+          )}
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-7 px-5 sm:px-8 py-8">
@@ -52,31 +70,19 @@ export default function ForgotPassword() {
             label="E-mail"
             placeholder="voce@email.com"
             icon="mail"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
             value={ui.email}
             error={ui.error}
             onInput={(v) => setUi({ email: v, error: null })}
+            onEnter={send}
           />
         </div>
       )}
       {!ui.sent ? (
         <div className="px-5 sm:px-8 py-3">
-          <Button
-            label="Enviar link"
-            size="lg"
-            fullWidth
-            loading={ui.submitting}
-            onClick={() => {
-              if (!isValidEmail(ui.email)) {
-                setUi({ error: 'E-mail inválido. Confira se tem @ e o domínio.' });
-                return;
-              }
-              if (ui.submitting) return;
-              setUi({ submitting: true, error: null });
-              requestPasswordReset(ui.email)
-                .then(() => setUi({ submitting: false, sent: true }))
-                .catch((e: unknown) => setUi({ submitting: false, error: errorMessage(e) }));
-            }}
-          />
+          <Button label="Enviar link" size="lg" fullWidth loading={ui.submitting} onClick={send} />
         </div>
       ) : null}
     </div>

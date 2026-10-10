@@ -7,7 +7,14 @@ import { serviceError, ServiceError } from '../errors';
 import { getSession } from '../store';
 import { db, invokeFunction, request, toServiceError } from './client';
 import { withTimeout } from '../boot';
-import { authRedirectUrl, enterPendingSession, enterSession, leaveSession, setRecovering } from './session';
+import {
+  authRedirectUrl,
+  enterPendingSession,
+  enterSession,
+  isRecovering,
+  leaveSession,
+  setRecovering
+} from './session';
 
 const digits = (s: string) => s.replace(/\D/g, '');
 
@@ -240,6 +247,13 @@ export async function resetPassword(newPassword: string): Promise<void> {
       throw serviceError('validacao', 'Essa senha é fraca. Use pelo menos 8 caracteres, com letras e números.');
     throw toServiceError(error);
   }
+  setRecovering(false);
+  await signOut();
+}
+
+/** X11: leaving the reset screen without a new password signs the link's session out. */
+export async function abandonPasswordReset(): Promise<void> {
+  if (!isRecovering()) return;
   setRecovering(false);
   await signOut();
 }

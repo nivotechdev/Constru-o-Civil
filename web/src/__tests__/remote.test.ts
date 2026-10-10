@@ -1071,6 +1071,31 @@ describe('Z11: opening the app with the real backend', () => {
     });
   });
 
+  it('X11: a reset link opened and left unfinished is not a sign-in the next time the app opens', async () => {
+    const memory = new Map<string, string>([['bicos.recuperacao', '1']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => memory.get(k) ?? null,
+      setItem: (k: string, v: string) => memory.set(k, v),
+      removeItem: (k: string) => memory.delete(k),
+      key: () => null,
+      length: 0
+    });
+    vi.stubGlobal('window', {
+      location: { pathname: '/', search: '', hash: '#/mural' },
+      addEventListener: () => undefined
+    });
+    const fake = fakeSupabase({
+      tables: { accounts: [workerAccount], workers: [workerRow] },
+      auth: { getSession: () => ({ data: { session: { user: authUser('u-ana', 'ana@exemplo.com') } }, error: null }) }
+    });
+    const { session, m } = await boot(fake);
+    await session.startRemoteSession();
+    expect(fake.calls.some((c) => c.name === 'signOut')).toBe(true);
+    expect(m.store.getSession()).toBeNull();
+    expect(memory.has('bicos.recuperacao')).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
   it('Y27: a session whose account has no row is signed out with the reason', async () => {
     const fake = fakeSupabase({
       tables: { accounts: [] },

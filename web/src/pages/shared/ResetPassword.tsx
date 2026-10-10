@@ -2,9 +2,10 @@ import { Button } from '../../components/Button';
 import { IconButton } from '../../components/IconButton';
 import { PasswordInput } from '../../components/Input';
 import { ResultIcon } from '../../components/ResultIcon';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PasswordStrength } from '../../components/PasswordStrength';
-import { resetPassword } from '../../services/auth';
+import { abandonPasswordReset, resetPassword } from '../../services/auth';
+import { passwordProblem } from '../../utils/password';
 import { goBack, navigate } from '../../services/router';
 import { errorMessage } from '../../services/errors';
 
@@ -19,6 +20,30 @@ export default function ResetPassword() {
     submitting: false
   });
   const setUi = (patch: Partial<typeof ui>) => setState((s) => ({ ...s, ...patch }));
+
+  // X11: leaving this screen without saving ends the short session the e-mail link opened.
+  const done = useRef(false);
+  useEffect(() => {
+    done.current = ui.done;
+  }, [ui.done]);
+  useEffect(() => () => void (done.current ? undefined : abandonPasswordReset()), []);
+
+  const save = () => {
+    const problem = passwordProblem(ui.senha);
+    if (problem) {
+      setUi({ error: problem });
+      return;
+    }
+    if (ui.senha !== ui.confirm) {
+      setUi({ error: 'As senhas não são iguais. Confira os dois campos.' });
+      return;
+    }
+    if (ui.submitting) return;
+    setUi({ submitting: true, error: null });
+    resetPassword(ui.senha)
+      .then(() => setUi({ submitting: false, done: true }))
+      .catch((e: unknown) => setUi({ submitting: false, error: errorMessage(e) }));
+  };
 
   if (ui.done) {
     return (
@@ -44,44 +69,28 @@ export default function ResetPassword() {
         </div>
         <PasswordInput
           id="reset-senha"
+          autoComplete="new-password"
           value={ui.senha}
           visible={ui.visible}
           onToggleVisible={() => setUi({ visible: !ui.visible })}
           onInput={(v) => setUi({ senha: v, error: null })}
+          onEnter={save}
         />
         <PasswordStrength password={ui.senha} />
         <PasswordInput
           id="reset-confirm"
           label="Confirme a senha nova"
+          autoComplete="new-password"
           value={ui.confirm}
           visible={ui.visible}
           onToggleVisible={() => setUi({ visible: !ui.visible })}
           error={ui.error}
           onInput={(v) => setUi({ confirm: v, error: null })}
+          onEnter={save}
         />
       </div>
       <div className="px-5 sm:px-8 py-3">
-        <Button
-          label="Salvar nova senha"
-          size="lg"
-          fullWidth
-          loading={ui.submitting}
-          onClick={() => {
-            if (ui.senha.length < 8) {
-              setUi({ error: 'Senha curta. Use 8 caracteres ou mais.' });
-              return;
-            }
-            if (ui.senha !== ui.confirm) {
-              setUi({ error: 'As senhas não são iguais. Confira os dois campos.' });
-              return;
-            }
-            if (ui.submitting) return;
-            setUi({ submitting: true, error: null });
-            resetPassword(ui.senha)
-              .then(() => setUi({ submitting: false, done: true }))
-              .catch((e: unknown) => setUi({ submitting: false, error: errorMessage(e) }));
-          }}
-        />
+        <Button label="Salvar nova senha" size="lg" fullWidth loading={ui.submitting} onClick={save} />
       </div>
     </div>
   );

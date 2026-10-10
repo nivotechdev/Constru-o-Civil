@@ -1009,3 +1009,21 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');`
   e `select vault.create_secret('<o mesmo PUSH_WEBHOOK_SECRET>', 'bicos_push_secret');`; por fim
   `VITE_VAPID_PUBLIC_KEY` no build. A chave privada nunca vai para o front.
+
+### X04 — Formulários
+
+- Login num `<form>` de verdade (gerenciadores de senha reconhecem), `autocomplete` em todos os campos de conta:
+  `username` + `current-password` no login, `email`, `name`/`organization`, `tel`, `new-password` no cadastro,
+  na nova senha e na troca, `one-time-code` no código do WhatsApp; **CPF/CNPJ com `autocomplete="off"`** (o
+  navegador não deve sugerir o documento de outra pessoa) e teclado numérico. Enter envia em todos os campos
+  (login, cadastro passo a passo, esqueci a senha, nova senha, excluir conta, telas de Configurações).
+
+### X11 — Recuperar senha
+
+- "Já abri o link" só existe na demonstração (lá não há e-mail); no modo real a tela diz para abrir o link do
+  e-mail e oferece **Voltar ao login**.
+- A nova senha segue **a mesma regra do cadastro** (8+ caracteres, letras e números) — `utils/password.ts`,
+  usado também em Trocar senha; o serviço confere antes de chamar o servidor.
+- **Sessão de recuperação abandonada é encerrada**: sair da tela sem salvar encerra a sessão curta do link; e se
+  a pessoa fechou a aba no meio, na próxima abertura o app encerra essa sessão em vez de entrar na conta
+  (marcador `bicos.recuperacao` no aparelho). Recarregar a própria tela de nova senha continua valendo.

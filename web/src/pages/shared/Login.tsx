@@ -104,7 +104,14 @@ export default function Login() {
           </span>
           <h1 className="font-display font-bold text-3xl text-concrete-900">Olá de novo</h1>
         </div>
-        <div className="flex flex-col gap-5">
+        {/* X04: a real <form>, so password managers recognize the sign-in (Enter is handled by the fields). */}
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
           {ui.notice ? (
             <Card tone="sunken" padding="sm">
               <div className="flex gap-2.5 items-center" role="status">
@@ -119,6 +126,7 @@ export default function Login() {
             placeholder="voce@email.com"
             icon="mail"
             inputMode="email"
+            autoComplete="username"
             value={ui.identifier}
             error={ui.identifierError}
             onInput={(v) => setUi({ identifier: v, identifierError: null, error: null })}
@@ -156,7 +164,7 @@ export default function Login() {
               onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))}
             />
           ) : null}
-        </div>
+        </form>
         <div className="flex flex-col items-center gap-1">
           <Button label="Esqueci minha senha" variant="ghost" onClick={() => navigate('/esqueci-senha')} />
           <Button label="Criar minha conta" variant="ghost" onClick={() => navigate('/escolha-perfil')} />

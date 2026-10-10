@@ -417,3 +417,16 @@ describe('F07: identity check (demo)', () => {
     expect(store.getDb().workers[id].verified).toBe(true);
   });
 });
+
+describe('X11: one password rule', () => {
+  it('sign-up, reset and change use the same check', async () => {
+    const { passwordProblem } = await import('../utils/password');
+    expect(passwordProblem('curta1')).toMatch(/curta/);
+    expect(passwordProblem('somenteletras')).toMatch(/letras e números/);
+    expect(passwordProblem('12345678')).toMatch(/letras e números/);
+    expect(passwordProblem('obra2026')).toBeNull();
+    vi.resetModules();
+    const auth = await import('../services/auth');
+    await expect(auth.resetPassword('somenteletras')).rejects.toMatchObject({ code: 'validacao' });
+  });
+});

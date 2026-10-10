@@ -2,6 +2,7 @@
 // With the real backend each function hands over to services/remote/auth.ts (Supabase Auth); in demo
 // mode (services/mode.ts) every flow is simulated in memory, with realistic delays and outcomes.
 // Screens only call these functions, the same in both modes.
+import { passwordProblem } from '../utils/password';
 import { ACCOUNTS, DEMO_PASSWORD } from '../data/seed';
 import type { Account, Company, Role, Worker } from '../types/models';
 import { localLatency, mockLatency } from './mockLatency';
@@ -278,8 +279,16 @@ export async function requestPasswordReset(_email: string): Promise<void> {
 
 /** Sets the new password chosen from the reset link. Demo: nothing is stored. */
 export async function resetPassword(_newPassword: string): Promise<void> {
+  // X11: the same rule as the sign-up.
+  const problem = passwordProblem(_newPassword);
+  if (problem) throw serviceError('validacao', problem);
   if (!IS_DEMO) return remote.resetPassword(_newPassword);
   await mockLatency(600);
+}
+
+/** X11: the reset screen was left without saving: the short session from the e-mail link ends. */
+export async function abandonPasswordReset(): Promise<void> {
+  if (!IS_DEMO) return remote.abandonPasswordReset();
 }
 
 // ---- Google (L13) ----
@@ -320,8 +329,8 @@ export async function completeOAuthSignUp(data: OAuthSignUpData): Promise<void> 
  * current password and Supabase Auth `updateUser({ password })`.
  */
 export async function changePassword(current: string, next: string): Promise<void> {
-  if (next.length < 8 || !/[a-zA-Z]/.test(next) || !/[0-9]/.test(next))
-    throw serviceError('validacao', 'Use 8 caracteres ou mais, misturando letras e números.');
+  const problem = passwordProblem(next);
+  if (problem) throw serviceError('validacao', problem);
   if (!IS_DEMO) return remote.changePassword(current, next);
   await mockLatency(600);
   const session = getSession();
