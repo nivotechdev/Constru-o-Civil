@@ -698,6 +698,24 @@ describe('remote: data and actions', () => {
     expect(paging.getPaging(paging.NOTIFICATIONS_PAGE).hasMore).toBe(false);
   });
 
+  it('X20: signing in and the Auth event that follows read the account once and open one channel', async () => {
+    const fake = server('ana', {
+      slow: { accounts: 20 },
+      auth: { getSession: () => ({ data: { session: null }, error: null }) }
+    });
+    const m = await load(fake);
+    // The app started signed out: the Auth listener is on.
+    await (await import('../services/remote/session')).startRemoteSession();
+    const channels = vi.spyOn(fake.client, 'channel');
+    const signing = m.auth.signIn('ana@exemplo.com', 'segredo123');
+    fake.authEvent('SIGNED_IN', { user: authUser('u-ana', 'ana@exemplo.com') });
+    await signing;
+    await new Promise((r) => setTimeout(r, 40));
+    const accountReads = fake.calls.filter((c) => c.name === 'accounts' && c.ops?.some((o) => o[0] === 'select'));
+    expect(accountReads).toHaveLength(1);
+    expect(channels).toHaveBeenCalledTimes(1);
+  });
+
   it('a candidacy notice makes the candidacy screens read again (Y12)', async () => {
     await load(server('ana'));
     const queries = await import('../services/queries');

@@ -1116,3 +1116,9 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   do perfil: "X km **do seu bairro**"; da cidade escolhida: "X km **do centro de** Campinas".
 - Trocou a cidade no perfil: o mural que estava na cidade antiga passa para a nova (uma cidade escolhida à mão no
   mural continua escolhida).
+
+### X20 — Login lê a conta uma vez
+
+- Feito no Z11 (`enterSession` divide a mesma leitura entre o login e o aviso `SIGNED_IN` do Auth, e o canal do
+  Realtime é aberto uma vez). Agora há teste que simula os dois chegando juntos (com o banco lento) e confere uma
+  leitura da conta e um canal; o teste falha se a divisão for removida.

@@ -21,6 +21,8 @@ export interface FakeOptions {
   unique?: Record<string, string[]>;
   /** Tables the client has no UPDATE privilege on: an upsert fails with 42501, like PostgREST. */
   noUpdate?: string[];
+  /** Milliseconds a table takes to answer (to test requests that overlap). */
+  slow?: Record<string, number>;
 }
 
 const ok = (data: unknown): Answer => ({ data, error: null });
@@ -51,6 +53,7 @@ function applyFilters(rows: Row[], ops: unknown[][]): Row[] {
 
 export function fakeSupabase(options: FakeOptions = {}) {
   const realtime: { event: string; cb: (payload: { new: Row }) => void }[] = [];
+  const authListeners: ((event: string, session: unknown) => void)[] = [];
   const statusListeners: ((status: string) => void)[] = [];
   const tables: Record<string, Row[]> = options.tables ?? {};
   const calls: Call[] = [];
@@ -123,7 +126,7 @@ export function fakeSupabase(options: FakeOptions = {}) {
       };
     }
     chain.then = (resolve: (a: Answer) => unknown, reject: (e: unknown) => unknown) =>
-      Promise.resolve().then(answer).then(resolve, reject);
+      new Promise((r) => setTimeout(r, options.slow?.[table] ?? 0)).then(answer).then(resolve, reject);
     return chain;
   }
 
@@ -131,7 +134,10 @@ export function fakeSupabase(options: FakeOptions = {}) {
     getSession: () => ({ data: { session: null }, error: null }),
     getUser: () => ({ data: { user: null }, error: null }),
     signOut: () => ({ error: null }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
+    onAuthStateChange: (...args: unknown[]) => {
+      authListeners.push(args[0] as (event: string, session: unknown) => void);
+      return { data: { subscription: { unsubscribe: () => undefined } } };
+    },
     setSession: () => ({ data: { user: null, session: null }, error: null }),
     resend: () => ({ data: null, error: null }),
     resetPasswordForEmail: () => ({ data: null, error: null }),
@@ -194,7 +200,9 @@ export function fakeSupabase(options: FakeOptions = {}) {
     realtime.filter((h) => h.event === event).forEach((h) => h.cb({ new: row }));
   /** The channel dropped and came back (each listener hears SUBSCRIBED again). */
   const resubscribe = () => statusListeners.forEach((cb) => cb('SUBSCRIBED'));
-  return { client, calls, tables, emit, resubscribe };
+  /** An Auth event, as supabase-js delivers it to onAuthStateChange. */
+  const authEvent = (event: string, session: unknown) => authListeners.forEach((cb) => cb(event, session));
+  return { client, calls, tables, emit, resubscribe, authEvent };
 }
 
 /** A Supabase Auth user as the client hands it out. */
