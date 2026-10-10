@@ -655,3 +655,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   mais", nunca "Senha fraca" (cadastro, nova senha). A tela de nova senha guarda a senha só no estado local.
 - "Escolher perfil" não promete mais "Dá para trocar depois no seu perfil" (não dá).
 - Configurações e Privacidade não falam mais de "mensagens" nem de "bicos urgentes" (não existem como tal).
+
+### P04, P06
+
+- "Confirmar candidatura" mostra o ofício e as estrelas com o número de avaliações (ou "Novo na plataforma"),
+  não mais "Pedreiro · 4.8".
+- Publicar/editar vaga: além da lista pronta, "Outro item" para escrever um requisito (até 60 caracteres,
+  sem repetir, até 12 no total; o banco confere o mesmo limite).

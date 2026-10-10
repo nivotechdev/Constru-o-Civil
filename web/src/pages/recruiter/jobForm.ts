@@ -214,3 +214,10 @@ export function draftFromForm(f: JobForm): JobDraft {
     urgent: f.urgente
   };
 }
+
+/** P06: the list with a written requirement added (trimmed, up to 60 characters, no repeats, at most 12). */
+export function addRequirement(list: string[], text: string): string[] {
+  const clean = text.trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!clean || list.length >= 12 || list.some((r) => r.toLowerCase() === clean.toLowerCase())) return list;
+  return [...list, clean];
+}

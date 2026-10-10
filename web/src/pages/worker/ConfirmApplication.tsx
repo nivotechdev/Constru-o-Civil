@@ -18,6 +18,7 @@ import { jobTitle, oficioNome } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 import { WorkerAvatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
+import { Rating } from '../../components/Rating';
 
 export default function ConfirmApplication({ params }: ScreenProps) {
   const db = useDb();
@@ -78,7 +79,8 @@ export default function ConfirmApplication({ params }: ScreenProps) {
               <WorkerAvatar worker={worker} size="sm" />
               <div className="flex flex-col">
                 <span className="font-semibold text-concrete-900">{worker.name}</span>
-                <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${worker.rating}`}</span>
+                <span className="text-sm text-concrete-500">{oficioNome(worker.oficioId)}</span>
+                <Rating value={worker.rating} count={worker.reviewCount} />
               </div>
             </div>
           </div>

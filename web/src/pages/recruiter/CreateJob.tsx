@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { CityPicker, LocationButton } from '../../components/CityPicker';
@@ -29,6 +29,7 @@ import { DIAS, DIAS_ORDEM, durationText } from '../../utils/jobInfo';
 import { toggleItem } from '../../utils/list';
 import { FEATURES } from '../../services/features';
 import {
+  addRequirement,
   draftFromForm,
   emptyForm,
   formDiarias,
@@ -463,6 +464,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
             />
           ))}
         </div>
+        <ExtraRequirement onAdd={(r) => set({ requisitos: addRequirement(f.requisitos, r) })} />
       </div>
       <div className="flex flex-col gap-1.5 w-full">
         <label htmlFor="create-job-detalhe" className="text-sm font-semibold text-concrete-900">
@@ -601,5 +603,32 @@ function StepDot({ n, active }: { n: number; active: boolean }) {
     >
       {String(n)}
     </span>
+  );
+}
+
+/** P06: a requirement written by the company, besides the ready-made ones. */
+function ExtraRequirement({ onAdd }: { onAdd: (text: string) => void }) {
+  const [text, setText] = useState('');
+  const add = () => {
+    if (!text.trim()) return;
+    onAdd(text);
+    setText('');
+  };
+  return (
+    <div className="flex items-end gap-2">
+      <div className="flex-1 min-w-0">
+        <Input
+          id="create-job-requisito"
+          label="Outro item"
+          placeholder="Ex.: trena própria"
+          value={text}
+          onInput={setText}
+          onEnter={add}
+        />
+      </div>
+      <div className="shrink-0">
+        <Button label="Adicionar" variant="secondary" iconLeft="plus" onClick={add} />
+      </div>
+    </div>
   );
 }

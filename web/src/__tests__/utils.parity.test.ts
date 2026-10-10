@@ -95,3 +95,12 @@ describe('specialties (Y23)', () => {
     expect(addSpecialty(full, 'Outra')).toBe(full);
   });
 });
+
+describe('written requirement (P06)', () => {
+  it('adds trimmed text without repeats, up to 12', async () => {
+    const { addRequirement } = await import('../pages/recruiter/jobForm');
+    expect(addRequirement(['EPI'], '  trena   própria ')).toEqual(['EPI', 'trena própria']);
+    expect(addRequirement(['EPI'], 'epi')).toEqual(['EPI']);
+    expect(addRequirement(['EPI'], '  ')).toEqual(['EPI']);
+  });
+});
