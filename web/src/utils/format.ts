@@ -57,9 +57,13 @@ export function strengthBarColor(strength: PasswordStrength): string {
   return strength === 3 ? 'bg-success-500' : strength ? 'bg-warning-500' : 'bg-concrete-200';
 }
 
+/** "R$ 180", "R$ 1.250", and with cents only when there are some: "R$ 180,50" (W01). */
 export function formatBRL(n: number | string | null | undefined): string {
-  const v = Math.round(Number(n) || 0);
-  return 'R$ ' + v.toLocaleString('pt-BR');
+  const v = Math.round((Number(n) || 0) * 100) / 100;
+  const cents = !Number.isInteger(v);
+  return (
+    'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 })
+  );
 }
 
 /** A job's diária as shown everywhere: "R$ 180", or "A combinar" when the job has no fixed pay. */

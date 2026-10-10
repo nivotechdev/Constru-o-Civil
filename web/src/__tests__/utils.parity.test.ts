@@ -45,7 +45,11 @@ describe('format', () => {
   });
 
   it('formats money and post dates the same way', () => {
-    for (const n of [0, 80, 150.4, 150.5, 1234, 12345.6, -3, NaN]) expect(formatBRL(n)).toBe(legacyFormat.formatBRL(n));
+    // Whole values read as in the legacy app; W01: with cents, the cents show (the legacy app rounded them away).
+    for (const n of [0, 80, 1234, -3, NaN]) expect(formatBRL(n)).toBe(legacyFormat.formatBRL(n));
+    expect(formatBRL(150.4)).toBe('R$ 150,40');
+    expect(formatBRL(12345.6)).toBe('R$ 12.345,60');
+    expect(formatBRL(99.999)).toBe('R$ 100');
     for (const d of ['2026-09-10', '2026-01-01', 'x', '2026-13'])
       expect(formatPostDate(d)).toBe(legacyFormat.formatPostDate(d));
   });
@@ -178,5 +182,17 @@ describe('portfolio files (F16)', () => {
     expect(await portfolioFileProblem({ type: 'image/jpeg', size: 11 * MB })).toBe('Foto de até 10 MB.');
     expect(await portfolioFileProblem({ type: 'video/mp4', size: 51 * MB })).toMatch(/50 MB/);
     expect(await portfolioFileProblem({ type: 'application/pdf', size: MB })).toBe('Escolha uma foto ou um vídeo.');
+  });
+});
+
+describe('W02: a job already going on', () => {
+  it('says only until when', async () => {
+    const { dateText } = await import('../utils/jobInfo');
+    const now = new Date(2026, 9, 14, 10);
+    const job = { dateToArrange: false, startDate: '2026-10-13', endDate: '2026-10-16' };
+    expect(dateText(job, now)).toBe('Até 16 out');
+    expect(dateText({ ...job, endDate: '2026-10-14' }, now)).toBe('Até hoje');
+    expect(dateText({ ...job, startDate: '2026-10-15' }, now)).toBe('Amanhã até 16 out');
+    expect(dateText({ ...job, startDate: '2026-10-01', endDate: '2026-10-03' }, now)).toMatch(/até 3 out/);
   });
 });

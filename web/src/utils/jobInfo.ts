@@ -72,11 +72,15 @@ const shortDay = (iso: string) => {
 };
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
-/** "Hoje", "Sex, 25 set", "Hoje até 27 set", or "Data a combinar". */
+/** "Hoje", "Sex, 25 set", "Hoje até 27 set", "Até 16 out" (already going on), or "Data a combinar". */
 export function dateText(job: Schedule, now: Date = new Date()): string {
   if (job.dateToArrange || !job.startDate) return 'Data a combinar';
   const start = dayLabel(job.startDate, now);
   if (!job.endDate || job.endDate === job.startDate) return start;
+  // W02: a job that started before today and is still going says only when it ends.
+  const today = todayISO(now);
+  if (job.startDate < today && job.endDate >= today)
+    return job.endDate === today ? 'Até hoje' : `Até ${shortDay(job.endDate)}`;
   return `${start} até ${shortDay(job.endDate)}`;
 }
 
