@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ApplicationStatusCard } from './ApplicationStatusCard';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -167,6 +168,7 @@ export default function JobDetail({ params }: ScreenProps) {
               </div>
             </Card>
           ) : null}
+          {application ? <ApplicationStatusCard app={application} /> : null}
           <Card padding="none">
             <div className="relative">
               <PhotoCarousel job={job} className="h-72 sm:h-80 lg:h-[26rem] rounded-t-card" />

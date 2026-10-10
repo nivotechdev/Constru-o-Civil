@@ -1053,3 +1053,10 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   cartão são decorativas para o leitor de tela (o título já descreve a vaga).
 - Conferência automática: `scripts/a11y-check.mjs` roda o **axe** (WCAG 2.1 A/AA) em 14 telas (trabalhador e
   construtora, celular) — **0 problemas** — e entra no CI; Lighthouse de Acessibilidade 100.
+
+### X06 — Situação da candidatura no detalhe da vaga
+
+- Quem se candidatou vê, no alto do detalhe da vaga, **"Sua candidatura"**: a situação (mesmo selo de Minhas
+  candidaturas), quando enviou, desde quando está assim e o **motivo** que a construtora (ou o sistema, como na
+  recusa automática por vaga cheia) informou. Quando o próximo passo é em outra tela (WhatsApp, avaliar), o
+  botão leva até lá.
