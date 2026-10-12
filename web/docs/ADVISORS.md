@@ -1,9 +1,27 @@
 # Advisors do Supabase (X13)
 
-Rodados no projeto `ppnxdajiihsjaojxokzh` em 10/10/2026, **antes** de aplicar as migrations de `APLICAR.md`
-(o banco ainda está nas três de 09/10). Cada aviso e o que resolve:
+## Depois de aplicar tudo (12/10/2026)
 
-## Segurança
+Com as 38 migrations de `APLICAR.md` aplicadas em `ppnxdajiihsjaojxokzh`:
+
+| Tipo       | Nível | Aviso                                                | Qtde | Por que fica                                                                                                                                                      |
+| ---------- | ----- | ---------------------------------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Segurança  | —     | nenhum ERROR                                         | 0    | `spatial_ref_sys` e o PostGIS saíram do `public` (X13)                                                                                                            |
+| Segurança  | WARN  | `authenticated_security_definer_function_executable` | 42   | São as RPCs que o app chama logado: o desenho (regras no banco, em `security definer` com `search_path` fixo)                                                     |
+| Segurança  | WARN  | `anon_security_definer_function_executable`          | 1    | `public_job_card`, a vaga pública do link compartilhado (F09), de propósito                                                                                       |
+| Segurança  | WARN  | `auth_leaked_password_protection`                    | 1    | Opção do painel: Authentication › Policies › "Leaked password protection" (plano Pro)                                                                             |
+| Segurança  | INFO  | `rls_enabled_no_policy`                              | 14   | Tabelas só de uso interno (tentativas, filas, app antigo, envios de identidade…): sem política, a RLS recusa tudo pela API; o app usa as RPCs e as Edge Functions |
+| Desempenho | INFO  | `unused_index`                                       | 17   | Banco ainda sem uso; reavaliar depois de algumas semanas em produção                                                                                              |
+| Desempenho | INFO  | `no_primary_key` (`application_attempts`)            | 1    | Registro só de contagem (limite contra spam), apagado depois de 2 dias                                                                                            |
+
+O `unindexed_foreign_keys` que sobrou depois da X15 (5 chaves das tabelas F04, F07, F13, F18 e Y28) foi zerado pela X23.
+
+## Antes de aplicar (10/10/2026)
+
+Rodados no projeto `ppnxdajiihsjaojxokzh` em 10/10/2026, **antes** de aplicar as migrations de `APLICAR.md`
+(o banco ainda estava nas três de 09/10). Cada aviso e o que resolve:
+
+### Segurança
 
 | Nível | Aviso                                                | Qtde | Resolvido por                                                                                                                                                                                          |
 | ----- | ---------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -14,7 +32,7 @@ Rodados no projeto `ppnxdajiihsjaojxokzh` em 10/10/2026, **antes** de aplicar as
 | WARN  | `authenticated_security_definer_function_executable` | 41   | **Não se aplica**: são as RPCs que o app chama logado (regra 3: regras no banco, em security definer com `search_path` fixo). As do app antigo e as de pagamento simulado saem com #2 (Z02) e #4 (Z08) |
 | WARN  | `auth_leaked_password_protection`                    | 1    | Painel: Authentication › Policies › "Leaked password protection" (plano Pro). Ver SUPABASE.md                                                                                                          |
 
-## Desempenho
+### Desempenho
 
 | Nível | Aviso                          | Qtde | Resolvido por                                                                                                                                                        |
 | ----- | ------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

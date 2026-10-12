@@ -1,28 +1,48 @@
 # Aplicar as migrations novas no Supabase
 
-O projeto `ppnxdajiihsjaojxokzh` já tem as três migrations de 2026-10-09 (`…_bicos_v2_schema`,
-`…_bicos_v2_rules`, `…_bicos_v2_data`). As migrations abaixo são novas. O conector do Supabase usado no
-desenvolvimento pede uma aprovação manual para comandos com `DROP`/`DELETE` (inclusive dentro de funções),
-que não chega numa sessão automática. Por isso elas ficam prontas aqui, testadas num Postgres igual ao do
-Supabase (`supabase/tests/local/setup.sh`), para aplicar de uma destas formas:
+> **Produção (`ppnxdajiihsjaojxokzh`): tudo aplicado em 12/10/2026** — as 36 migrations abaixo, na ordem, mais
+> a #37 (X22) e a #38 (X23), e a extensão `pg_net` ligada. Conferido no próprio banco: as 38 consultas de
+> conferência deste arquivo dão o resultado esperado e os 38 arquivos de `supabase/tests/` passam rodando no
+> banco de produção (cada um numa transação desfeita no fim — nada ficou gravado). O que segue serve para
+> outro ambiente (staging, um projeto novo) ou para reaplicar.
+
+Antes desta rodada, o projeto tinha as três migrations de 2026-10-09 (`…_bicos_v2_schema`, `…_bicos_v2_rules`,
+`…_bicos_v2_data`). As migrations abaixo vieram depois, testadas num Postgres igual ao do Supabase
+(`supabase/tests/local/setup.sh`). Para aplicar num ambiente que ainda não as tem, use uma destas formas:
 
 - **SQL Editor do painel**: abra cada arquivo, na ordem, cole e rode (cada um é idempotente: pode rodar de
   novo sem problema). Ou cole `APLICAR-TUDO.sql`, que junta todos numa transação só.
-- **Supabase CLI**: `supabase link --project-ref ppnxdajiihsjaojxokzh` e `supabase db push` — antes, alinhe o
-  histórico (abaixo), senão o CLI tenta rodar de novo as três primeiras.
+- **Supabase CLI**: `supabase link --project-ref <projeto>` e `supabase db push`.
 
 ### Histórico de migrations (X16)
 
-No banco, as três primeiras foram aplicadas em 10 partes, com outras versões (`20261008233626_bicos_v2_schema`
-… `20261009002539_bicos_v2_rules_5_auth_triggers`). O conteúdo é o mesmo dos três arquivos
-`20261009000100/200/300`. Para o histórico do banco ficar igual aos arquivos (uma vez, pelo CLI):
+Em produção, as migrations entraram pelo conector do Supabase, que grava cada uma com a hora em que foi aplicada
+(`20261008233626_bicos_v2_schema` … `20261012033541_habilitar_pg_net`), não com a versão do arquivo. O conteúdo é o
+dos arquivos de `web/supabase/migrations` (as três primeiras foram em partes; `bicos_v2_rules_7a…7d` e
+`bicos_v2_enum_values` são pedaços que o Z01 e os enums das seguintes já contêm). Para o histórico do banco ficar
+igual aos arquivos antes de usar `supabase db push` em produção (uma vez, pelo CLI):
 
 ```bash
-supabase migration repair --status reverted 20261008233626 20261009000624 20261009001304 20261009001443 \
-  20261009001730 20261009001838 20261009001917 20261009001947 20261009002436 20261009002539
-supabase migration repair --status applied 20261009000100 20261009000200 20261009000300
-supabase migration list   # local e remoto iguais até 20261009000300; o resto aparece só como local
+supabase migration repair --status reverted \
+  20261008233626 20261009000624 20261009001304 20261009001443 20261009001730 20261009001838 20261009001917 \
+  20261009001947 20261009002436 20261009002539 20261012025727 20261012025751 20261012025806 20261012030139 \
+  20261012030428 20261012030535 20261012030615 20261012030647 20261012030724 20261012030906 20261012030921 \
+  20261012030946 20261012031034 20261012031105 20261012031131 20261012031147 20261012031159 20261012031223 \
+  20261012031241 20261012031317 20261012031333 20261012031345 20261012031350 20261012031413 20261012031419 \
+  20261012031435 20261012031446 20261012031450 20261012031504 20261012031534 20261012031554 20261012031612 \
+  20261012031643 20261012031654 20261012031658 20261012031738 20261012031821 20261012031841 20261012031857 \
+  20261012031915 20261012031930 20261012032837 20261012032951 20261012033541
+supabase migration repair --status applied \
+  20261009000100 20261009000200 20261009000300 20261010000100 20261010000200 20261010000300 20261010000400 \
+  20261010000500 20261010000600 20261010000700 20261011000100 20261011000200 20261011000300 20261011000400 \
+  20261011000500 20261011000600 20261011000700 20261012000100 20261012000200 20261012000300 20261012000400 \
+  20261012000500 20261012000600 20261012000700 20261012000800 20261012000900 20261013000100 20261013000200 \
+  20261013000300 20261013000400 20261013000500 20261013000600 20261013000700 20261014000100 20261014000200 \
+  20261014000300 20261014000400 20261014000500 20261014000600 20261014000700 20261014000800
+supabase migration list   # local e remoto iguais
 ```
+
+(`habilitar_pg_net` é só `create extension if not exists pg_net`, o que o painel faz em Database › Extensions.)
 
 `repair` só mexe na tabela de histórico (`supabase_migrations.schema_migrations`), nunca no esquema.
 Daí em diante, toda mudança no banco entra por arquivo novo em `web/supabase/migrations` e `supabase db push`.
@@ -415,6 +435,26 @@ igual ao fim recusado.
 
 ```sql
 select prosrc like '%5.000%' from pg_proc where proname = 'job_from_draft';   -- true
+```
+
+### 37. `20261014000700_x22_limpeza_tentativas.sql` (X22)
+
+A #32 (X15) reaproveitou o nome do cron `bicos-limpar-tentativas` para limpar `application_attempts` e, com isso,
+desagendou a limpeza da #3/#13 (tentativas de entrar com CPF/CNPJ e confirmações de WhatsApp). Agora
+`purge_auth_attempts()` limpa as três tabelas e o cron chama ela.
+
+```sql
+select command from cron.job where jobname = 'bicos-limpar-tentativas';   -- select public.purge_auth_attempts()
+```
+
+### 38. `20261014000800_x23_indices_fk.sql` (X23)
+
+Índices das chaves estrangeiras das tabelas que chegaram depois da X15 (`blocks`, `company_members`,
+`identity_submissions`, `job_alerts`, `job_invites`) — zera o aviso `unindexed_foreign_keys`.
+
+```sql
+select count(*) from pg_indexes where indexname in ('blocks_blocked_idx', 'company_members_user_idx',
+  'identity_submissions_worker_idx', 'job_alerts_oficio_idx', 'job_invites_company_idx');   -- 5
 ```
 
 ## Testes
