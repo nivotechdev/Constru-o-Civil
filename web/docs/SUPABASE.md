@@ -49,20 +49,23 @@ Os dois apps dividem o Auth (`auth.users`), o segredo do CPF/CNPJ no Vault e os 
 
 ## 3. Situação da aplicação no projeto
 
-| Parte                                                                                                                                                                                    | Situação                                                                                              |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Tabelas, privilégios, RLS (`…000100_bicos_v2_schema.sql`)                                                                                                                                | **aplicada**                                                                                          |
-| Políticas, gatilhos de conta e no Auth, RPCs de vagas, candidatura, avaliação, pagamento, contato, exportação (`…000200_bicos_v2_rules.sql`)                                             | **aplicada** (em partes)                                                                              |
-| Ofícios, bucket `vagas`, cron, Realtime, contas antigas (`…000300_bicos_v2_data.sql`)                                                                                                    | **aplicada** — as 4 contas antigas já têm conta nova (perfil a completar)                             |
-| Edge Function `entrar-com-documento`                                                                                                                                                     | **publicada**                                                                                         |
-| `supabase/APLICAR-NO-SQL-EDITOR.sql`: decisões da construtora e desistência (`transition_application`), retirar candidatura, excluir vaga, excluir conta, limpeza de cadastro abandonado | **a aplicar** — colar no SQL Editor do painel e rodar (o conector pedia uma aprovação que não chegou) |
+| Parte                                                                                                                                              | Situação                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Tabelas, privilégios, RLS (`…000100_bicos_v2_schema.sql`)                                                                                          | **aplicada**                                                                                         |
+| Políticas, gatilhos de conta e no Auth, RPCs de vagas, candidatura, avaliação, pagamento, contato, exportação (`…000200_bicos_v2_rules.sql`)       | **aplicada** (em partes)                                                                             |
+| Ofícios, bucket `vagas`, cron, Realtime, contas antigas (`…000300_bicos_v2_data.sql`)                                                              | **aplicada** — as 4 contas antigas já têm conta nova (perfil a completar)                            |
+| Edge Function `entrar-com-documento`                                                                                                               | **publicada**                                                                                        |
+| Decisões da construtora e desistência (`transition_application`), retirar candidatura, excluir vaga, excluir conta, limpeza de cadastro abandonado | **aplicada** (o mesmo conteúdo está em `supabase/APLICAR-NO-SQL-EDITOR.sql`, caso precise reaplicar) |
 
 Testado direto no banco (numa transação desfeita no fim): cadastro com documento cifrado e mascarado,
 aceite dos termos registrado, publicar vaga (e recusar valor abaixo de R$ 80), PIX gerado e
 confirmado, vaga já impulsionada bloqueada, candidatura, contagem privada no mural, WhatsApp ilegível
 por `select`, contato fechado antes da aprovação, RLS das vagas salvas, avisos, marcar como lidas,
 editar vaga (avisa os candidatos), encerrar (recusa quem esperava). O teste achou e corrigiu um erro em
-`update_job`.
+`update_job`. Depois do último lote, o fluxo inteiro também passou no banco: cadastro criando a conta pelo
+gatilho do Auth, retirar candidatura, aprovar (recusa automática de quem esperava), desfazer
+(devolve), vaga lotada bloqueada, contato liberado, contratar, concluir, avaliações dos dois lados,
+excluir vaga e excluir conta.
 
 ## 4. Configurações do painel (Authentication)
 
