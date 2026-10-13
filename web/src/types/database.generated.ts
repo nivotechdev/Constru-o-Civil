@@ -1111,6 +1111,8 @@ export type Database = {
           urgente: boolean;
           impulsionada: boolean;
           sem_contratacao: boolean;
+          fotos: string[] | null;
+          dias: string | null;
           localizacao: unknown | null;
         };
         Insert: {
@@ -1134,6 +1136,8 @@ export type Database = {
           urgente?: boolean;
           impulsionada?: boolean;
           sem_contratacao?: boolean;
+          fotos?: string[] | null;
+          dias?: string | null;
           localizacao?: unknown | null;
         };
         Update: {
@@ -1157,6 +1161,8 @@ export type Database = {
           urgente?: boolean;
           impulsionada?: boolean;
           sem_contratacao?: boolean;
+          fotos?: string[] | null;
+          dias?: string | null;
           localizacao?: unknown | null;
         };
         Relationships: [
