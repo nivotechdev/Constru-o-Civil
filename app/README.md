@@ -36,9 +36,24 @@ the page is opened via `file://` (no server = no origin to satisfy the module lo
   screen-local UI state every render reads from. No backend.
 - `js/router.js` / `js/main.js` — hash router and the app shell (nav + screen content).
 - `js/components/` — the reusable component library (Button, Input, Card, Modal, Skeleton,
-  EmptyState, ErrorState, the JobCard/CandidateRow marketplace pieces, and `AppNav`, the
-  single navigation component that renders as a bottom tab bar under `lg:` and a sidebar
-  at `lg:` and above).
+  EmptyState, ErrorState, the JobTile/JobCard/CandidateRow marketplace pieces, PhotoCarousel /
+  PhotoManager for a job's photos, and `AppNav`, the single navigation component that
+  renders as a floating tab bar on phones and a full-width top navbar from `lg:` up).
+- Breakpoints: `lg` is 770px (see `tailwind.config.js`) — below it is the phone layout,
+  from it up the tablet/desktop layout. Every job list in the app (mural, applications, saved jobs, company
+  profiles) uses the same `JobTile` in the same grid (`.tile-grid` in `css/base.css`), so a
+  tile is exactly the same size everywhere: two equal columns on a phone, a fixed
+  16.75rem-wide tile from 640px up. The mural sizes itself to whole columns, 2 up to at most
+  6 per row (`.mural-frame`). The only horizontal scrolling in the app is a job's photo carousel
+  (touch swipe, mouse drag, arrows or keyboard) — on the mural tiles themselves and on the
+  job page, which opens on the photo last shown on the tile.
+- `js/utils/jobInfo.js` — how a job's schedule reads everywhere: date and hours are
+  optional ("a combinar"), and `dias` is one of weekdays / weekend / any day.
+- `js/data/cidades.js` + `js/utils/cidades.js` — every Brazilian municipality (IBGE data
+  via the MIT-licensed `municipios-br` package) for the "Onde você quer trabalhar" picker:
+  accent-insensitive search, and nearest city from the browser's GPS position, offline.
+- `img/jobs/` — sample job photos used by a few seed jobs, rendered by
+  `scripts/gen-job-photos.cjs` (illustrated scenes, so no third-party image licences).
 - `js/screens/{shared,worker,recruiter}/` — one file per screen, composed out of the
   component library.
 - `icons/` — Lucide SVGs vendored locally (via `lucide-static`); `scripts/gen-icons.cjs`

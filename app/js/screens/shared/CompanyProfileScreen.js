@@ -4,7 +4,7 @@ import { Button } from '../../components/Button.js';
 import { Badge } from '../../components/Badge.js';
 import { Rating } from '../../components/Rating.js';
 import { Card } from '../../components/Card.js';
-import { JobCard, JobCardFooter } from '../../components/JobCard.js';
+import { JobTile, TileGrid } from '../../components/JobTile.js';
 import { EmptyState } from '../../components/EmptyState.js';
 import { Dialog } from '../../components/Modal.js';
 import { Icon } from '../../utils/icons.js';
@@ -12,15 +12,11 @@ import { goBack } from '../../router.js';
 import * as store from '../../store.js';
 
 export default function renderCompanyProfile(navigate, params) {
-  store.ensureJobsLoaded();
   const isOwn = !params.id;
-  if (isOwn) store.ensureMyDocumentoLoaded();
-  else store.ensureProfileLoaded(params.id);
-  store.ensureReviewsLoaded(isOwn ? store.currentCompanyId() : params.id);
   const company = isOwn ? store.currentCompany() : store.getCompany(params.id);
   if (!company) return notFound(navigate);
 
-  const ui = store.getUI('company-profile', { deleteId: null });
+  const ui = store.getUI('company-profile', { capa: null, logo: null, deleteId: null });
 
   const openJobs = store.activeJobs().filter((j) => j.companyId === company.id && !j.closed && !store.isJobFull(j));
   const postToDelete = openJobs.find((j) => j.id === ui.deleteId);
@@ -28,14 +24,14 @@ export default function renderCompanyProfile(navigate, params) {
 
   return h('div', { class: 'min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0' },
     h('div', { class: 'relative' },
-      company.capa_url
-        ? h('img', { src: company.capa_url, alt: '', class: 'w-full h-48 object-cover lg:rounded-card' })
+      isOwn && ui.capa
+        ? h('img', { src: ui.capa, alt: '', class: 'w-full h-48 object-cover lg:rounded-card' })
         : h('div', { class: 'h-48 bg-concrete-200 lg:rounded-card' }),
       !isOwn ? h('div', { class: 'absolute top-2 left-2' }, IconButton({ icon: 'arrow-left', label: 'Voltar', variant: 'solid', onClick: () => goBack('/mural') })) : null,
       h('div', { class: 'absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised' },
         h('div', { class: 'w-full h-full rounded-full bg-brand-50 flex items-center justify-center overflow-hidden' },
-          company.foto_url
-            ? h('img', { src: company.foto_url, alt: '', class: 'w-full h-full object-cover' })
+          isOwn && ui.logo
+            ? h('img', { src: ui.logo, alt: '', class: 'w-full h-full object-cover' })
             : Icon('building-2', { size: 26, color: 'var(--brand)' })
         )
       )
@@ -84,21 +80,21 @@ export default function renderCompanyProfile(navigate, params) {
             ),
             openJobs.length === 0
               ? EmptyState({ icon: 'hammer', title: 'Você ainda não publicou nenhuma vaga', description: 'Publique seu primeiro bico para começar a receber candidatos.', actionLabel: 'Publicar vaga', onAction: () => navigate('/criar-vaga') })
-              : h('div', { class: 'flex flex-col gap-3' }, ...openJobs.map((job) => JobCard({
-                  job, companyName: null, onClick: () => navigate('/vaga-gerenciar/' + job.id),
-                  footer: JobCardFooter({
-                    badgeEl: Badge(statusBadge(job)),
-                    extra: h('div', { class: 'flex gap-1' },
-                      IconButton({ icon: 'trash-2', label: 'Excluir post', onClick: (e) => { e.stopPropagation(); store.setUI('company-profile', { deleteId: job.id }); } })
-                    )
-                  })
+              : TileGrid(openJobs.map((job) => JobTile({
+                  job, company, onClick: () => navigate('/vaga-gerenciar/' + job.id),
+                  badge: statusBadge(job),
+                  corner: IconButton({ icon: 'trash-2', label: 'Excluir post', variant: 'solid', onClick: () => store.setUI('company-profile', { deleteId: job.id }) })
                 })))
           )
         : h('div', { class: 'flex flex-col gap-2.5' },
             h('span', { class: 'text-xs font-bold tracking-[0.08em] uppercase text-concrete-500' }, 'Vagas publicadas'),
             openJobs.length === 0
               ? EmptyState({ icon: 'hammer', title: 'Nenhuma vaga aberta no momento', description: `${company.name} não tem bicos publicados agora. Volte mais tarde para ver novidades.` })
-              : h('div', { class: 'flex flex-col gap-3' }, ...openJobs.map((job) => JobCard({ job, companyName: null, onClick: () => navigate('/vaga/' + job.id) })))
+              : TileGrid(openJobs.map((job) => JobTile({
+                  job, company, onClick: () => navigate('/vaga/' + job.id),
+                  saved: store.getRole() === 'trabalhador' && store.isJobSaved(job.id),
+                  onToggleSave: store.getRole() === 'trabalhador' ? () => store.toggleSavedJob(job.id) : null
+                })))
           )
     ),
     Dialog({
@@ -113,11 +109,12 @@ export default function renderCompanyProfile(navigate, params) {
 function statusBadge(job) {
   const pending = store.pendingCount(job.id);
   const approved = store.approvedCount(job.id);
-  if (store.isJobClosed(job)) return { label: `Bico fechado · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
-  if (pending) return { label: pending === 1 ? '1 aguardando análise' : `${pending} aguardando análise`, tone: 'warning', icon: 'clock' };
+  // Short labels: they sit in a pill on the tile's photo.
+  if (store.isJobClosed(job)) return { label: `Fechado · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
+  if (pending) return { label: `${pending} em análise`, tone: 'warning', icon: 'clock' };
   const total = store.applicationsForJob(job.id).length;
   if (total) return { label: total === 1 ? '1 candidato' : `${total} candidatos`, tone: 'brand', icon: 'users' };
-  return { label: 'Sem candidatos ainda', tone: 'neutral', icon: 'search-x' };
+  return { label: 'Sem candidatos', tone: 'neutral', icon: 'search-x' };
 }
 
 function notFound(navigate) {

@@ -2,7 +2,6 @@ import { mount, cx } from './dom.js';
 import { route, onRouteChange, startRouter, navigate, currentPath } from './router.js';
 import * as store from './store.js';
 import { AppNav } from './components/AppNav.js';
-import { IN_PROGRESS } from './utils/applicationStatus.js';
 
 import renderSplash from './screens/shared/Splash.js';
 import renderChooseProfile from './screens/shared/ChooseProfile.js';
@@ -83,16 +82,13 @@ function isAuthFlow(path) {
   return path.startsWith('/cadastro/') || path.startsWith('/completar-perfil/');
 }
 
-// Só faz sentido ver estas telas sem sessão — uma vez logado, redireciona pro
-// mural. `/verificar-email`, `/completar-perfil/:role` e `/redefinir-senha`
-// ficam de fora de propósito: são etapas que acontecem logo depois de criar a
-// conta (com sessão já ativa, já que "confirmar e-mail" está desligado no
-// projeto) ou durante a recuperação de senha (sessão temporária de recovery).
-const SIGNED_OUT_ONLY = new Set(['/splash', '/login', '/escolha-perfil']);
-
-function isSignedOutOnly(path) {
-  return SIGNED_OUT_ONLY.has(path) || path.startsWith('/cadastro/');
-}
+// Desktop/tablet content width per screen: the mural spans the whole window, focused
+// tasks (forms, confirmations) get a narrow centered column, everything else a page column.
+const NARROW_SCREENS = new Set([
+  '/criar-vaga', '/perfil/editar', '/empresa/editar', '/configuracoes', '/configuracoes/privacidade', '/notificacoes',
+  '/confirmar/:id', '/enviado/:id', '/avaliar/:id', '/selecionado/:id', '/vaga-publicada/:id', '/impulsionar/:id',
+  '/fechado/:id', '/avaliacoes/:type/:id'
+]);
 
 const appEl = document.getElementById('app');
 
@@ -104,20 +100,36 @@ function build(m, path) {
   }
 
   const role = store.getRole();
-  const badges = role === 'trabalhador' ? { 'minhas-candidaturas': inProgressCount() } : {};
   const activeId = tabIdForPath(path, role);
+  const isMural = path === '/mural';
 
   const showMobileNav = TAB_ROOTS[role] && TAB_ROOTS[role].has(path);
-  const nav = AppNav({ role, active: activeId, navigate, badges, showMobilePill: showMobileNav });
+  const nav = AppNav({
+    role, active: activeId, navigate, showMobilePill: showMobileNav,
+    notifications: role === 'recrutador' ? 3 : 2, account: accountSummary(role)
+  });
 
   const shell = document.createElement('div');
-  shell.className = 'lg:flex lg:max-w-panel lg:mx-auto lg:px-8 lg:items-start';
+  shell.className = cx('lg:flex lg:flex-col lg:min-h-screen', isMural ? 'bg-white' : '');
   shell.appendChild(nav);
-  const main = document.createElement('div');
-  main.className = cx('flex-1 min-w-0 lg:py-6', showMobileNav ? 'pb-28 lg:pb-6' : '');
+  const main = document.createElement('main');
+  main.className = cx(
+    'flex-1 min-w-0',
+    showMobileNav ? 'pb-28 lg:pb-0' : '',
+    isMural ? 'bg-white min-h-screen' : cx('lg:w-full lg:mx-auto lg:px-8 lg:pt-8 lg:pb-16', NARROW_SCREENS.has(m.pattern) ? 'lg:max-w-[40rem]' : 'lg:max-w-panel')
+  );
   main.appendChild(content);
   shell.appendChild(main);
   return shell;
+}
+
+function accountSummary(role) {
+  if (role === 'recrutador') {
+    const company = store.currentCompany();
+    return { name: company.name, photo: store.getUI('company-profile', { capa: null, logo: null, deleteId: null }).logo };
+  }
+  const worker = store.currentWorker();
+  return { name: worker.name, initials: worker.initials };
 }
 
 function tabIdForPath(path, role) {
@@ -133,23 +145,10 @@ function tabIdForPath(path, role) {
   return null;
 }
 
-function inProgressCount() {
-  store.ensureMyApplicationsLoaded();
-  const apps = store.applicationsForWorker(store.currentWorkerId());
-  return apps.filter((a) => IN_PROGRESS.has(a.status)).length;
-}
-
 function notFoundScreen() {
   const div = document.createElement('div');
   div.className = 'flex flex-col items-center justify-center min-h-screen gap-3 text-center px-6';
   div.innerHTML = '<h1 class="font-display font-bold text-2xl text-concrete-900">Página não encontrada</h1><p class="text-concrete-500">Volte para o início.</p>';
-  return div;
-}
-
-function loadingScreen() {
-  const div = document.createElement('div');
-  div.className = 'flex items-center justify-center min-h-screen';
-  div.innerHTML = '<span class="w-8 h-8 rounded-full border-2 border-concrete-200 border-t-brand-500 animate-spin"></span>';
   return div;
 }
 
@@ -166,12 +165,6 @@ function render(m, path) {
   if (path === '/') { navigate('/splash', { replace: true }); return; }
   if (!m) { mount(appEl, notFoundScreen()); return; }
 
-  if (!store.isAuthReady()) { mount(appEl, loadingScreen()); return; }
-
-  const signedIn = store.isSignedIn();
-  if (!isAuthFlow(path) && !signedIn) { navigate('/login', { replace: true }); return; }
-  if (signedIn && isSignedOutOnly(path)) { navigate('/mural', { replace: true }); return; }
-
   const captured = captureFocus();
   mount(appEl, build(m, path));
   applyFocus(captured);
@@ -179,6 +172,7 @@ function render(m, path) {
 
 onRouteChange((m, path) => {
   window.scrollTo(0, 0);
+  store.getUI('app-nav', { menuOpen: false }).menuOpen = false; // a route change always closes the account menu
   render(m, path);
 });
 
@@ -204,24 +198,5 @@ function cssEscape(s) {
   return String(s).replace(/["\\]/g, '\\$&');
 }
 
-// Link de "esqueci minha senha": o Supabase acrescenta os tokens de recovery
-// como o próprio fragmento da URL (#access_token=...&type=recovery). Precisa
-// ser tratado ANTES do roteador (que também usa location.hash) rodar, senão
-// vira um "path" inválido cheio de lixo depois de "/redefinir-senha".
-async function consumeRecoveryTokenFromUrl() {
-  const hash = window.location.hash.slice(1);
-  if (!hash.includes('access_token=') || !hash.includes('type=recovery')) return;
-  const params = new URLSearchParams(hash);
-  const access_token = params.get('access_token');
-  const refresh_token = params.get('refresh_token');
-  if (!access_token || !refresh_token) return;
-  try { await store.setRecoverySession({ access_token, refresh_token }); } catch (e) { /* tela mostra link inválido */ }
-  history.replaceState(null, '', window.location.pathname + window.location.search + '#/redefinir-senha');
-}
-
-(async function bootstrap() {
-  await consumeRecoveryTokenFromUrl();
-  store.subscribe(render);
-  startRouter();
-  await store.initAuth();
-})();
+store.subscribe(render);
+startRouter();

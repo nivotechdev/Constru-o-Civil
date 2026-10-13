@@ -2,6 +2,8 @@
 module.exports = {
   content: ['./index.html', './js/**/*.js'],
   theme: {
+    // `lg` is the desktop/tablet layout (top navbar, rails); below it is the phone layout.
+    screens: { sm: '640px', lg: '770px', xl: '1280px', '2xl': '1536px' },
     extend: {
       colors: {
         brand: { 50: '#EFF3FE', 100: '#DBE4FD', 200: '#B7C8FB', 300: '#8BA5F7', 400: '#587AF3', 500: '#1D4BED', 600: '#163CC2', 700: '#122F97', 800: '#0E2472', 900: '#0A1A54' },

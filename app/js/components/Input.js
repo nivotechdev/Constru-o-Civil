@@ -10,7 +10,8 @@ let uid = 0;
 export function Input(props) {
   const {
     id, label, placeholder = '', icon, value = '', onInput, error, hint,
-    type = 'text', inputMode, mono = false, suffix, disabled = false, autoFocus = false
+    type = 'text', inputMode, mono = false, suffix, disabled = false, autoFocus = false,
+    invalid = false // red border only, for fields that share one message with a neighbour
   } = props;
   const fieldId = id || ('field-' + (uid++));
 
@@ -20,7 +21,7 @@ export function Input(props) {
   const row = h('div', {
     class: cx(
       'flex items-center gap-2 min-h-12 px-3 bg-white rounded-control border transition-colors duration-150',
-      error ? 'border-danger-500' : 'border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'
+      error || invalid ? 'border-danger-500' : 'border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'
     )
   });
   if (icon) row.appendChild(Icon(icon, { size: 20, color: 'var(--text-subtle)' }));

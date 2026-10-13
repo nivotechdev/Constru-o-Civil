@@ -7,6 +7,7 @@ import { Icon } from '../../utils/icons.js';
 import { formatBRL } from '../../utils/format.js';
 import { goBack } from '../../router.js';
 import * as store from '../../store.js';
+import { dateText } from '../../utils/jobInfo.js';
 
 const STATUS = {
   concluida: { label: 'Avaliar o trabalhador', tone: 'accent', icon: 'star', hint: 'Avaliar' },
@@ -32,7 +33,7 @@ export default function renderHistory(navigate) {
               h('div', { class: 'flex flex-col gap-3' },
                 h('div', { class: 'flex items-center gap-3' },
                   h('span', { class: 'inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent-50 text-accent-600 font-bold text-sm shrink-0' }, worker.initials),
-                  h('div', { class: 'flex-1 min-w-0 flex flex-col' }, h('span', { class: 'font-semibold text-concrete-900 truncate' }, worker.name), h('span', { class: 'text-sm text-concrete-500 truncate' }, `${job.role} · ${job.date}`)),
+                  h('div', { class: 'flex-1 min-w-0 flex flex-col' }, h('span', { class: 'font-semibold text-concrete-900 truncate' }, worker.name), h('span', { class: 'text-sm text-concrete-500 truncate' }, `${job.role} · ${dateText(job)}`)),
                   h('span', { class: 'font-mono font-bold text-lg text-concrete-900 shrink-0' }, job.pay == null ? 'A combinar' : formatBRL(job.pay))
                 ),
                 h('div', { class: 'flex items-center justify-between gap-2 pt-3 border-t border-concrete-200' },
