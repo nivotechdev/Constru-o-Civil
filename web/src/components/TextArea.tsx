@@ -16,7 +16,7 @@ export function TextArea({ id, rows = 3, placeholder, value, className, onInput 
     <textarea
       ref={fieldRef}
       id={id}
-      data-focus-id={id}
+
       rows={rows}
       placeholder={placeholder}
       value={value}

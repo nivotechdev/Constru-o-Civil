@@ -1,4 +1,3 @@
-import { useEffect, useSyncExternalStore } from 'react';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -8,66 +7,104 @@ import { IconButton } from '../../components/IconButton';
 import { JobTile, TileGrid } from '../../components/JobTile';
 import { Dialog } from '../../components/Modal';
 import { NotFound } from '../../components/NotFound';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useAction } from '../../hooks/useAction';
+import { useQuery } from '../../hooks/useQuery';
+import { toggleSaved } from '../../services/feedback';
+import { deleteJob } from '../../services/jobs';
+import { loadCompanyProfile } from '../../services/profiles';
+import { showToast } from '../../services/toast';
 import { Rating } from '../../components/Rating';
-import { useDb, useRole, useUI } from '../../hooks/useStore';
-import { COMPANY_PROFILE_DEFAULTS, COMPANY_PROFILE_KEY, type CompanyProfileUI } from '../../services/sharedUI';
+import { useDb, useRole, useScreenUI } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import {
   activeJobs,
   applicationsForJob,
+  candidateCount,
   approvedCount,
   currentCompany,
   getCompany,
-  isJobClosed,
-  isJobFull,
   isJobSaved,
+  jobState,
   pendingCount,
   successfulJobsForCompany
 } from '../../services/selectors';
-import { deleteJobPost, ensureMyDocumentoLoaded, getMyDocumento, subscribe, toggleSavedJob } from '../../services/store';
 import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
+import { AccountMenuButton } from '../../components/AccountMenuSheet';
+import { CompanyAvatar } from '../../components/Avatar';
+import { holdsSlot } from '../../services/applicationMachine';
+import type { Company } from '../../types/models';
+import { checkMyCompany } from '../../services/profiles';
+import { FieldError } from '../../components/FieldError';
+import { SafetyMenu } from '../../components/SafetyMenu';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
-  const myDocumento = useSyncExternalStore(subscribe, getMyDocumento);
-  const [ui, setUi] = useUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, COMPANY_PROFILE_DEFAULTS);
+  const [ui, setUi] = useScreenUI<{ deleteId: string | null }>('company-profile-delete', { deleteId: null });
 
   const isOwn = !params.id;
-  useEffect(() => {
-    if (isOwn) ensureMyDocumentoLoaded();
-  }, [isOwn]);
+  const companyId = isOwn ? currentCompany(db).id : params.id;
+  const query = useQuery('company:' + companyId, () => loadCompanyProfile(companyId));
+  const remove = useAction(deleteJob, () => {
+    setUi({ deleteId: null });
+    showToast('Vaga excluída');
+  });
+  if (query.status !== 'ready')
+    return (
+      <ScreenLoading
+        title={isOwn ? 'Sua empresa' : 'Construtora'}
+        onBack={() => goBack('/mural')}
+        query={query}
+        skeleton={<PageSkeleton />}
+      />
+    );
   const company = isOwn ? currentCompany(db) : getCompany(db, params.id);
   if (!company) return <NotFound message="Construtora não encontrada." />;
-  // O CNPJ (decifrado sob demanda) só existe no próprio perfil — perfil_publico() nunca o expõe.
-  const cnpj = isOwn ? company.cnpj || myDocumento || '' : company.cnpj;
 
-  const openJobs = activeJobs(db).filter((j) => j.companyId === company.id && !j.closed && !isJobFull(db, j));
+  const mine = activeJobs(db).filter((j) => j.companyId === company.id);
+  // Workers see the jobs taking candidates; the company sees its open and full ones (W05/Y01).
+  const openJobs = mine.filter((j) => jobState(db, j) === 'aberta');
+  const ownJobs = mine.filter((j) => {
+    const s = jobState(db, j);
+    return s === 'aberta' || s === 'cheia';
+  });
+  const teamOn = (jobId: string) => applicationsForJob(db, jobId).some((a) => holdsSlot(a.status));
   const successfulJobs = successfulJobsForCompany(db, company.id);
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 lg:bg-transparent lg:min-h-0">
       <div className="relative">
-        {isOwn && ui.capa ? (
-          <img src={ui.capa} alt="" className="w-full h-60 object-cover lg:rounded-card" />
+        {company.coverUrl ? (
+          <img src={company.coverUrl} alt="" className="w-full h-60 object-cover lg:rounded-card" />
         ) : (
           <div className="h-60 bg-concrete-200 lg:rounded-card" />
         )}
         {!isOwn ? (
-          <div className="absolute top-2 left-2">
-            <IconButton icon="arrow-left" label="Voltar" variant="solid" onClick={() => goBack('/mural')} />
+          <>
+            <div className="absolute top-2 left-2">
+              <IconButton icon="arrow-left" label="Voltar" variant="solid" onClick={() => goBack('/mural')} />
+            </div>
+            <div className="absolute top-2 right-2">
+              <SafetyMenu
+                solid
+                target="perfil"
+                targetId={company.id}
+                what="o perfil"
+                block={{ id: company.id, name: company.name, onBlocked: () => navigate('/mural', { replace: true }) }}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="absolute top-2 right-2">
+            <AccountMenuButton role="recrutador" />
           </div>
-        ) : null}
+        )}
         <div className="absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised">
-          <div className="w-full h-full rounded-full bg-brand-50 flex items-center justify-center overflow-hidden">
-            {isOwn && ui.logo ? (
-              <img src={ui.logo} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <Icon name="building-2" size={26} color="var(--brand)" />
-            )}
-          </div>
+          <CompanyAvatar company={company} size="lg" className="w-full h-full" />
         </div>
       </div>
       <div className="flex flex-col gap-5 pt-12 px-4 sm:px-6 pb-24 lg:pb-6">
@@ -81,7 +118,8 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
             </span>
             <div className="flex items-center gap-3">
               <Rating value={company.rating} count={company.reviewCount} />
-              {!isOwn ? (
+              {/* L09: the company sees its own reviews; workers see a company's. */}
+              {company.reviewCount > 0 && (isOwn || role === 'trabalhador') ? (
                 <button
                   type="button"
                   className="inline-flex items-center gap-0.5 text-sm font-semibold text-brand-600"
@@ -110,35 +148,28 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           <Card padding="md">
             <div className="flex flex-col gap-3.5">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-concrete-500">CNPJ</span>
-                <span className="font-mono text-sm text-concrete-900">{cnpj}</span>
+                <span className="text-sm text-concrete-500">{company.cnpj ? 'CNPJ' : 'Documento'}</span>
+                {company.cnpj ? (
+                  <span className="font-mono text-sm text-concrete-900">{company.cnpj}</span>
+                ) : (
+                  <span className="text-sm text-concrete-700 text-right">CPF (não aparece no perfil)</span>
+                )}
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-concrete-500">Tipo de obra</span>
                 <span className="font-semibold text-concrete-900 text-right">{company.tipoObra}</span>
               </div>
-              <div className="flex items-center gap-2 pt-3.5 border-t border-concrete-200">
-                <Badge label="Verificada" tone="success" icon="shield-check" />
-                <span className="text-xs text-concrete-500">{`CNPJ conferido em ${company.verifiedSince}`}</span>
-              </div>
+              <VerificationRow company={company} />
             </div>
           </Card>
         ) : (
           <Card padding="md">
             <div className="flex flex-col gap-3.5">
               <div className="flex gap-2.5 items-center">
-                <Icon name="hand-coins" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">{`${company.paidCount || 0} diárias pagas pela plataforma`}</span>
-              </div>
-              <div className="flex gap-2.5 items-center">
-                <Icon name="message-circle" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">
-                  {company.respondTime || 'Responde em poucas horas, em média'}
-                </span>
-              </div>
-              <div className="flex gap-2.5 items-center">
                 <Icon name="hammer" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">{`${openJobs.length} vagas abertas agora`}</span>
+                <span className="text-sm text-concrete-700">
+                  {openJobs.length === 1 ? '1 vaga aberta agora' : `${openJobs.length} vagas abertas agora`}
+                </span>
               </div>
               <div className="flex gap-2.5 items-center">
                 <Icon name="calendar" size={20} color="var(--text-subtle)" />
@@ -151,7 +182,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
         {isOwn ? (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Seus posts</span>
+              <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Suas vagas</span>
               <Button
                 label="Publicar"
                 variant="ghost"
@@ -160,17 +191,22 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                 onClick={() => navigate('/criar-vaga')}
               />
             </div>
-            {openJobs.length === 0 ? (
+            {ownJobs.length === 0 ? (
               <EmptyState
                 icon="hammer"
-                title="Você ainda não publicou nenhuma vaga"
-                description="Publique seu primeiro bico para começar a receber candidatos."
+                title="Nenhuma vaga aberta agora"
+                description={
+                  // W05: a company with past jobs isn't told to publish its "first" one.
+                  mine.length
+                    ? 'As vagas encerradas ficam em Minhas vagas. Publique outra quando precisar.'
+                    : 'Publique seu primeiro bico para começar a receber candidatos.'
+                }
                 actionLabel="Publicar vaga"
                 onAction={() => navigate('/criar-vaga')}
               />
             ) : (
               <TileGrid>
-                {openJobs.map((job) => (
+                {ownJobs.map((job) => (
                   <JobTile
                     key={job.id}
                     job={job}
@@ -178,12 +214,15 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                     onClick={() => navigate('/vaga-gerenciar/' + job.id)}
                     badge={statusBadge(db, job)}
                     corner={
-                      <IconButton
-                        icon="trash-2"
-                        label="Excluir post"
-                        variant="solid"
-                        onClick={() => setUi({ deleteId: job.id })}
-                      />
+                      // Y08: with a team (picked/hired), closing the job is the way — in Gerenciar vaga.
+                      teamOn(job.id) ? null : (
+                        <IconButton
+                          icon="trash-2"
+                          label="Excluir vaga"
+                          variant="solid"
+                          onClick={() => setUi({ deleteId: job.id })}
+                        />
+                      )
                     }
                   />
                 ))}
@@ -208,7 +247,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                     company={company}
                     onClick={() => navigate('/vaga/' + job.id)}
                     saved={role === 'trabalhador' && isJobSaved(db, job.id)}
-                    onToggleSave={role === 'trabalhador' ? () => toggleSavedJob(job.id) : null}
+                    onToggleSave={role === 'trabalhador' ? () => toggleSaved(job.id) : null}
                   />
                 ))}
               </TileGrid>
@@ -219,15 +258,19 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
       <Dialog
         open={Boolean(ui.deleteId)}
         tone="danger"
-        title="Excluir esse post?"
-        description="A vaga sai do mural imediatamente. Candidatos já enviados não são avisados."
-        confirmLabel="Excluir post"
+        title="Excluir essa vaga?"
+        description="O anúncio some do mural e do seu perfil. Quem ainda esperava resposta é avisado de que a vaga foi removida."
+        confirmLabel="Excluir vaga"
         onConfirm={() => {
-          if (ui.deleteId) deleteJobPost(ui.deleteId);
+          if (ui.deleteId) void remove.run(ui.deleteId);
+        }}
+        loading={remove.loading}
+        error={remove.error}
+        cancelLabel="Cancelar"
+        onCancel={() => {
+          remove.reset();
           setUi({ deleteId: null });
         }}
-        cancelLabel="Cancelar"
-        onCancel={() => setUi({ deleteId: null })}
       />
     </div>
   );
@@ -237,10 +280,63 @@ function statusBadge(db: Database, job: Job): StatusBadge {
   const pending = pendingCount(db, job.id);
   const approved = approvedCount(db, job.id);
   // Short labels: they sit in a pill on the tile's photo.
-  if (isJobClosed(db, job))
-    return { label: `Fechado · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
+  if (jobState(db, job) === 'cheia')
+    return { label: `Preenchida · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
   if (pending) return { label: `${pending} em análise`, tone: 'warning', icon: 'clock' };
-  const total = applicationsForJob(db, job.id).length;
+  const total = candidateCount(db, job.id);
   if (total) return { label: total === 1 ? '1 candidato' : `${total} candidatos`, tone: 'brand', icon: 'users' };
   return { label: 'Sem candidatos', tone: 'neutral', icon: 'search-x' };
+}
+
+// Y24: where the Bicos team's check of the company stands — never a "Verificada" that didn't happen.
+function VerificationRow({ company }: { company: Company }) {
+  const check = useAction(checkMyCompany, (status) =>
+    showToast(
+      status === 'verificada'
+        ? 'Empresa verificada'
+        : status === 'reprovada'
+          ? 'Não conseguimos verificar a empresa'
+          : 'Ainda não deu para confirmar. Nossa equipe vai conferir.'
+    )
+  );
+  const status = company.verification ?? (company.verified ? 'verificada' : 'pendente');
+  const when = company.verifiedAt
+    ? new Date(company.verifiedAt).toLocaleDateString('pt-BR')
+    : (company.verifiedSince ?? null);
+  return (
+    <div className="flex flex-col gap-1.5 pt-3.5 border-t border-concrete-200">
+      {status === 'verificada' ? (
+        <div className="flex items-center gap-2">
+          <Badge label="Verificada" tone="success" icon="shield-check" />
+          {when ? <span className="text-xs text-concrete-500">{`Conferida em ${when}`}</span> : null}
+        </div>
+      ) : status === 'reprovada' ? (
+        <>
+          <Badge label="Não verificada" tone="danger" icon="circle-x" />
+          <span className="text-xs text-concrete-500">
+            Não conseguimos confirmar os dados da empresa. Fale com a gente pela Ajuda.
+          </span>
+        </>
+      ) : (
+        <>
+          <Badge label="Verificação pendente" tone="warning" icon="clock" />
+          <span className="text-xs text-concrete-500">
+            {company.cnpj
+              ? 'Conferimos o CNPJ na Receita. Você já pode publicar vagas; o selo aparece quando der certo.'
+              : 'Com CPF, a conferência é feita pela nossa equipe. Você já pode publicar vagas.'}
+          </span>
+          {company.cnpj ? (
+            <Button
+              label="Verificar agora"
+              variant="secondary"
+              size="sm"
+              loading={check.loading}
+              onClick={() => void check.run()}
+            />
+          ) : null}
+          {check.error ? <FieldError message={check.error} /> : null}
+        </>
+      )}
+    </div>
+  );
 }

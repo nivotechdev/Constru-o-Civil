@@ -1,36 +1,109 @@
-// Sign-in, sign-up and password flows. Without a Supabase project configured every flow stays
-// simulated, with the same delays and outcomes as before — the mock/parity test suites exercise this
-// exact branch and must keep passing unmodified. Once `isSupabaseConfigured()` is true, these same
-// functions call the real `supabase.auth.*` methods instead (see docs/SUPABASE.md).
-import type { Role } from '../types/models';
-import { mockLatency } from './mockLatency';
-import { getSupabase, isSupabaseConfigured } from './supabase';
-import { setRole } from './store';
-import { documentoDuplicado, emailDuplicado, emailNaoConfirmado, traduzirErroSupabase } from '../utils/erros';
+// Accounts and the session: sign-in, sign-up, e-mail confirmation, the end of onboarding and sign-out.
+// With the real backend each function hands over to services/remote/auth.ts (Supabase Auth); in demo
+// mode (services/mode.ts) every flow is simulated in memory, with realistic delays and outcomes.
+// Screens only call these functions, the same in both modes.
+import { isValidMobile } from '../utils/format';
+import { passwordProblem } from '../utils/password';
+import { ACCOUNTS, DEMO_PASSWORD } from '../data/seed';
+import type { Account, Company, Role, Worker } from '../types/models';
+import { localLatency, mockLatency } from './mockLatency';
+import { clearQueries } from './queries';
+import { resetHistory } from './router';
+import {
+  getDb,
+  getSession,
+  setSessionAccount,
+  updateAccount,
+  updateCompany,
+  updateWorker,
+  upsertAccount,
+  upsertCompany,
+  upsertWorker
+} from './store';
+import { DEFAULT_CITY, DEFAULT_POINT } from './defaults';
+import { IS_DEMO } from './mode';
+import * as remote from './remote/auth';
+import { isValidCnpj, isValidCpf } from '../utils/document';
+import { FEATURES } from './features';
+import { serviceError } from './errors';
+import { isValidEmail } from '../utils/format';
 
-export interface SignInInput {
-  /** Mock mode only: which demo side to log in as ("Entrar como (demonstração)"). */
-  role: Role;
-  /** Real mode only: the account's e-mail and password. */
-  email?: string;
-  password?: string;
+// ---- mock credentials ----
+// Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
+const passwords = new Map<string, string>(Object.keys(ACCOUNTS).map((id) => [id, DEMO_PASSWORD]));
+
+/** The demo accounts listed on the login screen (none with the real backend). */
+export const DEMO_ACCOUNTS: { role: Role; email: string; password: string }[] = IS_DEMO
+  ? Object.values(ACCOUNTS).map((a) => ({ role: a.role, email: a.email, password: DEMO_PASSWORD }))
+  : [];
+
+const digits = (s: string) => s.replace(/\D/g, '');
+
+function findAccount(identifier: string): Account | undefined {
+  const id = identifier.trim().toLowerCase();
+  const doc = digits(identifier);
+  return Object.values(getDb().accounts).find(
+    (a) => a.email.toLowerCase() === id || (doc.length >= 11 && digits(a.document) === doc)
+  );
 }
 
-/** Mock: logs straight into the chosen demo side. Real: authenticates with e-mail/password. */
-export async function signIn({ role, email, password }: SignInInput): Promise<void> {
-  if (isSupabaseConfigured()) {
-    const supabase = await getSupabase();
-    if (!supabase) throw new Error('Supabase indisponível.');
-    const { error } = await supabase.auth.signInWithPassword({
-      email: (email || '').trim().toLowerCase(),
-      password: password || ''
-    });
-    if (error) throw error;
-    return;
-  }
+/**
+ * Whether `password` is the logged-in account's (before a sensitive action, e.g. deleting the account).
+ * Backend: re-authenticate with Supabase Auth (signInWithPassword on the same e-mail).
+ */
+export async function checkPassword(password: string): Promise<boolean> {
+  if (!IS_DEMO) return remote.checkPassword(password);
   await mockLatency(500);
-  setRole(role);
+  const session = getSession();
+  return Boolean(session && passwords.get(session.accountId) === password);
 }
+
+/** Forgets the mock password of a deleted account. */
+export function forgetPassword(accountId: string): void {
+  passwords.delete(accountId);
+}
+
+// ---- sign-in / sign-out ----
+
+/**
+ * Why signing in failed. One answer for an unknown e-mail/CPF/CNPJ and a wrong password, in both modes:
+ * telling them apart would reveal who has an account (Z07).
+ */
+/** `email-nao-confirmado`: right password, but the account's e-mail link was never opened (Y19). */
+export type SignInError = 'credenciais' | 'email-nao-confirmado';
+
+/** Where a sign-in or sign-up gets its captcha token (components/Captcha.tsx); none in the demo. */
+export type CaptchaSource = () => Promise<string | undefined>;
+const noCaptcha: CaptchaSource = async () => undefined;
+export type SignInResult = { ok: true; role: Role } | { ok: false; reason: SignInError; email?: string };
+
+/**
+ * Signs in with e-mail (or CPF/CNPJ) and password. The side (worker or company) comes from the account.
+ * Backend: Supabase Auth `signInWithPassword` (resolving a CPF/CNPJ to the account's e-mail first).
+ */
+export async function signIn(
+  identifier: string,
+  password: string,
+  captcha: CaptchaSource = noCaptcha
+): Promise<SignInResult> {
+  if (!IS_DEMO) return remote.signIn(identifier, password, captcha);
+  await mockLatency(500);
+  const account = findAccount(identifier);
+  if (!account || passwords.get(account.id) !== password) return { ok: false, reason: 'credenciais' };
+  setSessionAccount(account.id);
+  return { ok: true, role: account.role };
+}
+
+/** Ends the session and forgets every screen's state. Backend: Supabase Auth `signOut`. */
+export async function signOut(): Promise<void> {
+  if (!IS_DEMO) return remote.signOut();
+  await localLatency(300); // signing out works offline too: the session is dropped on the device
+  setSessionAccount(null);
+  clearQueries();
+  resetHistory();
+}
+
+// ---- sign-up ----
 
 export interface SignUpData {
   role: Role;
@@ -42,127 +115,285 @@ export interface SignUpData {
   /** Confirmed by code (see sendWhatsAppCode). */
   whatsapp: string;
   password: string;
+  /** The version of the terms/privacy policy the person accepted (see services/legal.ts). */
+  acceptedTermsVersion: string;
+  /** L14: "Tenho 18 anos ou mais" (the terms require it; the server refuses without it). */
+  adult: boolean;
+  /** F15: recruiter — who talks to the candidates. */
+  contactName?: string;
 }
 
-export type SignUpResult = { ok: true } | { ok: false; reason: 'doc-taken' | 'email-taken'; message: string };
+/**
+ * `email-taken`: the e-mail already has a confirmed account. `recusado`: the account couldn't be created
+ * with that data — the server doesn't say why (it would reveal whether a CPF/CNPJ has an account; Z07).
+ */
+export type SignUpResult = { ok: true } | { ok: false; reason: 'recusado' | 'email-taken' };
 
-// Demo: these CPF/CNPJ are "already registered" — they reproduce the "documento já cadastrado" error.
-const TAKEN_DOCS = ['111.111.111-11', '11.111.111/1111-11'];
+/** Demo: documents that already have an account elsewhere (valid ones, so they pass the form). */
+const TAKEN_DOCS = ['111.444.777-35', '11.222.333/0001-81'];
 
-/** Creates the account. The e-mail confirmation and the profile come next (see finishSignUp). */
-export async function signUp(data: SignUpData, jaTentouLiberar = false): Promise<SignUpResult> {
-  if (isSupabaseConfigured()) {
-    const supabase = await getSupabase();
-    if (!supabase) throw new Error('Supabase indisponível.');
-    const tipo = data.role === 'recrutador' ? 'construtora' : 'pedreiro';
-    const { error } = await supabase.auth.signUp({
-      email: data.email.trim().toLowerCase(),
-      password: data.password,
-      options: { data: { nome: data.name, tipo, documento: data.doc } }
-    });
-    if (!error) return { ok: true };
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase() || '?';
+}
 
-    // Auto-recuperação de cadastro-fantasma: um e-mail ou documento preso numa tentativa anterior
-    // nunca confirmada é liberado e a tentativa é refeita uma única vez antes de admitir erro.
-    if (!jaTentouLiberar) {
-      if (emailDuplicado(error)) {
-        try {
-          await supabase.rpc('reiniciar_cadastro_pendente_email', { p_email: data.email });
-        } catch {
-          /* segue mesmo se falhar */
-        }
-        return signUp(data, true);
-      }
-      if (documentoDuplicado(error)) {
-        try {
-          await supabase.rpc('reiniciar_cadastro_pendente_documento', { p_documento: data.doc });
-        } catch {
-          /* segue mesmo se falhar */
-        }
-        return signUp(data, true);
-      }
-    }
-    if (emailDuplicado(error)) return { ok: false, reason: 'email-taken', message: traduzirErroSupabase(error) };
-    return { ok: false, reason: 'doc-taken', message: traduzirErroSupabase(error) };
-  }
-
+/**
+ * Creates the account and its empty profile, and logs it in. The e-mail confirmation and the profile
+ * come next (the route guards send the user there). Backend: Supabase Auth `signUp` + a trigger that
+ * creates the `accounts` row and the worker/company row.
+ */
+export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptcha): Promise<SignUpResult> {
+  // X18: only a mobile (DDD + 9 + 8 digits) is a WhatsApp — the same check as the server.
+  if (!isValidMobile(data.whatsapp))
+    throw serviceError('validacao', 'Confira o WhatsApp: celular com DDD, 11 números.');
+  if (!IS_DEMO) return remote.signUp(data, captcha);
   await mockLatency(700);
-  return TAKEN_DOCS.includes(data.doc)
-    ? { ok: false, reason: 'doc-taken', message: 'Esse CPF/CNPJ já tem conta na Bicos.' }
-    : { ok: true };
-}
+  const accounts = Object.values(getDb().accounts);
+  if (!data.adult) return { ok: false, reason: 'recusado' };
+  // Y17: like the server, an invalid document (or none) is refused.
+  const validDoc = data.role === 'recrutador' ? isValidCnpj(data.doc) || isValidCpf(data.doc) : isValidCpf(data.doc);
+  if (!validDoc) return { ok: false, reason: 'recusado' };
+  if (TAKEN_DOCS.includes(data.doc) || accounts.some((a) => digits(a.document) === digits(data.doc)))
+    return { ok: false, reason: 'recusado' };
+  if (accounts.some((a) => a.email.toLowerCase() === data.email.trim().toLowerCase()))
+    return { ok: false, reason: 'email-taken' };
 
-export interface FinishSignUpPatch {
-  cargo?: string;
-  regiao?: string;
-  especialidades?: string[];
-  tipoObra?: string;
-  regiaoAtuacao?: string;
-}
-
-/** Last step of sign-up: the profile is filled in and the user enters the app. */
-export async function finishSignUp(role: Role, patch?: FinishSignUpPatch): Promise<void> {
-  if (isSupabaseConfigured() && patch) {
-    const supabase = await getSupabase();
-    if (supabase) {
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
-      if (session) {
-        const dbPatch =
-          role === 'recrutador'
-            ? { tipo_obra: patch.tipoObra || null, regiao_atuacao: patch.regiaoAtuacao || null }
-            : { cargo: patch.cargo || null, regiao: patch.regiao || null, especialidades: patch.especialidades || [] };
-        await supabase.from('profiles').update(dbPatch).eq('id', session.user.id);
-      }
-    }
-    return;
+  const stamp = Date.now().toString(36);
+  const now = new Date().toISOString();
+  const account: Account = {
+    id: 'conta-' + stamp,
+    email: data.email.trim(),
+    role: data.role,
+    document: data.doc,
+    whatsapp: data.whatsapp,
+    whatsappVerifiedAt: now,
+    emailConfirmedAt: null,
+    profileCompletedAt: null,
+    termsVersion: data.acceptedTermsVersion,
+    termsAcceptedAt: now,
+    workerId: null,
+    companyId: null,
+    createdAt: now
+  };
+  if (data.role === 'trabalhador') {
+    const worker: Worker = {
+      id: 't-' + stamp,
+      name: data.name.trim(),
+      initials: initialsOf(data.name),
+      oficioId: '',
+      whatsapp: data.whatsapp,
+      city: DEFAULT_CITY,
+      neighborhood: null,
+      ...DEFAULT_POINT,
+      rating: 0,
+      reviewCount: 0,
+      jobsDone: 0,
+      novo: true,
+      verified: false,
+      specialties: [],
+      facts: [],
+      reviews: []
+    };
+    upsertWorker(worker);
+    account.workerId = worker.id;
+  } else {
+    const company: Company = {
+      id: 'c-' + stamp,
+      name: data.name.trim(),
+      // Y16: only a CNPJ goes to the public profile (a recruiter on their own signs up with a CPF).
+      ...(isValidCnpj(data.doc) ? { cnpj: data.doc } : {}),
+      location: DEFAULT_CITY,
+      whatsapp: data.whatsapp,
+      rating: 0,
+      reviewCount: 0,
+      verified: false,
+      verification: 'pendente',
+      ...(data.contactName ? { contactName: data.contactName } : {}),
+      reviews: []
+    };
+    upsertCompany(company);
+    account.companyId = company.id;
   }
-  setRole(role);
+  passwords.set(account.id, data.password);
+  upsertAccount(account);
+  setSessionAccount(account.id);
+  return { ok: true };
 }
 
-/** Sends the "reset your password" link. */
-export async function requestPasswordReset(email: string): Promise<void> {
-  if (isSupabaseConfigured()) {
-    const supabase = await getSupabase();
-    if (!supabase) throw new Error('Supabase indisponível.');
-    // Sem fragmento de rota de propósito: o Supabase acrescenta os tokens de recovery como o
-    // PRÓPRIO fragmento (#access_token=...&type=recovery) — main.tsx trata isso antes do roteador
-    // rodar (consumeRecoveryTokenFromUrl), senão viraria um hash inválido para o roteador.
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname
+/**
+ * Demo stand-in for opening the link sent by e-mail: confirms the logged-in account's e-mail.
+ * Backend: Supabase Auth confirms it when the link is opened; the app only re-reads the session.
+ */
+/**
+ * "Já confirmei": `entrou` when the account is confirmed and in; `entrar-com-senha` when this device has
+ * no session to check (the sign-up waits for the link without one): the user signs in with the password
+ * (Y19). Still not confirmed → a "not yet" error.
+ */
+export async function confirmEmail(): Promise<'entrou' | 'entrar-com-senha'> {
+  if (!IS_DEMO) return remote.confirmEmail();
+  await mockLatency(500);
+  const session = getSession();
+  if (session) updateAccount(session.accountId, { emailConfirmedAt: new Date().toISOString() });
+  return 'entrou';
+}
+
+/** Sends the confirmation link again. Backend: Supabase Auth `resend({ type: 'signup' })`. */
+export async function resendConfirmationEmail(email?: string): Promise<void> {
+  if (!IS_DEMO) return remote.resendConfirmationEmail(email);
+  await mockLatency(600);
+}
+
+export type ProfileData =
+  | { role: 'trabalhador'; oficioId: string; city: string; specialties: string[] }
+  | { role: 'recrutador'; tipoObra: string; city: string };
+
+/** Last step of sign-up: saves "Completar perfil" and lets the account into the app. Backend: update the profile row. */
+export async function finishSignUp(profile: ProfileData): Promise<void> {
+  if (!IS_DEMO) return remote.finishSignUp(profile);
+  await mockLatency(500);
+  const session = getSession();
+  if (!session) return;
+  if (profile.role === 'trabalhador' && session.workerId) {
+    // The city picker's list is big: it loads only here, when it is needed.
+    const { cityByLabel } = await import('./cities');
+    const center = cityByLabel(profile.city) ?? DEFAULT_POINT;
+    updateWorker(session.workerId, {
+      oficioId: profile.oficioId,
+      city: profile.city,
+      neighborhood: null,
+      lat: center.lat,
+      lon: center.lon,
+      specialties: profile.specialties
     });
-    if (error) throw error;
-    return;
+  } else if (profile.role === 'recrutador' && session.companyId) {
+    updateCompany(session.companyId, { tipoObra: profile.tipoObra, location: profile.city });
   }
+  updateAccount(session.accountId, { profileCompletedAt: new Date().toISOString() });
+}
+
+// ---- password ----
+
+/** Sends the "reset your password" link. Demo: nothing is sent. */
+export async function requestPasswordReset(_email: string): Promise<void> {
+  if (!IS_DEMO) return remote.requestPasswordReset(_email);
   await mockLatency(600);
 }
 
-/** Sets the new password chosen from the reset link. Requires a recovery session (see main.tsx). */
-export async function resetPassword(newPassword: string): Promise<void> {
-  if (isSupabaseConfigured()) {
-    const supabase = await getSupabase();
-    if (!supabase) throw new Error('Supabase indisponível.');
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) throw error;
-    return;
-  }
+/** Sets the new password chosen from the reset link. Demo: nothing is stored. */
+export async function resetPassword(_newPassword: string): Promise<void> {
+  // X11: the same rule as the sign-up.
+  const problem = passwordProblem(_newPassword);
+  if (problem) throw serviceError('validacao', problem);
+  if (!IS_DEMO) return remote.resetPassword(_newPassword);
   await mockLatency(600);
 }
 
-/** Sends the 6-digit confirmation code to the number by WhatsApp. Not wired to a real provider yet —
- *  same "unavailable" scope decision the legacy app made for WhatsApp/Google sign-in. */
-export async function sendWhatsAppCode(_phone: string): Promise<void> {
+/** X11: the reset screen was left without saving: the short session from the e-mail link ends. */
+export async function abandonPasswordReset(): Promise<void> {
+  if (!IS_DEMO) return remote.abandonPasswordReset();
+}
+
+// ---- Google (L13) ----
+
+/** "Continuar com o Google": leaves for Google and comes back signed in. Backend: Supabase OAuth. */
+export async function signInWithGoogle(): Promise<void> {
+  if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
+  return remote.signInWithGoogle();
+}
+
+export interface OAuthSignUpData {
+  role: Role;
+  name: string;
+  doc: string;
+  whatsapp: string;
+  acceptedTermsVersion: string;
+  adult: boolean;
+  contactName?: string;
+}
+
+/**
+ * L13: a Google account without a side yet chooses it and gives the same data as the e-mail sign-up.
+ * Backend: RPC create_my_account (same rules), then the session starts as usual.
+ */
+export async function completeOAuthSignUp(data: OAuthSignUpData): Promise<void> {
+  if (!data.adult) throw serviceError('validacao', 'A Bicos é só para maiores de 18 anos.');
+  const validDoc = data.role === 'recrutador' ? isValidCnpj(data.doc) || isValidCpf(data.doc) : isValidCpf(data.doc);
+  if (!validDoc)
+    throw serviceError('validacao', data.role === 'recrutador' ? 'CNPJ ou CPF inválido.' : 'CPF inválido.');
+  if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, crie a conta pelo cadastro.');
+  return remote.completeOAuthSignUp(data);
+}
+
+// ---- account settings ----
+
+/**
+ * L15: "Trocar senha" in Configurações: the current password, then the new one. Backend: re-checks the
+ * current password and Supabase Auth `updateUser({ password })`.
+ */
+export async function changePassword(current: string, next: string): Promise<void> {
+  const problem = passwordProblem(next);
+  if (problem) throw serviceError('validacao', problem);
+  if (!IS_DEMO) return remote.changePassword(current, next);
+  await mockLatency(600);
+  const session = getSession();
+  if (!session || passwords.get(session.accountId) !== current)
+    throw serviceError('validacao', 'Senha atual incorreta.');
+  if (current === next) throw serviceError('validacao', 'Use uma senha diferente da atual.');
+  passwords.set(session.accountId, next);
+}
+
+/**
+ * F08: changes the e-mail. Nothing changes until the link sent to the new address is opened. Backend:
+ * re-checks the password and Supabase Auth `updateUser({ email })`; a trigger copies the confirmed
+ * address to accounts.email. Demo: changes at once (there is no inbox).
+ */
+export async function changeEmail(email: string, password: string): Promise<void> {
+  const clean = email.trim().toLowerCase();
+  if (!isValidEmail(clean)) throw serviceError('validacao', 'E-mail inválido. Confira se tem @ e o domínio.');
+  const session = getSession();
+  if (session && clean === session.email.toLowerCase()) throw serviceError('validacao', 'Esse já é o seu e-mail.');
+  if (!IS_DEMO) return remote.changeEmail(clean, password);
+  await mockLatency(600);
+  if (!session || passwords.get(session.accountId) !== password) throw serviceError('validacao', 'Senha incorreta.');
+  if (Object.values(getDb().accounts).some((a) => a.email.toLowerCase() === clean))
+    throw serviceError('conflito', 'Esse e-mail já tem conta na Bicos.');
+  updateAccount(session.accountId, { email: clean });
+}
+
+// ---- WhatsApp ----
+
+/** Numbers confirmed by code in this demo session (the server keeps them 30 minutes: Y25). */
+export const demoVerifiedPhones = new Set<string>();
+
+/**
+ * Sends the 6-digit confirmation code to the number by WhatsApp. Backend: Edge Function
+ * `codigo-whatsapp` (Twilio Verify; attempt limits; captcha when configured). Demo: nothing is sent.
+ */
+export async function sendWhatsAppCode(phone: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
+  if (!IS_DEMO) return remote.sendWhatsAppCode(phone, captcha);
   await mockLatency(600);
 }
 
-/** Checks the code the user typed. Demo: any 6 digits confirm the number, except 000000. */
-export async function verifyWhatsAppCode(_phone: string, code: string): Promise<boolean> {
+/**
+ * Checks the code the user typed; right → the number counts as confirmed (for the sign-up or a number
+ * change). Demo: any 6 digits confirm the number, except 000000.
+ */
+export async function verifyWhatsAppCode(phone: string, code: string): Promise<boolean> {
+  if (!IS_DEMO) return remote.verifyWhatsAppCode(phone, code);
   await mockLatency(600);
-  return /^\d{6}$/.test(code) && code !== '000000';
+  const ok = /^\d{6}$/.test(code) && code !== '000000';
+  if (ok) demoVerifiedPhones.add(digits(phone));
+  return ok;
 }
+
+/**
+ * Whether the number can be confirmed by code (sign-up, number change). It needs the WhatsApp/SMS
+ * provider (Twilio Verify, VITE_CODIGO_WHATSAPP): until it is set up, the code step is left out and the
+ * number is stored unconfirmed (accounts.whatsapp_verified_at stays empty). The demo simulates it.
+ */
+export const WHATSAPP_CODE_AVAILABLE = FEATURES.whatsappCode;
 
 /** Seconds before the code can be sent again. */
-export const WHATSAPP_RESEND_SECONDS = 15;
-
-export { emailNaoConfirmado, traduzirErroSupabase };
+export const WHATSAPP_RESEND_SECONDS = 60;

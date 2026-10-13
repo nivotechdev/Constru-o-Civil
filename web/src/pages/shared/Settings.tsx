@@ -1,8 +1,13 @@
-import type { ReactNode } from 'react';
+import { useSyncExternalStore, type ReactNode } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Icon, type IconName } from '../../components/icons/Icon';
+import { Switch } from '../../components/Switch';
 import { useRole } from '../../hooks/useStore';
+import { isFailureMode, setFailureMode, subscribeFailureMode } from '../../services/demo';
+import { IS_DEMO } from '../../services/mode';
 import { goBack, navigate } from '../../services/router';
+import { askSignOut } from '../../services/sharedUI';
+import { FEATURES } from '../../services/features';
 
 interface RowProps {
   icon: IconName;
@@ -48,6 +53,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 export default function Settings() {
   const role = useRole();
+  const failing = useSyncExternalStore(subscribeFailureMode, isFailureMode);
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 gap-6 pb-8 lg:bg-transparent lg:min-h-0">
       <BackBar title="Configurações" onBack={() => goBack(role === 'recrutador' ? '/empresa' : '/perfil')} />
@@ -58,14 +64,30 @@ export default function Settings() {
             label="Editar perfil"
             onClick={() => navigate(role === 'recrutador' ? '/empresa/editar' : '/perfil/editar')}
           />
-          <Row icon="lock" label="Trocar senha" onClick={() => navigate('/esqueci-senha')} />
+          <Row icon="mail" label="Trocar e-mail" onClick={() => navigate('/configuracoes/email')} />
+          <Row icon="phone" label="Trocar WhatsApp" onClick={() => navigate('/whatsapp')} />
+          <Row icon="lock" label="Trocar senha" onClick={() => navigate('/configuracoes/senha')} />
         </Section>
         <Section title="Preferências">
           <Row
             icon="bell"
             label="Notificações"
-            description="Bicos urgentes, candidaturas e mensagens"
-            onClick={() => navigate('/notificacoes')}
+            description="O que chega no app e no celular"
+            onClick={() => navigate('/configuracoes/avisos')}
+          />
+          {role === 'recrutador' && FEATURES.payments ? (
+            <Row
+              icon="receipt"
+              label="Pagamentos"
+              description="Impulsionamentos, recibos e reembolsos"
+              onClick={() => navigate('/pagamentos')}
+            />
+          ) : null}
+          <Row
+            icon="ban"
+            label="Contas bloqueadas"
+            description="Quem você bloqueou"
+            onClick={() => navigate('/configuracoes/bloqueados')}
           />
           <Row
             icon="shield-check"
@@ -75,12 +97,30 @@ export default function Settings() {
           />
         </Section>
         <Section title="Sobre">
-          <Row icon="file-check" label="Termos de uso" onClick={() => {}} />
-          <Row icon="shield-check" label="Política de privacidade" onClick={() => {}} />
+          <Row
+            icon="circle-help"
+            label="Ajuda"
+            description="Perguntas frequentes e suporte"
+            onClick={() => navigate('/ajuda')}
+          />
+          <Row icon="file-check" label="Termos de uso" onClick={() => navigate('/termos')} />
+          <Row icon="shield-check" label="Política de privacidade" onClick={() => navigate('/privacidade')} />
         </Section>
         <Section title="">
-          <Row icon="log-out" label="Sair da conta" danger onClick={() => navigate('/login')} />
+          <Row icon="log-out" label="Sair da conta" danger onClick={() => askSignOut()} />
         </Section>
+        {IS_DEMO ? (
+          <Section title="Demonstração">
+            <div className="px-4 py-1 bg-white">
+              <Switch
+                label="Simular falhas de conexão"
+                description="Para testar: toda ação e carregamento passa a dar erro, com a opção de tentar de novo."
+                checked={failing}
+                onChange={setFailureMode}
+              />
+            </div>
+          </Section>
+        ) : null}
       </div>
     </div>
   );

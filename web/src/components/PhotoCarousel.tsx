@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import type { Job } from '../types/models';
 import { cx } from '../utils/cx';
@@ -9,7 +9,7 @@ import { JobCover } from './JobCover';
 /** Photo being shown, per job — so the mural tile and the job page open on the same photo. */
 const shownPhoto = new Map<string, number>();
 
-type CarouselJob = Pick<Job, 'id' | 'role' | 'photos'>;
+type CarouselJob = Pick<Job, 'id' | 'oficioId' | 'title' | 'photos'>;
 
 interface PhotoCarouselProps {
   job: CarouselJob;
@@ -40,7 +40,29 @@ export function PhotoCarousel({
     );
   }
   // A new set of photos starts a fresh carousel (the legacy app rebuilt it on every render).
-  return <Slides key={photos.join('\n')} job={job} photos={photos} frame={frame} compact={compact} />;
+  const slides = <Slides key={photos.join('\n')} job={job} photos={photos} frame={frame} compact={compact} />;
+  // X01: on the mural a tile's carousel (and its photos) is only built when the tile comes near the screen.
+  return compact ? <WhenNear frame={frame}>{slides}</WhenNear> : slides;
+}
+
+function WhenNear({ frame, children }: { frame: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined');
+  useEffect(() => {
+    if (near || !ref.current) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '400px 0px' }
+    );
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [near]);
+  return near ? children : <div ref={ref} className={frame} />;
 }
 
 interface SlidesProps {
@@ -177,8 +199,10 @@ function Slides({ job, photos, frame, compact }: SlidesProps) {
         n > 1 ? 'cursor-grab' : ''
       )}
       tabIndex={n > 1 && !compact ? 0 : undefined}
-      aria-label="Fotos do bico"
-      aria-roledescription="carrossel"
+      // X05: on a tile the photos are decoration of the card (its link says what the job is); swipe stays.
+      aria-hidden={compact ? true : undefined}
+      aria-label={compact ? undefined : 'Fotos do bico'}
+      aria-roledescription={compact ? undefined : 'carrossel'}
     >
       {photos.map((src, i) => (
         <div key={i} className="shrink-0 w-full h-full snap-center snap-always overflow-hidden">
@@ -202,7 +226,7 @@ function Slides({ job, photos, frame, compact }: SlidesProps) {
       title={label}
       disabled={dir < 0 ? index === 0 : index === n - 1}
       className={cx(
-        'absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-white/90 text-concrete-900 shadow-raised transition hover:bg-white hover:scale-105 disabled:!opacity-0 disabled:pointer-events-none',
+        'tap-target absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-white/90 text-concrete-900 shadow-raised transition hover:bg-white hover:scale-105 disabled:!opacity-0 disabled:pointer-events-none',
         compact
           ? 'hidden lg:inline-flex w-8 h-8 opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
           : 'inline-flex w-9 h-9',

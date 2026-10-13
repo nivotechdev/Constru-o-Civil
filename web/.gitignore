@@ -8,3 +8,7 @@ scripts/parity/.font-cache/
 .env
 .env.*
 !.env.example
+dist-real/
+deno.lock
+preview/
+lighthouse*.json

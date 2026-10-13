@@ -5,10 +5,11 @@ import { NotificationsPanel } from '../components/NotificationsPanel';
 import { useNotifications } from '../hooks/useNotifications';
 import { useUI } from '../hooks/useStore';
 import { navigate } from '../services/router';
-import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../services/sharedUI';
+import { MENU_DEFAULTS, MENU_KEY, type MenuUI, askSignOut } from '../services/sharedUI';
 import { getUI, setUI } from '../services/store';
 import type { Role } from '../types/models';
 import { cx } from '../utils/cx';
+import { ACCOUNT_MENU } from './accountMenu';
 
 interface NavItem {
   id: string;
@@ -32,29 +33,9 @@ const ITEMS: Record<Role, NavItem[]> = {
   ],
   recrutador: [
     { id: 'mural', icon: 'hammer', label: 'Início', path: '/mural' },
+    { id: 'minhas-vagas', icon: 'hard-hat', label: 'Vagas', desktopLabel: 'Minhas vagas', path: '/minhas-vagas' },
     { id: 'criar-vaga', icon: 'plus', label: 'Publicar', desktopLabel: 'Publicar vaga', path: '/criar-vaga' },
     { id: 'empresa', icon: 'building-2', label: 'Perfil', path: '/empresa' }
-  ]
-};
-
-interface MenuEntry {
-  icon: IconName;
-  label: string;
-  path: string;
-}
-
-const MENU: Record<Role, MenuEntry[]> = {
-  trabalhador: [
-    { icon: 'user', label: 'Meu perfil', path: '/perfil' },
-    { icon: 'bookmark', label: 'Vagas salvas', path: '/vagas-salvas' },
-    { icon: 'bell', label: 'Notificações', path: '/notificacoes' },
-    { icon: 'settings', label: 'Configurações', path: '/configuracoes' }
-  ],
-  recrutador: [
-    { icon: 'building-2', label: 'Minha empresa', path: '/empresa' },
-    { icon: 'history', label: 'Bicos fechados', path: '/historico' },
-    { icon: 'bell', label: 'Notificações', path: '/notificacoes' },
-    { icon: 'settings', label: 'Configurações', path: '/configuracoes' }
   ]
 };
 
@@ -239,7 +220,7 @@ function TopBar({ role, items, active, account }: TopBarProps) {
     setMenu({ menuOpen: false, notificationsOpen: false });
     navigate(path);
   };
-  const notifications = useNotifications(role);
+  const notifications = useNotifications();
   const [indicatorStyle] = useState(() =>
     lastIndicator ? { transform: `translateX(${lastIndicator.x}px)`, width: `${lastIndicator.w}px` } : { opacity: '0' }
   );
@@ -345,6 +326,7 @@ function TopBar({ role, items, active, account }: TopBarProps) {
                 list={notifications.list}
                 unread={notifications.unread}
                 onMarkAllRead={notifications.markAllRead}
+                onOpen={notifications.open}
                 onSeeAll={() => go('/notificacoes')}
                 onClose={() => setMenu({ notificationsOpen: false })}
                 className="absolute right-0 top-full mt-3 w-[24rem]"
@@ -383,11 +365,19 @@ function TopBar({ role, items, active, account }: TopBarProps) {
                     </div>
                   </div>
                   <div className="h-px bg-concrete-200 my-1" />
-                  {(MENU[role] || MENU.trabalhador).map((m) => (
+                  {(ACCOUNT_MENU[role] || ACCOUNT_MENU.trabalhador).map((m) => (
                     <MenuItem key={m.path} icon={m.icon} label={m.label} onClick={() => go(m.path)} />
                   ))}
                   <div className="h-px bg-concrete-200 my-1" />
-                  <MenuItem icon="log-out" label="Sair da conta" danger onClick={() => go('/login')} />
+                  <MenuItem
+                    icon="log-out"
+                    label="Sair da conta"
+                    danger
+                    onClick={() => {
+                      setMenu({ menuOpen: false });
+                      askSignOut();
+                    }}
+                  />
                 </div>
               </>
             ) : null}

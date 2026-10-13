@@ -109,7 +109,7 @@ export function WhatsAppCode({
           </div>
           <input
             id={id}
-            data-focus-id={id}
+
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -149,7 +149,7 @@ export function WhatsAppCode({
             {resending ? 'Reenviando…' : 'Reenviar código pelo WhatsApp'}
           </button>
         )}
-        <span className="text-xs text-concrete-400">Demonstração: qualquer código de 6 números confirma.</span>
+        <span className="text-xs text-concrete-500">Demonstração: qualquer código de 6 números confirma.</span>
       </div>
     </div>
   );

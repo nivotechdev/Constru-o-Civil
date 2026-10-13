@@ -1,5 +1,6 @@
 import type { Job } from '../types/models';
 import { cx } from '../utils/cx';
+import { jobTitle, oficioNome } from '../services/catalog';
 import { Icon, type IconName } from './icons/Icon';
 
 // Illustrated cover for jobs without a photo: a trade-specific gradient, blueprint texture and
@@ -25,8 +26,8 @@ const COVERS: (Cover & { test: RegExp })[] = [
 ];
 const DEFAULT_COVER: Cover = { icon: 'hard-hat', from: '#1D4BED', to: '#0A1A54' };
 
-export function JobCover({ job, large = false }: { job: Pick<Job, 'role'>; large?: boolean }) {
-  const c = COVERS.find((x) => x.test.test(job.role || '')) || DEFAULT_COVER;
+export function JobCover({ job, large = false }: { job: Pick<Job, 'oficioId' | 'title'>; large?: boolean }) {
+  const c = COVERS.find((x) => x.test.test(oficioNome(job.oficioId) + ' ' + jobTitle(job))) || DEFAULT_COVER;
   return (
     <div className="absolute inset-0" style={{ background: `linear-gradient(145deg, ${c.from}, ${c.to})` }}>
       <div className="absolute inset-0 job-cover-grid" />

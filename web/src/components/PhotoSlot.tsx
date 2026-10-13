@@ -10,6 +10,8 @@ interface PhotoSlotProps {
   placeholder?: string;
   className?: string;
   height?: string;
+  /** 0–1 while the picture uploads: a bar over it (Z12). */
+  progress?: number | null;
 }
 
 /** Tap-to-choose photo well (cover banner, avatar, job-site photo). No backend — stores a local object URL. */
@@ -19,7 +21,8 @@ export function PhotoSlot({
   onChange,
   placeholder = 'Toque para escolher uma foto',
   className = '',
-  height = '9rem'
+  height = '9rem',
+  progress = null
 }: PhotoSlotProps) {
   const isCircle = shape === 'circle';
   return (
@@ -41,6 +44,21 @@ export function PhotoSlot({
           if (file && onChange) onChange(mediaUrl(file));
         }}
       />
+      {progress !== null ? (
+        <span
+          className="absolute inset-x-0 bottom-0 z-10 h-1.5 bg-black/20"
+          role="progressbar"
+          aria-label="Enviando a foto"
+          aria-valuenow={Math.round(progress * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <span
+            className="block h-full bg-brand-500 transition-[width]"
+            style={{ width: `${Math.round(progress * 100)}%` }}
+          />
+        </span>
+      ) : null}
       {value ? (
         <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover" />
       ) : (

@@ -41,17 +41,17 @@ integração Firebase que não existe hoje. Ver `docs/VALIDACAO.md` → "Observa
 
 ### Fluxo de entrada / autenticação (sem shell de navegação)
 
-| Rota                      | Tela            | Regras                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                       | —               | redireciona (replace) para `/splash`                                                                                                                                                                                                                                                                                                                                                                                          |
-| `/splash`                 | Splash          | "Entrar" → `/login`; "Criar minha conta" → `/escolha-perfil`                                                                                                                                                                                                                                                                                                                                                                  |
-| `/login`                  | Login           | campos "E-mail, CPF ou CNPJ" + senha (olho mostrar/ocultar); seletor "Entrar como (demonstração)" Trabalhador/Recrutador; **Entrar / Google / celular** fazem o mesmo: loading 500 ms → `setRole` → `/mural` (sem validação). Links "Esqueci minha senha", "Criar minha conta".                                                                                                                                               |
-| `/escolha-perfil`         | ChooseProfile   | RadioCards trabalhador/recrutador (padrão trabalhador) → `/cadastro/:role`                                                                                                                                                                                                                                                                                                                                                    |
-| `/cadastro/:role`         | Signup          | Wizard de 4 passos (trabalhador: nome, CPF, e-mail, senha; recrutador: nome da empresa, CNPJ, e-mail, senha). Máscaras CPF/CNPJ ao digitar, validação por passo, confirmação de senha, medidor de força, aceite dos termos, loading 700 ms, documento sentinela `111.111.111-11` / `11.111.111/1111-11` → volta ao passo do documento com erro "já tem conta". Sucesso → guarda `authFlow {role,email}` → `/verificar-email`. |
-| `/verificar-email`        | VerifyEmail     | mostra e-mail do cadastro; "Abrir meu e-mail" → `/completar-perfil/:role`; "Reenviar o link" não faz nada                                                                                                                                                                                                                                                                                                                     |
-| `/completar-perfil/:role` | CompleteProfile | 2 passos. Trabalhador: foto (opcional) + cargo (obrigatório) → região + especialidades (≥1). Recrutador: capa/logo (opcionais) → tipo de obra + região. Concluir → `setRole` → `/mural`.                                                                                                                                                                                                                                      |
-| `/esqueci-senha`          | ForgotPassword  | valida e-mail, loading 600 ms, tela "Link enviado" → `/redefinir-senha`                                                                                                                                                                                                                                                                                                                                                       |
-| `/redefinir-senha`        | ResetPassword   | senha ≥ 8, confirmação igual, medidor de força, loading 600 ms, tela "Senha redefinida" → `/login`                                                                                                                                                                                                                                                                                                                            |
+| Rota                      | Tela            | Regras                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                       | —               | redireciona (replace) para `/splash`                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `/splash`                 | Splash          | "Entrar" → `/login`; "Criar minha conta" → `/escolha-perfil`                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `/login`                  | Login           | campos "E-mail, CPF ou CNPJ" + senha (olho mostrar/ocultar); seletor "Entrar como (demonstração)" Trabalhador/Recrutador; **Entrar / Google / celular** fazem o mesmo: loading 500 ms → `setRole` → `/mural` (sem validação). Links "Esqueci minha senha", "Criar minha conta".                                                                                                                                                                                         |
+| `/escolha-perfil`         | ChooseProfile   | RadioCards trabalhador/recrutador (padrão trabalhador) → `/cadastro/:role`                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/cadastro/:role`         | Signup          | Wizard de 4 passos (trabalhador: nome, CPF, e-mail, senha; recrutador: nome da empresa, CNPJ ou CPF, e-mail, senha). Máscaras CPF/CNPJ ao digitar, dígito verificador (Y17), validação por passo, confirmação de senha, medidor de força, aceite dos termos, loading 700 ms; na demonstração `111.444.777-35` / `11.222.333/0001-81` já "têm conta" → volta ao passo do documento com a recusa genérica. Sucesso → guarda `authFlow {role,email}` → `/verificar-email`. |
+| `/verificar-email`        | VerifyEmail     | mostra e-mail do cadastro; "Abrir meu e-mail" → `/completar-perfil/:role`; "Reenviar o link" não faz nada                                                                                                                                                                                                                                                                                                                                                               |
+| `/completar-perfil/:role` | CompleteProfile | 2 passos. Trabalhador: foto (opcional) + cargo (obrigatório) → região + especialidades (≥1). Recrutador: capa/logo (opcionais) → tipo de obra + região. Concluir → `setRole` → `/mural`.                                                                                                                                                                                                                                                                                |
+| `/esqueci-senha`          | ForgotPassword  | valida e-mail, loading 600 ms, tela "Link enviado" → `/redefinir-senha`                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `/redefinir-senha`        | ResetPassword   | senha ≥ 8, confirmação igual, medidor de força, loading 600 ms, tela "Senha redefinida" → `/login`                                                                                                                                                                                                                                                                                                                                                                      |
 
 ### Área logada (com shell: pílula flutuante no celular, barra superior "ilha" ≥ 770 px)
 
@@ -122,3 +122,71 @@ Não há tradução de códigos de erro do Firebase porque não há Firebase.
 
 Não existe. Só a rota sobrevive ao F5 (está no hash). Todo o estado (papel, dados, formulários)
 volta ao seed. Replicado tal qual.
+
+## 7. Fase 1 — o que mudou depois da migração (`web/`)
+
+As seções acima descrevem o legado. A Fase 1 (bloqueadores B01–B12) trocou o seguinte no `web/`;
+as regras estão em `DECISOES.md` e as funções de serviço em `CONTRATO-BACKEND.md`.
+
+### Rotas novas
+
+| Rota                                    | Tela           | Acesso      | O que faz                                                                                                       |
+| --------------------------------------- | -------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `/termos`                               | Terms          | pública     | Termos de uso (versão aceita no cadastro fica gravada na conta) — B11                                           |
+| `/privacidade`                          | PrivacyPolicy  | pública     | Política de privacidade — B11                                                                                   |
+| `/vaga-editar/:id`                      | EditJob        | construtora | mesmo formulário da criação; só a dona e com a vaga aberta; avisa candidatos se valor/data/endereço mudam — B05 |
+| `/avaliar-trabalhador/:jobId/:workerId` | RateWorker     | construtora | avaliação do trabalhador depois da diária (nota, tags, comentário até 300) — B03                                |
+| `/impulsionar/:id/:plan`                | BoostPayment   | construtora | pagamento simulado: PIX (QR, copia e cola, prazo de 30 min) ou cartão (final 0000 é recusado) — B08             |
+| `/configuracoes/excluir-conta`          | DeleteAccount  | logado      | senha + confirmação dos compromissos; mostra o impacto antes de excluir — B12                                   |
+| `/conta-excluida`                       | AccountDeleted | pública     | confirmação depois da exclusão — B12                                                                            |
+
+### Rotas existentes que mudaram de comportamento
+
+- `/login`, `/cadastro/:role`, `/verificar-email`, `/completar-perfil/:role`: conta e sessão de verdade (e-mail +
+  senha, sessão sobrevive ao F5), guardas por rota (B09/B10).
+- `/mural`, `/vaga/:id`: ofício do catálogo único, endereço completo, datas reais, distância por
+  coordenadas (B06/B07).
+- `/minhas-candidaturas`, `/selecionado/:id`, `/vaga-gerenciar/:id`: máquina de status da
+  candidatura com histórico; contato por WhatsApp liberado só a partir de "contratado" (B01/B02).
+- `/avaliar/:id`: grava a avaliação de verdade e atualiza a média (B04).
+- `/configuracoes`: links de Termos/Política funcionam; chave escondida do modo de falha (`?falhar=1`).
+- `/configuracoes/privacidade`: exportar dados real; "Excluir conta" leva a `/configuracoes/excluir-conta`.
+
+### Recarregamento
+
+Agora a sessão (`bicos.sessao` no `localStorage`) sobrevive ao F5; os dados continuam no store em
+memória e voltam ao seed.
+
+## 8. Rodada 2 (fases A–E) — o que mudou
+
+As rotas agora são **caminhos de verdade** (`/vaga/BC-1`, X17); os links antigos com `#/` continuam abrindo. Regras
+em `DECISOES.md`, funções em `CONTRATO-BACKEND.md`, banco e serviços externos em `SUPABASE.md`.
+
+### Rotas novas
+
+| Rota                        | Tela                 | Acesso      | O que faz                                                                                 |
+| --------------------------- | -------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| `/v/:id`                    | PublicJob            | pública     | vaga compartilhada, sem login e sem endereço exato (F09)                                  |
+| `/completar-cadastro`       | CompleteSignup       | pública     | lado, documento, WhatsApp e termos de quem entrou pelo Google (L13)                       |
+| `/ajuda`                    | Help                 | pública     | perguntas frequentes e suporte por WhatsApp/e-mail (Z05/F05)                              |
+| `/whatsapp`                 | ChangeWhatsApp       | logado      | trocar o WhatsApp, com código quando configurado (Y25)                                    |
+| `/configuracoes/senha`      | ChangePassword       | logado      | trocar a senha com a atual (L15)                                                          |
+| `/configuracoes/email`      | ChangeEmail          | logado      | trocar o e-mail, vale depois do link (F08)                                                |
+| `/configuracoes/bloqueados` | BlockedAccounts      | logado      | contas bloqueadas, com desbloquear (F04)                                                  |
+| `/configuracoes/avisos`     | NotificationSettings | logado      | o que chega no sino e no celular; ativar push com explicação antes (F06/X03)              |
+| `/perfil/verificar`         | VerifyIdentity       | trabalhador | selfie + documento para o selo "Verificado" (F07)                                         |
+| `/publicar-de-novo/:id`     | RepublishJob         | construtora | formulário preenchido a partir de uma vaga encerrada, com datas novas (F03)               |
+| `/minhas-vagas`             | MyJobs               | construtora | vagas abertas, cheias e encerradas, com "Carregar mais" (Y01/X01); `/historico` abre nela |
+| `/pagamentos`               | Payments             | construtora | impulsionamentos pagos e recibos (F11)                                                    |
+
+### Rotas que mudaram
+
+- `/vaga/:id`: situação da candidatura com data e motivo (X06), total da vaga (W03), forma de pagamento da vaga (L18),
+  distância dizendo de onde é medida (X19), compartilhar, denunciar e bloquear (F09/F04), convite (F13).
+- `/enviado/:id`: lê a candidatura e volta ao detalhe se ela não existir (X07).
+- `/minhas-candidaturas`, `/notificacoes`: "Carregar mais" (X01); o número do sino vem do servidor (X03).
+- `/vaga-gerenciar/:id`: aprovar/recusar sem duplo toque (W06), "Desfazer" a recusa (L22), convite a trabalhadores.
+- `/vaga-editar/:id`: mantém o ponto do endereço, consulta o CEP ao abrir (X10), limites do W08.
+- `/esqueci-senha`, `/redefinir-senha`: "Já abri o link" só na demonstração; mesma regra de senha; sessão do link
+  abandonada é encerrada (X11).
+- Todas: diálogos com foco preso e Esc (X05), app instalável e aberto sem sinal (X02).

@@ -8,15 +8,141 @@
       name="description"
       content="Bicos conecta construtoras a trabalhadores da construção civil para diárias avulsas."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- X02: the two faces of the first screen come with the page (self-hosted; no Google Fonts). -->
     <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/barlow/files/barlow-latin-700-normal.woff2"
     />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-400-normal.woff2"
+    />
+    <meta name="theme-color" content="#1D4BED" />
+    <link rel="icon" href="./icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Bicos" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- X02: link preview on WhatsApp and social networks (VITE_SITE_URL = the published address). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="Bicos" />
+    <meta property="og:title" content="Bicos — diárias de obra perto de você" />
+    <meta
+      property="og:description"
+      content="Construtoras publicam diárias; pedreiros, serventes e outros profissionais da obra se candidatam."
+    />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:image" content="__SITE_URL__/icons/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body class="bg-concrete-50 text-concrete-700 font-body">
-    <div id="app"></div>
+    <!-- Z11: shown before any JavaScript runs (slow phone, bad signal); React replaces it on start. X02: it
+         mirrors the splash screen (same name and sentence, same sizes), so the first paint is already the
+         biggest one and the swap to React doesn't move anything. -->
+    <div id="app">
+      <div class="boot">
+        <div class="boot-mid">
+          <span class="boot-name">Bicos</span>
+          <p class="boot-text">Diárias de obra perto de você. Sem taxa para o trabalhador.</p>
+        </div>
+        <span class="boot-spin"></span>
+      </div>
+      <style>
+        .boot {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background: #1d4bed;
+          color: #fff;
+          text-align: center;
+        }
+        .boot-mid {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          padding: 0 24px;
+        }
+        .boot-name {
+          font:
+            700 3rem/1 Barlow,
+            'Helvetica Neue',
+            Arial,
+            sans-serif;
+          letter-spacing: -0.025em;
+        }
+        .boot-text {
+          margin: 0;
+          max-width: 20rem;
+          font:
+            400 1rem/1.5rem 'Plus Jakarta Sans',
+            'Segoe UI',
+            Arial,
+            sans-serif;
+          color: rgba(255, 255, 255, 0.85);
+        }
+        .boot-spin {
+          align-self: center;
+          margin-bottom: 64px;
+          width: 28px;
+          height: 28px;
+          border: 3px solid rgba(255, 255, 255, 0.9);
+          border-right-color: transparent;
+          border-radius: 50%;
+          animation: bicos-spin 0.8s linear infinite;
+        }
+        @media (min-width: 640px) {
+          .boot-name {
+            font-size: 3.75rem;
+          }
+          .boot-text {
+            max-width: 24rem;
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+          }
+        }
+        @keyframes bicos-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      </style>
+    </div>
+    <noscript>
+      <p
+        style="
+          font:
+            16px/1.5 system-ui,
+            sans-serif;
+          max-width: 32rem;
+          margin: 2rem auto;
+          padding: 0 1.5rem;
+        "
+      >
+        A Bicos precisa do JavaScript ligado no navegador para funcionar.
+      </p>
+    </noscript>
+    <script>
+      // This is the development source: it only runs through Vite (npm run dev). Opened straight from
+      // disk it would stay blank, so say where the ready-to-open app is.
+      if (location.protocol === 'file:')
+        document.getElementById('app').innerHTML =
+          '<div style="font:16px/1.5 system-ui,sans-serif;max-width:32rem;margin:15vh auto;padding:0 1.5rem;color:#2f3742">' +
+          '<h1 style="font-size:1.4rem;color:#101418">Este arquivo precisa do servidor de desenvolvimento</h1>' +
+          '<p>Para abrir o app direto do disco, gere a prévia com <code>npm run build:standalone</code> (<b>dist-standalone/index.html</b>) ou baixe o artefato <b>bicos-preview</b> do CI.</p>' +
+          '<p>Para desenvolver: <code>cd web &amp;&amp; npm install &amp;&amp; npm run dev</code></p></div>';
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

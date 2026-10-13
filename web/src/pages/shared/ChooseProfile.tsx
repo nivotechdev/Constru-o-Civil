@@ -1,12 +1,12 @@
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { RadioCard } from '../../components/Radio';
-import { useUI } from '../../hooks/useStore';
+import { useScreenUI } from '../../hooks/useStore';
 import { goBack, navigate } from '../../services/router';
 import type { Role } from '../../types/models';
 
 export default function ChooseProfile() {
-  const [ui, setUi] = useUI<{ role: Role }>('escolhaPerfil', { role: 'trabalhador' });
+  const [ui, setUi] = useScreenUI<{ role: Role }>('escolhaPerfil', { role: 'trabalhador' });
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50">
@@ -15,7 +15,6 @@ export default function ChooseProfile() {
         <div className="flex flex-col gap-2.5">
           <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Criar conta</span>
           <h1 className="font-display font-bold text-3xl text-concrete-900">Como você vai usar o Bicos?</h1>
-          <p className="text-base text-concrete-700">Dá para trocar depois no seu perfil.</p>
         </div>
         <div className="flex flex-col gap-3">
           <RadioCard

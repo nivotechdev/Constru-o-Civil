@@ -1,6 +1,6 @@
-// The Supabase client — isolated here and not used by any screen yet. It is ready to be initialized
-// from the environment (.env.local, see .env.example) and stays off when the variables are missing:
-// then the app keeps running on the in-memory mock data, exactly as today.
+// The Supabase client, created from the environment (.env.local, see .env.example). Only the services
+// use it (services/remote/); without the variables it stays off and the app runs on the in-memory
+// demo data (services/mode.ts).
 //
 // The library is loaded with a dynamic import on first use, so it isn't downloaded while the app is in
 // mock mode. Creating the client doesn't touch the network either; requests only start when a query
@@ -39,7 +39,9 @@ export function getSupabase(): Promise<BicosSupabase | null> {
     client = config
       ? import('@supabase/supabase-js').then(({ createClient }) =>
           createClient<SupabaseDatabase>(config.url, config.anonKey, {
-            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+            // The links sent by e-mail bring the tokens in the URL's #fragment, which is also the
+            // router's: services/remote/session.ts takes them out before the router starts.
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'implicit' }
           })
         )
       : Promise.resolve(null);

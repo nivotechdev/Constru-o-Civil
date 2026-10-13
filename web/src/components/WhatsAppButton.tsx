@@ -15,13 +15,21 @@ interface WhatsAppButtonProps {
   size?: keyof typeof SIZES;
   fullWidth?: boolean;
   round?: boolean;
+  /** F15: "Falar com Ana" instead of "Falar no WhatsApp". */
+  label?: string;
 }
 
 /**
  * "Falar no WhatsApp": a real link (opens WhatsApp in a new tab/app), in WhatsApp green.
  * Clicks don't bubble, so it can sit inside a clickable tile.
  */
-export function WhatsAppButton({ href, size = 'sm', fullWidth = false, round = false }: WhatsAppButtonProps) {
+export function WhatsAppButton({
+  href,
+  size = 'sm',
+  fullWidth = false,
+  round = false,
+  label = LABEL
+}: WhatsAppButtonProps) {
   const onClick = (e: MouseEvent) => {
     e.stopPropagation();
     if (!href) e.preventDefault();
@@ -33,8 +41,8 @@ export function WhatsAppButton({ href, size = 'sm', fullWidth = false, round = f
         href={href || '#'}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={LABEL}
-        title={LABEL}
+        aria-label={label}
+        title={label}
         className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#128C4A] text-white shadow-raised ring-2 ring-white transition hover:bg-[#0E7A3F] hover:scale-105 active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-[#128C4A]/30"
         onClick={onClick}
       >
@@ -47,7 +55,7 @@ export function WhatsAppButton({ href, size = 'sm', fullWidth = false, round = f
       href={href || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={LABEL}
+      aria-label={label}
       className={cx(
         'inline-flex items-center justify-center whitespace-nowrap rounded-full font-semibold text-white bg-[#128C4A] shadow-card transition-colors hover:bg-[#0E7A3F] active:scale-[0.98] outline-none focus-visible:ring-4 focus-visible:ring-[#128C4A]/25',
         SIZES[size] || SIZES.sm,
@@ -60,10 +68,10 @@ export function WhatsAppButton({ href, size = 'sm', fullWidth = false, round = f
       {size === 'sm' ? (
         <>
           <span className="sm:hidden">{SHORT_LABEL}</span>
-          <span className="hidden sm:inline">{LABEL}</span>
+          <span className="hidden sm:inline">{label}</span>
         </>
       ) : (
-        LABEL
+        label
       )}
     </a>
   );

@@ -1,28 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { passwordProblem } from '../../utils/password';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
+import { FieldError } from '../../components/FieldError';
 import { IconButton } from '../../components/IconButton';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
-import { sendWhatsAppCode, signUp, verifyWhatsAppCode } from '../../services/auth';
-import { AUTH_FLOW_KEY, type AuthFlowUI } from '../../services/sharedUI';
+import { sendWhatsAppCode, signUp, verifyWhatsAppCode, WHATSAPP_CODE_AVAILABLE } from '../../services/auth';
+import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
-import { goBack as routerGoBack, navigate } from '../../services/router';
+import { currentPath, goBack as routerGoBack, navigate } from '../../services/router';
 import { resetUI, setUI } from '../../services/store';
 import type { Role } from '../../types/models';
-import {
-  isValidEmail,
-  maskCNPJ,
-  maskCPF,
-  maskPhone,
-  passwordStrength,
-  STRENGTH_LABEL,
-  strengthBarColor
-} from '../../utils/format';
+import { isValidEmail, maskCNPJ, maskCPF, isValidMobile, maskPhone } from '../../utils/format';
 import { WhatsAppCode } from './WhatsAppCode';
+import { useCaptcha } from '../../components/Captcha';
+import { errorMessage } from '../../services/errors';
+import { isValidCnpj, isValidCpf } from '../../utils/document';
+import { PasswordStrength } from '../../components/PasswordStrength';
 
-type FieldId = 'nome' | 'razao' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
+type FieldId = 'nome' | 'razao' | 'responsavel' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
 
 interface SignupField {
   id: FieldId;
@@ -32,7 +30,7 @@ interface SignupField {
   placeholder: string;
   icon?: IconName;
   type?: string;
-  mask?: 'cpf' | 'cnpj' | 'phone';
+  mask?: 'cpf' | 'cnpj' | 'cpfCnpj' | 'phone';
   /** The WhatsApp confirmation code step. */
   isCode?: boolean;
   mono?: boolean;
@@ -96,7 +94,7 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
         mask: 'cpf',
         mono: true
       },
-      { ...COMUM_EMAIL, help: 'É por aqui que avisamos quando uma construtora escolher você.' },
+      { ...COMUM_EMAIL, help: 'Use um e-mail que você abre: é com ele que você entra e recupera a senha.' },
       {
         ...COMUM_WHATSAPP,
         help: 'É por ele que as construtoras falam com você. Vamos mandar um código para confirmar o número.'
@@ -117,16 +115,24 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
         icon: 'building-2'
       },
       {
+        id: 'responsavel',
+        label: 'Seu nome',
+        question: 'Quem vai falar com os candidatos?',
+        help: 'Quem você aprovar vê "Fale com" e esse nome no botão do WhatsApp.',
+        placeholder: 'Ana Souza',
+        icon: 'user'
+      },
+      {
         id: 'doc',
-        label: 'CNPJ',
+        label: 'CNPJ ou CPF',
         question: 'Qual é o CNPJ da empresa?',
-        help: 'Conferimos o CNPJ antes de liberar a publicação de vagas.',
+        help: 'Trabalha por conta própria? Use seu CPF. O CPF nunca aparece no perfil; do CNPJ, só o começo.',
         placeholder: '00.000.000/0000-00',
         icon: 'id-card',
-        mask: 'cnpj',
+        mask: 'cpfCnpj',
         mono: true
       },
-      { ...COMUM_EMAIL, help: 'É por aqui que avisamos cada novo candidato da sua vaga.' },
+      { ...COMUM_EMAIL, help: 'Use um e-mail que você abre: é com ele que você entra e recupera a senha.' },
       {
         ...COMUM_WHATSAPP,
         help: 'É por ele que os candidatos falam com a empresa. Vamos mandar um código para confirmar o número.'
@@ -143,17 +149,21 @@ interface SignupUI {
   step: number;
   values: Values;
   errors: Partial<Record<FieldId, string | null>>;
-  generalError: 'doc' | 'email' | null;
+  generalError: boolean;
   submitting: boolean;
   passwordVisible: boolean;
-  confirmPassword: string;
   confirmError: string | null;
   accepted: boolean;
   acceptError: boolean;
+  /** L14: the terms require 18+. */
+  adult: boolean;
+  adultError: boolean;
   /** When the last WhatsApp code was sent (ms), for the resend countdown. */
   codeSentAt: number;
   resending: boolean;
   resent: boolean;
+  /** A request failed (no connection…): shown above the button, the answers stay. */
+  submitError: string | null;
 }
 
 function validateField(field: SignupField, values: Values, role: Role): string | null {
@@ -164,46 +174,74 @@ function validateField(field: SignupField, values: Values, role: Role): string |
     return null;
   }
   if (field.id === 'razao') return v.length < 3 ? 'Informe o nome da empresa.' : null;
+  if (field.id === 'responsavel')
+    return v.length < 2 ? 'Escreva seu nome.' : v.length > 60 ? 'Use até 60 caracteres.' : null;
   if (field.id === 'doc') {
-    const digits = v.replace(/\D/g, '');
-    const need = role === 'recrutador' ? 14 : 11;
-    if (digits.length !== need)
-      return role === 'recrutador' ? 'CNPJ inválido. Confira os 14 números.' : 'CPF inválido. Confira os 11 números.';
-    return null;
+    // Y17: the check digits too (the server refuses the same documents).
+    if (role === 'recrutador')
+      return isValidCnpj(v) || isValidCpf(v) ? null : 'CNPJ ou CPF inválido. Confira os números.';
+    return isValidCpf(v) ? null : 'CPF inválido. Confira os 11 números.';
   }
   if (field.id === 'email') return isValidEmail(v) ? null : 'E-mail inválido. Confira se tem @ e o domínio.';
   if (field.id === 'whatsapp') {
-    const digits = v.replace(/\D/g, '');
-    return digits.length === 10 || digits.length === 11 ? null : 'Número inválido. Confira o DDD e o número.';
+    return isValidMobile(v) ? null : 'Número inválido. Use o celular com DDD (11 números).';
   }
   if (field.id === 'codigo') return /^\d{6}$/.test(v) ? null : 'Digite os 6 números do código.';
-  if (field.id === 'senha') {
-    if (v.length < 8) return 'Senha curta. Use 8 caracteres ou mais.';
-    if (!/[a-zA-Z]/.test(v) || !/[0-9]/.test(v)) return 'Misture letras e números na senha.';
-    return null;
-  }
+  if (field.id === 'senha') return passwordProblem(v);
   return null;
 }
 
+/**
+ * The steps of the form. Without a WhatsApp provider to send the code (see WHATSAPP_CODE_AVAILABLE), the
+ * code step is left out and the number is kept as typed (not marked as confirmed).
+ */
+function signupSteps(role: Role): { overline: string; fields: SignupField[] } {
+  const cfg = PERFIS[role];
+  if (WHATSAPP_CODE_AVAILABLE) return cfg;
+  return {
+    ...cfg,
+    fields: cfg.fields
+      .filter((f) => f.id !== 'codigo')
+      .map((f) =>
+        f.id === 'whatsapp' && f.help ? { ...f, help: f.help.replace(/ Vamos mandar um código[^.]*\./, '') } : f
+      )
+  };
+}
+
 export default function Signup({ params }: ScreenProps) {
+  const captcha = useCaptcha();
   const role: Role = params.role === 'recrutador' ? 'recrutador' : 'trabalhador';
   const key = 'cadastro-' + role;
-  const cfg = PERFIS[role];
+  const cfg = signupSteps(role);
   const [ui, setUi] = useUI<SignupUI>(key, () => ({
     step: 0,
     values: {},
     errors: {},
-    generalError: null,
+    generalError: false,
     submitting: false,
     passwordVisible: false,
-    confirmPassword: '',
     confirmError: null,
     accepted: false,
     acceptError: false,
+    adult: false,
+    adultError: false,
     codeSentAt: 0,
     resending: false,
-    resent: false
+    resent: false,
+    submitError: null
   }));
+  // Y22: the password only lives in this screen (never in the shared store), and the draft (name,
+  // document, e-mail…) is forgotten when the flow is left — except for a look at the terms.
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const values: Values = { ...ui.values, senha: password };
+  useEffect(
+    () => () => {
+      const to = currentPath();
+      if (!['/termos', '/privacidade', '/cadastro/' + role].includes(to)) resetUI(key);
+    },
+    [key, role]
+  );
   const step = Math.max(0, Math.min(ui.step, cfg.fields.length - 1));
   const field = cfg.fields[step];
   const isLast = step === cfg.fields.length - 1;
@@ -222,20 +260,23 @@ export default function Signup({ params }: ScreenProps) {
   };
 
   function resendCode() {
-    setUi({ resending: true });
-    sendWhatsAppCode(ui.values.whatsapp || '').then(() =>
-      setUi((s) => ({
-        resending: false,
-        resent: true,
-        codeSentAt: Date.now(),
-        values: { ...s.values, codigo: '' },
-        errors: { ...s.errors, codigo: null }
-      }))
-    );
+    if (ui.resending) return;
+    setUi({ resending: true, submitError: null });
+    sendWhatsAppCode(ui.values.whatsapp || '', captcha.getToken)
+      .then(() =>
+        setUi((s) => ({
+          resending: false,
+          resent: true,
+          codeSentAt: Date.now(),
+          values: { ...s.values, codigo: '' },
+          errors: { ...s.errors, codigo: null }
+        }))
+      )
+      .catch((e: unknown) => setUi({ resending: false, submitError: errorMessage(e) }));
   }
 
   function goBack() {
-    if (step > 0) setUi({ step: step - 1, generalError: null });
+    if (step > 0) setUi({ step: step - 1, generalError: false, submitError: null });
     else routerGoBack('/escolha-perfil');
   }
 
@@ -243,87 +284,112 @@ export default function Signup({ params }: ScreenProps) {
     let value = v;
     if (field.mask === 'cpf') value = maskCPF(v);
     if (field.mask === 'cnpj') value = maskCNPJ(v);
+    if (field.mask === 'cpfCnpj') value = v.replace(/\D/g, '').length > 11 ? maskCNPJ(v) : maskCPF(v);
     if (field.mask === 'phone') value = maskPhone(v);
+    if (field.id === 'senha') {
+      setPassword(value);
+      setUi((s) => ({ errors: { ...s.errors, senha: null }, generalError: false, submitError: null }));
+      return;
+    }
     setUi((s) => ({
       values: { ...s.values, [field.id]: value },
       errors: { ...s.errors, [field.id]: null },
-      generalError: null
+      generalError: false,
+      submitError: null
     }));
   }
 
   function continueStep() {
     if (ui.submitting) return; // Enter while the account is being created
-    const err = validateField(field, ui.values, role);
+    const err = validateField(field, values, role);
     if (err) {
       setUi((s) => ({ errors: { ...s.errors, [field.id]: err } }));
       return;
     }
-    if (field.id === 'whatsapp') {
-      setUi({ submitting: true });
-      sendWhatsAppCode(ui.values.whatsapp || '').then(() =>
-        setUi((s) => ({
-          submitting: false,
-          step: step + 1,
-          codeSentAt: Date.now(),
-          resent: false,
-          values: { ...s.values, codigo: '' },
-          errors: { ...s.errors, codigo: null }
-        }))
-      );
+    if (field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE) {
+      setUi({ submitting: true, submitError: null });
+      sendWhatsAppCode(ui.values.whatsapp || '', captcha.getToken)
+        .then(() =>
+          setUi((s) => ({
+            submitting: false,
+            step: step + 1,
+            codeSentAt: Date.now(),
+            resent: false,
+            values: { ...s.values, codigo: '' },
+            errors: { ...s.errors, codigo: null }
+          }))
+        )
+        .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
       return;
     }
     if (field.id === 'codigo') {
-      setUi({ submitting: true });
-      verifyWhatsAppCode(ui.values.whatsapp || '', ui.values.codigo || '').then((ok) =>
-        setUi((s) =>
-          ok
-            ? { submitting: false, step: step + 1 }
-            : {
-                submitting: false,
-                errors: { ...s.errors, codigo: 'Código incorreto. Confira a mensagem no WhatsApp e tente de novo.' }
-              }
+      setUi({ submitting: true, submitError: null });
+      verifyWhatsAppCode(ui.values.whatsapp || '', ui.values.codigo || '')
+        .then((ok) =>
+          setUi((s) =>
+            ok
+              ? { submitting: false, step: step + 1 }
+              : {
+                  submitting: false,
+                  errors: { ...s.errors, codigo: 'Código incorreto. Confira a mensagem no WhatsApp e tente de novo.' }
+                }
+          )
         )
-      );
+        .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
       return;
     }
     if (!isLast) {
       setUi({ step: step + 1 });
       return;
     }
-    if (ui.confirmPassword !== ui.values.senha) {
+    if (confirmPassword !== password) {
       setUi({ confirmError: 'As senhas não são iguais. Confira os dois campos.' });
       return;
     }
-    if (!ui.accepted) {
-      setUi({ acceptError: true });
+    if (!ui.adult || !ui.accepted) {
+      setUi({ adultError: !ui.adult, acceptError: !ui.accepted });
       return;
     }
-    setUi({ submitting: true, acceptError: false });
-    signUp({
-      role,
-      name: (role === 'trabalhador' ? ui.values.nome : ui.values.razao) || '',
-      doc: ui.values.doc || '',
-      email: ui.values.email || '',
-      whatsapp: ui.values.whatsapp || '',
-      password: ui.values.senha || ''
-    }).then((result) => {
-      if (!result.ok) {
-        // The CPF/CNPJ or the e-mail already has an account: back to that step, with the general error.
-        const errorField = result.reason === 'email-taken' ? 'email' : 'doc';
-        const backStep = cfg.fields.findIndex((f) => f.id === errorField);
-        setUi({ submitting: false, step: backStep, generalError: errorField });
-        return;
-      }
-      setUi({ submitting: false });
-      setUI<AuthFlowUI>(AUTH_FLOW_KEY, { role, email: ui.values.email || 'voce@email.com' });
-      resetUI(key);
-      navigate('/verificar-email');
-    });
+    setUi({ submitting: true, acceptError: false, adultError: false, submitError: null });
+    signUp(
+      {
+        role,
+        name: (role === 'trabalhador' ? ui.values.nome : ui.values.razao) || '',
+        doc: ui.values.doc || '',
+        email: ui.values.email || '',
+        whatsapp: ui.values.whatsapp || '',
+        password,
+        acceptedTermsVersion: TERMS_VERSION,
+        adult: true,
+        ...(role === 'recrutador' ? { contactName: (ui.values.responsavel || '').trim() } : {})
+      },
+      captcha.getToken
+    )
+      .then((result) => {
+        if (!result.ok && result.reason === 'email-taken') {
+          const emailStep = cfg.fields.findIndex((f) => f.id === 'email');
+          setUi((s) => ({
+            submitting: false,
+            step: emailStep,
+            errors: { ...s.errors, email: 'Esse e-mail já tem conta na Bicos. Entre na conta ou use outro e-mail.' }
+          }));
+          return;
+        }
+        if (!result.ok) {
+          // Refused without a reason (it would reveal whether the CPF/CNPJ has an account): back to the
+          // document step, with the general error.
+          const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
+          setUi({ submitting: false, step: docStep, generalError: true });
+          return;
+        }
+        // The account now exists and is logged in; the route guard takes it to "Confirme seu e-mail".
+        resetUI(key);
+        setUI<{ fromSignup: boolean }>('verificar-email', { fromSignup: true });
+        navigate('/verificar-email', { replace: true });
+      })
+      // Y20: the service's own message (no internet, too many attempts, weak password…).
+      .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
   }
-
-  const strength = passwordStrength(ui.values.senha);
-  const strengthColor = strengthBarColor(strength);
-  const strengthTextColor = strength === 3 ? 'text-success-500' : strength ? 'text-warning-500' : 'text-concrete-500';
 
   return (
     <div className="min-h-screen flex flex-col bg-white lg:min-h-0 lg:h-[calc(100vh-5rem)] lg:max-w-app lg:mx-auto lg:shadow-card lg:my-10 lg:rounded-card lg:overflow-hidden">
@@ -345,15 +411,9 @@ export default function Signup({ params }: ScreenProps) {
             <div className="flex gap-2.5 items-start">
               <span className="shrink-0 mt-0.5" />
               <div className="flex flex-col gap-1">
-                <span className="font-semibold text-danger-500">
-                  {ui.generalError === 'email'
-                    ? 'Esse e-mail já tem conta na Bicos.'
-                    : role === 'recrutador'
-                      ? 'Esse CNPJ já tem conta na Bicos.'
-                      : 'Esse CPF já tem conta na Bicos.'}
-                </span>
+                <span className="font-semibold text-danger-500">Não deu para criar a conta com esses dados.</span>
                 <span className="text-sm text-concrete-700">
-                  Entre com o e-mail cadastrado ou recupere a senha. Se não foi você, fale com a gente pelo WhatsApp.
+                  {`Confira o ${role === 'recrutador' ? 'CNPJ ou CPF' : 'CPF'} e o e-mail. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
                 </span>
               </div>
             </div>
@@ -400,49 +460,64 @@ export default function Signup({ params }: ScreenProps) {
               id={key + '-senha'}
               label={field.label}
               placeholder={field.placeholder}
-              value={ui.values.senha || ''}
+              value={password}
               error={ui.errors.senha}
               visible={ui.passwordVisible}
               onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
+              autoComplete="new-password"
               onInput={setValue}
               onEnter={continueByEnter}
             />
             <PasswordInput
               id={key + '-confirm'}
+              autoComplete="new-password"
               label="Confirme a senha"
               placeholder="Repita a senha"
-              value={ui.confirmPassword}
+              value={confirmPassword}
               error={ui.confirmError}
               visible={ui.passwordVisible}
               onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
-              onInput={(v) => setUi({ confirmPassword: v, confirmError: null })}
+              onInput={(v) => {
+                setConfirmPassword(v);
+                setUi({ confirmError: null });
+              }}
               onEnter={continueByEnter}
             />
             <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-3">
-                <span className="flex-1 h-1 rounded-full bg-concrete-200 overflow-hidden">
-                  <span
-                    className={`block h-full rounded-full ${strengthColor} transition-all`}
-                    style={{ width: (strength / 3) * 100 + '%' }}
-                  />
-                </span>
-                <span className={`text-sm whitespace-nowrap ${strengthTextColor}`}>
-                  {STRENGTH_LABEL[strength] || 'Senha fraca'}
-                </span>
-              </div>
+              <PasswordStrength password={password} />
               <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
                 <Checkbox
-                  label="Li e aceito as condições de uso da Bicos"
+                  label="Tenho 18 anos ou mais"
+                  checked={ui.adult}
+                  onChange={(v) => setUi({ adult: v, adultError: false })}
+                />
+                {ui.adultError ? (
+                  <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
+                    A Bicos é só para maiores de 18 anos.
+                  </span>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-1">
+                <Checkbox
+                  label="Li e aceito os Termos de uso e a Política de privacidade"
                   checked={ui.accepted}
                   onChange={(v) => setUi({ accepted: v, acceptError: false })}
                 />
                 <div className="flex gap-4 pl-9">
-                  <a href="#" className="text-sm text-brand-600 underline">
+                  <button
+                    type="button"
+                    className="text-sm text-brand-600 underline"
+                    onClick={() => navigate('/termos')}
+                  >
                     Termos de uso
-                  </a>
-                  <a href="#" className="text-sm text-brand-600 underline">
+                  </button>
+                  <button
+                    type="button"
+                    className="text-sm text-brand-600 underline"
+                    onClick={() => navigate('/privacidade')}
+                  >
                     Política de privacidade
-                  </a>
+                  </button>
                 </div>
                 {ui.acceptError ? (
                   <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
@@ -466,18 +541,21 @@ export default function Signup({ params }: ScreenProps) {
             inputMode={
               field.mask === 'phone' ? 'tel' : field.mask ? 'numeric' : field.type === 'email' ? 'email' : 'text'
             }
+            autoComplete={fieldAutoComplete(field, role)}
             onInput={setValue}
             onEnter={continueByEnter}
             autoFocus
           />
         )}
       </div>
-      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar">
+      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar flex flex-col gap-2">
+        {captcha.widget}
+        {ui.submitError ? <FieldError message={ui.submitError} /> : null}
         <Button
           label={
             isLast
               ? 'Criar minha conta'
-              : field.id === 'whatsapp'
+              : field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE
                 ? 'Enviar código'
                 : field.isCode
                   ? 'Confirmar número'
@@ -491,4 +569,14 @@ export default function Signup({ params }: ScreenProps) {
       </div>
     </div>
   );
+}
+
+/** X04: what the browser may fill in each step (documents never: it would offer someone else's). */
+function fieldAutoComplete(field: SignupField, role: Role): string | undefined {
+  if (field.type === 'email') return 'email';
+  if (field.mask === 'phone') return 'tel';
+  if (field.mask) return 'off';
+  if (field.id === 'nome') return role === 'recrutador' ? 'organization' : 'name';
+  if (field.id === 'responsavel') return 'name';
+  return undefined;
 }

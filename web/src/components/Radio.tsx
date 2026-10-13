@@ -45,3 +45,39 @@ export function RadioCard({ name, icon, label, description, checked = false, onC
     </label>
   );
 }
+
+/** Plain radio row (a list of reasons, options in a dialog). */
+export function Radio({
+  name,
+  label,
+  checked = false,
+  onChange
+}: {
+  name: string;
+  label: string;
+  checked?: boolean;
+  onChange?: () => void;
+}) {
+  const fieldId = useId();
+  return (
+    <label htmlFor={fieldId} className="flex items-center gap-3 min-h-11 cursor-pointer select-none">
+      <input
+        id={fieldId}
+        type="radio"
+        name={name}
+        checked={checked}
+        className="sr-only"
+        onChange={() => onChange?.()}
+      />
+      <span
+        className={cx(
+          'inline-flex items-center justify-center w-5 h-5 rounded-full border-2 shrink-0 transition-colors',
+          checked ? 'border-brand-500' : 'border-concrete-400'
+        )}
+      >
+        {checked ? <span className="w-2.5 h-2.5 rounded-full bg-brand-500" /> : null}
+      </span>
+      <span className="text-sm text-concrete-900">{label}</span>
+    </label>
+  );
+}

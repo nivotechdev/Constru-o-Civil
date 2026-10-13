@@ -1,18 +1,24 @@
 import { Card } from '../../../components/Card';
 import { EmptyState } from '../../../components/EmptyState';
-import { Icon } from '../../../components/icons/Icon';
 import { IconButton } from '../../../components/IconButton';
 import { Logo } from '../../../components/Logo';
+import { QueryView } from '../../../components/QueryView';
+import { TileGridSkeleton } from '../../../components/Skeleton';
+import type { Query } from '../../../hooks/useQuery';
 import { NotificationsPanel } from '../../../components/NotificationsPanel';
 import { Rating } from '../../../components/Rating';
 import { Tag } from '../../../components/Tag';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { useUI } from '../../../hooks/useStore';
 import { navigate } from '../../../services/router';
+import { workerPlace } from '../../../utils/workerInfo';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
-import { FeedGrid, NoJobsState, SearchPill } from './FeedParts';
+import { FeedGrid, LoadMore, NoJobsState, SearchPill, SearchScope } from './FeedParts';
+import { oficioNome } from '../../../services/catalog';
 import { setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
+import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
+import type { Paging } from '../../../services/paging';
 
 export interface FeedLayoutProps {
   db: Database;
@@ -23,16 +29,23 @@ export interface FeedLayoutProps {
   /** What the search finds; `null` while nothing is typed. */
   found: SearchMatches | null;
   chips: ActiveFilter[];
+  /** The mural's first load (skeleton, then the jobs or an error). */
+  query: Query;
+  /** The city the mural opens on (filters reset to it). */
+  home: string;
+  /** "Carregar mais" (X01). */
+  paging: Paging & { more: () => void };
 }
 
 /** The mural below 770px: search pill, filter chips, sort control and the grid of tiles. */
-export function MobileFeed({ db, role, ui, ordered, found, chips }: FeedLayoutProps) {
+export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, paging }: FeedLayoutProps) {
   const noResults =
     found !== null && found.jobs.length === 0 && found.companies.length === 0 && found.workers.length === 0;
   const activeCount = chips.length;
 
   const searchResults = found ? (
     <div className="flex flex-col gap-5">
+      <SearchScope location={ui.location} allCities={ui.allCities} />
       {found.jobs.length ? (
         <div className="flex flex-col gap-3">
           <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Vagas</div>
@@ -45,9 +58,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips }: FeedLayoutPr
           {found.companies.map((c) => (
             <Card key={c.id} padding="md" onClick={() => navigate('/construtora/' + c.id)}>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-50 shrink-0">
-                  <Icon name="building-2" size={20} color="var(--brand)" />
-                </span>
+                <CompanyAvatar company={c} size="sm" />
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-concrete-900 truncate">{c.name}</span>
                   <span className="text-sm text-concrete-500 truncate">{c.location}</span>
@@ -62,16 +73,14 @@ export function MobileFeed({ db, role, ui, ordered, found, chips }: FeedLayoutPr
         <div className="flex flex-col gap-2">
           <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Trabalhadores</div>
           {found.workers.map((w) => (
-            <Card key={w.id} padding="md">
+            <Card key={w.id} padding="md" onClick={() => navigate('/trabalhador/' + w.id)}>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent-50 text-accent-600 font-bold text-sm shrink-0">
-                  {w.initials}
-                </span>
+                <WorkerAvatar worker={w} size="sm" />
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-concrete-900 truncate">{w.name}</span>
-                  <span className="text-sm text-concrete-500 truncate">{`${w.role} · ${w.region}`}</span>
+                  <span className="text-sm text-concrete-500 truncate">{`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}</span>
                 </div>
-                <Rating value={w.rating} count={w.jobsDone} />
+                <Rating value={w.rating} count={w.reviewCount} />
               </div>
             </Card>
           ))}
@@ -106,14 +115,21 @@ export function MobileFeed({ db, role, ui, ordered, found, chips }: FeedLayoutPr
           <button
             key={o.id}
             type="button"
-            className={`flex-1 h-10 rounded-full text-sm font-bold transition-colors ${ui.sort === o.id ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'}`}
+            className={`relative tap-target flex-1 h-10 rounded-full text-sm font-bold transition-colors ${ui.sort === o.id ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'}`}
             onClick={() => setFeed({ sort: o.id })}
           >
             {o.label}
           </button>
         ))}
       </div>
-      {ordered.length ? <FeedGrid db={db} role={role} jobs={ordered} /> : <NoJobsState location={ui.location} />}
+      {ordered.length ? (
+        <>
+          <FeedGrid db={db} role={role} jobs={ordered} />
+          <LoadMore paging={paging} />
+        </>
+      ) : (
+        <NoJobsState location={ui.location} home={home} />
+      )}
     </div>
   );
 
@@ -124,21 +140,25 @@ export function MobileFeed({ db, role, ui, ordered, found, chips }: FeedLayoutPr
           <h1 className="inline-flex" aria-label="Bicos">
             <Logo compact />
           </h1>
-          <MobileNotifications role={role} />
+          <MobileNotifications />
         </div>
         <SearchPill id="feed-search" role={role} search={ui.search} compact />
       </div>
       <div className="px-4 pt-4 pb-6">
-        <div className="mural-frame flex flex-col gap-5">{searchResults ?? browseResults}</div>
+        <div className="mural-frame flex flex-col gap-5">
+          <QueryView query={query} skeleton={<TileGridSkeleton count={4} />}>
+            {() => searchResults ?? browseResults}
+          </QueryView>
+        </div>
       </div>
     </div>
   );
 }
 
 // The header bell and its panel, which opens across the top of the screen.
-function MobileNotifications({ role }: { role: Role }) {
+function MobileNotifications() {
   const [menus, setMenus] = useUI<MenuUI>(MENU_KEY, MENU_DEFAULTS);
-  const { list, unread, markAllRead } = useNotifications(role);
+  const { list, unread, markAllRead, open } = useNotifications();
   return (
     <>
       <IconButton
@@ -152,6 +172,7 @@ function MobileNotifications({ role }: { role: Role }) {
           list={list}
           unread={unread}
           onMarkAllRead={markAllRead}
+          onOpen={open}
           onSeeAll={() => {
             setMenus({ notificationsOpen: false });
             navigate('/notificacoes');

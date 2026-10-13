@@ -14,10 +14,15 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "parity": "vite build --mode test && node scripts/parity/run.mjs"
+    "parity": "node scripts/parity/run.mjs",
+    "gen:types": "node scripts/gen-db-types.mjs"
   },
   "dependencies": {
+    "@fontsource/barlow": "^5.2.6",
+    "@fontsource/plus-jakarta-sans": "^5.2.6",
+    "@fontsource/space-mono": "^5.2.8",
     "@supabase/supabase-js": "^2.117.2",
+    "heic2any": "^0.0.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
@@ -40,6 +45,7 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.0",
     "vite": "^7.3.6",
+    "vite-plugin-pwa": "^1.0.3",
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^3.2.4"
   }

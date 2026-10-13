@@ -3,8 +3,7 @@
 import { CIDADES_RAW } from '../data/cidades';
 import type { City } from '../types/models';
 
-/** Where the demo's jobs are, and every city choice starts. */
-export const DEFAULT_CITY = 'São Paulo, SP';
+export { DEFAULT_CITY } from './defaults';
 
 let cache: City[] | null = null;
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -59,4 +58,10 @@ export function nearestCity(lat: number, lon: number): City | null {
     }
   }
   return best;
+}
+
+/** The municipality with that label ("São Paulo, SP"), if it exists. */
+export function cityByLabel(label: string): City | null {
+  const key = fold(label.replace(/,/g, ' ')).replace(/\s+/g, ' ').trim();
+  return all().find((c) => c.key === key) ?? null;
 }

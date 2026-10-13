@@ -3,24 +3,32 @@ import { Button } from '../../components/Button';
 import { CityPicker, LocationButton } from '../../components/CityPicker';
 import { FieldError } from '../../components/FieldError';
 import { IconButton } from '../../components/IconButton';
-import { Input } from '../../components/Input';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
-import { Tag } from '../../components/Tag';
 import { useUI } from '../../hooks/useStore';
 import { DEFAULT_CITY } from '../../services/cities';
 import { finishSignUp } from '../../services/auth';
-import { CARGOS_TRABALHADOR, TIPOS_OBRA } from '../../services/catalog';
+import { OFICIO_OPTIONS, TIPOS_OBRA } from '../../services/catalog';
 import type { ScreenProps } from '../../types/screen';
 import { navigate } from '../../services/router';
-import {
-  COMPANY_PROFILE_DEFAULTS,
-  COMPANY_PROFILE_KEY,
-  WORKER_PHOTO_KEY,
-  type CompanyProfileUI,
-  type WorkerPhotoUI
-} from '../../services/sharedUI';
-import { getUI, setUI } from '../../services/store';
+import { saveMyProfileImages } from '../../services/profiles';
+import { showToast } from '../../services/toast';
+import { SpecialtiesField } from '../../components/SpecialtiesField';
+import { askSignOut } from '../../services/sharedUI';
+import { errorMessage } from '../../services/errors';
+import { checkMyCompany } from '../../services/profiles';
+
+/**
+ * The pictures chosen while completing the profile, saved once the profile is (Z12). The profile is
+ * already done at this point: if the upload fails, the app goes on and says where to try again.
+ */
+async function savePictures(pictures: { foto?: string | null; capa?: string | null; logo?: string | null }) {
+  const chosen = Object.fromEntries(Object.entries(pictures).filter(([, v]) => v));
+  if (!Object.keys(chosen).length) return;
+  await saveMyProfileImages(chosen).catch(() =>
+    showToast('Não deu para enviar suas fotos agora. Tente de novo em Editar perfil.', { tone: 'error' })
+  );
+}
 
 export default function CompleteProfile({ params }: ScreenProps) {
   return params.role === 'recrutador' ? <RecruiterFlow /> : <WorkerFlow />;
@@ -29,18 +37,22 @@ export default function CompleteProfile({ params }: ScreenProps) {
 interface ShellProps {
   step: number;
   total: number;
-  onBack: () => void;
+  /** The first step has no way back (the account already exists). */
+  onBack?: () => void;
   children: ReactNode;
   onContinue: () => void;
   label: string;
+  loading?: boolean;
+  /** Why saving failed (shown above the button; what was filled in stays). */
+  error?: string | null;
 }
 
-function Shell({ step, total, onBack, children, onContinue, label }: ShellProps) {
+function Shell({ step, total, onBack, children, onContinue, label, loading = false, error = null }: ShellProps) {
   return (
     <div className="min-h-screen flex flex-col bg-white lg:min-h-0 lg:h-[calc(100vh-5rem)] lg:max-w-app lg:mx-auto lg:shadow-card lg:my-10 lg:rounded-card lg:overflow-hidden">
       <div className="sticky top-0 z-10 bg-white border-b border-concrete-200 px-2 pb-3">
         <div className="flex items-center gap-1.5 min-h-14">
-          {step > 0 ? <IconButton icon="arrow-left" label="Voltar" onClick={onBack} /> : <span className="w-11 h-11" />}
+          {onBack ? <IconButton icon="arrow-left" label="Voltar" onClick={onBack} /> : <span className="w-11 h-11" />}
           <span className="flex-1 text-sm font-semibold text-concrete-500">{`Passo ${step + 1} de ${total}`}</span>
         </div>
         <div className="h-1 mx-2 rounded-full bg-concrete-200 overflow-hidden">
@@ -53,8 +65,11 @@ function Shell({ step, total, onBack, children, onContinue, label }: ShellProps)
       <div className="flex-1 px-5 sm:px-8 py-8 flex flex-col gap-7 bg-concrete-50 lg:min-h-0 lg:overflow-y-auto">
         {children}
       </div>
-      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar">
-        <Button label={label} size="lg" fullWidth onClick={onContinue} />
+      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar flex flex-col gap-2">
+        {error ? <FieldError message={error} /> : null}
+        <Button label={label} size="lg" fullWidth loading={loading} onClick={onContinue} />
+        {/* Y26: a way out for whoever entered the wrong account. */}
+        <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
       </div>
     </div>
   );
@@ -72,56 +87,45 @@ function Heading({ overline, title, help }: { overline: string; title: string; h
 
 interface WorkerUI {
   step: number;
+  saving: boolean;
+  saveError: string | null;
   capa: string | null;
   photo: string | null;
-  cargo: string;
+  oficioId: string;
   cidade: string;
   pickerOpen: boolean;
-  /** What is being typed in the specialties field. */
-  especialidade: string;
   especialidades: string[];
-  errors: { cargo?: string | null; especialidades?: string | null };
+  errors: { oficioId?: string | null; especialidades?: string | null };
 }
 
 function WorkerFlow() {
   const [ui, setUi] = useUI<WorkerUI>('completar-trabalhador', {
     step: 0,
+    saving: false,
+    saveError: null,
     capa: null,
     photo: null,
-    cargo: '',
+    oficioId: '',
     cidade: DEFAULT_CITY,
     pickerOpen: false,
-    especialidade: '',
     especialidades: [],
     errors: {}
   });
 
   const toStep1 = () => {
-    if (!ui.cargo) {
-      setUi({ errors: { cargo: 'Selecione seu cargo ou especialidade principal.' } });
+    if (!ui.oficioId) {
+      setUi({ errors: { oficioId: 'Escolha o seu ofício principal.' } });
       return;
     }
     setUi({ step: 1, errors: {} });
   };
 
-  // Typed specialties pile up as chips under the field (same word twice is ignored).
-  const addEspecialidade = () => {
-    const value = ui.especialidade.trim().replace(/\s+/g, ' ');
-    if (!value) return;
-    const exists = ui.especialidades.some((e) => e.toLowerCase() === value.toLowerCase());
-    setUi({
-      especialidade: '',
-      especialidades: exists ? ui.especialidades : [...ui.especialidades, value],
-      errors: { ...ui.errors, especialidades: null }
-    });
-  };
-
   if (ui.step === 0) {
     return (
-      <Shell step={0} total={2} onBack={() => navigate('/verificar-email')} onContinue={toStep1} label="Continuar">
+      <Shell step={0} total={2} onContinue={toStep1} label="Continuar">
         <Heading
           overline="Completar perfil"
-          title="Capa, foto e o seu cargo"
+          title="Capa, foto e o seu ofício"
           help="Isso aparece no seu perfil para as construtoras que virem seu bico."
         />
         <div className="flex flex-col gap-2">
@@ -148,12 +152,12 @@ function WorkerFlow() {
           </div>
         </div>
         <Select
-          label="Cargo ou especialidade principal"
-          placeholder="Selecione seu cargo"
-          options={CARGOS_TRABALHADOR}
-          value={ui.cargo}
-          error={ui.errors.cargo}
-          onChange={(v) => setUi({ cargo: v, errors: { ...ui.errors, cargo: null } })}
+          label="Seu ofício principal"
+          placeholder="Escolha seu ofício"
+          options={OFICIO_OPTIONS}
+          value={ui.oficioId}
+          error={ui.errors.oficioId}
+          onChange={(v) => setUi({ oficioId: v, errors: { ...ui.errors, oficioId: null } })}
         />
       </Shell>
     );
@@ -165,16 +169,25 @@ function WorkerFlow() {
       total={2}
       onBack={() => setUi({ step: 0 })}
       onContinue={() => {
+        if (ui.saving) return;
         if (ui.especialidades.length === 0) {
           setUi({ errors: { especialidades: 'Adicione ao menos uma especialidade.' } });
           return;
         }
-        if (ui.capa) setUI<WorkerPhotoUI>(WORKER_PHOTO_KEY, { photo: ui.capa });
-        finishSignUp('trabalhador', { cargo: ui.cargo, regiao: ui.cidade, especialidades: ui.especialidades }).then(
-          () => navigate('/mural')
-        );
+        setUi({ saving: true, saveError: null });
+        finishSignUp({ role: 'trabalhador', oficioId: ui.oficioId, city: ui.cidade, specialties: ui.especialidades })
+          .then(() => savePictures({ foto: ui.photo, capa: ui.capa }))
+          .then(() => {
+            setUi({ saving: false });
+            // L10: the automatic CNPJ check runs in the background (the profile shows the result).
+            void checkMyCompany().catch(() => undefined);
+            navigate('/mural', { replace: true });
+          })
+          .catch((e: unknown) => setUi({ saving: false, saveError: errorMessage(e) }));
       }}
       label="Concluir perfil"
+      loading={ui.saving}
+      error={ui.saveError}
     >
       <Heading
         overline="Completar perfil"
@@ -186,40 +199,12 @@ function WorkerFlow() {
         location={ui.cidade}
         onClick={() => setUi({ pickerOpen: true })}
       />
-      <div className="flex flex-col gap-2.5">
-        <div className="flex items-end gap-2">
-          <Input
-            id="completar-especialidade"
-            label="Especialidades"
-            placeholder="Ex.: Reboco, pintura, elétrica"
-            icon="hammer"
-            value={ui.especialidade}
-            invalid={Boolean(ui.errors.especialidades)}
-            onInput={(v) => setUi({ especialidade: v })}
-            onEnter={addEspecialidade}
-          />
-          <Button label="Adicionar" variant="secondary" iconLeft="plus" onClick={addEspecialidade} />
-        </div>
-        {ui.errors.especialidades ? (
-          <FieldError message={ui.errors.especialidades} />
-        ) : (
-          <span className="text-sm text-concrete-500">
-            Escreva uma especialidade e toque em Adicionar ou aperte Enter.
-          </span>
-        )}
-        {ui.especialidades.length ? (
-          <div className="flex flex-wrap gap-2 pt-1" aria-label="Suas especialidades">
-            {ui.especialidades.map((e) => (
-              <Tag
-                key={e}
-                label={e}
-                selected
-                onRemove={() => setUi({ especialidades: ui.especialidades.filter((x) => x !== e) })}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
+      <SpecialtiesField
+        id="completar-especialidade"
+        value={ui.especialidades}
+        error={ui.errors.especialidades}
+        onChange={(list) => setUi({ especialidades: list, errors: { ...ui.errors, especialidades: null } })}
+      />
       <CityPicker
         open={ui.pickerOpen}
         title="Onde você quer trabalhar"
@@ -234,6 +219,8 @@ function WorkerFlow() {
 
 interface RecruiterUI {
   step: number;
+  saving: boolean;
+  saveError: string | null;
   capa: string | null;
   logo: string | null;
   tipoObra: string;
@@ -245,6 +232,8 @@ interface RecruiterUI {
 function RecruiterFlow() {
   const [ui, setUi] = useUI<RecruiterUI>('completar-recrutador', {
     step: 0,
+    saving: false,
+    saveError: null,
     capa: null,
     logo: null,
     tipoObra: '',
@@ -258,7 +247,7 @@ function RecruiterFlow() {
       <Shell
         step={0}
         total={2}
-        onBack={() => navigate('/verificar-email')}
+
         onContinue={() => setUi({ step: 1 })}
         label="Continuar"
       >
@@ -300,15 +289,23 @@ function RecruiterFlow() {
       total={2}
       onBack={() => setUi({ step: 0 })}
       onContinue={() => {
+        if (ui.saving) return;
         if (!ui.tipoObra) {
           setUi({ errors: { tipoObra: 'Selecione o tipo de obra.' } });
           return;
         }
-        const current = getUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, COMPANY_PROFILE_DEFAULTS);
-        setUI<CompanyProfileUI>(COMPANY_PROFILE_KEY, { capa: ui.capa ?? current.capa, logo: ui.logo ?? current.logo });
-        finishSignUp('recrutador', { tipoObra: ui.tipoObra, regiaoAtuacao: ui.cidade }).then(() => navigate('/mural'));
+        setUi({ saving: true, saveError: null });
+        finishSignUp({ role: 'recrutador', tipoObra: ui.tipoObra, city: ui.cidade })
+          .then(() => savePictures({ logo: ui.logo, capa: ui.capa }))
+          .then(() => {
+            setUi({ saving: false });
+            navigate('/mural', { replace: true });
+          })
+          .catch((e: unknown) => setUi({ saving: false, saveError: errorMessage(e) }));
       }}
       label="Concluir perfil"
+      loading={ui.saving}
+      error={ui.saveError}
     >
       <Heading
         overline="Completar perfil"

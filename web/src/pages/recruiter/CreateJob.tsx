@@ -1,166 +1,299 @@
+import { useEffect, useRef, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
+import { CityPicker, LocationButton } from '../../components/CityPicker';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { JobTile } from '../../components/JobTile';
 import { PhotoManager } from '../../components/PhotoManager';
+import { Select } from '../../components/Select';
+import { Switch } from '../../components/Switch';
 import { Tag } from '../../components/Tag';
 import { TextArea } from '../../components/TextArea';
-import { useDb, useUI } from '../../hooks/useStore';
-import { REQUISITOS_OPCOES } from '../../services/catalog';
-import { publishJob } from '../../services/marketplace';
+import { useDb, useScreenUI } from '../../hooks/useStore';
+import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
+import { IS_DEMO } from '../../services/mode';
+import { OFICIO_OPTIONS, REQUISITOS_OPCOES } from '../../services/catalog';
+import { errorMessage } from '../../services/errors';
+import { publishJob, significantChanges, updateJob } from '../../services/jobs';
+import { holdsSlot, isPending } from '../../services/applicationMachine';
+import { showToast } from '../../services/toast';
 import { goBack, navigate } from '../../services/router';
-import { currentCompanyId, getCompany } from '../../services/selectors';
+import { applicationsForJob, approvedCount, currentCompanyId, getCompany } from '../../services/selectors';
 import { resetUI } from '../../services/store';
-import type { DiasKey } from '../../types/models';
+import type { DiasKey, Job } from '../../types/models';
 import { cx } from '../../utils/cx';
-import { DIAS, DIAS_ORDEM } from '../../utils/jobInfo';
+import { todayISO } from '../../utils/dates';
+import { DIAS, DIAS_ORDEM, durationText, WAGE_PAYMENTS } from '../../utils/jobInfo';
 import { toggleItem } from '../../utils/list';
+import { FEATURES } from '../../services/features';
+import {
+  addRequirement,
+  draftFromForm,
+  emptyForm,
+  formDiarias,
+  formFromJob,
+  MAX_DESCRIPTION,
+  MIN_PAY,
+  validateStep1,
+  validateStep2,
+  type FieldKey,
+  type FormErrors,
+  type JobForm
+} from './jobForm';
 
-const KEY = 'create-job';
-
-type ErrorKey = 'tipo' | 'local' | 'dias' | 'periodo' | 'diarias' | 'vagas' | 'valor' | 'detalhe';
-type Errors = Partial<Record<ErrorKey, string | null>>;
+type CepStatus = 'idle' | 'loading' | 'found' | 'notfound' | 'error';
 
 interface CreateJobUI {
   step: 1 | 2;
-  fotos: string[];
-  tipo: string;
-  local: string;
-  dias: DiasKey | null;
-  data: string;
-  periodoInicio: string;
-  periodoFim: string;
-  diarias: string;
-  vagas: string;
-  valor: string;
-  negociavel: boolean;
-  requisitos: string[];
-  detalhe: string;
-  errors: Errors;
+  form: JobForm;
+  errors: FormErrors;
+  cepStatus: CepStatus;
+  cepError: string | null;
+  pickerOpen: boolean;
   publishing: boolean;
+  publishError: string | null;
 }
 
 function digits(v: string, max: number) {
   return String(v).replace(/\D/g, '').slice(0, max);
 }
 
-// Step 1: what, where, when and how many. Hours are optional, but if one end is filled in, so must the other.
-function validateStep1(ui: CreateJobUI): Errors {
-  const errors: Errors = {};
-  if (!ui.tipo.trim()) errors.tipo = 'Escreva o tipo de serviço da vaga.';
-  if (!ui.local.trim()) errors.local = 'Informe o endereço da obra.';
-  if (!ui.dias) errors.dias = 'Escolha em que dias o bico pode acontecer.';
-  if (Boolean(ui.periodoInicio) !== Boolean(ui.periodoFim))
-    errors.periodo = 'Preencha o início e o fim, ou deixe os dois em branco.';
-  if (!ui.diarias || Number(ui.diarias) < 1) errors.diarias = 'Informe quantas diárias.';
-  if (!ui.vagas || Number(ui.vagas) < 1) errors.vagas = 'Informe quantas pessoas a vaga precisa.';
-  return errors;
-}
+const hasErrors = (e: FormErrors) => Object.values(e).some(Boolean);
 
-// Step 2: the pay (or "a combinar") and the description.
-function validateStep2(ui: CreateJobUI): Errors {
-  const errors: Errors = {};
-  if (!ui.negociavel) {
-    const n = parseInt(ui.valor, 10);
-    if (!ui.valor.trim()) errors.valor = 'Informe o valor da diária, ou marque como a combinar.';
-    else if (!n || n < 80) errors.valor = 'Informe um valor de R$ 80 ou mais.';
-  }
-  if (!ui.detalhe.trim()) errors.detalhe = 'Descreva o serviço da vaga.';
-  return errors;
-}
-
+/** Publishing a new job. */
 export default function CreateJob() {
-  const db = useDb();
-  const [ui, setUi] = useUI<CreateJobUI>(KEY, () => ({
-    step: 1,
-    fotos: [],
-    tipo: '',
-    local: '',
-    dias: null,
-    data: '',
-    periodoInicio: '',
-    periodoFim: '',
-    diarias: '1',
-    vagas: '1',
-    valor: '',
-    negociavel: false,
-    requisitos: ['Botina e capacete próprios'],
-    detalhe: '',
-    errors: {},
-    publishing: false
-  }));
+  return <JobFormScreen />;
+}
 
-  const clearError = (field: ErrorKey) => ({ ...ui.errors, [field]: null });
-  // Hours are optional, but if one end is filled in, so must the other.
-  const hasHours = Boolean(ui.periodoInicio && ui.periodoFim);
-  // "Diárias" and "vagas" sit side by side and share one message.
-  const countError = ui.errors.diarias || ui.errors.vagas;
+/**
+ * The job form: publishing a new job, or editing `job` (B05). Editing keeps the start date if it is
+ * already in the past, can't go below the people already approved, and warns when candidates will be
+ * told about a change.
+ */
+export function JobFormScreen({ job, template, templateId }: { job?: Job; template?: JobForm; templateId?: string }) {
+  const db = useDb();
+  const KEY = job ? 'edit-job:' + job.id : templateId ? 'create-job:de:' + templateId : 'create-job';
+  const holding = job ? approvedCount(db, job.id) : 0;
+  const candidates = job
+    ? applicationsForJob(db, job.id).filter((a) => isPending(a.status) || holdsSlot(a.status))
+    : [];
+  const limits = job ? { originalStartDate: job.startDate, minSlots: holding } : {};
+  const [ui, setUi] = useScreenUI<CreateJobUI>(KEY, () => ({
+    step: 1,
+    form: job ? formFromJob(job) : (template ?? emptyForm()),
+    errors: {},
+    cepStatus: 'idle',
+    cepError: null,
+    pickerOpen: false,
+    publishing: false,
+    publishError: null
+  }));
+  const f = ui.form;
+  const today = todayISO();
+
+  /** Changes form values and clears the messages of the fields they belong to. */
+  const set = (patch: Partial<JobForm>, ...clear: FieldKey[]) =>
+    setUi((s) => ({
+      form: { ...s.form, ...patch },
+      errors: clear.length ? { ...s.errors, ...Object.fromEntries(clear.map((k) => [k, null])) } : s.errors
+    }));
+
+  // The CEP fills street, neighbourhood and city as soon as its 8 digits are typed. A newer lookup (or a
+  // change to the CEP) makes the answers of older ones stale.
+  const cepSeq = useRef(0);
+  function searchCep(cep: string) {
+    const seq = ++cepSeq.current;
+    setUi({ cepStatus: 'loading', cepError: null });
+    lookupCep(cep)
+      .then((found) => {
+        if (seq !== cepSeq.current) return;
+        if (!found) {
+          setUi({ cepStatus: 'notfound' });
+          return;
+        }
+        setUi((s) => ({
+          cepStatus: 'found',
+          form: { ...s.form, street: found.street, neighborhood: found.neighborhood, city: found.city },
+          errors: { ...s.errors, cep: null, street: null, neighborhood: null, city: null }
+        }));
+      })
+      .catch((e: unknown) => {
+        if (seq === cepSeq.current) setUi({ cepStatus: 'error', cepError: errorMessage(e) });
+      });
+  }
+
+  // X10: editing, the CEP is looked up again on opening (the map point of a changed number comes from it);
+  // the street and the rest stay as saved.
+  useEffect(() => {
+    if (!job || onlyDigits(job.address.cep).length !== 8) return;
+    lookupCep(job.address.cep).catch(() => undefined);
+  }, [job]);
+
+  function onCep(v: string) {
+    const cep = maskCEP(v);
+    set({ cep }, 'cep');
+    if (onlyDigits(cep).length === 8 && onlyDigits(cep) !== onlyDigits(f.cep)) searchCep(cep);
+    else if (onlyDigits(cep).length < 8) {
+      cepSeq.current++;
+      setUi({ cepStatus: 'idle', cepError: null });
+    }
+  }
 
   function advance() {
     if (ui.step === 1) {
-      const errors = validateStep1(ui);
-      if (Object.keys(errors).length) {
+      const errors = validateStep1(f, new Date(), limits, job);
+      if (hasErrors(errors)) {
         setUi({ errors });
         return;
       }
       setUi({ step: 2, errors: {} });
       return;
     }
-    const errors = validateStep2(ui);
-    if (Object.keys(errors).length) {
+    const errors = validateStep2(f);
+    if (hasErrors(errors)) {
       setUi({ errors });
       return;
     }
-    setUi({ publishing: true });
-    const diariasNum = Number(ui.diarias) || 1;
-    publishJob({
-      role: ui.tipo.trim(),
-      pay: ui.negociavel ? null : parseInt(ui.valor, 10),
-      address: ui.local,
-      date: ui.data.trim() || null,
-      hours: hasHours ? `${ui.periodoInicio}h–${ui.periodoFim}h` : null,
-      dias: ui.dias,
-      duration: diariasNum === 1 ? '1 diária' : `${diariasNum} diárias`,
-      slots: Number(ui.vagas) || 1,
-      requirements: ui.requisitos,
-      description: ui.detalhe.trim(),
-      photos: ui.fotos
-    }).then((id) => {
-      setUi({ publishing: false });
-      resetUI(KEY);
-      navigate('/vaga-publicada/' + id);
-    });
+    if (ui.publishing) return;
+    setUi({ publishing: true, publishError: null });
+    const draft = draftFromForm(f, job);
+    const saving = job
+      ? updateJob(job.id, draft).then(() => {
+          resetUI(KEY);
+          showToast(warnChanges.length ? 'Vaga atualizada. Avisamos os candidatos.' : 'Vaga atualizada');
+          navigate('/vaga-gerenciar/' + job.id, { replace: true });
+        })
+      : publishJob(draft).then((id) => {
+          resetUI(KEY);
+          navigate('/vaga-publicada/' + id);
+        });
+    saving.catch((e: unknown) => setUi({ publishing: false, publishError: errorMessage(e) }));
   }
+
+  const diarias = formDiarias(f);
+  // Editing a job people applied to: a new pay, date or address is told to them.
+  const warnChanges =
+    job && candidates.length && !hasErrors(validateStep1(f, new Date(), limits, job))
+      ? significantChanges(job, draftFromForm(f, job))
+      : [];
+  const cepHint =
+    ui.cepStatus === 'loading'
+      ? 'Buscando o endereço…'
+      : ui.cepStatus === 'found'
+        ? 'Endereço encontrado. Confira e complete com o número.'
+        : ui.cepStatus === 'notfound'
+          ? 'Não achamos esse CEP. Preencha o endereço abaixo.'
+          : IS_DEMO
+            ? `Demonstração: ${EXAMPLE_CEPS.slice(0, 3).join(', ')} são encontrados.`
+            : 'Digite o CEP e a gente preenche o endereço.';
 
   const step1 = (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2.5 text-center">
         <span className="text-sm font-semibold text-concrete-900">Fotos da vaga (opcional)</span>
-        <PhotoManager photos={ui.fotos} onChange={(fotos) => setUi({ fotos })} />
+        <PhotoManager photos={f.fotos} onChange={(fotos) => set({ fotos })} />
         <span className="max-w-[22rem] text-sm text-concrete-500">
           Até 6 fotos do canteiro. A primeira vira a capa do bico no mural.
         </span>
       </div>
-      <Input
-        id="create-job-tipo"
-        label="Tipo de serviço"
-        placeholder="Ex.: Pedreiro de acabamento"
-        icon="hammer"
-        value={ui.tipo}
-        error={ui.errors.tipo}
-        onInput={(v) => setUi({ tipo: v, errors: { ...ui.errors, tipo: null } })}
+      <Select
+        label="Ofício"
+        placeholder="Escolha o ofício da vaga"
+        options={OFICIO_OPTIONS}
+        value={f.oficioId}
+        error={ui.errors.oficio}
+        onChange={(v) => set({ oficioId: v }, 'oficio')}
       />
       <Input
-        id="create-job-local"
-        label="Endereço da obra"
-        placeholder="Rua, número e bairro"
-        icon="map-pin"
-        value={ui.local}
-        error={ui.errors.local}
-        onInput={(v) => setUi({ local: v, errors: { ...ui.errors, local: null } })}
+        id="create-job-titulo"
+        label="Título (opcional)"
+        placeholder="Ex.: Pedreiro para reboco de fachada"
+        icon="pencil"
+        hint="Sem título, a vaga aparece com o nome do ofício."
+        value={f.titulo}
+        maxLength={60}
+        onInput={(v) => set({ titulo: v })}
       />
+
+      <fieldset className="flex flex-col gap-4">
+        <legend className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500 pb-3">
+          Endereço da obra
+        </legend>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-end gap-2 max-w-[22rem]">
+            <Input
+              id="create-job-cep"
+              label="CEP"
+              placeholder="00000-000"
+              icon="map-pin"
+              inputMode="numeric"
+              mono
+              value={f.cep}
+              error={ui.errors.cep}
+              onInput={onCep}
+            />
+            {ui.cepStatus === 'error' ? (
+              <Button
+                label="Tentar de novo"
+                variant="secondary"
+                iconLeft="refresh-cw"
+                onClick={() => searchCep(f.cep)}
+              />
+            ) : null}
+          </div>
+          {ui.errors.cep ? null : ui.cepStatus === 'error' ? (
+            <FieldError message={ui.cepError || 'Não deu para buscar o CEP.'} />
+          ) : (
+            <span className={cx('text-sm', ui.cepStatus === 'found' ? 'text-success-500' : 'text-concrete-500')}>
+              {cepHint}
+            </span>
+          )}
+        </div>
+        <Input
+          id="create-job-rua"
+          label="Rua"
+          placeholder="Ex.: Rua Serra de Bragança"
+          value={f.street}
+          error={ui.errors.street}
+          onInput={(v) => set({ street: v }, 'street')}
+        />
+        <div className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] gap-3">
+          <Input
+            id="create-job-numero"
+            label="Número"
+            placeholder="1240"
+            value={f.number}
+            error={ui.errors.number}
+            maxLength={10}
+            onInput={(v) => set({ number: v }, 'number')}
+          />
+          <Input
+            id="create-job-complemento"
+            label="Complemento (opcional)"
+            placeholder="Ex.: fundos, bloco B"
+            value={f.complement}
+            maxLength={40}
+            onInput={(v) => set({ complement: v })}
+          />
+        </div>
+        <Input
+          id="create-job-bairro"
+          label="Bairro"
+          placeholder="Ex.: Tatuapé"
+          value={f.neighborhood}
+          error={ui.errors.neighborhood}
+          onInput={(v) => set({ neighborhood: v }, 'neighborhood')}
+        />
+        <LocationButton title="Cidade da obra" location={f.city} onClick={() => setUi({ pickerOpen: true })} />
+        {ui.errors.city ? <FieldError message={ui.errors.city} /> : null}
+        <span className="text-sm text-concrete-500">
+          Antes de aprovar alguém, os candidatos veem só o bairro e a cidade. O endereço completo aparece para quem você
+          aprovar.
+        </span>
+      </fieldset>
+
       <div className="flex flex-col gap-2" role="radiogroup" aria-labelledby="create-job-dias-label">
         <span id="create-job-dias-label" className="text-sm font-semibold text-concrete-900">
           Em que dias pode ser?
@@ -170,90 +303,119 @@ export default function CreateJob() {
             <DiasOption
               key={id}
               id={id}
-              checked={ui.dias === id}
-              onSelect={() => setUi({ dias: id, errors: clearError('dias') })}
+              checked={f.dias === id}
+              onSelect={() => set({ dias: id }, 'dias', 'endDate')}
             />
           ))}
         </div>
         {ui.errors.dias ? <FieldError message={ui.errors.dias} /> : null}
       </div>
-      {/* Short answers get short fields, side by side where they fit. */}
-      <div className="flex flex-wrap items-start gap-x-6 gap-y-6">
-        <div className="w-[12.5rem]">
-          <Input
-            id="create-job-data"
-            label="Data (opcional)"
-            placeholder="Ex.: 12 set"
-            icon="calendar"
-            value={ui.data}
-            hint="Em branco: data a combinar."
-            onInput={(v) => setUi({ data: v })}
+
+      <div className="flex flex-col gap-3">
+        <div className="rounded-card border border-concrete-200 bg-white px-4">
+          <Switch
+            label="Data a combinar"
+            description="Ligue se o dia ainda vai ser combinado com o trabalhador."
+            checked={f.dateToArrange}
+            onChange={(on) => set({ dateToArrange: on }, 'startDate', 'endDate', 'diarias')}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-concrete-900">Horário (opcional)</span>
-          <div className="flex items-center gap-2">
-            <div className="w-[6.5rem]">
-              <Input
-                id="create-job-periodo-inicio"
-                placeholder="7"
-                suffix="h"
-                inputMode="numeric"
-                value={ui.periodoInicio}
-                invalid={Boolean(ui.errors.periodo)}
-                onInput={(v) => setUi({ periodoInicio: digits(v, 2), errors: clearError('periodo') })}
-              />
-            </div>
-            <span className="text-sm text-concrete-500">às</span>
-            <div className="w-[6.5rem]">
-              <Input
-                id="create-job-periodo-fim"
-                placeholder="17"
-                suffix="h"
-                inputMode="numeric"
-                value={ui.periodoFim}
-                invalid={Boolean(ui.errors.periodo)}
-                onInput={(v) => setUi({ periodoFim: digits(v, 2), errors: clearError('periodo') })}
-              />
-            </div>
+        {f.dateToArrange ? (
+          <div className="w-[12.5rem]">
+            <Input
+              id="create-job-diarias"
+              label="Quantas diárias"
+              placeholder="1"
+              suffix="diária(s)"
+              inputMode="numeric"
+              value={f.diarias}
+              error={ui.errors.diarias}
+              onInput={(v) => set({ diarias: digits(v, 2) }, 'diarias')}
+            />
           </div>
-          {ui.errors.periodo ? (
-            <span className="max-w-[15rem] text-sm text-danger-500">{ui.errors.periodo}</span>
-          ) : (
-            <span className="text-sm text-concrete-500">Em branco: horário a combinar.</span>
-          )}
-        </div>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <div className="grid grid-cols-2 gap-3 max-w-[20rem]">
-          <Input
-            id="create-job-diarias"
-            label="Diárias"
-            placeholder="1"
-            suffix="diária(s)"
-            inputMode="numeric"
-            value={ui.diarias}
-            invalid={Boolean(ui.errors.diarias)}
-            onInput={(v) => setUi({ diarias: digits(v, 2), errors: clearError('diarias') })}
-          />
-          <Input
-            id="create-job-vagas"
-            label="Pessoas"
-            placeholder="1"
-            suffix="pessoa(s)"
-            inputMode="numeric"
-            value={ui.vagas}
-            invalid={Boolean(ui.errors.vagas)}
-            onInput={(v) => setUi({ vagas: digits(v, 2), errors: clearError('vagas') })}
-          />
-        </div>
-        {countError ? (
-          <FieldError message={countError} />
         ) : (
-          <span className="text-sm text-concrete-500">
-            Quantos dias o bico dura e quantos trabalhadores você precisa.
-          </span>
+          <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-2 gap-3 max-w-[27rem]">
+              <Input
+                id="create-job-inicio"
+                label="Começa em"
+                type="date"
+                min={today}
+                value={f.startDate}
+                error={ui.errors.startDate}
+                onInput={(v) =>
+                  set({ startDate: v, endDate: f.endDate && f.endDate >= v ? f.endDate : v }, 'startDate', 'endDate')
+                }
+              />
+              <Input
+                id="create-job-fim"
+                label="Termina em"
+                type="date"
+                min={f.startDate || today}
+                value={f.endDate}
+                error={ui.errors.endDate}
+                onInput={(v) => set({ endDate: v }, 'endDate')}
+              />
+            </div>
+            {diarias > 0 && !ui.errors.startDate && !ui.errors.endDate ? (
+              <span className="text-sm text-concrete-500">
+                {`${durationText({ diarias })} no período${f.dias && f.dias !== 'qualquer' ? `, só ${DIAS[f.dias].short.toLowerCase()}` : ''}.`}
+              </span>
+            ) : null}
+          </div>
         )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-semibold text-concrete-900">Horário (opcional)</span>
+        <div className="flex items-center gap-2">
+          <div className="w-[8.5rem]">
+            <Input
+              id="create-job-hora-inicio"
+              type="time"
+              value={f.startTime}
+              invalid={Boolean(ui.errors.periodo)}
+              onInput={(v) => set({ startTime: v }, 'periodo')}
+            />
+          </div>
+          <span className="text-sm text-concrete-500">às</span>
+          <div className="w-[8.5rem]">
+            <Input
+              id="create-job-hora-fim"
+              type="time"
+              value={f.endTime}
+              invalid={Boolean(ui.errors.periodo)}
+              onInput={(v) => set({ endTime: v }, 'periodo')}
+            />
+          </div>
+        </div>
+        {ui.errors.periodo ? (
+          <FieldError message={ui.errors.periodo} />
+        ) : (
+          <span className="text-sm text-concrete-500">Em branco: horário a combinar.</span>
+        )}
+      </div>
+
+      <div className="w-[10rem]">
+        <Input
+          id="create-job-vagas"
+          label="Pessoas"
+          placeholder="1"
+          suffix="pessoa(s)"
+          inputMode="numeric"
+          value={f.vagas}
+          error={ui.errors.vagas}
+          hint="Quantos trabalhadores você precisa."
+          onInput={(v) => set({ vagas: digits(v, 2) }, 'vagas')}
+        />
+      </div>
+      <div className="rounded-card border border-concrete-200 bg-white px-4">
+        <Switch
+          label="Vaga urgente"
+          description="De graça. A vaga ganha o selo Urgente e aparece antes das outras no mural, depois das impulsionadas."
+          checked={f.urgente}
+          onChange={(on) => set({ urgente: on })}
+        />
       </div>
     </div>
   );
@@ -261,7 +423,7 @@ export default function CreateJob() {
   const step2 = (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-start gap-2">
-        {ui.negociavel ? null : (
+        {f.negociavel ? null : (
           <div className="w-full max-w-[15rem]">
             <Input
               id="create-job-valor"
@@ -269,31 +431,56 @@ export default function CreateJob() {
               placeholder="220"
               suffix="reais"
               inputMode="numeric"
-              value={ui.negociavel ? '' : ui.valor}
+              value={f.valor}
               error={ui.errors.valor}
-              hint={ui.errors.valor || ui.negociavel ? null : 'O trabalhador vê esse valor no mural. Mínimo de R$ 80.'}
-              onInput={(v) => setUi({ valor: digits(v, 5), errors: { ...ui.errors, valor: null } })}
+              hint={ui.errors.valor ? null : `O trabalhador vê esse valor no mural. Mínimo de R$ ${MIN_PAY}.`}
+              onInput={(v) => set({ valor: digits(v, 5) }, 'valor')}
             />
           </div>
         )}
-        {ui.negociavel ? null : (
+        {f.negociavel ? null : (
           <Button
             label="Deixar valor a combinar"
             variant="ghost"
             size="sm"
             iconLeft="handshake"
-            onClick={() => setUi({ negociavel: true, valor: '', errors: { ...ui.errors, valor: null } })}
+            onClick={() => set({ negociavel: true, valor: '' }, 'valor')}
           />
         )}
-        {ui.negociavel ? <span className="text-sm font-semibold text-concrete-900">Valor da diária</span> : null}
-        {ui.negociavel ? (
+        {f.negociavel ? <span className="text-sm font-semibold text-concrete-900">Valor da diária</span> : null}
+        {f.negociavel ? (
           <div className="w-full flex items-center gap-2 p-3 rounded-control bg-brand-50 border border-brand-200">
             <Icon name="handshake" size={18} color="var(--text-brand)" />
             <span className="flex-1 text-sm text-brand-600">
               O trabalhador vê "A combinar" no lugar do valor, e negocia direto com você.
             </span>
-            <Button label="Definir um valor" variant="ghost" size="sm" onClick={() => setUi({ negociavel: false })} />
+            <Button label="Definir um valor" variant="ghost" size="sm" onClick={() => set({ negociavel: false })} />
           </div>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-2.5">
+        <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Como você paga a diária</div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Como você paga a diária">
+          {WAGE_PAYMENTS.map((p) => (
+            <Tag
+              key={p.id}
+              label={p.label}
+              selected={f.pagamento === p.id}
+              onClick={() => set({ pagamento: p.id }, 'pagamento')}
+            />
+          ))}
+        </div>
+        {f.pagamento === 'outro' ? (
+          <Input
+            id="create-job-pagamento"
+            label="Como vai ser"
+            placeholder="Ex.: metade no início, metade no fim"
+            value={f.pagamentoObs}
+            error={ui.errors.pagamento}
+            onInput={(v) => set({ pagamentoObs: v.slice(0, 80) }, 'pagamento')}
+          />
+        ) : ui.errors.pagamento ? (
+          <FieldError message={ui.errors.pagamento} />
         ) : null}
       </div>
       <div className="flex flex-col gap-2.5">
@@ -301,19 +488,16 @@ export default function CreateJob() {
           O que o trabalhador precisa levar
         </div>
         <div className="flex flex-wrap gap-2">
-          {REQUISITOS_OPCOES.map((r) => (
+          {[...REQUISITOS_OPCOES, ...f.requisitos.filter((r) => !REQUISITOS_OPCOES.includes(r))].map((r) => (
             <Tag
               key={r}
               label={r}
-              selected={ui.requisitos.includes(r)}
-              onClick={() =>
-                setUi({
-                  requisitos: toggleItem(ui.requisitos, r)
-                })
-              }
+              selected={f.requisitos.includes(r)}
+              onClick={() => set({ requisitos: toggleItem(f.requisitos, r) })}
             />
           ))}
         </div>
+        <ExtraRequirement onAdd={(r) => set({ requisitos: addRequirement(f.requisitos, r) })} />
       </div>
       <div className="flex flex-col gap-1.5 w-full">
         <label htmlFor="create-job-detalhe" className="text-sm font-semibold text-concrete-900">
@@ -323,15 +507,16 @@ export default function CreateJob() {
           id="create-job-detalhe"
           rows={3}
           placeholder="Ex.: reboco de duas paredes internas, argamassa e areia já estão no local."
-          value={ui.detalhe}
+          value={f.detalhe}
           className={cx(
-            'w-full px-3 py-2.5 bg-white rounded-control border outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none transition-colors duration-150',
+            'w-full px-3 py-2.5 bg-white rounded-control border outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150',
             ui.errors.detalhe
               ? 'border-danger-500'
               : 'border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100'
           )}
-          onInput={(v) => setUi({ detalhe: v, errors: { ...ui.errors, detalhe: null } })}
+          onInput={(v) => set({ detalhe: v.slice(0, MAX_DESCRIPTION) }, 'detalhe')}
         />
+        <span className="text-xs text-concrete-500 self-end">{`${f.detalhe.trim().length}/${MAX_DESCRIPTION}`}</span>
         {ui.errors.detalhe ? (
           <FieldError message={ui.errors.detalhe} />
         ) : (
@@ -346,16 +531,19 @@ export default function CreateJob() {
           <JobTile
             job={{
               id: 'previa',
-              role: ui.tipo.trim() || 'Tipo de serviço',
-              location: 'Tatuapé, SP',
-              dias: ui.dias,
-              date: ui.data.trim() || null,
-              hours: hasHours ? `${ui.periodoInicio}h–${ui.periodoFim}h` : null,
-              pay: ui.negociavel || !ui.valor ? null : parseInt(ui.valor, 10),
-              photos: ui.fotos
+              oficioId: f.oficioId,
+              title: f.titulo.trim() || null,
+              address: { neighborhood: f.neighborhood.trim() || 'Bairro' },
+              dias: f.dias,
+              dateToArrange: f.dateToArrange,
+              startDate: f.dateToArrange ? null : f.startDate || null,
+              endDate: f.dateToArrange ? null : f.endDate || null,
+              startTime: f.startTime || null,
+              endTime: f.endTime || null,
+              pay: f.negociavel || !f.valor ? null : parseInt(f.valor, 10),
+              photos: f.fotos
             }}
             company={getCompany(db, currentCompanyId())}
-            onClick={() => {}}
           />
         </div>
       </div>
@@ -364,25 +552,51 @@ export default function CreateJob() {
 
   return (
     <div className="flex flex-col">
-      <BackBar title="Publicar vaga" onBack={() => (ui.step === 2 ? setUi({ step: 1 }) : goBack('/mural'))} />
+      <BackBar
+        title={job ? 'Editar vaga' : 'Publicar vaga'}
+        onBack={() => (ui.step === 2 ? setUi({ step: 1 }) : goBack(job ? '/vaga-gerenciar/' + job.id : '/mural'))}
+      />
       <div className="flex items-center gap-2 px-4 sm:px-0 pt-3">
         <StepDot n={1} active={ui.step >= 1} />
-        <span className="text-sm text-concrete-500">Serviço, local e dias</span>
+        <span className="text-sm text-concrete-500">Serviço, local e datas</span>
         <span className="flex-1 h-px bg-concrete-200" />
         <StepDot n={2} active={ui.step >= 2} />
         <span className="text-sm text-concrete-500">Valor e requisitos</span>
       </div>
       <div className="px-4 sm:px-0 py-5">{ui.step === 1 ? step1 : step2}</div>
       <div className="px-4 sm:px-0 py-3 flex flex-col gap-1.5">
+        {warnChanges.length ? (
+          <div className="flex items-start gap-2.5 p-3 rounded-card bg-warning-50 border border-warning-100 text-sm text-concrete-800">
+            <Icon name="triangle-alert" size={18} color="var(--amber-500)" />
+            <span>{`Você mudou ${warnChanges.join(', ')}. Os candidatos serão avisados da mudança.`}</span>
+          </div>
+        ) : null}
+        {hasErrors(ui.errors) ? <FieldError message="Confira os campos marcados em vermelho." /> : null}
+        {ui.publishError ? <FieldError message={ui.publishError} /> : null}
         <Button
-          label={ui.step === 1 ? 'Continuar' : 'Publicar vaga'}
+          label={ui.step === 1 ? 'Continuar' : job ? 'Salvar alterações' : 'Publicar vaga'}
           size="lg"
           fullWidth
           loading={ui.publishing}
           onClick={advance}
         />
-        <span className="text-center text-xs text-concrete-500">Publicar é grátis. Você paga só se impulsionar.</span>
+        {job ? null : (
+          <span className="text-center text-xs text-concrete-500">
+            {FEATURES.payments ? 'Publicar é grátis. Você paga só se impulsionar.' : 'Publicar é grátis.'}
+          </span>
+        )}
       </div>
+      <CityPicker
+        open={ui.pickerOpen}
+        title="Cidade da obra"
+        value={f.city}
+        stateKey={KEY + '-city'}
+        onChoose={(city) => {
+          set({ city }, 'city');
+          setUi({ pickerOpen: false });
+        }}
+        onClose={() => setUi({ pickerOpen: false })}
+      />
     </div>
   );
 }
@@ -423,5 +637,32 @@ function StepDot({ n, active }: { n: number; active: boolean }) {
     >
       {String(n)}
     </span>
+  );
+}
+
+/** P06: a requirement written by the company, besides the ready-made ones. */
+function ExtraRequirement({ onAdd }: { onAdd: (text: string) => void }) {
+  const [text, setText] = useState('');
+  const add = () => {
+    if (!text.trim()) return;
+    onAdd(text);
+    setText('');
+  };
+  return (
+    <div className="flex items-end gap-2">
+      <div className="flex-1 min-w-0">
+        <Input
+          id="create-job-requisito"
+          label="Outro item"
+          placeholder="Ex.: trena própria"
+          value={text}
+          onInput={setText}
+          onEnter={add}
+        />
+      </div>
+      <div className="shrink-0">
+        <Button label="Adicionar" variant="secondary" iconLeft="plus" onClick={add} />
+      </div>
+    </div>
   );
 }

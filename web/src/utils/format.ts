@@ -57,9 +57,13 @@ export function strengthBarColor(strength: PasswordStrength): string {
   return strength === 3 ? 'bg-success-500' : strength ? 'bg-warning-500' : 'bg-concrete-200';
 }
 
+/** "R$ 180", "R$ 1.250", and with cents only when there are some: "R$ 180,50" (W01). */
 export function formatBRL(n: number | string | null | undefined): string {
-  const v = Math.round(Number(n) || 0);
-  return 'R$ ' + v.toLocaleString('pt-BR');
+  const v = Math.round((Number(n) || 0) * 100) / 100;
+  const cents = !Number.isInteger(v);
+  return (
+    'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 })
+  );
 }
 
 /** A job's diária as shown everywhere: "R$ 180", or "A combinar" when the job has no fixed pay. */
@@ -76,26 +80,7 @@ export function formatPostDate(isoDate: string): string {
   return `${d} de ${MESES[m - 1]} de ${y}`;
 }
 
-const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-function toLocalDate(isoDate: string): Date {
-  const [y, m, d] = String(isoDate).split('-').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
-}
-
-function daysBetween(a: Date, b: Date): number {
-  const MS_DIA = 24 * 60 * 60 * 1000;
-  const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-  const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-  return Math.round((utcB - utcA) / MS_DIA);
-}
-
-/** '2026-09-10' -> 'Hoje' | 'Amanhã' | 'Qui, 10 set' (relative to today); '' when there is no date. */
-export function formatJobDate(isoDate: string | null | undefined): string {
-  if (!isoDate) return '';
-  const alvo = toLocalDate(isoDate);
-  const diff = daysBetween(new Date(), alvo);
-  if (diff === 0) return 'Hoje';
-  if (diff === 1) return 'Amanhã';
-  return `${DIAS_SEMANA[alvo.getDay()]}, ${alvo.getDate()} ${MESES[alvo.getMonth()]}`;
+/** A Brazilian mobile number with DDD: 11 digits, DDD without zero, starting with 9 (Y25). */
+export function isValidMobile(v: string | null | undefined): boolean {
+  return /^[1-9][1-9]9\d{8}$/.test(String(v || '').replace(/\D/g, ''));
 }

@@ -6,13 +6,29 @@ import { ResultIcon } from '../../components/ResultIcon';
 import { useDb } from '../../hooks/useStore';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
-import { companyOf, getJob } from '../../services/selectors';
+import { applicationFor, companyOf, currentWorker, getJob } from '../../services/selectors';
+import { useEffect } from 'react';
+import { useQuery } from '../../hooks/useQuery';
+import { loadJob } from '../../services/jobs';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
 import { formatPay } from '../../utils/format';
+import { jobTitle } from '../../services/catalog';
 import { dateText } from '../../utils/jobInfo';
 
 export default function ApplicationSent({ params }: ScreenProps) {
   const db = useDb();
+  // X07: opened straight (reload, old link) the job and the candidacy are read first; without a candidacy
+  // this screen doesn't claim one was sent — it goes back to the job.
+  const query = useQuery('job:' + params.id, () => loadJob(params.id));
   const job = getJob(db, params.id);
+  const sent = job ? applicationFor(db, job.id, currentWorker(db).id) : null;
+  const missing = query.status === 'ready' && job && !sent;
+  useEffect(() => {
+    if (missing) navigate('/vaga/' + params.id, { replace: true });
+  }, [missing, params.id]);
+  if (query.status !== 'ready' || missing)
+    return <ScreenLoading title="Bicos" onBack={() => goBack('/mural')} query={query} skeleton={<PageSkeleton />} />;
   if (!job) return <JobNotFound />;
   const company = companyOf(db, job);
 
@@ -30,7 +46,7 @@ export default function ApplicationSent({ params }: ScreenProps) {
         <Card tone="sunken" padding="md" className="w-full">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="font-semibold text-concrete-900">{job.role}</span>
+              <span className="font-semibold text-concrete-900">{jobTitle(job)}</span>
               <span className="text-sm text-concrete-500">{`${company.name} · ${dateText(job)}`}</span>
             </div>
             <span className="font-mono font-bold text-xl text-concrete-900">{formatPay(job.pay)}</span>

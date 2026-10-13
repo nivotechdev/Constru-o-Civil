@@ -2,6 +2,7 @@
 // GPS or by typing any Brazilian municipality. Used by the mural's filters and by "Completar perfil".
 import { useUI } from '../hooks/useStore';
 import { nearestCity, searchCities } from '../services/cities';
+import type { GeoPoint } from '../types/models';
 import { cx } from '../utils/cx';
 import { Button } from './Button';
 import { Icon } from './icons/Icon';
@@ -49,7 +50,8 @@ interface CityPickerProps {
   title: string;
   /** The city chosen now ("Name, UF"), checked in the list. */
   value: string;
-  onChoose: (label: string) => void;
+  /** `point` is the exact GPS position when the city came from "Usar minha localização". */
+  onChoose: (label: string, point?: GeoPoint) => void;
   onClose: () => void;
   /** Key of the picker's own state (typed search, GPS status), one per place that uses it. */
   stateKey: string;
@@ -61,9 +63,9 @@ export function CityPicker({ open, title, value, onChoose, onClose, stateKey }: 
     setUi(PICKER_DEFAULTS);
     onClose();
   };
-  const choose = (label: string) => {
+  const choose = (label: string, point?: GeoPoint) => {
     setUi(PICKER_DEFAULTS);
-    onChoose(label);
+    onChoose(label, point);
   };
   const useMyLocation = () => {
     if (!navigator.geolocation) {
@@ -74,7 +76,7 @@ export function CityPicker({ open, title, value, onChoose, onClose, stateKey }: 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const c = nearestCity(pos.coords.latitude, pos.coords.longitude);
-        if (c) choose(c.label);
+        if (c) choose(c.label, { lat: pos.coords.latitude, lon: pos.coords.longitude });
         else setUi({ geo: 'error' });
       },
       (err) => setUi({ geo: err && err.code === 1 ? 'denied' : 'error' }),
@@ -106,7 +108,7 @@ export function CityPicker({ open, title, value, onChoose, onClose, stateKey }: 
           {geoMsg}
         </span>
       ) : null}
-      <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.08em] text-concrete-400">
+      <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.08em] text-concrete-500">
         <span className="flex-1 h-px bg-concrete-200" />
         ou
         <span className="flex-1 h-px bg-concrete-200" />

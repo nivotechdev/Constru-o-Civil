@@ -1,25 +1,7 @@
-import { useEffect, useSyncExternalStore } from 'react';
 import { Button } from '../../components/Button';
 import { navigate } from '../../services/router';
-import { isSupabaseConfigured } from '../../services/supabase';
-import { isAuthReady, isSignedIn, profileNeedsCompleting, getRole, subscribe } from '../../services/store';
 
 export default function Splash() {
-  // Subscribed (not a one-off check on mount): `initAuth()` resolves asynchronously, so whether
-  // there's already a session is only known a render or two after this screen first mounts.
-  const authReady = useSyncExternalStore(subscribe, isAuthReady);
-  const signedIn = useSyncExternalStore(subscribe, isSignedIn);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured() || !authReady || !signedIn) return;
-    // Deferred a tick: the router navigates via flushSync when the target chunk is already loaded,
-    // which React refuses while still committing the effect that triggered it ("flushSync was called
-    // from inside a lifecycle method") — escaping to a microtask lets that commit finish first.
-    queueMicrotask(() => {
-      navigate(profileNeedsCompleting() ? '/completar-perfil/' + getRole() : '/mural', { replace: true });
-    });
-  }, [authReady, signedIn]);
-
   return (
     <div className="min-h-screen flex flex-col bg-brand-500">
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">

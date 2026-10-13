@@ -88,6 +88,22 @@ button {
   animation: bicos-fade-in var(--dur-normal) var(--ease-standard);
 }
 
+@keyframes bicos-shine {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+/* Placeholder block while a screen's data loads (components/Skeleton.tsx). */
+.skeleton {
+  display: block;
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 37%, var(--skeleton-base) 63%);
+  background-size: 400% 100%;
+  animation: bicos-shine 1.4s ease infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -225,4 +241,16 @@ button {
   .app-island {
     transition: none;
   }
+}
+
+/* X05: every control answers a touch of at least 44 × 44 px, even when it is drawn smaller (the extra area is
+   invisible and centred on it). The element must be positioned (relative/absolute). */
+.tap-target::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }

@@ -2,19 +2,20 @@ import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons/Icon';
-import { Dialog } from '../../components/Modal';
-import { useUI } from '../../hooks/useStore';
+import { useScreenUI } from '../../hooks/useStore';
 import { exportMyData } from '../../services/account';
+import { IS_DEMO } from '../../services/mode';
+import { errorMessage } from '../../services/errors';
+import { showToast } from '../../services/toast';
 import { goBack, navigate } from '../../services/router';
 
 interface PrivacyUI {
   exporting: boolean;
   exported: boolean;
-  confirmDelete: boolean;
 }
 
 export default function Privacy() {
-  const [ui, setUi] = useUI<PrivacyUI>('privacy', { exporting: false, exported: false, confirmDelete: false });
+  const [ui, setUi] = useScreenUI<PrivacyUI>('privacy', { exporting: false, exported: false });
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 gap-5 pb-8 lg:bg-transparent lg:min-h-0">
@@ -32,14 +33,14 @@ export default function Privacy() {
               <div className="flex flex-col gap-1">
                 <span className="font-semibold text-concrete-900">Exportar meus dados</span>
                 <span className="text-sm text-concrete-600">
-                  Perfil, candidaturas, avaliações e mensagens em um arquivo único.
+                  Perfil, candidaturas, avaliações e avisos em um arquivo único.
                 </span>
               </div>
             </div>
             {ui.exported ? (
               <span className="flex items-center gap-2 text-sm text-success-500 font-semibold">
                 <Icon name="circle-check" size={16} color="var(--green-500)" />
-                Arquivo enviado para o seu e-mail.
+                {IS_DEMO ? 'Arquivo enviado para o seu e-mail.' : 'Arquivo baixado no seu aparelho.'}
               </span>
             ) : (
               <Button
@@ -48,7 +49,12 @@ export default function Privacy() {
                 loading={ui.exporting}
                 onClick={() => {
                   setUi({ exporting: true });
-                  exportMyData().then(() => setUi({ exporting: false, exported: true }));
+                  exportMyData()
+                    .then(() => setUi({ exporting: false, exported: true }))
+                    .catch((e: unknown) => {
+                      setUi({ exporting: false });
+                      showToast(errorMessage(e), { tone: 'error' });
+                    });
                 }}
               />
             )}
@@ -66,20 +72,14 @@ export default function Privacy() {
                 </span>
               </div>
             </div>
-            <Button label="Excluir minha conta" variant="danger" onClick={() => setUi({ confirmDelete: true })} />
+            <Button
+              label="Excluir minha conta"
+              variant="danger"
+              onClick={() => navigate('/configuracoes/excluir-conta')}
+            />
           </div>
         </Card>
       </div>
-      <Dialog
-        open={ui.confirmDelete}
-        tone="danger"
-        title="Excluir sua conta?"
-        description="Isso apaga seu perfil, candidaturas e histórico da Bicos para sempre. Não dá para desfazer."
-        confirmLabel="Sim, excluir conta"
-        onConfirm={() => navigate('/login')}
-        cancelLabel="Cancelar"
-        onCancel={() => setUi({ confirmDelete: false })}
-      />
     </div>
   );
 }

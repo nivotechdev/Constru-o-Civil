@@ -6,10 +6,11 @@ import { Icon } from '../../../components/icons/Icon';
 import { JobTile } from '../../../components/JobTile';
 import { navigate } from '../../../services/router';
 import { getCompany, isJobSaved, isMine } from '../../../services/selectors';
-import { toggleSavedJob } from '../../../services/store';
+import { toggleSaved } from '../../../services/feedback';
 import type { Company, Database, Job, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
-import { DEFAULT_CITY, NO_FILTERS, setFeed, type FeedUI } from './feedUI';
+import { noFilters, setFeed, type FeedUI } from './feedUI';
+import { Button } from '../../../components/Button';
 
 interface FeedTileProps {
   job: Job;
@@ -29,7 +30,7 @@ const FeedTile = memo(function FeedTile({ job, company, role, saved }: FeedTileP
       onClick={() => navigate(mine ? '/vaga-gerenciar/' + job.id : '/vaga/' + job.id)}
       mine={mine}
       saved={saved}
-      onToggleSave={role === 'trabalhador' ? () => toggleSavedJob(job.id) : null}
+      onToggleSave={role === 'trabalhador' ? () => toggleSaved(job.id) : null}
     />
   );
 });
@@ -51,15 +52,15 @@ export function FeedGrid({ db, role, jobs }: { db: Database; role: Role; jobs: J
   );
 }
 
-export function NoJobsState({ location }: { location: string }) {
-  if (location !== DEFAULT_CITY) {
+export function NoJobsState({ location, home }: { location: string; home: string }) {
+  if (location !== home) {
     return (
       <EmptyState
         icon="map-pin"
         title={`Ainda não tem bico em ${location.split(',')[0]}`}
         description="Assim que uma construtora publicar uma vaga nessa cidade, ela aparece aqui."
-        actionLabel={`Ver bicos em ${DEFAULT_CITY.split(',')[0]}`}
-        onAction={() => setFeed({ location: DEFAULT_CITY })}
+        actionLabel={`Ver bicos em ${home.split(',')[0]}`}
+        onAction={() => setFeed({ location: home, origin: null })}
       />
     );
   }
@@ -69,7 +70,7 @@ export function NoJobsState({ location }: { location: string }) {
       title="Nenhuma vaga com esse filtro"
       description="Tire um filtro ou aumente a distância para ver mais bicos."
       actionLabel="Limpar filtros"
-      onAction={() => setFeed(NO_FILTERS)}
+      onAction={() => setFeed(noFilters(home))}
     />
   );
 }
@@ -109,7 +110,7 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
         <input
           ref={inputRef}
           id={id}
-          data-focus-id={id}
+
           type="search"
           autoComplete="off"
           spellCheck={false}
@@ -146,3 +147,20 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
     </div>
   );
 }
+
+/** Under the search results: widen the search to every city, or come back to the chosen one (L17). */
+export function SearchScope({ location, allCities }: { location: string; allCities: boolean }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm text-concrete-500">
+      <span>{allCities ? 'Buscando em todas as cidades.' : `Buscando em ${location.split(',')[0]}.`}</span>
+      <Button
+        label={allCities ? `Só em ${location.split(',')[0]}` : 'Buscar em todas as cidades'}
+        variant="ghost"
+        size="sm"
+        onClick={() => setFeed({ allCities: !allCities })}
+      />
+    </div>
+  );
+}
+
+export { LoadMore } from '../../../components/LoadMore';

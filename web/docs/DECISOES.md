@@ -1,0 +1,1181 @@
+# Decisões de produto e de implementação
+
+Decisões tomadas onde o pedido não definia o comportamento. Regra usada: a opção mais simples e segura
+para quem usa o app. Cada item diz de qual ID do plano veio.
+
+## B09 — Sessão e guardas de rota
+
+- **Uma conta = um lado.** O papel (trabalhador ou construtora) vem da conta e não muda no login. Quem
+  quiser os dois lados cria duas contas (F14 tira a frase "Dá para trocar depois").
+- **Contas de demonstração:** `trabalhador@bicos.demo` (perfil Jorge Mendes) e `construtora@bicos.demo`
+  (Construtora Meridiano), senha `bicos123`. Ficam listadas num quadro discreto no fim do login; tocar
+  numa conta preenche os campos.
+- **Login aceita e-mail, CPF ou CNPJ** (como o campo já dizia). O serviço resolve o documento para a
+  conta. As mensagens de erro distinguem conta inexistente e senha errada (L13 completa o resto).
+- **"Continuar com o Google" e "Continuar com o celular"** ainda não têm fluxo (L13). Até lá, tocar neles
+  mostra o aviso "Na demonstração, entre com e-mail e senha", em vez de entrar numa conta qualquer.
+- **Sessão persistida no `localStorage`** (chave `bicos.sessao`, só o id da conta, com `try/catch`).
+  Os dados do mock continuam só em memória: depois de recarregar a página, só as contas de demonstração
+  voltam logadas; uma conta criada no cadastro some com o recarregamento (como o resto do mock).
+- **Sem sessão**, qualquer rota interna leva ao login; depois de entrar, a pessoa volta para o endereço
+  que tentou abrir. A raiz `/` mostra a Splash sem sessão e o mural com sessão.
+- **Onboarding obrigatório:** com e-mail não confirmado, a única tela que abre é "Confirme seu e-mail";
+  com perfil incompleto, só "Completar perfil" do próprio lado. Termos, privacidade e recuperação de
+  senha abrem sempre.
+- **"Abrir meu e-mail"** faz, na demonstração, o papel do link de confirmação (aviso na própria tela).
+- **Rotas por lado:** perfil de candidato com contexto de vaga (`/trabalhador/:id/:jobId`) é só da
+  construtora; perfis públicos (`/trabalhador/:id`, `/construtora/:id`), mural, detalhe da vaga,
+  notificações e configurações abrem para os dois.
+- **Sair da conta** pede confirmação num diálogo único (menu, Configurações, Editar perfil e a tela de
+  confirmar e-mail) e apaga todo o estado de telas da sessão. O "voltar" do navegador não volta para
+  dentro da conta.
+- **Tabela `profiles` virou `accounts`** em `types/supabase.ts`, com e-mail, documento, WhatsApp e as
+  datas de confirmação. O arquivo de tipos agora declara cada linha uma vez e deriva insert/update. O SQL
+  em `web/supabase/` é o rascunho anterior e **não** foi atualizado (o pedido proíbe migrations nesta
+  etapa); o back-end escreve as migrations a partir de `docs/CONTRATO-BACKEND.md` e de `types/supabase.ts`.
+
+## B10 — Carregamento, erro, vazio e offline
+
+- **Interruptor de falha da demonstração:** abrir o app com `?falhar=1` antes do `#` (ex.:
+  `index.html?falhar=1#/mural`) ou ligar **Configurações › Demonstração › Simular falhas de conexão**. Com
+  ele ligado, toda chamada de serviço do mock é rejeitada. "Sair da conta" continua funcionando (a sessão
+  é encerrada no aparelho mesmo sem rede).
+- **Sem internet** (`navigator.onLine` falso), as chamadas também falham, com a mensagem de offline, e uma
+  faixa no topo avisa enquanto durar.
+- **Leituras passam por serviço com cache por sessão:** cada tela pede o que mostra com uma chave
+  (`feed`, `job:ID`, `worker:ID`…). O primeiro acesso mostra esqueleto; os seguintes abrem na hora (o
+  store já tem os dados). Em erro, a tela mostra "Tentar de novo" e, em telas cheias, "Voltar ao início".
+  Sair da conta limpa o cache.
+- **Salvar vaga é otimista:** a bandeirinha muda na hora e volta se a chamada falhar, com um aviso.
+- **Erros de ação** aparecem junto do botão (ou dentro do diálogo, que continua aberto); avisos curtos de
+  sucesso aparecem num toast no rodapé, anunciado a leitores de tela.
+- **Erros de serviço têm código** (`offline`, `falha_demo`, `nao_autorizado`, `nao_encontrado`,
+  `conflito`, `validacao`) e mensagem pronta em português; o back-end real deve mapear seus erros para
+  esses códigos (ver `services/errors.ts`).
+
+## B07 — Catálogo único de ofícios
+
+- **14 ofícios** em `data/oficios.ts` (servidos por `services/catalog.ts`), cada um com `id` estável,
+  nome e sinônimos. Vaga e trabalhador guardam só o `oficioId`; a tabela `oficios` entra em
+  `types/supabase.ts`.
+- **"Pedreiro" e "Pedreiro de acabamento" são ofícios distintos**; o filtro do mural compara o id exato
+  (filtrar por Pedreiro não traz Pedreiro de acabamento). A busca por texto encontra os dois.
+- **Título da vaga é opcional** (até 60 caracteres). Sem título, a vaga aparece com o nome do ofício.
+- **Busca ignora acento e maiúsculas** e encontra vagas e trabalhadores por nome do ofício ou sinônimo
+  ("hidráulica" acha os encanadores).
+- **"Servente e ajudante"** (texto livre do seed) virou o ofício Servente.
+- **Testes de paridade com o app antigo** para o store e para a mensagem pronta do WhatsApp foram
+  aposentados: o modelo mudou de propósito (ids de catálogo, e nas próximas etapas datas reais e status
+  explícitos). As regras passaram a ser testadas diretamente (`store.test.ts`, `oficios.test.ts`). Os
+  testes de paridade das máscaras, textos de status e busca de cidades continuam.
+
+## B06 — Endereço, cidade, localização e datas reais
+
+- **Vaga guarda o endereço inteiro** (CEP, rua, número, complemento, bairro, cidade, UF, latitude e
+  longitude) e as **datas reais** (início e fim em `YYYY-MM-DD`, horários `HH:MM`). "Hoje", "Amanhã",
+  "Sex, 25 set" e "Hoje até 27 set" são calculados na hora de mostrar (`utils/jobInfo.ts`).
+- **CEP na demonstração:** uma tabela pequena de CEPs reais (`services/address.ts`: 03307-000, 03104-000,
+  01310-100, 13010-111, 20040-002). Outro CEP válido aparece como "não encontrado" e a pessoa preenche rua
+  e bairro e escolhe a cidade no seletor. No back-end, a busca vai para ViaCEP/BrasilAPI por uma função.
+- **Coordenadas no mock:** o ponto do CEP conhecido, ou o centro da cidade escolhida, mais um pequeno
+  deslocamento fixo por rua e número (para duas vagas da mesma cidade não ficarem no mesmo ponto).
+- **Datas:** início não pode ser no passado; fim igual ou depois do início; uma vaga cobre no máximo 60
+  dias. "Data a combinar" é um interruptor; ligado, a construtora informa quantas diárias.
+- **Diárias** são contadas pelas datas e pelos dias escolhidos (semana, fim de semana ou qualquer dia). Se
+  nenhum dia do período cair nos dias escolhidos, o formulário avisa.
+- **Horário** continua opcional, agora com minutos (início antes do fim).
+- **Distância** é calculada em linha reta (Haversine) a partir de: (1) a posição do GPS, quando a pessoa
+  usou "Usar minha localização"; (2) a casa do trabalhador, quando o mural está na cidade dele; (3) o
+  centro da cidade escolhida. O filtro "Até X km" e a ordem "Mais perto" usam esse cálculo.
+- **O mural abre na cidade do trabalhador** (a do perfil). "Limpar filtros" volta para ela. Para a
+  construtora, abre em São Paulo (cidade das vagas de demonstração).
+- **Vaga com data final passada sai do mural** sozinha (e da lista de vagas abertas da construtora).
+- **Trabalhador** guarda cidade (rótulo do seletor), bairro (quando conhecido) e coordenadas; o texto
+  "Tatuapé, SP" é montado na hora. Mudar de cidade no perfil move o ponto para o centro da nova cidade.
+- **Datas do seed são relativas ao dia em que o app abre**, para a demonstração sempre ter vagas "Hoje",
+  "Amanhã" e na semana que vem, e um histórico no passado.
+- **Tela carregada sob demanda:** o carregamento das telas marca a promessa do código como resolvida e
+  sempre chama `use()`, removendo um aviso do React sobre `use()` condicional.
+
+## B02 — Máquina de status da candidatura
+
+- **Uma tabela única** (`services/applicationMachine.ts`) diz de qual status para qual, e quem pode
+  (trabalhador, construtora ou sistema). Só ela muda o status; o back-end deve aplicar a mesma tabela (está
+  em `docs/CONTRATO-BACKEND.md`).
+- **"Avaliada" deixou de ser status.** A candidatura fica "concluída" e cada lado tem seu indicador
+  (`workerReviewed`, `companyReviewed`).
+- **Histórico:** cada candidatura guarda `events[]` (status, quando, quem, motivo) e `statusChangedAt`.
+  "Contato liberado em" mostra a data real em que a construtora aprovou.
+- **Abrir o perfil de um candidato novo** muda "enviada" para "em análise" e avisa o trabalhador.
+- **Recusa automática ao preencher a última vaga** fica marcada (`autoRejected`). Se a construtora desfizer
+  aquela aprovação, os recusados automaticamente voltam para "em análise" (antecipa parte da L01). Ao
+  encerrar a vaga, a recusa vira definitiva.
+- **Desfazer aprovação** retira o aviso "Você foi pré-selecionado" se o trabalhador ainda não o viu.
+- **Conclusão automática:** uma contratação cuja vaga já passou da data final vira "concluída" sozinha
+  (no mock, sempre que as candidaturas são lidas; no back-end, uma rotina diária) e os dois lados recebem o
+  pedido de avaliação.
+- **Desistir e cancelar pedem motivo** (lista curta + "Outro motivo" escrito); o motivo vai na notificação
+  para o outro lado. Marcar falta pede só confirmação.
+- **Notificações agora são dados**: cada uma é de um trabalhador ou de uma construtora, nasce na mesma
+  transação da mudança que avisa, tem destino (abre a tela certa) e é marcada como lida ao abrir.
+- **Testes de paridade dos rótulos de status** com o app antigo foram aposentados (há status novos).
+
+## B01 — WhatsApp nos dois sentidos
+
+- **Número privado dos dois lados.** `Worker.whatsapp` e `Company.whatsapp` existem no modelo (espelham as
+  colunas do banco), mas nenhuma tela lê esses campos: o número só sai de `contacts.getContact(id da
+candidatura)`, que exige candidatura pré-selecionada ou contratada e que quem pede seja um dos dois
+  lados. No back-end, isso vira uma RPC que confere o mesmo antes de ler a coluna privada.
+- **Botão "Falar no WhatsApp"** pede o contato na hora de aparecer (com "Carregando contato…" e "Tentar de
+  novo" se falhar). Aparece para a construtora na lista de candidatos (aprovado/contratado), no perfil do
+  candidato com contexto de vaga e na tela da equipe; para o trabalhador em Minhas candidaturas e em
+  "Você avançou".
+- **Depois da conclusão o contato fecha** (a regra pede só pré-selecionado/contratado). Se precisar
+  reabrir para combinar algo depois, é uma decisão a revisitar.
+- **Mensagens prontas** usam o nome do ofício (não o título) e o código da vaga: "Olá! Vi sua vaga de
+  {ofício} ({código}) na Bicos e fui aprovado…" e "Olá, {primeiro nome}! Aqui é da {construtora}, sobre a
+  vaga de {ofício} ({código}) na Bicos…".
+
+## B03 — Construtora avalia o trabalhador
+
+- **Nova rota** `/avaliar-trabalhador/:jobId/:workerId` (só construtora), espelho de "Avaliar a diária":
+  nota de 1 a 5 (nenhuma estrela marcada no início), pontos prontos ("Chegou no horário", "Trabalho
+  caprichado", "Usou EPI", "Respeitou a equipe", "Deixou o local limpo") e comentário de até 300
+  caracteres. Só abre com a diária concluída e se a construtora ainda não avaliou; senão mostra "Essa
+  avaliação não está disponível".
+- **Entradas:** Histórico (item "Avaliar"), notificação "Avalie o trabalhador", perfil do candidato
+  (botão "Avaliar {nome}") e tela da equipe do bico.
+- **Avaliação vira registro** (`Review`: candidatura, direção, autor, nota, pontos, comentário, data) e o
+  trabalhador ganha `reviewCount`. A nota nova entra na média com uma casa decimal. As avaliações antigas
+  do seed foram convertidas (sem candidatura ligada).
+
+## B04 — Avaliar a diária grava de verdade
+
+- **"Avaliar a diária" usa o mesmo formulário da construtora** e `reviews.submitReview`: a avaliação vai
+  para o perfil da construtora, a nota e a contagem são recalculadas e o lado do trabalhador fica marcado
+  como avaliado.
+- **Guarda:** só com a diária concluída e uma vez; fora disso, a tela "Essa avaliação não está
+  disponível" (com "Voltar").
+- **Nota começa vazia** (nada de 5 estrelas e "Pagou no dia" pré-marcados); o botão fica desativado até
+  escolher a nota; comentário em caixa de texto com limite de 300 caracteres e contador (antecipa P02/P03).
+- **Estrelas do trabalhador mostram a quantidade de avaliações** (`reviewCount`), não de bicos feitos
+  (antecipa parte da L09).
+
+## B05 — Editar vaga
+
+- **`/vaga-editar/:id` reaproveita o formulário de publicar** (`JobFormScreen` em modo edição), já
+  preenchido. Só o dono edita, e só com a vaga aberta (encerrada ou excluída mostra o motivo).
+- **Data de início no passado** é aceita se for a mesma de antes (vaga em andamento); trocar para outra
+  data passada não.
+- **Pessoas:** não dá para pedir menos que o número de aprovados/contratados. A aprovação também passou
+  a recusar quando a vaga já está cheia (o teste da edição achou esse caso).
+- **Aviso aos candidatos:** mudar valor, data/horário ou endereço com candidatos ativos (pendentes,
+  aprovados ou contratados) mostra "Os candidatos serão avisados da mudança" antes de salvar e envia a
+  notificação "A vaga mudou" a cada um. Mudar só a descrição, fotos ou requisitos não avisa ninguém.
+- **Requisitos próprios** da vaga (fora da lista padrão) aparecem marcados na edição, para não sumirem.
+
+## B08 — Impulsionamento com pagamento (simulado)
+
+- **Fluxo:** escolher o plano → `/impulsionar/:id/:plano` → PIX ou cartão. A vaga só fica impulsionada
+  com o pagamento **confirmado**, até `boostEndsAt` (24h ou 3 dias, conforme o plano). `boosted` deixou de
+  existir: "impulsionada" é `boostEndsAt` no futuro, e acaba sozinho.
+- **PIX:** código "copia e cola" e QR fictícios (marcados como demonstração), válidos por 30 minutos, com
+  contagem; "Simular pagamento confirmado" faz o papel do banco. Código vencido vira "expirado" e a tela
+  oferece gerar outro. No back-end, a confirmação vem do webhook do provedor de pagamento.
+- **Cartão:** número, nome, validade e código com máscara e validação (dígito verificador, validade
+  futura). Na demonstração qualquer cartão válido é aprovado e um número terminado em 0000 é recusado,
+  com a mensagem do banco. No back-end, o cartão é tokenizado no navegador pelo provedor (o número nunca
+  passa pelo nosso servidor).
+- **Pagamentos são registros** (`BoostPayment`: plano, forma, valor, status aguardando/confirmado/
+  recusado/expirado, datas) — base para a tela de cobranças (F11).
+- **Gerenciar vaga:** selo "Impulsionada até {data, hora}" e botão "Impulsionar vaga" sempre que a vaga
+  estiver aberta e não impulsionada. Vaga encerrada, cheia, vencida ou já impulsionada não pode ser
+  impulsionada (a tela explica).
+- **Textos:** saiu "cartão cadastrado" e a promessa de reembolso (não há tela de reembolso ainda; volta
+  com a F11). Confirmar o pagamento gera a notificação "Vaga impulsionada" para a construtora.
+- **Ordem do mural** ainda usa o "urgente"; o impulsionamento ativo no topo e os selos no cartão da vaga
+  são a L08.
+
+## B11 — Termos de uso e Política de privacidade
+
+- **`/termos` e `/privacidade`** abrem com ou sem login, em tela cheia, com faixa "Rascunho para revisão
+  jurídica", versão e data. O texto-modelo está em `services/legal.ts` (no back-end, servido de uma tabela
+  para o aceite ficar ligado à versão mostrada).
+- **A política de privacidade (texto) é separada de "Privacidade e dados"** (`/configuracoes/privacidade`,
+  onde a pessoa exporta ou exclui os dados).
+- **No cadastro**, o aceite único cobre os dois documentos ("Li e aceito os Termos de uso e a Política de
+  privacidade"); os links abrem as telas e o "voltar" retorna ao passo do cadastro, sem perder o que foi
+  digitado. A conta guarda `termsVersion` e `termsAcceptedAt`.
+- **Configurações › Sobre** aponta para as duas telas (os dois botões estavam sem ação).
+
+## B12 — Exclusão de conta real
+
+- **Fluxo:** Configurações › Privacidade e dados › "Excluir minha conta" abre `/configuracoes/excluir-conta`:
+  senha → lista do que acontece com os bicos em andamento → caixa "Entendo e confirmo…" (só quando há
+  bicos pré-selecionados/contratados; com link para resolver antes) → diálogo final → `account.deleteAccount`
+  → sessão encerrada → `/conta-excluida` (tela pública).
+- **Trabalhador:** desiste das diárias pré-selecionadas/contratadas (a construtora é avisada e a vaga
+  reabre) e as candidaturas pendentes são retiradas.
+- **Construtora:** contratações em andamento são canceladas (o trabalhador é avisado) e as vagas abertas
+  são encerradas (candidatos avisados), como no "Encerrar vaga".
+- **Dados:** a conta some (o login deixa de funcionar); posts e notificações da pessoa são apagados; o
+  perfil fica anônimo ("Conta excluída") para que avaliações e históricos do outro lado continuem
+  coerentes, sem nome nem WhatsApp. No back-end, uma RPC faz o mesmo numa transação e apaga o usuário do
+  Auth.
+- **Diárias que já passaram** são concluídas antes de montar a lista (não aparecem como "em andamento").
+
+## Ligação com o Supabase (front novo no banco do app antigo)
+
+- **Mesmo projeto, tabelas novas ao lado das antigas.** O front novo usa o projeto que o app antigo já
+  usa, com tabelas no formato do contrato (`accounts`, `workers`, `companies`, `jobs`, `applications`…),
+  sem renomear nem alterar as do app antigo — que continua funcionando. Os dois dividem o Auth, o
+  segredo do CPF/CNPJ (Vault) e os buckets. Migrations só acrescentam.
+- **Regras no banco.** Tudo que muda mais de um registro é uma RPC `security definer` que repete as
+  regras do modo de demonstração (mesmas mensagens) numa transação; o cliente só lê pelo RLS e grava
+  diretamente apenas o que é seu e simples (vaga salva, post, lido/não lido, campos do próprio perfil).
+- **WhatsApp privado de verdade.** As colunas de WhatsApp não têm privilégio de leitura; o número só sai
+  pela RPC `get_contact`, para os dois lados do bico, a partir da pré-seleção.
+- **Contagem sem expor candidatos.** O trabalhador não lê candidaturas de outros; o mural sabe se a vaga
+  lotou pela RPC `job_stats` (só números).
+- **Ids de vaga curtos** (`BC-5001`…): aparecem no link e na mensagem pronta do WhatsApp.
+- **Entrar com CPF/CNPJ por Edge Function**, para nunca devolver ao navegador o e-mail de um documento.
+- **Links do e-mail** (confirmação e nova senha) no fluxo `implicit`, tratados antes do roteador — o
+  mesmo jeito comprovado do app antigo (o `#access_token` e o roteador usam o mesmo `#`).
+- **E-mail incorreto ou senha incorreta** viram uma mensagem só ("E-mail ou senha incorretos"): o
+  Supabase Auth não diz qual dos dois, de propósito.
+- **Sem provedor de WhatsApp/pagamento ainda**: o passo do código de WhatsApp sai do cadastro no modo
+  real (o número fica sem confirmação, sem fingir que um código foi enviado); o pagamento do
+  impulsionamento é registrado e confirmado no servidor, com a confirmação do PIX simulada até integrar
+  um provedor. O número do cartão nunca sai do aparelho (só os 4 últimos dígitos).
+- **Exportar dados** no modo real baixa o arquivo no aparelho (não há envio de e-mail configurado); a
+  tela diz isso.
+- **Contas antigas** recebem a conta nova com o perfil a completar; o aceite dos termos só é registrado
+  quando a pessoa aceitou de fato (cadastro no app novo), nunca em nome de quem não viu.
+- **Excluir vaga** também a encerra (quem esperava é avisado), para ninguém ficar com candidatura presa
+  numa vaga que sumiu.
+- **Diária concluída** soma 1 em `jobs_done` do trabalhador (o modo de demonstração não somava).
+- **Ajustes mínimos de tela** (só no modo real, sem mudar o visual): esconder as dicas de demonstração;
+  "Abrir meu e-mail" vira "Já confirmei meu e-mail" e mostra o motivo quando ainda não confirmou;
+  mensagem do login para e-mail/senha incorretos; contagem de candidatos no perfil da construtora
+  vinda do servidor.
+
+---
+
+# Rodada 2 — pronto para produção
+
+Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Cada item diz o ID.
+
+## Como o banco é atualizado
+
+- **Migrations novas ficam prontas e testadas, aplicadas pelo painel.** O conector do Supabase usado no
+  desenvolvimento exige uma aprovação manual para qualquer comando com `DROP`/`DELETE` (mesmo dentro de
+  função), e essa aprovação não chega numa sessão automática. Contornar essa trava não é uma opção. Então
+  cada migration é testada num Postgres igual ao do Supabase (`supabase/tests/local/setup.sh`, imagem
+  `supabase/postgres` 17.6 + as migrations do app antigo e do novo) e a ordem para aplicar está em
+  `supabase/APLICAR.md`.
+- **Testes SQL** (`supabase/tests/*.sql`) rodam cada RPC como o app chama, com a sessão de uma conta
+  (`pg_temp.login`), e terminam em `rollback`: dá para rodar no banco de verdade sem deixar rastro.
+- **O app antigo (`app/`) será desligado.** O front novo substitui o antigo; as funções antigas abertas a
+  visitantes são fechadas (Z08) mesmo que o antigo deixe de conseguir excluir conta ou reiniciar cadastro.
+
+## Z01 — RPCs de candidatura, vaga e conta
+
+- `APLICAR-NO-SQL-EDITOR.sql` saiu do repositório: virou a migration `20261010000100_z01_rpcs_candidatura.sql`,
+  já com as correções Y02, Y03, Y05, Y06, Y08 e Y15 do lado do banco (o modo de demonstração recebe as
+  mesmas regras na Fase B).
+- **Posição ocupada** = pré-selecionado, contratado **ou concluído** (`job_holding`). Assim uma diária
+  concluída não "abre" a vaga de novo no mural.
+- **Excluir conta exige login de até 5 minutos** (o `amr` do token). O app já confere a senha logo antes
+  (o que renova o login); quem chamar a RPC com um token velho recebe "confirme sua senha de novo".
+
+## Z04 — Salvar vaga
+
+- **`insert` simples**, e "já estava salva" (código 23505) conta como sucesso: a tabela não tem permissão
+  de UPDATE, então `upsert` era recusado.
+
+## Z02 — Impulsionar só pagando
+
+- **Provedor: Mercado Pago** (PIX e cartão). Ainda não há conta configurada: no modo real o Impulsionar
+  fica **escondido** (`services/features.ts` › `FEATURES.payments`, ligado por `VITE_PAGAMENTOS=mercadopago`
+  e `VITE_MP_PUBLIC_KEY`). Os botões "Impulsionar" somem do Gerenciar vaga e da tela "Vaga publicada", o
+  texto "Você paga só se impulsionar" vira "Publicar é grátis" e as rotas `/impulsionar/…` mostram
+  "Impulsionar ainda não está disponível".
+- **No banco não existe mais simulação**: `simulate_pix_paid`, `pay_with_card` e `start_pix_payment` (que
+  gerava um PIX de mentira) foram apagadas. Abrir, gravar e confirmar cobrança são funções só do
+  `service_role`, chamadas pelas Edge Functions `criar-cobranca` e `webhook-pagamento`.
+- **Cartão**: no modo real, o formulário é o do próprio Mercado Pago (Card Payment Brick, campos em
+  iframes do provedor); o app recebe só um token de uso único. À vista (1 parcela), sem débito.
+- **PIX**: QR code e "copia e cola" do provedor, válidos por 30 min; a tela consulta o pagamento a cada 5 s
+  e muda sozinha quando o webhook confirma (X08).
+- **Um pagamento aguardando por vaga** (Y13): gerar outro código cancela o anterior (status `cancelado`).
+  Se o código cancelado for pago mesmo assim, o dinheiro entrou: o destaque soma a partir do fim do atual.
+- **Pagamento confirmado com a vaga já fechada/cheia/vencida** vira `reembolso_pendente`, a construtora é
+  avisada ("Pagamento será devolvido") e a devolução é feita pelo painel do Mercado Pago (F11 mostra o
+  status). Reembolso automático fica para quando houver conta no provedor.
+- **Os dados do cartão da demonstração** ficam no estado da própria tela (somem ao sair), nunca no store (Y14).
+- **Suporte**: WhatsApp `54 9473-1661` e `nivotech.dev@gmail.com`, como informado. O número parece ter um
+  dígito a menos para um celular (são 10 dígitos com o DDD); confira e ajuste em `VITE_SUPORTE_WHATSAPP`.
+
+## Z07 — Ninguém descobre quem tem conta pelo CPF/CNPJ
+
+- **Sem pergunta separada sobre o documento.** `document_available` não é mais chamável pelo app; o banco
+  confere o CPF/CNPJ dentro do próprio cadastro (gatilho antes de gravar a conta no Auth). Documento de
+  conta confirmada → o cadastro falha e o app diz só "Não deu para criar a conta com esses dados", com
+  "Entrar" e "Recuperar senha". Documento preso num cadastro nunca confirmado → o cadastro antigo é
+  liberado (o que `reiniciar_cadastro_pendente_*` fazia, agora só dentro de um cadastro de verdade).
+- **Login: uma resposta só** para "não existe" e "senha errada", nos dois modos: "E-mail, CPF/CNPJ ou senha
+  incorretos".
+- **Login por documento**: a Edge Function confere a senha no banco (`document_login_email`, com o hash
+  bcrypt do Auth) e só então devolve o e-mail da própria conta; o app entra normalmente com e-mail e senha,
+  a partir do aparelho da pessoa (antes, todo login por documento saía do IP da função e esbarrava no
+  limite do Auth). Limite: 5 tentativas por documento e 20 por IP a cada 15 minutos (`auth_attempts`).
+- **Captcha: Cloudflare Turnstile**, no login e no último passo do cadastro, no modo "só pede quando
+  desconfia". Escondido até configurar (`VITE_TURNSTILE_SITE_KEY` no app, `TURNSTILE_SECRET` nas Edge
+  Functions e o captcha do próprio Supabase Auth ligado com a mesma chave). O conector do Cloudflare desta
+  sessão não cria widgets do Turnstile: o passo a passo está no `SUPABASE.md`.
+- **Google e celular** só aparecem no login quando o provedor está configurado (`VITE_LOGIN_GOOGLE`,
+  `VITE_LOGIN_CELULAR`); no modo real, hoje, os botões somem (o fluxo completo é a L13).
+
+## Z08 — App antigo desligado
+
+- **O app antigo (`app/`) deixa de funcionar com o banco**: todas as funções dele perdem a permissão de
+  execução para visitante e conta logada, e as tabelas dele (`profiles`, `vagas`, `candidaturas`,
+  `avaliacoes`, `vagas_salvas`, `publicacoes_trabalhador`, `consentimentos`) deixam de ser lidas ou
+  gravadas direto. Os dados ficam: o app novo usa o que precisa por funções do banco (conta antiga vira
+  conta nova no primeiro login; o aceite dos termos continua em `consentimentos`). O app novo não lia
+  essas tabelas nem chamava essas funções (conferido no código).
+- **Cadastro nunca confirmado** é apagado depois de **7 dias** (o app antigo apagava em 2 horas, antes de
+  muita gente abrir o e-mail). A rotina `expirar-vagas-diario` do app antigo foi desligada.
+
+## Z09 — CPF fora dos metadados do Auth
+
+- O documento ainda vai no cadastro dentro dos metadados (é como o gatilho recebe), mas o gatilho que roda
+  **antes** de gravar a conta o retira e o guarda só durante a transação; o gatilho seguinte cifra em
+  `accounts`. O CPF/CNPJ nunca chega a ser gravado em `auth.users`. As contas existentes foram limpas.
+- Efeito colateral aceito: o perfil do app antigo (`profiles`) deixa de receber o documento das contas
+  novas (o app antigo está desligado; o login por documento usa `accounts`).
+
+## Z06 — Endereço da obra só para quem está no bico
+
+- **Antes da aprovação**: bairro, cidade e distância ("2,3 km de você"), com a frase "O endereço completo
+  aparece quando a construtora aprovar você". **Depois** (pré-selecionado ou contratado) e para a própria
+  construtora: rua, número, complemento, CEP e "Abrir no Google Maps" / "Waze" (no detalhe da vaga e em
+  "Você avançou").
+- **No banco**: `select` em `jobs` não devolve rua, número, complemento, CEP nem o ponto exato (privilégio
+  por coluna). Todo mundo lê `area_lat`/`area_lon`, o ponto arredondado em 2 casas (~1 km), usado na
+  distância e no filtro de raio. O endereço exato sai só por `get_job_addresses`, que confere se a conta é
+  a dona ou foi escolhida. Depois de concluída, desistida ou cancelada, o endereço fecha de novo.
+- **No modo de demonstração** os dados estão no aparelho; quem esconde é a tela (`canSeeExactAddress`), com
+  a mesma regra.
+- A distância antes da aprovação é aproximada (até ~1 km de diferença); a tela não promete precisão.
+
+## Z05 — Menu da conta no celular
+
+- **Engrenagem no topo do próprio perfil** (só abaixo de 770 px, onde não há a barra de cima). Ela abre a
+  folha "Sua conta" com as mesmas entradas do menu do computador: Vagas salvas (trabalhador) ou Bicos
+  fechados (construtora), Notificações, Configurações, Ajuda e Sair da conta. As entradas ficam num lugar
+  só (`layouts/accountMenu.ts`).
+- **Tela "Ajuda"** (`/ajuda`, abre com ou sem conta; adianta a F05): perguntas frequentes por lado e
+  "Falar no WhatsApp" / "Mandar e-mail" com o suporte da NivoTech.
+
+## Z10 — Sem tela branca
+
+- **Error Boundary em dois níveis**: o app inteiro (tela cheia) e cada tela (dentro do layout, com a
+  navegação funcionando). O cartão diz "Essa tela não abriu" (ou "Sem internet") com "Tentar de novo" e
+  "Recarregar o app".
+- **Tela que não baixou** (internet caiu no meio) é esquecida e baixada de novo no "Tentar de novo" ou na
+  próxima visita. Se o arquivo sumiu porque saiu uma versão nova, o app recarrega sozinho (no máximo uma
+  vez por minuto, para não entrar em laço).
+- **Link com `%` quebrado** não derruba o roteador: o pedaço fica como foi digitado.
+- **Erros vão para `services/monitoring.ts`** (adianta a X21): no console na demonstração; no modo real,
+  para o Sentry se `VITE_SENTRY_DSN` estiver configurado, sem dados pessoais (a rota vai sem ids).
+
+## Z11 — Abertura rápida e sem cair no login por falta de sinal
+
+- **Splash no `index.html`**, sem depender do JavaScript (aparece na hora, mesmo com o celular lento); o
+  React o troca pela splash dele enquanto a sessão é restaurada.
+- **O app abre na hora para quem volta**: a conta e o perfil da própria pessoa ficam guardados no aparelho
+  (`bicos.conta`, apagados ao sair); com eles o app abre logo e confere com o servidor em segundo plano.
+  Sem nada guardado, espera o servidor no máximo ~10 s.
+- **Sem conexão com uma sessão no aparelho**: tela "Sem conexão com a Bicos — sua conta continua aqui",
+  com "Tentar de novo"; o app tenta sozinho quando a internet volta (evento `online`). Nunca cai no login
+  por causa da rede.
+- **Conta sem cadastro no app** (Y27): sai da sessão quebrada e avisa "Não achamos o cadastro dessa conta"
+  (antes mostrava "confira sua internet" a cada abertura).
+- **Sessão vencida ou encerrada em outro lugar** (Y27): qualquer pedido que receba o erro de token
+  (PGRST301/302/303, "JWT expired", erros de refresh do Auth) mostra "Sua sessão terminou. Entre de novo
+  para continuar.", sai da sessão no aparelho e abre o login com o e-mail preenchido e esse aviso (antes:
+  "Sua conta não pode fazer isso").
+- **Uma leitura da conta por login** (X20): o login e o aviso do Auth que vem logo depois dividem a mesma
+  leitura e o mesmo canal de tempo real.
+
+## Z12 — Fotos de perfil, capa e logo salvas de verdade
+
+- **No modelo**: `Worker.photoUrl`/`coverUrl` e `Company.logoUrl`/`coverUrl` (colunas `photo_url`, `cover_url`,
+  `logo_url` que o banco já tinha). Saem os estados de tela que guardavam as fotos só no aparelho.
+- **Envio**: a foto é reduzida no próprio celular (até 1600 px, WebP ou JPEG, ~0,82 de qualidade; HEIC do
+  iPhone é convertido por uma biblioteca baixada só quando precisa), vai para o bucket `avatars` na pasta
+  da conta, com barra de progresso no lugar da foto e no botão ("Enviando fotos… 40%"). A foto trocada é
+  apagada do Storage (sem arquivo órfão).
+- **Onde aparece para todos**: perfis, lista de candidatos, cards da busca no mural, detalhe da vaga
+  (logo), "Você avançou", confirmar candidatura, histórico, bico fechado e o menu da conta. Componente
+  único `components/Avatar.tsx` (foto, ou iniciais/ícone da empresa).
+- **Editar perfil/empresa** usa um rascunho da própria tela: abre sempre com os dados salvos, "Cancelar" e
+  sair descartam (inclusive as fotos escolhidas). Saiu o botão "Sair da conta" de dentro dessas telas
+  (adianta a P01 e parte da Y21).
+- **Completar perfil**: as fotos escolhidas são salvas junto com o perfil; se o envio falhar, o perfil fica
+  completo e o aviso diz para tentar de novo em Editar perfil.
+- **No banco** (adianta a X09): o banco só aceita URL do Storage deste projeto, do bucket certo e da pasta do
+  dono (`app_config.storage_public_base`, trocar no staging); ninguém lista arquivos dos buckets; foto de
+  vaga só por conta de construtora e portfólio só por trabalhador; limites de tamanho e tipo por bucket.
+
+## Z03 — Impulsionar muda a ordem do mural
+
+- **Ordem do mural**: impulsionada (paga, ainda no prazo) → urgente (grátis) → a ordem escolhida (mais perto,
+  mais cedo, maior valor). A construtora vê as próprias vagas antes de tudo. No modo real a mesma ordem
+  passa para o servidor na X01.
+- **Selos no card**: "Impulsionada" (foguete, azul) e "Urgente" (raio, vermelho), quando o card não tem um
+  selo de situação (como em Minhas candidaturas).
+- **"Vaga urgente" é um interruptor grátis** no formulário de publicar/editar.
+- **O plano "24h + aviso por WhatsApp" (R$ 39) saiu** até o envio existir; ficaram 24 h (R$ 12) e 3 dias
+  (R$ 28). O valor `whats` continua no tipo do banco só para registros antigos e é recusado na cobrança.
+
+---
+
+# Fase B — falhas de lógica
+
+## Y01 — Estados da vaga
+
+- **Cinco estados**, calculados num lugar só (`selectors.jobState`): **aberta** (recebe candidatos), **cheia**
+  (todas as posições ocupadas: sai do mural, mas continua editável e encerrável), **encerrada**, **excluída** e
+  **vencida** (passou do último dia).
+- **Posição ocupada** = pré-selecionado, contratado ou concluído (nos dois modos).
+- **A vaga encerra sozinha** quando toda a equipe conclui (posições ocupadas por diárias concluídas e ninguém
+  escolhido/contratado ainda para trabalhar): vai para o histórico e conta como bico concluído.
+- **Gerenciar vaga**: "Editar" em vaga aberta ou cheia; "Encerrar" também na vencida; vaga encerrada mostra
+  "Ver resumo do bico". Aprovar a última posição não leva mais à tela de bico fechado (a vaga só ficou
+  cheia); encerrar leva (Y09). O perfil da construtora lista as vagas abertas e cheias ("Suas vagas").
+- **Aumentar o número de pessoas** numa vaga que lotou devolve para análise quem tinha sido recusado
+  automaticamente (mesma regra do Y03).
+
+## Y02 — Concluir e marcar falta só a partir do dia
+
+- Os botões "Marcar diária como concluída" e "Não compareceu" só aparecem a partir do primeiro dia do bico
+  (antes, a tela diz a partir de quando). O serviço e o banco recusam antes disso. Vaga "a combinar" não
+  tem data: vale a qualquer momento depois da contratação.
+
+## Y03/Y05/Y06/Y08 — no modo de demonstração
+
+- As mesmas regras que o Z01 colocou no banco: recusados automáticos voltam ("A vaga reabriu") quando
+  uma posição libera numa vaga aberta; desfazer aprovação em vaga encerrada é recusado; o texto da
+  desistência diz se a vaga volta ao mural; excluir vaga com equipe é recusado e quem esperava é avisado
+  ("Vaga removida"). A exclusão também está em Gerenciar vaga ("Excluir vaga", só sem equipe).
+- Diária concluída soma 1 em "bicos realizados" também na demonstração.
+
+## Y04 — Vaga vencida
+
+- Rotina das vagas cujo prazo acabou (de hora em hora no banco; nas leituras na demonstração): quem esperava
+  vira "não selecionado" (aviso "Vaga vencida"); pré-selecionado sem contratação vira **"expirada"** (status
+  novo, aviso aos dois); a diária contratada é concluída sozinha **2 dias depois do fim** (até lá dá para
+  marcar falta); sem ninguém para trabalhar, a vaga encerra.
+- **Vaga "a combinar" vence 30 dias depois de publicada** (`Job.createdAt`). Na demonstração, as vagas
+  ganharam a data de publicação (dois dias antes do início).
+
+## Y07 — Vaga indisponível no detalhe
+
+- Faixa no topo do detalhe: "Vaga preenchida", "Vaga encerrada", "Vaga vencida" ou "Removida pela
+  construtora" (L02/L03), e no lugar de "Quero esse bico" o botão "Ver outros bicos".
+- "Confirmar candidatura" faz a mesma conferência (link antigo, vaga que lotou no meio do caminho).
+- A demonstração recusa a candidatura com as mesmas mensagens do servidor (`submit_application`).
+
+## Y09 — Resumo do bico (antes "Bico fechado")
+
+- A tela `/fechado/:id` virou **"Resumo do bico"**: título conforme a situação ("Fulano foi pré-selecionado",
+  "está contratado", "concluiu a diária", "Bico concluído", "Vaga encerrada sem contratação"), a equipe com
+  o status de cada um, o que falta (confirmar contratação, avaliar) e o **total = diária × diárias ×
+  pessoas** ("A combinar" sem valor).
+- Encerrar a vaga leva para essa tela; ela também abre em Gerenciar vaga ("Ver resumo do bico") e é só da
+  construtora dona.
+- **"Publicar de novo"** (adianta a F03) numa vaga encerrada, excluída ou vencida: abre o formulário já
+  preenchido (ofício, endereço, valor, pessoas, requisitos, descrição, fotos), com as datas em branco.
+
+## X01 + Y10/Y11/L17 — Mural paginado no servidor
+
+- O mural lê a RPC **`feed_jobs`** em páginas de 30 (cursor por posição, sem `offset`), já filtrado no banco:
+  só vagas abertas com posição livre e dentro do prazo; da cidade escolhida ou do raio (coluna
+  `area_geog` + índice GiST; o raio usa o centro da área da vaga, nunca o ponto exato); ofício, "Hoje",
+  "Amanhã", "Semana"; busca sem acento no título, ofício, bairro e construtora.
+- **Ordem: impulsionadas → urgentes → a ordem escolhida** (perto, recentes, maior diária) — a mesma regra
+  em `feedUI.orderJobs` para a demonstração.
+- "Carregar mais" no fim da lista (`services/paging.ts` + `hooks/usePaging.ts`). A página volta do zero ao
+  trocar filtro, cidade, busca ou conta.
+- **Y10**: ao abrir a primeira página, as vagas da cidade que o aparelho ainda mostrava e o servidor não
+  devolveu são relidas; as que sumiram (excluídas) saem da tela, as encerradas/lotadas ficam marcadas como
+  tal e saem do mural pelos filtros.
+- **Y11**: a busca procura na cidade escolhida (ou no raio); "Buscar em todas as cidades" amplia. A tela diz
+  onde está procurando.
+- **L17**: a busca de pessoas mostra construtoras para todos e trabalhadores só para construtoras.
+- **"Carregar mais" também em** Minhas candidaturas (as em andamento vêm todas; as encerradas em páginas de
+  30, das mais recentes), Minhas vagas › Encerradas (as abertas vêm todas) e Notificações (páginas de 30; o
+  número do sino é o do servidor, X03). Cursor por data + ids da última data (sem `offset`).
+- No mural, o **carrossel de fotos de cada cartão só é montado quando o cartão chega perto da tela**
+  (`IntersectionObserver`, 400 px de folga); antes disso, só o fundo do cartão.
+
+## Y12 — Aviso de candidatura atualiza as telas
+
+- Aviso que chega pelo Realtime (exceto impulsionamento e alerta de bico novo) relê em segundo plano as telas
+  de candidatura já abertas: minhas candidaturas, histórico, vaga e candidatos (`queries.refreshCandidacies`).
+- Abrir um aviso relê essas telas **com carregamento**, antes de mostrar: "Você avançou" nunca abre com o
+  status de antes do aviso. Na demonstração o store já tem o status novo.
+
+## Y15 — Exclusão de conta completa
+
+- O app exclui a conta pela Edge Function **`excluir-conta`** (depois de conferir a senha, o que renova o
+  login). Ela chama `delete_my_account` **com o token do usuário** — a RPC exige login de no máximo 5
+  minutos (`session_authenticated_at`, pelo `amr` do token), recusa bico em andamento sem confirmação,
+  avisa o outro lado, anonimiza perfil e `reviews.author_label` e apaga a conta de acesso numa transação —
+  e só então apaga a pasta `<id>/` do usuário em `avatars`, `portfolio` e `vagas` e limpa `jobs.photos`
+  das vagas dele.
+- Se apagar os arquivos falhar depois de a conta ter saído, o erro fica no log da função (a conta não
+  volta); os arquivos já não estão ligados a nenhum perfil.
+- A RPC continua liberada para `authenticated` (ela só apaga a própria conta); quem a chamasse direto
+  deixaria só os próprios arquivos para trás. O app nunca faz isso.
+- As telas dizem o que de fato acontece: perfil, fotos e contatos apagados; avaliações e histórico ficam
+  sem o nome.
+
+## Y16 + Y17 — Documento válido e CPF fora do perfil da empresa
+
+- CPF e CNPJ conferidos pelo dígito verificador no app (`utils/document.ts`) e no banco (`cpf_valid`,
+  `cnpj_valid`, `document_valid_for`). O gatilho do cadastro no Auth recusa conta de trabalhador ou
+  recrutador **sem documento válido**; `create_account_for` recusa documento inválido.
+- **Recrutador pode se cadastrar com CPF** (quem trabalha por conta própria): o campo virou "CNPJ ou CPF".
+  O CPF fica só cifrado em `accounts`; `companies.cnpj` recebe apenas CNPJ (o começo, mascarado). A
+  migration limpa os CPFs mascarados que já estavam lá.
+- Conta criada pelo Google (sem lado) ainda não tem documento: completa em "Escolher perfil" quando o
+  login com Google for ligado (L13); até lá o botão fica escondido.
+- O texto do cadastro deixou de prometer "conferimos o CNPJ antes de liberar a publicação" (Y24).
+- Na demonstração, os documentos "já cadastrados" agora são válidos (`111.444.777-35`,
+  `11.222.333/0001-81`) e a construtora de exemplo ganhou um CNPJ válido.
+
+## Y18 — Média das notas sem erro acumulado
+
+- No banco, um gatilho em `workers`/`companies` recalcula `rating = round(avg(value), 1)` e `review_count`
+  a partir de `reviews` sempre que a contagem ou a nota mudam (`submit_review` não precisou mudar); a
+  migration recalcula todos os perfis. Valor escrito à mão não fica.
+- Na demonstração, `ratingWith` faz a mesma conta quando o perfil tem todas as avaliações na lista; os
+  perfis de exemplo listam só as últimas, e para eles vale a média arredondada até ali.
+
+## Y19 — E-mail não confirmado
+
+- Entrar com a senha certa e o e-mail sem confirmar **não cria mais uma sessão "pendente" inventada** (sem
+  token e com o lado errado): o login responde `email-nao-confirmado` e mostra "Falta confirmar seu e-mail.
+  Abra o link que enviamos para …" com "Reenviar o link" (para aquele e-mail).
+- Depois do cadastro (sessão pendente com o lado certo), "Já confirmei meu e-mail" sem sessão do Auth no
+  aparelho leva ao login com o e-mail preenchido e a frase "Se já confirmou o e-mail, entre com sua senha".
+  Com sessão, confere no Auth e entra; sem confirmação, "Ainda não recebemos a confirmação".
+- O título "Conta criada. Confirme seu e-mail" só aparece vindo do cadastro; nos outros casos, "Confirme seu
+  e-mail".
+
+## Y20 — Erros do cadastro
+
+- Toda falha do cadastro (criar a conta, mandar e conferir o código do WhatsApp) mostra a mensagem do
+  `ServiceError` (sem internet, muitas tentativas, senha fraca, captcha…), não mais "confira sua internet"
+  para tudo.
+- A recusa do documento continua **genérica de propósito** (Z07: dizer "esse CPF já tem conta" revelaria
+  quem tem conta). O servidor não diz "documento já cadastrado", então a tela nunca afirma isso: volta ao
+  passo do documento com "Não deu para criar a conta com esses dados" e os caminhos (entrar, recuperar a
+  senha, falar com a gente).
+
+## Y21 + Y22 — Estado de tela que não fica velho nem passa para a próxima pessoa
+
+- `useScreenUI(key, defaults)` (hooks/useStore.ts): o estado é da visita à tela — criado do dado real ao
+  abrir, apagado ao sair (inclusive ao salvar ou cancelar). Revisadas **todas** as chaves de `useUI`:
+  - passaram a `useScreenUI`, com a chave pelo item quando há item: Editar/Publicar vaga
+    (`edit-job:<id>`, `create-job`, `create-job:de:<id>`), Gerenciar vaga (`job-manage:<id>`), detalhe da
+    vaga (`job-detail:<id>`), Impulsionar (`boost-job:<id>`), excluir vaga no perfil, posts do perfil
+    (`worker-posts:<id>`), Esqueci a senha (não fica mais preso em "Link enviado"), Nova senha,
+    Privacidade, Confirme seu e-mail, Escolher perfil;
+  - Editar perfil e Editar empresa já usam estado local (rodada anterior);
+  - continuam em `useUI` de propósito: mural (filtros), menus, diálogo de sair, seletor de cidade (zera
+    ao fechar), pagamento em andamento (`boost-pay:<id>:<plano>`, só método e id do pagamento) e
+    Completar perfil (o usuário não sai dessa tela sem sair da conta).
+- **Senha nunca fica no estado global**: login e cadastro guardam a senha só no estado local da tela. Abrir
+  os Termos no meio do cadastro mantém o rascunho e pede a senha de novo.
+- **O rascunho do cadastro some ao sair do fluxo** (qualquer tela que não seja o próprio cadastro, Termos ou
+  Privacidade), ao entrar e ao sair da conta: entrar com outra conta, ou sair, apaga todo o estado de tela
+  (`setSessionAccount`).
+
+## Y23 — Especialidades num formato só
+
+- `components/SpecialtiesField.tsx` é o único campo de especialidades, em "Completar perfil" e em "Editar
+  perfil": sugestões do catálogo para tocar, texto livre com "Adicionar"/Enter, e qualquer uma pode ser
+  removida (as livres deixaram de sumir na edição). Sem repetir (ignora maiúsculas), até 10, até 40
+  caracteres cada (`utils/specialties.ts`).
+
+## Y24 (+ L10) — Selo "Verificada" de verdade
+
+- Construtora tem `verification_status`: **pendente** (toda conta nova), **verificada** ou **reprovada**.
+  Só a equipe da Bicos muda, pela função `set_company_verification` (service_role — SQL Editor do painel
+  até existir uma área de admin), que manda o aviso "Empresa verificada" ou "Não conseguimos verificar a
+  empresa". O selo (`verified`) e a data (`verified_at`) acompanham o status por gatilho; a construtora não
+  consegue mudar nenhum dos dois.
+- No próprio perfil: "Verificada · Conferida em <data>", "Verificação pendente" (pode publicar; o selo
+  aparece quando terminarmos) ou "Não verificada" (falar com a gente). Acabou o "conferido em undefined".
+- Recrutador com CPF vê "Documento: CPF (não aparece no perfil)" no lugar do CNPJ.
+- O cadastro deixou de prometer conferir o CNPJ antes de liberar a publicação (Y17).
+
+## Y25 — Trocar o WhatsApp (os dois lados)
+
+- Tela própria **"Trocar WhatsApp"** (`/whatsapp`), aberta pelo "Trocar" em Editar perfil e Editar
+  empresa (o trabalhador antes não conseguia trocar; a construtora salvava "abc" vazio). Máscara, celular
+  com DDD (11 números) no app e no banco (`whatsapp_valid`; o cadastro também passou a exigir celular).
+- Com o código ligado, o número só troca depois de confirmado pelo código (reaproveita `WhatsAppCode`); sem
+  o código, troca e fica "sem confirmação". **Trocar sempre zera `whatsapp_verified_at`**, a não ser que o
+  número novo tenha acabado de ser confirmado (vale uma vez, por 30 minutos).
+- O código real é a Edge Function **`codigo-whatsapp`** (Twilio Verify, canal WhatsApp ou SMS; limites
+  por número e por IP; captcha quando ligado). Fica **escondida até configurar**: sem `TWILIO_ACCOUNT_SID`,
+  `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID` nas secrets e `VITE_CODIGO_WHATSAPP=1` no app, o passo do código
+  some (cadastro e troca), como antes. O código confirmado no cadastro faz a conta nascer confirmada.
+
+## Y26 — Saída do "Completar perfil"
+
+- Os dois passos do "Completar perfil" (trabalhador e construtora) têm "Sair e entrar com outra conta", que
+  abre o mesmo diálogo de sair da conta. Falha ao salvar mostra a mensagem real do erro.
+
+## Y28 — "Avisar quando aparecer bico novo" funciona
+
+- O interruptor nos Filtros (só para trabalhador) **salva um aviso no servidor** (`job_alerts`): a cidade
+  escolhida — ou o raio, a partir do mesmo ponto do mural — e o ofício do filtro, se houver. Um por pessoa;
+  desligar apaga. Se os filtros mudarem com o aviso ligado, aparece "Usar estes filtros no aviso".
+- Cada vaga nova que bate gera a notificação "Bico novo perto de você" (gatilho `notify_job_alerts`; mesma
+  regra em `services/alerts.ts` para a demonstração), **no máximo 5 por dia** por pessoa. O push no celular
+  entra com o X03.
+- A busca por raio usa o centro da área da vaga (nunca o endereço exato), como o mural.
+
+## Fase C — pendências antigas
+
+### P08, F14, L16 — Textos
+
+- Indicador de força da senha num componente só (`PasswordStrength`): campo vazio mostra "8 caracteres ou
+  mais", nunca "Senha fraca" (cadastro, nova senha). A tela de nova senha guarda a senha só no estado local.
+- "Escolher perfil" não promete mais "Dá para trocar depois no seu perfil" (não dá).
+- Configurações e Privacidade não falam mais de "mensagens" nem de "bicos urgentes" (não existem como tal).
+
+### P04, P06
+
+- "Confirmar candidatura" mostra o ofício e as estrelas com o número de avaliações (ou "Novo na plataforma"),
+  não mais "Pedreiro · 4.8".
+- Publicar/editar vaga: além da lista pronta, "Outro item" para escrever um requisito (até 60 caracteres,
+  sem repetir, até 12 no total; o banco confere o mesmo limite).
+
+### L18 — Pagamento da diária como campo da vaga; sem métricas inventadas
+
+- Publicar/editar vaga pergunta **"Como você paga a diária"**: PIX no fim de cada diária, PIX no fim do bico,
+  dinheiro ou outro jeito (com explicação de até 80 caracteres). Detalhe da vaga e Gerenciar mostram o que foi
+  escolhido no lugar do texto fixo "Pagamento em PIX no fim da diária".
+- As vagas que já existiam ficam com "PIX no fim de cada diária" — era o que o app mostrava para todas.
+- Mudar a forma de pagamento avisa os candidatos ("mudou pagamento"), como mudar o valor.
+- O mural (`feed_jobs`) não traz o pagamento; o detalhe lê a vaga inteira, e o merge não apaga o pagamento
+  quando a mesma vaga volta pelo mural.
+- Perfil da construtora: saíram "N diárias pagas pela plataforma" (a plataforma não paga diárias) e o tempo
+  de resposta (não é calculado). Ficam os números reais: bicos concluídos, vagas abertas, avaliações.
+
+### L01 + L22 — "Aprovado · Desfazer" e "Recusado · Desfazer"
+
+- Aprovar ou recusar (na lista do Gerenciar vaga ou no perfil do candidato) mostra o toast com **Desfazer** por
+  7 segundos. A decisão vale na hora (o WhatsApp libera na hora), e desfazer tira o aviso do trabalhador se
+  ele ainda não viu; se viu, ele recebe "Sua candidatura voltou para análise" — o aviso é sempre coerente.
+  Preferimos isso a atrasar a decisão: uma decisão "pendurada" no aparelho se perderia se o app fechasse.
+- Desfazer recusa é a transição nova `desfazer_recusa` (RPC `undo_reject`): só a recusa feita pela própria
+  construtora, até 10 minutos depois, com a vaga aberta.
+
+### L09 — Quem vê quais avaliações
+
+- Cada um vê as próprias avaliações a partir do próprio perfil ("Ver avaliações", voltando para o perfil).
+  Além disso, construtoras veem as de trabalhadores e trabalhadores veem as de construtoras.
+- "Ver avaliações" só aparece onde a pessoa pode ver e quando há avaliação (antes levava a um cadeado).
+
+### L11 + L12 — Editar perfil e empresa
+
+- Mesma conferência nos dois modos (`profileErrors`): nome completo (trabalhador com nome e sobrenome), ofício
+  e cidade da lista, até 80 caracteres; o erro aparece **no campo**. Só o que mudou é conferido e enviado (os
+  perfis antigos não travam por um campo que a pessoa não mexeu). O banco também recusa nome fora de 3–80 e
+  mais de 10 especialidades.
+- Já estavam feitos: foto e capa (Z12), especialidades (Y23), Cancelar descarta (Y21), WhatsApp com código
+  (Y25).
+- **L12**: "Editar empresa" escolhe a cidade das obras na lista (`CityPicker`), como no "Completar perfil",
+  no lugar do texto livre "Região onde você contrata".
+
+### L15 + F08 — Senha, e-mail e WhatsApp nas Configurações
+
+- Configurações › Conta: **Trocar e-mail**, **Trocar WhatsApp** (Y25) e **Trocar senha**.
+- Trocar senha pede a senha atual e a nova duas vezes (com o medidor de força); a atual é conferida de novo no
+  Auth antes de `updateUser`. Antes o item levava ao "Esqueci minha senha".
+- Trocar e-mail pede o e-mail novo e a senha; no modo real o Supabase manda um link para o endereço novo e
+  **nada muda até ele ser aberto** (a tela diz isso). Ao abrir, o app avisa "E-mail trocado" e o gatilho
+  `on_auth_user_updated_v2` copia o e-mail para `accounts`. Na demonstração troca na hora.
+- "Confirme seu e-mail": **Corrigir e-mail** (sai do cadastro pendente e começa de novo; o cadastro nunca
+  confirmado é limpo depois e o documento fica livre — Z07/Z08) e reenvio só depois de **60 segundos**, com a
+  contagem no botão. O reenvio do código do WhatsApp também passou a 60 segundos (L14).
+
+### L14 — Cadastro
+
+- Caixa **"Tenho 18 anos ou mais"** (os termos exigem), separada do aceite dos termos; o servidor recusa o
+  cadastro sem ela (`maior_de_idade` nos metadados, conferido no gatilho do Auth).
+- Dígito verificador: Y17. Reenvio do código em 60 s, com limite de tentativas no servidor (Y25:
+  3 códigos por número e 10 por IP a cada hora; 8 conferências por número a cada 15 min).
+- **Duplicidade no próprio passo: decidido não fazer para o documento.** Conferir "esse CPF já tem conta"
+  antes de criar a conta é exatamente a enumeração que o Z07 fechou. O documento é conferido na criação, e a
+  recusa volta ao passo do documento com a mensagem genérica. O e-mail repetido é dito na criação (o Supabase
+  já revela isso no cadastro) e volta ao passo do e-mail. WhatsApp repetido é permitido (a mesma pessoa pode
+  ter conta de trabalhador e de construtora com o mesmo celular).
+
+### L05 + F12 — "Precisa de você" e confirmar presença
+
+- "Minhas candidaturas" abre com o grupo **Precisa de você**: diária concluída para avaliar, pré-seleção para
+  falar com a construtora e contratação para hoje/amanhã ainda sem confirmação. Depois "Em andamento" e
+  "Encerradas".
+- **Confirmar presença**: em "Você avançou", o contratado vê "Confirmar que vou" (e o "Não vou poder ir" que já
+  existia). A construtora recebe o aviso e vê o selo "Confirmou que vai" no candidato. Na véspera, às 18h,
+  quem ainda não confirmou recebe "Amanhã tem bico" (rotina diária no banco; a demonstração não tem relógio
+  de rotina, então não manda lembrete). Mudar as datas da vaga zera as confirmações.
+
+### P07 — Mensagem pronta do WhatsApp
+
+- A mensagem que abre no WhatsApp diz quem escreve, para quem, a vaga e a data: "Olá, Construtora Meridiano!
+  Aqui é Jorge, da Bicos. Fui aprovado para a vaga de Pedreiro de acabamento (BC-4821) do dia 12/10…" — e
+  "fui contratado" / "você foi contratado" quando a contratação já foi confirmada. Data a combinar ou vários
+  dias aparecem como tal.
+
+### F15 — Responsável da construtora
+
+- Cadastro de recrutador ganhou o passo "Quem vai falar com os candidatos?" (nome do responsável), editável em
+  "Editar empresa". Quem foi aprovado vê **"Falar com Ana"** no botão do WhatsApp, e a mensagem pronta começa
+  por "Olá, Ana!". Sem nome, continua "Falar no WhatsApp" / o nome da empresa.
+
+### F01 + L07 — "Minhas vagas" e histórico por vaga
+
+- Aba nova **Vagas** na navegação da construtora (`/minhas-vagas`), com **Abertas · Cheias · Encerradas** e a
+  contagem de cada. Cada cartão: vaga, data, valor, "x de y vagas preenchidas" ou o desfecho, candidatos novos,
+  a equipe e o que falta ("2 candidatos novos", "Falta confirmar 1 contratação", "Falta avaliar 1 pessoa").
+  Tocar abre o Gerenciar (aberta/cheia) ou o Resumo do bico (encerrada); encerradas têm "Publicar de novo". O
+  mural continua em "Início".
+- **L07**: "Bicos fechados" (`/historico`) virou a aba Encerradas, **por vaga** e não por pessoa, com todos os
+  desfechos (`jobOutcome`): concluída, encerrada com/sem contratação, prazo acabou com/sem equipe, excluída.
+- **Rascunhos: adiado.** Um rascunho de vaga que sobrevive a sair da tela contraria a regra do Y21 (formulário
+  é da visita) e, para valer entre aparelhos, pede uma tabela de rascunhos no servidor. Fica para depois do
+  lançamento; hoje "Publicar de novo" cobre o caso mais comum (repetir uma vaga).
+
+### L10 — Verificação da construtora (o resto)
+
+- Status `pendente | verificada | reprovada`: Y24.
+- **Verificação automática**: ao concluir o perfil (e pelo botão "Verificar agora" enquanto pendente), a Edge
+  Function **`verificar-cnpj`** consulta o CNPJ na BrasilAPI (dados públicos da Receita, sem chave): situação
+  "ATIVA" → verificada (selo e aviso); baixada/inapta/suspensa/nula → reprovada; CPF, CNPJ não encontrado ou
+  serviço fora → continua pendente para a equipe. Até 5 consultas por dia por construtora. O CNPJ completo sai
+  do banco só para a função (`company_cnpj_for_check`, service_role). Na demonstração, CNPJ válido verifica na
+  hora.
+- **Reprovada não publica** (o banco recusa com "Fale com a gente pela Ajuda").
+- **Decisão: pendente publica normalmente**, em vez de deixar a vaga "em análise". A conferência manual depende
+  de uma pessoa da equipe e o recrutador com CPF (autônomo) não tem CNPJ para a checagem automática; segurar as
+  vagas deixaria o mural vazio no lançamento. O selo "Verificada" é o que diferencia; se a equipe quiser
+  segurar as vagas de pendentes, é só uma linha em `publish_job` / `feed_jobs`.
+
+### L13 — Entrar com o Google (atrás de flag); celular adiado
+
+- **"Continuar com o Google"** aparece só com `VITE_LOGIN_GOOGLE=1` e o provedor Google ligado no Supabase Auth
+  (SUPABASE.md). Na demonstração e sem configurar, o botão some (antes aparecia e só mostrava aviso).
+- Quem entra pelo Google pela primeira vez não tem lado: o app mantém a sessão e abre **"Completar cadastro"**
+  (lado, nome, CPF/CNPJ, WhatsApp, responsável da construtora, 18+ e termos) → RPC `create_my_account`, com as
+  mesmas regras e a mesma recusa genérica do documento (Z07) → segue para o "Completar perfil" de sempre.
+- **Entrar pelo celular: adiado.** Precisa do provedor de SMS no Supabase Auth e de ligar o telefone às contas
+  que já existem (no Supabase, uma conta por telefone é outro usuário); sem isso, cada login pelo celular
+  criaria uma conta nova. O celular já é confirmado por código (Y25), e o login continua por e-mail ou CPF/CNPJ.
+  O botão não aparece.
+
+### F18 — Membros da construtora (só o modelo)
+
+- Tabela `company_members` (empresa, pessoa, papel `dono` ou `recrutador`), com a própria conta de cada
+  construtora como dona (as novas entram por gatilho). Sem tela agora: hoje a conta da construtora continua
+  sendo a empresa (`accounts.company_id = id`), e `my_company_id()` não mudou. Quando houver "convidar
+  pessoa", ela passa a ler desta tabela e as políticas das vagas aceitam qualquer membro.
+
+### F09 — Compartilhar vaga e página pública
+
+- Botão **Compartilhar** no detalhe da vaga e no Gerenciar (vaga aberta): abre o menu de compartilhar do
+  celular (Web Share API) ou, sem ele, o WhatsApp com o texto pronto ("Pintor em Tatuapé · R$ 200 por diária.
+  Vi na Bicos: <link>").
+- O link é **`/v/<id>`** (era `#/v/<id>` antes do X17; os links antigos continuam abrindo), uma página que abre **sem login** (RPC `public_job_card`, liberada para anon): título,
+  valor, área (bairro/cidade), datas, horário, pagamento, descrição, a construtora com nota e selo. Nunca o
+  endereço exato nem contato. "Entrar para me candidatar" e "Criar minha conta" voltam para a vaga depois do
+  login. Quem já está logado vai direto para a vaga. Vaga excluída: "Essa vaga não existe mais".
+
+### F10 — Perfil profissional do trabalhador
+
+- "Editar perfil" ganhou: **Sobre você** (até 280 caracteres), **dias que você pode** (semana, fim de semana,
+  qualquer dia), **anos de experiência**, **diária que você pede** e **até onde você vai** (5/10/20/50 km).
+- Os "fatos" do perfil passam a vir desses campos ("12 anos de experiência", "Diária a partir de R$ 200", "Vai
+  até 20 km de casa", "23 bicos concluídos na Bicos"). Os fatos antigos escritos à mão ("diárias pagas pela
+  plataforma", "RG e CPF conferidos…") deixaram de aparecer — não eram verdade no app.
+- A construtora (e a própria pessoa) vê **faltas e desistências** (RPC `worker_track_record`), como o diálogo
+  de falta promete. Perfil sem nada preenchido mostra ao dono um convite para completar.
+
+### F11 — Pagamentos da construtora
+
+- Configurações › **Pagamentos** (só construtora e só com pagamento ligado): os impulsionamentos com plano,
+  data, valor e status (aguardando, pago, recusado, PIX venceu, cancelado, reembolso em análise). Pago →
+  **"Baixar recibo"** (arquivo de texto com plano, valor, forma, datas e "não substitui nota fiscal");
+  aguardando → volta ao pagamento; reembolso → fala com a gente.
+- **Dados de faturamento / nota fiscal: adiado** — a NivoTech ainda não tem CNPJ para emitir nota; quando
+  tiver, entram o formulário de dados de faturamento e a nota pelo provedor de pagamento.
+
+### F13 — Convidar trabalhador para uma vaga
+
+- No perfil de um trabalhador (vindo da busca), a construtora tem **"Convidar para uma vaga"**: lista as vagas
+  abertas dela com "Convidar", "Convidado", "Aceitou/Recusou" ou "Já se candidatou". Até 20 convites por dia.
+- O trabalhador recebe o aviso e, no detalhe da vaga, o cartão "<construtora> convidou você" com **Aceitar
+  convite** (vira candidatura, com as mesmas regras de "Quero esse bico") ou **Recusar**. A construtora é
+  avisada da resposta.
+
+### F04 — Denunciar e bloquear
+
+- Bandeira no detalhe da vaga (trabalhador) e nos perfis de construtora e trabalhador: **Denunciar** (motivo:
+  golpe, ofensa, informação falsa, trabalho perigoso, spam, outro + detalhes) e **Bloquear**. Avaliações e
+  posts têm "Denunciar". A denúncia vai para `reports` (a equipe lê pelo painel); repetir atualiza; até 20 por
+  dia.
+- Bloquear (`blocks`): as candidaturas e convites pendentes entre os dois saem, e o banco recusa novas
+  candidaturas e convites nos dois sentidos (gatilhos). O app tira os bloqueados do mural e da busca. Lista em
+  Configurações › **Contas bloqueadas**, com "Desbloquear".
+- Uma contratação já confirmada não é desfeita pelo bloqueio (a pessoa pode estar indo trabalhar); para isso
+  existem cancelar e desistir.
+
+### F06 — Preferências de aviso
+
+- Configurações › **Avisos**: no app, "Bicos novos e convites" pode ser desligado (o banco deixa de gravar esses
+  avisos para a conta: `notify()` respeita `notification_prefs`). O andamento do próprio bico (aprovado,
+  contratado, cancelado, lembretes) **sempre chega** — silenciar isso faria a pessoa perder trabalho.
+- "No celular" (um interruptor por grupo) aparece quando o push estiver ligado (X03); a escolha já fica salva em
+  `push_groups`. O pedido de permissão explicado antes do pedido do navegador entra com o X03.
+- E-mail por tipo: adiado — o app ainda não manda avisos por e-mail (só os do Auth).
+
+### F16 — Portfólio
+
+- Tocar num post abre a **tela cheia**, com deslizar (ou as setas / teclado) para o próximo; o dono **edita a
+  legenda** ali. Legenda com até 280 caracteres e contador (banco confere).
+- Ao escolher o arquivo: **foto até 10 MB** (comprimida antes de enviar, Z12) e **vídeo até 60 segundos e 50
+  MB** (a duração é lida no aparelho; o Storage recusa acima de 50 MB). O botão mostra o **progresso do envio**.
+
+### F07 — Verificação de identidade do trabalhador
+
+- Perfil › cartão **Verificar identidade** (`/perfil/verificar`): selfie (câmera frontal) + foto do documento
+  (câmera traseira). Estados: não enviado, **em análise**, **verificado**, **recusado** (com o motivo e "enviar
+  de novo").
+- As fotos vão para o bucket **privado** `identidade`, na pasta da própria conta; ninguém lê pelo app (só a
+  equipe, com `service_role`). A decisão é `set_identity_status(worker, status, motivo)` — chamada pelo painel
+  da equipe / SQL Editor; o trabalhador recebe um aviso no sino. Sem verificação automática por terceiros
+  (serviço pago; fica para depois, com bandeira).
+- O selo "Verificado" (`workers.verified`) passa a significar exatamente "identidade verificada" (gatilho
+  mantém os dois em sincronia). "Novo na plataforma" **não esconde** mais "Verificado": os dois aparecem no
+  perfil, e a lista de candidatos mostra o escudo ao lado do nome.
+- Demonstração: um botão "Aprovar (demonstração)" faz o papel da equipe; não existe no modo real.
+
+### Fase C — itens resolvidos junto com outros IDs
+
+| ID  | Onde ficou                                                                                                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- |
+| L03 | Coberto pelo Y07 (vaga indisponível sem "Quero esse bico"; mesma checagem no banco).                                            |
+| L04 | "Você avançou" mostra o endereço completo e **Abrir no mapa** (Google Maps / Waze) — Z06, `MapLinks`.                           |
+| L06 | Coberto pelo Y09 (resumo do bico com texto por situação e total certo).                                                         |
+| L08 | Coberto pelo Z03 (impulsionada/urgente no topo, sem o plano de WhatsApp).                                                       |
+| L19 | Coberto pelo Z06 (endereço exato só para a dona e para quem foi escolhido).                                                     |
+| L21 | Coberto pelo Z12 (fotos de perfil, capa e logo no Storage, com compressão e progresso).                                         |
+| F03 | **Publicar de novo** numa vaga encerrada abre o formulário preenchido, com datas novas (commit do Y09).                         |
+| F05 | Tela **Ajuda** (`/ajuda`): perguntas frequentes, WhatsApp e e-mail do suporte; os textos "fale com o suporte" apontam para ela. |
+| P05 | Perfil da construtora: "Suas vagas" e "Excluir vaga".                                                                           |
+| P06 | Requisito escrito livre além da lista (commit P04/P06).                                                                         |
+
+---
+
+# Fase D — qualidade de app profissional
+
+### X02 — App instalável e leve (PWA)
+
+- `vite-plugin-pwa`: **manifest** (nome, ícones 192/512 e maskable, `theme-color` azul, `display: standalone`) e
+  **service worker** que guarda o app no celular (scripts, estilos, fontes, ícones). Sem sinal, o app abre e
+  mostra as telas de "sem internet" (Z11) em vez da página de erro do navegador — essa é a "página offline":
+  mais útil que uma página estática, porque mostra o que já estava carregado.
+- Fotos (buckets públicos do Storage e as da demonstração): cache no aparelho (até 300, 30 dias). Banco, Auth e
+  Edge Functions **sempre** vão à rede (nada de dado velho de vaga ou candidatura).
+- Versão nova publicada: um aviso "Tem uma versão nova da Bicos — **Atualizar**" (`services/pwa.ts`); nada é
+  trocado debaixo de uma tela aberta. O app aberto por dias confere de hora em hora.
+- Ícones e a imagem de prévia são desenhados por `scripts/make-icons.mjs` (martelo branco no azul da marca).
+  Prévia do link (`og:` + `twitter:card`) com a imagem 1200×630; a URL absoluta vem de `VITE_SITE_URL`. A
+  prévia **por vaga** (título e diária no WhatsApp) precisa de renderização no servidor (Cloudflare Worker ou
+  Edge Function lendo `public_job_card`) — adiado até o domínio existir.
+- **Fontes servidas pelo próprio app** (`@fontsource`, só o subconjunto latino e os pesos usados), sem Google
+  Fonts; as duas da primeira tela vão com `preload`.
+- A tela de carregamento do `index.html` agora **é igual** à tela inicial (mesmo nome, mesma frase, mesmos
+  tamanhos): a primeira pintura já é a maior, e a troca para o React não mexe nada.
+- `robots.txt`. A prévia `standalone` (file://) não tem service worker.
+- **Lighthouse (celular, `vite preview`)** — com limitação real de rede/CPU (`--throttling-method=devtools`):
+  Desempenho **96**, Acessibilidade **100**, Boas práticas **100**, SEO **100** (com o robots.txt). Com a
+  limitação simulada (padrão) o Desempenho sai **81**: o simulador atribui a maior pintura ao React porque,
+  sem limitação, o app monta antes da primeira pintura. O Lighthouse 12 não tem mais a categoria "PWA"; a
+  instalação foi conferida pelo manifest + service worker ativo (teste com Playwright: registra, abre sem rede).
+
+### X17 — URLs de verdade
+
+- Servido por HTTP, o roteador usa **caminhos reais** (History API): `/mural`, `/vaga/BC-4821`, `/v/BC-4821`
+  — links compartilháveis e indexáveis. A prévia `standalone` aberta do disco (file://) continua com `#/`.
+- Os arquivos são referenciados a partir da raiz (`base: '/'`, ou `VITE_BASE` se o app ficar numa pasta).
+- **Servidor**: todo caminho que não for arquivo responde com `index.html`. Cloudflare Pages faz isso sozinho
+  (sem `404.html` ele trata o projeto como SPA); no Netlify, `/* /index.html 200` em `_redirects`; no nginx,
+  `try_files $uri /index.html`. O service worker (X02) também responde as navegações com o app.
+- Links antigos (`/#/vaga/BC-1`, já enviados no WhatsApp) abrem e são reescritos como caminho.
+- Links de e-mail do Auth: voltam para a raiz com `#access_token=…`; o app guarda a sessão e troca a URL pela
+  rota (`/redefinir-senha` ou `/`) antes de o roteador começar. Em _Redirect URLs_ do painel: o domínio e
+  `domínio/**` (SUPABASE.md).
+- A pilha própria de "voltar" continua (o "Voltar" do app não sai do app); o botão voltar do navegador
+  funciona pelo `popstate`.
+
+### X16 — Processo
+
+- **CI** (`.github/workflows/web.yml`): a cada push/PR que mexe em `web/` — typecheck, lint, format, testes,
+  os três builds (demonstração, modo real com variáveis de mentira, prévia `standalone`), **Lighthouse** no
+  perfil de celular (falha abaixo de 85/95/95, `scripts/lighthouse-check.mjs`) e os **testes SQL** num Postgres
+  igual ao do Supabase com todas as migrations.
+- `web/preview/index.html` saiu do Git: a prévia que abre do disco é o artefato **bicos-preview** do CI (ou
+  `npm run build:standalone`).
+- `.env.example` completo, com o que é público e onde ficam os segredos.
+- **Histórico de migrations**: o banco tem as três primeiras em 10 partes com outras versões; `APLICAR.md`
+  traz os `supabase migration repair` que deixam o histórico igual aos arquivos (só a tabela de histórico).
+- **Staging separado: adiado (decisão do dono do projeto)** — criar um segundo projeto Supabase (gratuito) só
+  para testes, aplicar as mesmas migrations e apontar um build de staging para ele (`VITE_SUPABASE_URL` do
+  staging). Não criei porque um projeto novo entra na conta/cobrança da organização. O "Branching" do
+  Supabase é a alternativa paga. Os testes SQL já rodam isolados no CI, sem tocar o banco de produção.
+
+### X13 — Avisos de segurança do Supabase
+
+- Advisors rodados no banco real e anexados em `docs/ADVISORS.md`, com o que resolve cada um.
+- Migration `x13_avisos_seguranca`: **PostGIS reinstalado em `extensions`** (o PostGIS não aceita mudar de
+  schema; o banco não tinha nenhum ponto gravado na coluna antiga — conferido — e `jobs.area_geog` é
+  calculada); `search_path` fixo nas três funções antigas; **visitante não executa nenhuma função security
+  definer** além da vaga pública; funções novas do `postgres` nascem fechadas (cada migration dá o grant que
+  precisa).
+- O aviso de funções security definer executáveis por quem está logado **não se aplica**: é o desenho exigido
+  (regras no banco, via RPC com `search_path` fixo). "Leaked password protection" é uma chave do painel
+  (plano Pro) — SUPABASE.md.
+
+### X15 — RLS sem função por linha e limite contra spam
+
+- `applications`: a construtora vê as candidaturas por `job_id in (select my_job_ids())` (calculado uma vez por
+  consulta), não mais `is_my_job(job_id)` por linha; `application_events` pelo mesmo critério. `my_job_ids` é
+  security definer para não reaplicar a política de `jobs`, que olha `applications` (seria recursão).
+- Índices das chaves estrangeiras que faltavam. As políticas das tabelas do app antigo saíram (já estavam
+  fechadas desde o Z08; sem política a RLS recusa tudo) — zera os avisos de desempenho delas.
+- **Spam**: cada candidatura enviada fica registrada (`application_attempts`, sem acesso pela API, limpa todo
+  dia). Até **30 por dia** e **3 vezes a mesma vaga por dia** (candidatar → retirar → candidatar avisava a
+  construtora a cada vez). A mensagem aparece no app como qualquer recusa do servidor.
+
+### X14 — Tipos do banco gerados do SQL
+
+- `src/types/database.generated.ts` sai do próprio banco (todas as migrations aplicadas) por
+  `scripts/gen-db-types.mjs`, no mesmo formato do `supabase gen types typescript` (o comando oficial precisa
+  baixar uma imagem Docker que este ambiente não alcança; com Docker livre, dá o mesmo resultado). O CI
+  regenera e falha se o arquivo commitado estiver velho.
+- `types/supabase.ts` continua escrito à mão (enums com os tipos do domínio, colunas que o app lê), mas agora
+  **é conferido contra o gerado no `typecheck`**: tabela, coluna, tipo, nulidade e RPC diferentes do SQL viram
+  erro com o nome do que divergiu. A conferência achou `jobs.area_lat/area_lon` (colunas geradas, o Postgres
+  as declara anuláveis) — corrigido no mapeador.
+- **Colunas protegidas**: o `update` de cada tabela só aceita as colunas com grant (perfil, legenda do post,
+  `read_at` do aviso); qualquer outra (nota, selo, status, impulsionamento) é erro de tipo — elas mudam só
+  pelas RPCs, e o banco também recusa.
+
+### X03 — Notificações
+
+- **Sino certo em qualquer aparelho**: o número vem do servidor (`my_unread_count`, não só dos 100 avisos
+  carregados); abrir um aviso num aparelho tira dos outros (Realtime de UPDATE em `notifications`); ao voltar
+  o sinal, ao reabrir o app (aba visível) ou quando o canal do Realtime cai e volta, a lista e o número são
+  relidos.
+- **Push (Web Push com VAPID)**: Configurações › Avisos › "Ativar neste aparelho" abre **uma explicação antes**
+  do pedido do navegador (o que chega, que dá para desligar); só então o navegador pergunta. O aparelho vai
+  para `push_subscriptions` (por RPC; um aparelho fica com a última conta que entrou nele). Sair da conta
+  desliga o aparelho. Estados mostrados: ligado, desligado, bloqueado no navegador (como liberar), sem suporte
+  (no iPhone, só com o app na tela de início).
+- Envio: cada aviso novo chama a Edge Function **`enviar-push`** pelo `pg_net` (gatilho no banco; só se a conta
+  tem aparelho). A função respeita os grupos escolhidos (F06), manda título, texto e a tela do aviso (nada
+  além do que o sino mostra) e apaga aparelhos que o navegador diz que não existem mais. Tocar na notificação
+  abre o app na tela certa (`public/push-sw.js`, importado pelo service worker do X02).
+- **Escondido até configurar** (`VITE_VAPID_PUBLIC_KEY`). Para ligar: gerar as chaves
+  (`npx web-push generate-vapid-keys`); em Edge Functions › Secrets, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+  `VAPID_SUBJECT` (`mailto:nivotech.dev@gmail.com`) e `PUSH_WEBHOOK_SECRET` (um texto aleatório longo);
+  publicar `enviar-push` com `--no-verify-jwt`; ligar a extensão **pg_net**; no SQL Editor, guardar no Vault
+  a URL da função e o mesmo segredo:
+  `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');`
+  e `select vault.create_secret('<o mesmo PUSH_WEBHOOK_SECRET>', 'bicos_push_secret');`; por fim
+  `VITE_VAPID_PUBLIC_KEY` no build. A chave privada nunca vai para o front.
+
+### X04 — Formulários
+
+- Login num `<form>` de verdade (gerenciadores de senha reconhecem), `autocomplete` em todos os campos de conta:
+  `username` + `current-password` no login, `email`, `name`/`organization`, `tel`, `new-password` no cadastro,
+  na nova senha e na troca, `one-time-code` no código do WhatsApp; **CPF/CNPJ com `autocomplete="off"`** (o
+  navegador não deve sugerir o documento de outra pessoa) e teclado numérico. Enter envia em todos os campos
+  (login, cadastro passo a passo, esqueci a senha, nova senha, excluir conta, telas de Configurações).
+
+### X11 — Recuperar senha
+
+- "Já abri o link" só existe na demonstração (lá não há e-mail); no modo real a tela diz para abrir o link do
+  e-mail e oferece **Voltar ao login**.
+- A nova senha segue **a mesma regra do cadastro** (8+ caracteres, letras e números) — `utils/password.ts`,
+  usado também em Trocar senha; o serviço confere antes de chamar o servidor.
+- **Sessão de recuperação abandonada é encerrada**: sair da tela sem salvar encerra a sessão curta do link; e se
+  a pessoa fechou a aba no meio, na próxima abertura o app encerra essa sessão em vez de entrar na conta
+  (marcador `bicos.recuperacao` no aparelho). Recarregar a própria tela de nova senha continua valendo.
+
+### X05 — Acessibilidade (WCAG 2.1 AA)
+
+- **Diálogos e folhas** (`Dialog`, `Sheet`, tela cheia do portfólio): `role="dialog"`/`alertdialog`, título
+  ligado por `aria-labelledby`, foco entra ao abrir, **Tab fica preso dentro**, **Esc fecha** e o foco **volta
+  para o botão que abriu** (`hooks/useModal.ts`; só o de cima responde quando há um sobre o outro).
+- Erros já ligados ao campo (`aria-invalid` + `aria-describedby`) em `Input`/`PasswordInput`.
+- **Cartão de vaga**: deixou de ser um `role="link"` com o botão de salvar dentro. O cartão inteiro continua
+  abrindo a vaga com toque/clique; para teclado e leitor de tela, o **título é o botão** (com o resumo da vaga)
+  e "Salvar vaga" é outro botão — Enter no salvar só salva.
+- A barra de navegação **não é mais recriada a cada mudança de dados** (`AppShell`, `key={storeVersion}`) — isso
+  tirava o foco do teclado da barra. **`LegacyRerender` foi removido**: ele imitava o app antigo (tirava o foco
+  do botão clicado, cortava transições e reiniciava animações a cada mudança); o comportamento normal do React
+  é melhor para acessibilidade.
+- **Alvos de toque ≥ 44 px**: botões, chips, ícones, "salvar vaga" e setas do carrossel ganham uma área de toque
+  invisível de pelo menos 44 × 44 px (`.tap-target`), sem mudar o desenho. No cartão de vaga o alvo de toque é o
+  cartão todo.
+- **Contraste**: textos em `concrete-400` (3,1:1) passaram para `concrete-500` (≥ 4,5:1). As fotos dentro do
+  cartão são decorativas para o leitor de tela (o título já descreve a vaga).
+- Conferência automática: `scripts/a11y-check.mjs` roda o **axe** (WCAG 2.1 A/AA) em 14 telas (trabalhador e
+  construtora, celular) — **0 problemas** — e entra no CI; Lighthouse de Acessibilidade 100.
+
+### X06 — Situação da candidatura no detalhe da vaga
+
+- Quem se candidatou vê, no alto do detalhe da vaga, **"Sua candidatura"**: a situação (mesmo selo de Minhas
+  candidaturas), quando enviou, desde quando está assim e o **motivo** que a construtora (ou o sistema, como na
+  recusa automática por vaga cheia) informou. Quando o próximo passo é em outra tela (WhatsApp, avaliar), o
+  botão leva até lá.
+
+### X07 — "Candidatura enviada" sem sucesso falso
+
+- A tela de "Candidatura enviada" lê a vaga e a candidatura quando é aberta direto (recarregar, link antigo) e,
+  **sem candidatura, volta para o detalhe da vaga** em vez de dizer que enviou.
+- Tocar de novo em "Quero esse bico" numa vaga em que já se candidatou responde **"Você já se candidatou a essa
+  vaga"** e volta para o detalhe (`submitApplication` diz `enviada` ou `ja_enviada`), sem segunda notificação.
+
+### X08 — PIX atualiza sozinho
+
+- Feito junto com o Z02: o PIX aguardando é relido a cada 5 s (o webhook confirma no servidor) e um pagamento já
+  terminado não fica preso na tela para o próximo impulso (`BoostPayment.tsx`).
+
+### X09 — Fotos e mídia
+
+- Progresso, compressão (1600 px, WebP/JPEG), HEIC convertido, banco aceitando só URL do próprio Storage na pasta
+  do dono, buckets sem listagem e foto de vaga só por construtora: feitos no Z12/F16.
+- **Arquivos órfãos**: além de apagar a foto trocada e o post excluído na hora, uma limpeza diária
+  (`limpar-arquivos`, chamada pelo pg_cron às 4h40) apaga pela API do Storage o que nenhuma linha usa há mais de 1
+  dia (envio que não chegou a ser gravado, foto tirada de uma vaga) e as **fotos de identidade 30 dias depois da
+  decisão** (F07, guardar só o necessário). Arquivos de antes do app novo ficam.
+- Para ligar: publicar `limpar-arquivos` com `--no-verify-jwt`, segredo `CLEANUP_SECRET` em Edge Functions ›
+  Secrets e no Vault `bicos_cleanup_url` (URL da função) e `bicos_cleanup_secret` (o mesmo segredo).
+
+### X10 — Endereço ao editar a vaga
+
+- Editar a vaga sem mexer no endereço (CEP, rua, número, cidade) **mantém o ponto salvo**; mudou o endereço, ele é
+  localizado de novo.
+- Ao abrir a edição, o **CEP é consultado de novo** (o ponto de uma rua/número novo vem dele); os campos ficam como
+  salvos.
+- Cidade que o mapa não conhece (fora da lista e sem CEP achado) **não vira (0, 0)**: o passo 1 pede para escolher a
+  cidade da lista.
+
+### X12 — Textos que prometiam o que não existe
+
+- Procurados todos os textos de promessa. Corrigidos: "É por aqui (e-mail) que avisamos…" no cadastro (o app não
+  manda avisos por e-mail; agora: "é com ele que você entra e recupera a senha"); "em até 2 dias úteis" na
+  verificação de identidade (sem prazo prometido); "Avisamos quando der para colocá-la no topo" com o impulso
+  desligado; "O link vale por 24 horas" (o prazo é configuração do Auth: agora "vence depois de um tempo; peça
+  outro aqui").
+- Já corrigidos antes: "Pagamento em PIX no fim da diária" fixo (L18, forma de pagamento da vaga), "a falta fica
+  registrada no perfil" (agora é verdade: F10 mostra faltas e desistências), plano de "aviso por WhatsApp" (Z03).
+  Não há "mensagens", "diárias pagas pela plataforma", "responde em poucas horas" nem "dá para trocar depois" no
+  app (conferido por busca).
+
+### X18 — WhatsApp só celular
+
+- Feito no Y25: tela, serviço e banco aceitam só celular (DDD + 9 + 8 números). Agora o serviço de cadastro também
+  confere antes de criar a conta (nos dois modos).
+
+### X19 — Distância honesta e mural que acompanha o perfil
+
+- "X km **de você**" só quando a distância é medida da posição da pessoa ("Usar minha localização"). Medida do bairro
+  do perfil: "X km **do seu bairro**"; da cidade escolhida: "X km **do centro de** Campinas".
+- Trocou a cidade no perfil: o mural que estava na cidade antiga passa para a nova (uma cidade escolhida à mão no
+  mural continua escolhida).
+
+### X20 — Login lê a conta uma vez
+
+- Feito no Z11 (`enterSession` divide a mesma leitura entre o login e o aviso `SIGNED_IN` do Auth, e o canal do
+  Realtime é aberto uma vez). Agora há teste que simula os dois chegando juntos (com o banco lento) e confere uma
+  leitura da conta e um canal; o teste falha se a divisão for removida.
+
+### X21 — Observabilidade
+
+- **Erros no app**: já existia (`services/monitoring.ts`): com `VITE_SENTRY_DSN`, erros não tratados e os da tela de
+  erro vão para o Sentry com a rota sem ids e sem dados pessoais; sem a variável, nada sai do aparelho.
+- **Erros nas Edge Functions**: todas passam por `monitored()` (`_shared/monitoring.ts`): erro não tratado vira
+  500 com mensagem amigável, vai para o log da função e, com o segredo `SENTRY_DSN`, para o Sentry — sem corpo do
+  pedido nem cabeçalhos; e-mails e números longos (CPF, telefone) são apagados da mensagem.
+- **Funil**: `funnel_daily(de, até)` no banco conta por dia cadastros iniciados (Auth), e-mails confirmados,
+  cadastros concluídos, vagas publicadas, candidaturas, aprovações, contratações, diárias concluídas,
+  impulsionamentos pagos e a receita — **a partir dos dados que o banco já guarda, sem rastrear pessoas** (por isso
+  não depende de consentimento; nenhuma ferramenta de terceiros). Só service_role (painel/SQL Editor).
+- A Política de privacidade ganhou uma linha dizendo isso (contagem sem identificar ninguém e registro de erros sem
+  dados pessoais). É um esclarecimento, sem mudar a versão aceita no cadastro — se o jurídico preferir, sobe a versão
+  em `services/legal.ts` e todos aceitam de novo.
+- Analytics de navegação (telas vistas, cliques) por pessoa: **adiado** — exigiria banner de consentimento e uma
+  ferramenta; o funil acima responde às perguntas do produto sem isso.
+
+---
+
+# Fase E — polimento
+
+### W01–W04
+
+- **W01** valores com centavos só quando há centavos ("R$ 180", "R$ 180,50").
+- **W02** vaga que já começou e ainda vai: "Até 16 out" (ou "Até hoje"), em vez de "Ontem até 16 out".
+- **W03** total da vaga (diária × diárias) no detalhe, na confirmação da candidatura e no Gerenciar, quando há
+  mais de uma diária e valor fixo ("Total R$ 660 por 3 diárias").
+- **W04** "O que precisa levar" some quando a vaga não pede nada.
+- Achado junto: os cartões da diária no detalhe e no Gerenciar ainda diziam "Pago no fim da diária" fixo (resto
+  do L18/X12) — agora mostram a forma de pagamento da vaga.
+
+### W05–W07
+
+- **W05** depois de publicar, botão **Gerenciar vaga**. No perfil da própria construtora, quem já teve vagas
+  (todas encerradas) não é mandado a publicar "seu primeiro bico"; vagas cheias continuam listadas em "Suas
+  vagas"; "1 vaga aberta" no singular.
+- **W06** aprovar/recusar na lista de candidatos: um de cada vez, com o indicador de envio no lugar dos botões
+  (sem duplo toque).
+- **W07** "O contato por WhatsApp abre depois que você aprovar" só aparece enquanto o contato ainda está fechado
+  para aquela candidatura.
+
+### W08 — Limites de publicar e de pagar
+
+- **Diária até R$ 5.000** (acima é quase sempre erro de digitação) — formulário e banco.
+- **Descrição de 20 a 1000 letras**, com contador — formulário e banco. As vagas antigas da demonstração já passam.
+- **CEP coerente com a cidade**: se o CEP é de outra cidade, o passo 1 avisa ("Esse CEP é de …").
+- **Turno que passa da meia-noite** (22h–6h) aceito no formulário e no banco, e mostrado como "22h–6h (vira a
+  noite)"; só início igual ao fim é recusado.
+- **Cartões de 15 a 19 dígitos** (Amex e outros); antes só 16.
+
+### W09 — Demonstração
+
+- Código da vaga nova na demonstração: o **próximo número** depois do maior já usado (vagas existentes e excluídas),
+  sem colisão (antes era um número aleatório).
+- O contato de WhatsApp é guardado **por candidatura e situação** (pré-selecionado → contratado muda a mensagem
+  pronta) e por conta: o segundo toque não lê de novo. Vale nos dois modos; sair da conta limpa.

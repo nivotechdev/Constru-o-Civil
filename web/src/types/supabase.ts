@@ -1,352 +1,540 @@
-// The real, deployed Supabase (Postgres) schema this app talks to, typed in the shape
-// `supabase gen types typescript` produces, so `createClient<SupabaseDatabase>()` types every query
-// and every `.rpc(...)` call. This mirrors the schema in ../../../supabase/migrations/ (000 through
-// 012) — that SQL is the source of truth; keep this file in sync with it, not the other way around.
+// The Supabase (Postgres) schema the app will use, typed in the shape supabase-js expects
+// (`createClient<SupabaseDatabase>()` types every query). Each table's row is declared once below; what
+// an insert/update accepts is derived from it (columns with a default or that accept null are optional
+// on insert). docs/CONTRATO-BACKEND.md describes the tables and the rules around them; the back end
+// writes the migrations from it (the SQL in supabase/ is the earlier draft — see docs/DECISOES.md).
 //
-// Two things make this schema different from a typical CRUD table set, and from what
-// services/supabaseMappers.ts has to do:
-//   - One `profiles` table covers BOTH Company and Worker (see `profiles.tipo`), instead of two
-//     separate tables — the mapper reads the same row into whichever domain type the caller needs.
-//   - Anything that changes more than one row atomically, or that decides what another user is
-//     allowed to see (deciding a candidacy, closing a job, revealing a WhatsApp number, exporting or
-//     deleting an account), is an RPC (`Functions` below), not a direct table write. Never write to
-//     `candidaturas`/`avaliacoes` status columns from the client — always go through the matching RPC.
-//
-// Some sensitive columns (`documento_cifrado`, `documento_hash`) are deliberately left out of the
-// `profiles` Row type below even though they exist in the table: the app must never select them
-// directly (the encrypted document only ever comes back through the `meu_documento` RPC), so leaving
-// them untyped turns an accidental `select('*')` misuse into a compile error instead of a data leak.
+// Tables map to the domain records in models.ts (see services/supabaseMappers.ts):
+//   accounts      – Account (id = auth.users.id; e-mail confirmation, onboarding, worker or company)
+//   oficios       – Oficio: the one catalog of trades (jobs.oficio_id, workers.oficio_id)
+//   companies     – Company (reviews live in `reviews`)
+//   workers       – Worker (reviews live in `reviews`)
+//   jobs          – Job; deleted_at replaces Database.deletedJobIds
+//   applications  – Application (status changed only by the status machine)
+//   application_events – Application.events (history of each candidacy)
+//   saved_jobs    – Database.savedJobIds (per worker)
+//   reviews       – Company.reviews and Worker.reviews
+//   worker_posts  – WorkerPost
+//   notifications – AppNotification (for one worker or one company)
+//   boost_payments – BoostPayment (PIX/cartão); only a confirmed one sets jobs.boost_ends_at
+// The enums reuse the domain types, so the schema and the app can't drift apart silently.
+import type {
+  Actor,
+  ApplicationStatus,
+  ReviewDirection,
+  BoostPlanId,
+  DiasKey,
+  CompanyVerification,
+  NotificationKind,
+  WagePayment,
+  WorkerAvailability,
+  IdentityStatus,
+  ReportTarget,
+  ReportReason,
+  PaymentMethod,
+  PaymentStatus,
+  Role,
+  WorkerPost
+} from './models';
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-type Tipo = 'pedreiro' | 'construtora';
-type VagaStatus = 'aberta' | 'preenchida' | 'expirada';
-type CandidaturaStatus =
-  | 'enviada'
-  | 'em_analise'
-  | 'pre_selecionado'
-  | 'contratado'
-  | 'concluida'
-  | 'avaliada'
-  | 'nao_selecionado';
-type Turno = 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
-type Dias = 'semana' | 'fimdesemana' | 'qualquer';
-type MidiaTipo = 'imagem' | 'video';
+// ---- rows ----
+// (Type aliases, not interfaces: supabase-js checks rows against Record<string, unknown>.)
+
+type AccountRow = {
+  id: string;
+  email: string;
+  role: Role;
+  document: string;
+  whatsapp: string;
+  whatsapp_verified_at: string | null;
+  email_confirmed_at: string | null;
+  profile_completed_at: string | null;
+  terms_version: string;
+  terms_accepted_at: string;
+  worker_id: string | null;
+  company_id: string | null;
+  created_at: string;
+};
+
+type OficioRow = {
+  id: string;
+  nome: string;
+  sinonimos: string[];
+};
+
+type CompanyRow = {
+  id: string;
+  name: string;
+  cnpj: string | null;
+  tipo_obra: string | null;
+  location: string;
+  /** Private: readable only through the get_contact RPC. */
+  whatsapp: string;
+  rating: number;
+  review_count: number;
+  verified: boolean;
+  verified_since: string | null;
+  /** F15: who talks to the candidates. */
+  contact_name: string | null;
+  /** Y24: only the Bicos team changes it (set_company_verification); `verified` follows it. */
+  verification_status: CompanyVerification;
+  verified_at: string | null;
+  since_label: string | null;
+  respond_time: string | null;
+  paid_count: number | null;
+  logo_url: string | null;
+  cover_url: string | null;
+  created_at: string;
+};
+
+type WorkerRow = {
+  id: string;
+  name: string;
+  initials: string;
+  oficio_id: string | null;
+  /** Private: readable only through the get_contact RPC. */
+  whatsapp: string;
+  city: string;
+  neighborhood: string | null;
+  lat: number;
+  lon: number;
+  rating: number;
+  review_count: number;
+  jobs_done: number;
+  novo: boolean;
+  verified: boolean;
+  specialties: string[];
+  facts: string[];
+  photo_url: string | null;
+  cover_url: string | null;
+  /** F07 */
+  identity_status: IdentityStatus;
+  /** F10: the professional profile. */
+  availability: WorkerAvailability | null;
+  years_experience: number | null;
+  desired_pay: number | null;
+  travel_km: number | null;
+  bio: string | null;
+  created_at: string;
+};
+
+type JobRow = {
+  id: string;
+  company_id: string;
+  oficio_id: string;
+  title: string | null;
+  pay: number | null;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  uf: string;
+  lat: number;
+  lon: number;
+  date_to_arrange: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  diarias: number;
+  dias: DiasKey | null;
+  urgent: boolean;
+  boost_ends_at: string | null;
+  photos: string[] | null;
+  slots: number;
+  closed: boolean;
+  sem_contratacao: boolean;
+  description: string;
+  requirements: string[];
+  /** L18: 'pix_dia' | 'pix_fim' | 'dinheiro' | 'outro' (null on jobs from before). */
+  payment_method: WagePayment | null;
+  payment_note: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  /** The point rounded to ~1 km (generated by the database): what anyone may read (Z06). */
+  /** Generated from lat/lon (never empty in practice; Postgres reports generated columns as nullable). */
+  area_lat: number | null;
+  area_lon: number | null;
+};
+
+/** The exact address of a job, for its company and the worker picked or hired (RPC get_job_addresses). */
+export type JobAddressRow = {
+  job_id: string;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  uf: string;
+  lat: number;
+  lon: number;
+};
+
+type ApplicationRow = {
+  id: string;
+  job_id: string;
+  worker_id: string;
+  status: ApplicationStatus;
+  created_at: string;
+  status_changed_at: string;
+  auto_rejected: boolean;
+  worker_reviewed: boolean;
+  company_reviewed: boolean;
+  presence_confirmed_at: string | null;
+};
+
+type ApplicationEventRow = {
+  id: number;
+  application_id: string;
+  status: ApplicationStatus;
+  at: string;
+  by: Actor;
+  reason: string | null;
+};
+
+type SavedJobRow = {
+  worker_id: string;
+  job_id: string;
+  saved_at: string;
+};
+
+type ReviewRow = {
+  id: string;
+  application_id: string | null;
+  direction: ReviewDirection;
+  company_id: string | null;
+  worker_id: string | null;
+  author_label: string;
+  value: number;
+  tags: string[];
+  comment: string;
+  created_at: string;
+};
+
+type WorkerPostRow = {
+  id: string;
+  worker_id: string;
+  media_url: string | null;
+  media_type: WorkerPost['mediaType'];
+  caption: string;
+  posted_on: string;
+  created_at: string;
+};
+
+type NotificationRow = {
+  id: string;
+  worker_id: string | null;
+  company_id: string | null;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  target: string | null;
+  created_at: string;
+  read_at: string | null;
+};
+
+type BoostPaymentRow = {
+  id: string;
+  job_id: string;
+  company_id: string;
+  plan: BoostPlanId;
+  method: PaymentMethod;
+  amount_cents: number;
+  status: PaymentStatus;
+  pix_code: string | null;
+  pix_qr_base64?: string | null;
+  card_last4: string | null;
+  created_at: string;
+  expires_at: string | null;
+  confirmed_at: string | null;
+  boost_ends_at: string | null;
+};
+
+/** How many candidates a job has, without who they are (RPC job_stats). */
+export type JobStatsRow = {
+  job_id: string;
+  /** Picked or hired: they hold a slot. */
+  holding: number;
+  /** Waiting for the company's decision. */
+  pending: number;
+  total: number;
+};
+
+// ---- table shapes supabase-js expects ----
+
+/** Columns that accept null (optional on insert). */
+type NullableKeys<R> = { [K in keyof R]: null extends R[K] ? K : never }[keyof R];
+
+interface Relationship {
+  foreignKeyName: string;
+  columns: string[];
+  isOneToOne: boolean;
+  referencedRelation: string;
+  referencedColumns: string[];
+}
+
+/** F06 */
+type NotificationPrefsRow = {
+  account_id: string;
+  muted_groups: string[];
+  push_groups: string[];
+  updated_at: string;
+};
+
+/** F04: who blocked whom (select: the blocker's own). */
+type BlockRow = { blocker_id: string; blocked_id: string; created_at: string };
+
+/** F13: an invitation (select: each side its own; written by invite_worker / answer_invite). */
+type JobInviteRow = {
+  job_id: string;
+  worker_id: string;
+  company_id: string;
+  status: 'pendente' | 'aceito' | 'recusado';
+  created_at: string;
+  answered_at: string | null;
+};
+
+/** Y28: the worker's alert for new jobs (select own; written by save_job_alert / delete_job_alert). */
+type JobAlertRow = {
+  worker_id: string;
+  city: string;
+  uf: string;
+  lat: number;
+  lon: number;
+  radius_km: number | null;
+  oficio_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** A table: `Defaulted` are the columns the database fills in when an insert leaves them out. */
+/**
+ * `Writable`: the columns the app may change with a plain update (the column grants in the migrations; X14).
+ * Any other column in an update is a type error — those change only through the RPCs.
+ */
+interface Table<R, Defaulted extends keyof R = never, Writable extends keyof R = never> {
+  Row: R;
+  Insert: Omit<R, Defaulted | NullableKeys<R>> & Partial<Pick<R, Defaulted | NullableKeys<R>>>;
+  Update: { [K in Writable]?: R[K] } & { [K in Exclude<keyof R, Writable>]?: never };
+  Relationships: Relationship[];
+}
+
+const fk = (table: string, column: string, to: string, isOneToOne = false): Relationship => ({
+  foreignKeyName: `${table}_${column}_fkey`,
+  columns: [column],
+  isOneToOne,
+  referencedRelation: to,
+  referencedColumns: ['id']
+});
+/** The foreign keys, for documentation and for the tests (supabase-js only needs their type). */
+export const RELATIONSHIPS = {
+  accounts: [fk('accounts', 'worker_id', 'workers', true), fk('accounts', 'company_id', 'companies')],
+  workers: [fk('workers', 'oficio_id', 'oficios')],
+  jobs: [fk('jobs', 'company_id', 'companies'), fk('jobs', 'oficio_id', 'oficios')],
+  applications: [fk('applications', 'job_id', 'jobs'), fk('applications', 'worker_id', 'workers')],
+  saved_jobs: [fk('saved_jobs', 'worker_id', 'workers'), fk('saved_jobs', 'job_id', 'jobs')],
+  reviews: [
+    fk('reviews', 'company_id', 'companies'),
+    fk('reviews', 'worker_id', 'workers'),
+    fk('reviews', 'job_id', 'jobs')
+  ],
+  worker_posts: [fk('worker_posts', 'worker_id', 'workers')],
+  job_alerts: [fk('job_alerts', 'worker_id', 'workers', true)],
+  job_invites: [fk('job_invites', 'job_id', 'jobs'), fk('job_invites', 'worker_id', 'workers')],
+  blocks: [],
+  notification_prefs: [],
+  application_events: [fk('application_events', 'application_id', 'applications')],
+  notifications: [fk('notifications', 'worker_id', 'workers'), fk('notifications', 'company_id', 'companies')],
+  boost_payments: [fk('boost_payments', 'job_id', 'jobs'), fk('boost_payments', 'company_id', 'companies')]
+};
 
 export interface SupabaseDatabase {
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          id: string;
-          nome: string;
-          email: string;
-          tipo: Tipo | null;
-          ativo: boolean;
-          criado_em: string;
-          atualizado_em: string;
-          foto_url: string | null;
-          capa_url: string | null;
-          biografia: string | null;
-          cargo: string | null;
-          regiao: string | null;
-          especialidades: string[] | null;
-          tipo_obra: string | null;
-          regiao_atuacao: string | null;
-          whatsapp: string | null;
-        };
-        Insert: {
-          id: string;
-          nome: string;
-          email: string;
-          tipo?: Tipo | null;
-          ativo?: boolean;
-          criado_em?: string;
-          atualizado_em?: string;
-          foto_url?: string | null;
-          capa_url?: string | null;
-          biografia?: string | null;
-          cargo?: string | null;
-          regiao?: string | null;
-          especialidades?: string[] | null;
-          tipo_obra?: string | null;
-          regiao_atuacao?: string | null;
-          whatsapp?: string | null;
-        };
-        Update: {
-          id?: string;
-          nome?: string;
-          email?: string;
-          tipo?: Tipo | null;
-          ativo?: boolean;
-          criado_em?: string;
-          atualizado_em?: string;
-          foto_url?: string | null;
-          capa_url?: string | null;
-          biografia?: string | null;
-          cargo?: string | null;
-          regiao?: string | null;
-          especialidades?: string[] | null;
-          tipo_obra?: string | null;
-          regiao_atuacao?: string | null;
-          whatsapp?: string | null;
-        };
-        Relationships: [];
-      };
-      vagas: {
-        Row: {
-          id: string;
-          autor_id: string;
-          autor_nome: string | null;
-          titulo: string;
-          valor: number | null;
-          turno: Turno | null;
-          cidade: string;
-          data_servico: string;
-          horario: string | null;
-          status: VagaStatus;
-          criado_em: string;
-          slots: number;
-          endereco: string | null;
-          duracao: string | null;
-          requisitos: string[] | null;
-          foto_url: string | null;
-          fotos: string[] | null;
-          dias: Dias | null;
-          descricao: string | null;
-          urgente: boolean;
-          impulsionada: boolean;
-          sem_contratacao: boolean;
-        };
-        Insert: {
-          id?: string;
-          autor_id: string;
-          autor_nome?: string | null;
-          titulo: string;
-          valor?: number | null;
-          turno?: Turno | null;
-          cidade: string;
-          data_servico: string;
-          horario?: string | null;
-          status?: VagaStatus;
-          criado_em?: string;
-          slots?: number;
-          endereco?: string | null;
-          duracao?: string | null;
-          requisitos?: string[] | null;
-          foto_url?: string | null;
-          fotos?: string[] | null;
-          dias?: Dias | null;
-          descricao?: string | null;
-          urgente?: boolean;
-          impulsionada?: boolean;
-          sem_contratacao?: boolean;
-        };
-        Update: {
-          id?: string;
-          autor_id?: string;
-          autor_nome?: string | null;
-          titulo?: string;
-          valor?: number | null;
-          turno?: Turno | null;
-          cidade?: string;
-          data_servico?: string;
-          horario?: string | null;
-          status?: VagaStatus;
-          criado_em?: string;
-          slots?: number;
-          endereco?: string | null;
-          duracao?: string | null;
-          requisitos?: string[] | null;
-          foto_url?: string | null;
-          fotos?: string[] | null;
-          dias?: Dias | null;
-          descricao?: string | null;
-          urgente?: boolean;
-          impulsionada?: boolean;
-          sem_contratacao?: boolean;
-        };
-        Relationships: [
-          { foreignKeyName: 'vagas_autor_id_fkey'; columns: ['autor_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }
-        ];
-      };
-      candidaturas: {
-        Row: {
-          id: string;
-          vaga_id: string;
-          candidato_id: string;
-          nome_candidato: string;
-          email_candidato: string;
-          candidatado_em: string;
-          status: CandidaturaStatus;
-        };
-        Insert: {
-          id?: string;
-          vaga_id: string;
-          candidato_id: string;
-          nome_candidato: string;
-          email_candidato: string;
-          candidatado_em?: string;
-          status?: CandidaturaStatus;
-        };
-        Update: {
-          id?: string;
-          vaga_id?: string;
-          candidato_id?: string;
-          nome_candidato?: string;
-          email_candidato?: string;
-          candidatado_em?: string;
-          status?: CandidaturaStatus;
-        };
-        Relationships: [
-          { foreignKeyName: 'candidaturas_vaga_id_fkey'; columns: ['vaga_id']; isOneToOne: false; referencedRelation: 'vagas'; referencedColumns: ['id'] },
-          { foreignKeyName: 'candidaturas_candidato_id_fkey'; columns: ['candidato_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }
-        ];
-      };
-      avaliacoes: {
-        Row: {
-          id: string;
-          candidatura_id: string;
-          avaliador_id: string;
-          avaliado_id: string;
-          nota: number;
-          comentario: string | null;
-          criado_em: string;
-        };
-        Insert: {
-          id?: string;
-          candidatura_id: string;
-          avaliador_id: string;
-          avaliado_id: string;
-          nota: number;
-          comentario?: string | null;
-          criado_em?: string;
-        };
-        Update: {
-          id?: string;
-          candidatura_id?: string;
-          avaliador_id?: string;
-          avaliado_id?: string;
-          nota?: number;
-          comentario?: string | null;
-          criado_em?: string;
-        };
-        Relationships: [
-          { foreignKeyName: 'avaliacoes_candidatura_id_fkey'; columns: ['candidatura_id']; isOneToOne: false; referencedRelation: 'candidaturas'; referencedColumns: ['id'] },
-          { foreignKeyName: 'avaliacoes_avaliador_id_fkey'; columns: ['avaliador_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
-          { foreignKeyName: 'avaliacoes_avaliado_id_fkey'; columns: ['avaliado_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }
-        ];
-      };
-      consentimentos: {
-        Row: {
-          id: string;
-          usuario_id: string;
-          documento: 'termos_de_uso' | 'politica_privacidade';
-          versao: string;
-          aceito_em: string;
-        };
-        Insert: {
-          id?: string;
-          usuario_id: string;
-          documento: 'termos_de_uso' | 'politica_privacidade';
-          versao: string;
-          aceito_em?: string;
-        };
-        Update: {
-          id?: string;
-          usuario_id?: string;
-          documento?: 'termos_de_uso' | 'politica_privacidade';
-          versao?: string;
-          aceito_em?: string;
-        };
-        Relationships: [
-          { foreignKeyName: 'consentimentos_usuario_id_fkey'; columns: ['usuario_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }
-        ];
-      };
-      vagas_salvas: {
-        Row: { trabalhador_id: string; vaga_id: string; salva_em: string };
-        Insert: { trabalhador_id: string; vaga_id: string; salva_em?: string };
-        Update: { trabalhador_id?: string; vaga_id?: string; salva_em?: string };
-        Relationships: [
-          { foreignKeyName: 'vagas_salvas_trabalhador_id_fkey'; columns: ['trabalhador_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
-          { foreignKeyName: 'vagas_salvas_vaga_id_fkey'; columns: ['vaga_id']; isOneToOne: false; referencedRelation: 'vagas'; referencedColumns: ['id'] }
-        ];
-      };
-      publicacoes_trabalhador: {
-        Row: {
-          id: string;
-          trabalhador_id: string;
-          midia_url: string;
-          midia_tipo: MidiaTipo;
-          legenda: string | null;
-          criado_em: string;
-        };
-        Insert: {
-          id?: string;
-          trabalhador_id: string;
-          midia_url: string;
-          midia_tipo: MidiaTipo;
-          legenda?: string | null;
-          criado_em?: string;
-        };
-        Update: {
-          id?: string;
-          trabalhador_id?: string;
-          midia_url?: string;
-          midia_tipo?: MidiaTipo;
-          legenda?: string | null;
-          criado_em?: string;
-        };
-        Relationships: [
-          { foreignKeyName: 'publicacoes_trabalhador_trabalhador_id_fkey'; columns: ['trabalhador_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }
-        ];
-      };
+      accounts: Table<AccountRow, 'created_at'>;
+      job_alerts: Table<JobAlertRow, 'created_at' | 'updated_at'>;
+      job_invites: Table<JobInviteRow, 'status' | 'created_at'>;
+      blocks: Table<BlockRow, 'created_at'>;
+      notification_prefs: Table<NotificationPrefsRow, 'muted_groups' | 'push_groups' | 'updated_at'>;
+      oficios: Table<OficioRow, 'sinonimos'>;
+      companies: Table<
+        CompanyRow,
+        'id' | 'rating' | 'review_count' | 'verified' | 'verification_status' | 'verified_at' | 'created_at',
+        'name' | 'tipo_obra' | 'location' | 'logo_url' | 'cover_url' | 'contact_name'
+      >;
+      workers: Table<
+        WorkerRow,
+        | 'id'
+        | 'rating'
+        | 'review_count'
+        | 'jobs_done'
+        | 'novo'
+        | 'verified'
+        | 'specialties'
+        | 'facts'
+        | 'created_at'
+        | 'identity_status',
+        | 'name'
+        | 'oficio_id'
+        | 'city'
+        | 'neighborhood'
+        | 'lat'
+        | 'lon'
+        | 'photo_url'
+        | 'cover_url'
+        | 'specialties'
+        | 'availability'
+        | 'years_experience'
+        | 'desired_pay'
+        | 'travel_km'
+        | 'bio'
+      >;
+      jobs: Table<
+        JobRow,
+        | 'id'
+        | 'date_to_arrange'
+        | 'diarias'
+        | 'urgent'
+        | 'slots'
+        | 'closed'
+        | 'sem_contratacao'
+        | 'requirements'
+        | 'created_at'
+        | 'updated_at'
+        | 'area_lat'
+        | 'area_lon'
+      >;
+      applications: Table<
+        ApplicationRow,
+        'id' | 'status' | 'created_at' | 'status_changed_at' | 'auto_rejected' | 'worker_reviewed' | 'company_reviewed'
+      >;
+      application_events: Table<ApplicationEventRow, 'id'>;
+      saved_jobs: Table<SavedJobRow, 'saved_at'>;
+      reviews: Table<ReviewRow, 'id' | 'tags' | 'comment' | 'created_at'>;
+      worker_posts: Table<WorkerPostRow, 'id' | 'media_type' | 'caption' | 'posted_on' | 'created_at', 'caption'>;
+      notifications: Table<NotificationRow, 'id' | 'created_at', 'read_at'>;
+      boost_payments: Table<BoostPaymentRow, 'id' | 'status' | 'created_at'>;
     };
     Views: { [_ in never]: never };
+    /** The RPCs the app calls (supabase/migrations/*_bicos_v2_rules.sql). */
     Functions: {
-      perfil_publico: {
-        Args: { p_id: string };
-        Returns: {
-          id: string;
-          nome: string;
-          tipo: Tipo | null;
-          foto_url: string | null;
-          capa_url: string | null;
-          biografia: string | null;
-          cargo: string | null;
-          regiao: string | null;
-          especialidades: string[] | null;
-          tipo_obra: string | null;
-          regiao_atuacao: string | null;
-          criado_em: string;
-          documento: string | null;
-        }[];
-      };
-      buscar_perfis: {
-        Args: { termo?: string };
-        Returns: { id: string; nome: string; tipo: Tipo | null; foto_url: string | null; biografia: string | null }[];
-      };
-      contato_whatsapp: { Args: { p_candidatura_id: string }; Returns: string | null };
-      decidir_candidatura: { Args: { p_candidatura_id: string; p_decisao: 'aprovado' | 'recusado' }; Returns: undefined };
-      fechar_vaga: { Args: { p_vaga_id: string }; Returns: undefined };
-      concluir_candidatura: { Args: { p_candidatura_id: string }; Returns: undefined };
-      postar_avaliacao: {
-        Args: { p_candidatura_id: string; p_nota: number; p_comentario?: string | null };
+      submit_identity: { Args: { p_selfie_path: string; p_document_path: string }; Returns: undefined };
+      my_unread_count: { Args: never; Returns: number };
+      save_push_subscription: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent: string | null };
         Returns: undefined;
       };
-      exportar_meus_dados: { Args: Record<string, never>; Returns: Json };
-      excluir_minha_conta: { Args: Record<string, never>; Returns: undefined };
-      meu_documento: { Args: Record<string, never>; Returns: string | null };
-      salvar_documento: { Args: { documento_texto: string }; Returns: undefined };
-      reiniciar_cadastro_pendente_email: { Args: { p_email: string }; Returns: boolean };
-      reiniciar_cadastro_pendente_documento: { Args: { p_documento: string }; Returns: boolean };
+      delete_push_subscription: { Args: { p_endpoint: string }; Returns: undefined };
+      my_identity: {
+        Args: never;
+        Returns: { status: IdentityStatus; reason: string | null; submitted_at: string | null }[];
+      };
+      save_notification_prefs: { Args: { p_muted: string[]; p_push: string[] }; Returns: undefined };
+      report_content: {
+        Args: { p_target_type: ReportTarget; p_target_id: string; p_reason: ReportReason; p_details: string | null };
+        Returns: undefined;
+      };
+      block_account: { Args: { p_account: string }; Returns: undefined };
+      unblock_account: { Args: { p_account: string }; Returns: undefined };
+      invite_worker: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
+      answer_invite: { Args: { p_job_id: string; p_accept: boolean }; Returns: undefined };
+      worker_track_record: {
+        Args: { p_worker_ids: string[] };
+        Returns: { worker_id: string; faltas: number; desistencias: number }[];
+      };
+      public_job_card: { Args: { p_job_id: string }; Returns: Json };
+      create_my_account: {
+        Args: {
+          p_role: Role;
+          p_name: string;
+          p_document: string;
+          p_whatsapp: string;
+          p_terms_version: string;
+          p_adult: boolean;
+          p_contact_name: string | null;
+        };
+        Returns: undefined;
+      };
+      confirm_presence: { Args: { p_job_id: string }; Returns: undefined };
+      undo_reject: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
+      save_job_alert: {
+        Args: {
+          p_city: string;
+          p_uf: string;
+          p_lat: number;
+          p_lon: number;
+          p_radius_km: number | null;
+          p_oficio: string | null;
+        };
+        Returns: undefined;
+      };
+      delete_job_alert: { Args: never; Returns: undefined };
+      change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
+      ensure_my_account: { Args: never; Returns: undefined };
+      finish_sign_up: { Args: { p: Json }; Returns: undefined };
+      conclude_my_finished_jobs: { Args: never; Returns: number };
+      job_stats: { Args: { p_job_ids: string[] }; Returns: JobStatsRow[] };
+      submit_application: { Args: { p_job_id: string }; Returns: undefined };
+      withdraw_application: { Args: { p_job_id: string }; Returns: undefined };
+      transition_application: {
+        Args: { p_job_id: string; p_worker_id: string; p_action: string; p_reason?: string | null };
+        Returns: undefined;
+      };
+      publish_job: { Args: { p: Json }; Returns: string };
+      update_job: { Args: { p_job_id: string; p: Json }; Returns: undefined };
+      set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
+      close_job: { Args: { p_job_id: string }; Returns: undefined };
+      delete_job: { Args: { p_job_id: string }; Returns: undefined };
+      submit_review: {
+        Args: {
+          p_application_id: string;
+          p_direction: ReviewDirection;
+          p_value: number;
+          p_tags: string[];
+          p_comment: string;
+        };
+        Returns: undefined;
+      };
+      get_contact: { Args: { p_application_id: string }; Returns: { name: string; phone: string }[] };
+      get_payment: { Args: { p_payment_id: string }; Returns: BoostPaymentRow };
+      get_job_addresses: { Args: { p_job_ids: string[] }; Returns: JobAddressRow[] };
+      feed_jobs: {
+        Args: {
+          p_city: string;
+          p_uf: string;
+          p_lat: number;
+          p_lon: number;
+          p_radius_km?: number | null;
+          p_oficio?: string | null;
+          p_quando?: string | null;
+          p_search?: string | null;
+          p_all_cities?: boolean;
+          p_sort?: string;
+          p_limit?: number;
+          p_cursor?: Json | null;
+        };
+        Returns: Json[];
+      };
+      export_my_data: { Args: never; Returns: Json };
+      delete_my_account: { Args: { p_confirm_commitments: boolean }; Returns: undefined };
     };
     Enums: {
-      tipo_perfil: Tipo;
-      status_vaga: VagaStatus;
-      status_candidatura: CandidaturaStatus;
-      turno_vaga: Turno;
-      dias_vaga: Dias;
-      midia_tipo: MidiaTipo;
+      app_role: Role;
+      dias_semana: DiasKey;
+      application_status: ApplicationStatus;
+      application_actor: Actor;
+      media_type: WorkerPost['mediaType'];
+      review_direction: ReviewDirection;
+      notification_kind: NotificationKind;
+      boost_plan: BoostPlanId;
+      payment_method: PaymentMethod;
+      payment_status: PaymentStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };
@@ -360,7 +548,38 @@ export type TableRow<T extends keyof PublicSchema['Tables']> = PublicSchema['Tab
 export type TableInsert<T extends keyof PublicSchema['Tables']> = PublicSchema['Tables'][T]['Insert'];
 /** What an update accepts (any subset of columns). */
 export type TableUpdate<T extends keyof PublicSchema['Tables']> = PublicSchema['Tables'][T]['Update'];
-/** An RPC's parameters, as `supabase.rpc(name, args)` expects them. */
-export type RpcArgs<T extends keyof PublicSchema['Functions']> = PublicSchema['Functions'][T]['Args'];
-/** What an RPC resolves to. */
-export type RpcReturns<T extends keyof PublicSchema['Functions']> = PublicSchema['Functions'][T]['Returns'];
+export type DbEnum<T extends keyof PublicSchema['Enums']> = PublicSchema['Enums'][T];
+
+// ---- X14: the hand-written schema above can't drift from the SQL ----
+// database.generated.ts is generated from the database with every migration (scripts/gen-db-types.mjs). Each
+// table and RPC declared here must exist there, each column with a compatible type and the same
+// nullability. A mismatch is a type error naming the table and the column.
+import type { Database as GeneratedDatabase } from './database.generated';
+
+export type Gen = GeneratedDatabase['public'];
+type Nullable<T> = null extends T ? true : false;
+export type ColumnCheck<H, G> = {
+  [K in keyof H]-?: K extends keyof G
+    ? [NonNullable<H[K]>] extends [NonNullable<G[K]>]
+      ? Nullable<H[K]> extends Nullable<G[K]>
+        ? true
+        : `nulidade diferente: ${K & string}`
+      : NonNullable<G[K]> extends unknown[]
+        ? true
+        : `tipo diferente: ${K & string}`
+    : `coluna inexistente: ${K & string}`;
+};
+type Problems<T> = { [K in keyof T]: T[K] extends true ? never : T[K] }[keyof T];
+type TableProblems = {
+  [T in keyof PublicSchema['Tables']]: T extends keyof Gen['Tables']
+    ? Problems<ColumnCheck<PublicSchema['Tables'][T]['Row'], Gen['Tables'][T]['Row']>>
+    : `tabela inexistente`;
+};
+type FunctionProblems = {
+  [F in keyof PublicSchema['Functions']]: F extends keyof Gen['Functions'] ? never : `função inexistente`;
+};
+type Clean<T> = { [K in keyof T as [T[K]] extends [never] ? never : K]: T[K] };
+/** Empty when the schema matches; otherwise lists what drifted (shown by the type error below). */
+export type SchemaDrift = Clean<TableProblems> & Clean<FunctionProblems>;
+type AssertNoDrift<T extends Record<string, never>> = T;
+export type SchemaInSync = AssertNoDrift<SchemaDrift>;

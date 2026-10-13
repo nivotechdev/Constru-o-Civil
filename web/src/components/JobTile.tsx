@@ -3,9 +3,10 @@ import type { Company, Job } from '../types/models';
 import type { StatusBadge, Tone } from '../types/ui';
 import { cx } from '../utils/cx';
 import { formatBRL } from '../utils/format';
-import { diasInfo, whenText } from '../utils/jobInfo';
+import { diasInfo, isBoosted, whenText } from '../utils/jobInfo';
 import { Icon } from './icons/Icon';
 import { PhotoCarousel } from './PhotoCarousel';
+import { jobTitle } from '../services/catalog';
 import { SaveFlag } from './SaveFlag';
 
 // Icon colour for a status badge on the photo, by tone (the rest fall back to neutral's).
@@ -19,12 +20,16 @@ const TONE_COLOR: Partial<Record<Tone, string>> = {
 };
 
 /** The fields a tile reads (the publish form's preview passes a partial job). */
-type TileJob = Pick<Job, 'id' | 'role' | 'location' | 'date' | 'hours' | 'pay' | 'photos'> & Partial<Pick<Job, 'dias'>>;
+type TileJob = Pick<
+  Job,
+  'id' | 'oficioId' | 'title' | 'pay' | 'photos' | 'dateToArrange' | 'startDate' | 'endDate' | 'startTime' | 'endTime'
+> & { address: Pick<Job['address'], 'neighborhood'> } & Partial<Pick<Job, 'dias' | 'urgent' | 'boostEndsAt'>>;
 
 interface JobTileProps {
   job: TileJob;
   company?: Company;
-  onClick: () => void;
+  /** Opens the job; without it the tile is only a picture (e.g. the publish form's preview). */
+  onClick?: () => void;
   /** Status shown on the photo (used on "Minhas candidaturas"). */
   badge?: StatusBadge | null;
   mine?: boolean;
@@ -53,10 +58,11 @@ export function JobTile({
   onToggleSave = null,
   corner = null
 }: JobTileProps) {
-  const bairro = String(job.location || '').split(',')[0];
+  const bairro = job.address.neighborhood;
   const dias = diasInfo(job);
   const where = [bairro, dias && dias.short].filter(Boolean).join(' · ');
   const when = whenText(job);
+  const label = [jobTitle(job), badge && badge.label, company && company.name, where, when].filter(Boolean).join(', ');
 
   const pill = (children: ReactNode, className = '') => (
     <span
@@ -70,19 +76,9 @@ export function JobTile({
   );
 
   return (
-    <div
-      role="link"
-      tabIndex={0}
-      aria-label={[job.role, badge && badge.label, company && company.name, where, when].filter(Boolean).join(', ')}
-      className="group min-w-0 cursor-pointer rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
-      onClick={() => onClick()}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-    >
+    // X05: the whole card opens the job with the mouse or a tap; for keyboard and screen readers the title is
+    // the button (the save flag is its own button, not nested inside another control).
+    <div className={cx('group min-w-0 rounded-xl', onClick ? 'cursor-pointer' : '')} onClick={onClick}>
       <div className="relative aspect-[20/19] rounded-xl sm:rounded-2xl overflow-hidden bg-concrete-200">
         {/* Only the picture is greyed out when muted; badges and the save flag keep their colour.
             The photos swipe right here on the tile, without opening the job. */}
@@ -101,6 +97,25 @@ export function JobTile({
               )
             : null}
           {mine ? pill('Sua vaga', 'text-brand-600') : null}
+          {/* Z03: the paid boost and the free "urgent" are visible on the card. */}
+          {!badge && isBoosted(job)
+            ? pill(
+                <>
+                  <Icon name="rocket" size={12} color="var(--text-brand)" />
+                  Impulsionada
+                </>,
+                'text-brand-600'
+              )
+            : null}
+          {!badge && job.urgent
+            ? pill(
+                <>
+                  <Icon name="zap" size={12} color="var(--red-500)" />
+                  Urgente
+                </>,
+                'text-danger-500'
+              )
+            : null}
         </div>
         {corner ? (
           <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
@@ -111,9 +126,28 @@ export function JobTile({
         ) : null}
       </div>
       <div className="flex flex-col pt-2.5 sm:pt-3 text-[0.8125rem] sm:text-[0.9375rem] leading-[1.35]">
-        <span className={cx('truncate font-semibold sm:text-base', muted ? 'text-concrete-500' : 'text-concrete-900')}>
-          {job.role}
-        </span>
+        {onClick ? (
+          <button
+            type="button"
+            aria-label={label}
+            className={cx(
+              'truncate text-left font-semibold sm:text-base rounded outline-none focus-visible:ring-4 focus-visible:ring-brand-100',
+              muted ? 'text-concrete-500' : 'text-concrete-900'
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+          >
+            {jobTitle(job)}
+          </button>
+        ) : (
+          <span
+            className={cx('truncate font-semibold sm:text-base', muted ? 'text-concrete-500' : 'text-concrete-900')}
+          >
+            {jobTitle(job)}
+          </span>
+        )}
         <span className="truncate text-concrete-500">{where}</span>
         <span className="truncate text-concrete-500">{when}</span>
         <span className={cx('truncate pt-0.5', muted ? 'text-concrete-500' : 'text-concrete-900')}>
