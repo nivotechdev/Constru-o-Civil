@@ -1,13 +1,19 @@
-// Cloudflare Turnstile: confere o token do captcha no servidor. Sem TURNSTILE_SECRET configurado o
-// captcha está desligado (o app também não mostra o desafio: VITE_TURNSTILE_SITE_KEY vazio).
+// Cloudflare Turnstile: confere o token do captcha no servidor.
+// L05: obrigatório. Sem TURNSTILE_SECRET o pedido é RECUSADO (antes passava sem captcha) — a não ser que
+// CAPTCHA_OPCIONAL=1 esteja nos Secrets, o que só se usa em desenvolvimento local. No staging use a chave de
+// teste da Cloudflare (1x0000000000000000000000000000000AA), que sempre aprova.
 
 export function captchaEnabled(): boolean {
-  return Boolean(Deno.env.get('TURNSTILE_SECRET'));
+  return Boolean(Deno.env.get('TURNSTILE_SECRET')) || Deno.env.get('CAPTCHA_OPCIONAL') !== '1';
 }
 
 export async function captchaOk(token: unknown, ip: string): Promise<boolean> {
   const secret = Deno.env.get('TURNSTILE_SECRET');
-  if (!secret) return true;
+  if (!secret) {
+    if (Deno.env.get('CAPTCHA_OPCIONAL') === '1') return true;
+    console.error('[captcha] TURNSTILE_SECRET não configurado: pedido recusado.');
+    return false;
+  }
   if (typeof token !== 'string' || !token) return false;
   const form = new FormData();
   form.append('secret', secret);

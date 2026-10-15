@@ -35,6 +35,13 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
+      # L05: as Edge Functions (Deno) também passam pelo verificador de tipos. Numa cópia fora de web/ para o
+      # Deno não confundir o node_modules do app com o das funções.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.4
+      - name: Tipos das Edge Functions
+        run: cp -r supabase/functions "$RUNNER_TEMP/functions" && cd "$RUNNER_TEMP/functions" && deno check */index.ts
       - name: Build (demonstração)
         run: npm run build:demo
       # L01: o build de produção sem as variáveis tem de falhar (nunca sai um app de demonstração por engano).

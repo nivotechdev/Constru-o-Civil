@@ -3,6 +3,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'node:child_process';
 import { isDemoMode, productionEnvError, productionEnvProblems } from './build/env';
 
 // `npm run build` → dist/ (code-split, served over HTTP, installable: manifest + service worker, X02).
@@ -25,6 +26,19 @@ function requireProductionEnv(env: Record<string, string>): Plugin {
       if (problems.length) throw new Error(productionEnvError(problems));
     }
   };
+}
+
+/** L05: the release in error reports is the commit (the deploy may set VITE_RELEASE itself). */
+function commitRelease(env: Record<string, string>): string {
+  const fromCi = env.VITE_RELEASE || process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA;
+  if (fromCi) return fromCi.slice(0, 12);
+  try {
+    return execSync('git rev-parse --short=12 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'dev';
+  }
 }
 
 /** X02: the link preview (`og:`) needs absolute URLs — `VITE_SITE_URL` is the published address. */
@@ -102,10 +116,13 @@ export default defineConfig(({ mode }) => {
     resolve: standalone ? { alias: { 'virtual:pwa-register': '/src/services/pwaStub.ts' } } : undefined,
     define: demo
       ? Object.fromEntries(Object.entries(DEMO_ENV).map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)]))
-      : undefined,
+      : { 'import.meta.env.VITE_RELEASE': JSON.stringify(commitRelease(env)) },
     build: {
       outDir: standalone ? 'dist-standalone' : 'dist',
       target: 'es2020',
+      // L05: source maps for Sentry, without the comment that points browsers to them. The deploy uploads
+      // them to Sentry and deletes them from dist/ before publishing (scripts/sentry-sourcemaps.mjs).
+      sourcemap: demo ? false : 'hidden',
       // Shared helpers smaller than 1 kB (a field error, a formatter…) ride along in a chunk that loads
       // under the same conditions instead of becoming requests of their own. Rollup only merges chunks
       // without side effects, so the order code runs in doesn't change.

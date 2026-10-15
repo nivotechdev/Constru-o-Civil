@@ -1,11 +1,25 @@
 // Utilidades das Edge Functions: CORS, respostas JSON e os clientes do Supabase.
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { allowedOrigin, originsProblem, parseOrigins } from './origin.ts';
+
+// L05: sem APP_ORIGIN a função não sobe (o erro aparece em Edge Functions › Logs).
+const ORIGINS = parseOrigins(Deno.env.get('APP_ORIGIN'));
+const problem = originsProblem(ORIGINS);
+if (problem) throw new Error(problem);
 
 export const CORS = {
-  'Access-Control-Allow-Origin': Deno.env.get('APP_ORIGIN') ?? '*',
+  'Access-Control-Allow-Origin': ORIGINS[0],
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  Vary: 'Origin'
 };
+
+/** Põe na resposta a origem do pedido, quando ela está em APP_ORIGIN (prévias por PR, staging). */
+export function withCors(req: Request, res: Response): Response {
+  res.headers.set('Access-Control-Allow-Origin', allowedOrigin(ORIGINS, req.headers.get('Origin')));
+  res.headers.set('Vary', 'Origin');
+  return res;
+}
 
 export function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });

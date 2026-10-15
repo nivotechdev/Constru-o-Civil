@@ -1215,3 +1215,30 @@ as tabelas do app antigo (`public.profiles` na `bicos_v2_rules`, por exemplo), e
 `/supabase/migrations/0*.sql`, como o setup dos testes. (2) Cada migration do app entra no histórico com a versão
 do **arquivo** (não a hora), que é o que a produção terá depois do `repair`; assim `list_migrations` compara
 igual. (3) Os dois scripts recusam o ref/conexão da produção.
+
+## L05 (lançamento) — Anti-abuso e observabilidade ligados
+
+**Problema**: captcha e Sentry eram opcionais (sem configurar, sumiam em silêncio), as funções respondiam CORS `*`
+sem `APP_ORIGIN`, e o "esqueci a senha" nem pedia captcha.
+
+**O que foi feito**:
+
+- **Captcha**: o build de produção exige a site key (L01); cadastro, login (e-mail ou documento) e "esqueci a
+  senha" pedem o token e **não enviam sem ele** (`captchaToken` em `services/remote/auth.ts`, teste em
+  `captcha.test.ts`). No servidor, `_shared/captcha.ts` passou a **recusar** quando falta `TURNSTILE_SECRET`
+  (antes deixava passar); `CAPTCHA_OPCIONAL=1` só para desenvolvimento. Para o Auth (cadastro, login, recuperação)
+  quem confere é o próprio Supabase: Attack Protection › Captcha (ação do responsável).
+- **Sentry**: `services/monitoring.ts` ganhou `beforeSend` (tira e-mail, CPF, CNPJ, telefone, JWT/tokens, ids e
+  `BC-n` de mensagem, tags e extras), quadros da pilha de verdade (para o Sentry usar os source maps), `release` =
+  commit (`vite.config.ts` › `commitRelease`) e `environment`. O build de produção gera source maps **ocultos**
+  (`sourcemap: 'hidden'`, sem o comentário que aponta para eles); `scripts/sentry-sourcemaps.mjs` envia ao Sentry
+  e apaga os `.map` de `dist/` antes de publicar. Continua sem SDK (o bundle não cresce).
+- **APP_ORIGIN**: `_shared/http.ts` não sobe sem ele (erro no log da função). Aceita lista e `https://*.dominio`
+  para prévias por PR; `monitored()` devolve a origem do pedido quando ela está na lista (`_shared/origin.ts`,
+  testado no Vitest). O CI passou a rodar `deno check` nas funções.
+
+**Por quê**: falhar fechado. Esquecer um segredo agora quebra a função de forma visível no deploy/staging, em vez
+de deixar a porta aberta em produção sem ninguém perceber.
+
+**Pendente com o responsável**: código do WhatsApp (Twilio Verify) obrigatório antes da 1ª candidatura **ou**
+validação de formato + aviso — ver `CHECKLIST-LANCAMENTO.md`.

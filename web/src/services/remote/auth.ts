@@ -4,6 +4,7 @@
 import type { Role } from '../../types/models';
 import type { CaptchaSource, ProfileData, SignInResult, SignUpData, SignUpResult } from '../auth';
 import { serviceError, ServiceError } from '../errors';
+import { FEATURES } from '../features';
 import { getSession } from '../store';
 import { db, invokeFunction, request, toServiceError } from './client';
 import { withTimeout } from '../boot';
@@ -28,6 +29,18 @@ const authCode = (e: unknown) => ((e ?? {}) as AuthErrorLike).code ?? '';
 
 // ---- sign-in ----
 
+const NOT_A_ROBOT = 'Não conseguimos confirmar que você não é um robô. Tente de novo.';
+
+/**
+ * L05: with the captcha on (production), a public form never goes out without a token — the Auth and
+ * `entrar-com-documento` would refuse it anyway; stopping here gives a clear message instead.
+ */
+async function captchaToken(captcha: CaptchaSource): Promise<string | undefined> {
+  const token = await captcha();
+  if (FEATURES.captcha && !token) throw serviceError('validacao', NOT_A_ROBOT + ' Se continuar, recarregue a página.');
+  return token;
+}
+
 const TOO_MANY = 'Muitas tentativas. Espere 15 minutos e tente de novo, ou toque em "Esqueci minha senha".';
 
 /**
@@ -48,14 +61,13 @@ export async function signIn(identifier: string, password: string, captcha: Capt
       answer = await invokeFunction<{ email?: string }>('entrar-com-documento', {
         documento: doc,
         senha: password,
-        captchaToken: await captcha()
+        captchaToken: await captchaToken(captcha)
       });
     } catch (e) {
       const refusal = e instanceof ServiceError ? e.reason : null;
       if (refusal === 'credenciais') return { ok: false, reason: 'credenciais' };
       if (refusal === 'muitas-tentativas') throw serviceError('conflito', TOO_MANY);
-      if (refusal === 'captcha')
-        throw serviceError('validacao', 'Não conseguimos confirmar que você não é um robô. Tente de novo.');
+      if (refusal === 'captcha') throw serviceError('validacao', NOT_A_ROBOT);
       throw e;
     }
     if (!answer.email) return { ok: false, reason: 'credenciais' };
@@ -64,7 +76,11 @@ export async function signIn(identifier: string, password: string, captcha: Capt
 
   let result;
   try {
-    result = await client.auth.signInWithPassword({ email, password, options: { captchaToken: await captcha() } });
+    result = await client.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken: await captchaToken(captcha) }
+    });
   } catch (e) {
     throw toServiceError(e);
   }
@@ -75,8 +91,7 @@ export async function signIn(identifier: string, password: string, captcha: Capt
     // Y19: no session (and no way to know the side) until the link is opened: the login says so.
     if (code === 'email_not_confirmed') return { ok: false, reason: 'email-nao-confirmado', email };
     if (code === 'over_request_rate_limit') throw serviceError('conflito', TOO_MANY);
-    if (code === 'captcha_failed')
-      throw serviceError('validacao', 'Não conseguimos confirmar que você não é um robô. Tente de novo.');
+    if (code === 'captcha_failed') throw serviceError('validacao', NOT_A_ROBOT);
     throw toServiceError(result.error);
   }
   return { ok: true, role: await enterSession(result.data.user) };
@@ -126,7 +141,7 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
       password: data.password,
       options: {
         emailRedirectTo: authRedirectUrl(),
-        captchaToken: await captcha(),
+        captchaToken: await captchaToken(captcha),
         // Read by the database when the account is created; the document is removed from the Auth
         // metadata right after it is encrypted (Z09). `tipo` keeps the legacy app's trigger working.
         data: {
@@ -154,8 +169,7 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
       throw serviceError('validacao', 'Essa senha é fraca. Use pelo menos 8 caracteres, com letras e números.');
     if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit')
       throw serviceError('conflito', 'Muitas tentativas agora. Espere alguns minutos e tente de novo.');
-    if (code === 'captcha_failed')
-      throw serviceError('validacao', 'Não conseguimos confirmar que você não é um robô. Tente de novo.');
+    if (code === 'captcha_failed') throw serviceError('validacao', NOT_A_ROBOT);
     throw toServiceError(result.error);
   }
   const user = result.data.user;
@@ -221,12 +235,14 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
 
 // ---- password ----
 
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(email: string, captcha: CaptchaSource): Promise<void> {
   const client = await db();
   const { error } = await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-    redirectTo: authRedirectUrl()
+    redirectTo: authRedirectUrl(),
+    captchaToken: await captchaToken(captcha)
   });
   if (error) {
+    if (authCode(error) === 'captcha_failed') throw serviceError('validacao', NOT_A_ROBOT);
     if (authCode(error) === 'over_email_send_rate_limit')
       throw serviceError('conflito', 'Já enviamos o link há pouco. Espere alguns minutos para pedir outro.');
     throw toServiceError(error);
@@ -261,7 +277,11 @@ export async function abandonPasswordReset(): Promise<void> {
 // ---- WhatsApp code (Y25) ----
 
 export async function sendWhatsAppCode(phone: string, captcha: CaptchaSource): Promise<void> {
-  await invokeFunction('codigo-whatsapp', { acao: 'enviar', telefone: digits(phone), captchaToken: await captcha() });
+  await invokeFunction('codigo-whatsapp', {
+    acao: 'enviar',
+    telefone: digits(phone),
+    captchaToken: await captchaToken(captcha)
+  });
 }
 
 export async function verifyWhatsAppCode(phone: string, code: string): Promise<boolean> {

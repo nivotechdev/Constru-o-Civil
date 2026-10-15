@@ -275,9 +275,9 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
 
 // ---- password ----
 
-/** Sends the "reset your password" link. Demo: nothing is sent. */
-export async function requestPasswordReset(_email: string): Promise<void> {
-  if (!IS_DEMO) return remote.requestPasswordReset(_email);
+/** Sends the "reset your password" link (captcha in production — L05). Demo: nothing is sent. */
+export async function requestPasswordReset(_email: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
+  if (!IS_DEMO) return remote.requestPasswordReset(_email, captcha);
   await mockLatency(600);
 }
 
