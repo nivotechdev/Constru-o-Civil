@@ -1300,3 +1300,21 @@ recebiam dados** (gatilho `on_auth_user_created` copiando cada cadastro para `pr
 (`accounts.document_cipher`). Apagá-la, como o pedido sugeria, tornaria esses documentos ilegíveis.
 
 **Mapa completo**: `docs/LGPD.md` (dado → onde → finalidade → base legal → prazo, operadores, achados).
+
+## L04 (lançamento) — E-mail transacional que chega
+
+**Problema**: o SMTP padrão do Supabase só entrega para a equipe do projeto, com cota mínima; os e-mails eram os
+textos padrão em inglês.
+
+**O que foi feito**: os 4 e-mails do Auth em português (`supabase/email-templates/`), num layout único só com
+tabela e estilos na linha (sem imagem remota, sem script — o que mais derruba a entrega), botão grande e o mesmo
+link em texto para celular simples. `scripts/configurar-auth.mjs` aplica, pela Management API, SMTP da Brevo,
+templates, assuntos, Site URL/Redirect URLs, senha mínima e captcha — o mesmo comando para staging e produção
+(esta só com `CONFIRMO_PRODUCAO=sim`). Os registros de DNS e o teste de entrega estão no checklist.
+
+**Por quê**: configurar à mão no painel, duas vezes, é onde staging e produção começam a divergir. A validade dos
+links fica em 1 hora (padrão do Supabase, vale para todos os tipos); a tela "Confirme seu e-mail" já tem
+"Reenviar o link".
+
+**Não feito (depende do responsável)**: autenticar o domínio na Brevo e criar os registros no DNS; o aceite
+"chega na caixa de entrada do Gmail e do Outlook" só pode ser conferido depois disso.
