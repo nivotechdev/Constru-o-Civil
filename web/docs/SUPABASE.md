@@ -118,7 +118,8 @@ na demonstração tudo é simulado.
 
 ## 6. Hospedagem
 
-- Build: `npm run build` → `dist/` (com as variáveis do `.env.example`). As rotas são caminhos de verdade
+- Build: `npm run build` → `dist/` (com as variáveis do `.env.example`; **falha** se faltar alguma obrigatória —
+  L01; a demonstração é `npm run build:demo`). As rotas são caminhos de verdade
   (`/vaga/BC-1`): o servidor responde `index.html` para todo caminho que não for arquivo. **Cloudflare Pages** faz isso
   sozinho (sem `404.html`); Netlify: `/* /index.html 200` em `_redirects`; nginx: `try_files $uri /index.html`.
 - `VITE_SITE_URL` (prévia do link no WhatsApp) e `APP_ORIGIN` (CORS das funções) = o domínio publicado.

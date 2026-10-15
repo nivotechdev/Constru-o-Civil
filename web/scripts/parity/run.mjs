@@ -7,7 +7,7 @@
 //   - focus (document.activeElement), scroll position and URL;
 //   - a screenshot of the whole page (scrolled and stitched), pixel by pixel.
 //
-// Usage: npm run build && npm run parity
+// Usage: npm run build:demo && npm run parity
 // Options (environment): PARITY_ONLY=<scenario substring> · PARITY_VIEWPORTS=phone,tablet,desktop ·
 // PARITY_CONCURRENCY=<journeys at once, default 1> · PARITY_REFERENCE=<dir of the app to compare with>
 import { execFileSync } from 'node:child_process';
@@ -594,7 +594,7 @@ async function runScenario(browser, base, vp, scenario) {
 }
 
 async function main() {
-  if (!fs.existsSync(path.join(REACT_DIR, 'index.html'))) throw new Error('Build first: npm run build');
+  if (!fs.existsSync(path.join(REACT_DIR, 'index.html'))) throw new Error('Build first: npm run build:demo');
   if (!fs.existsSync(path.join(REFERENCE_DIR, 'index.html'))) throw new Error('No reference app at ' + REFERENCE_DIR);
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.mkdirSync(OUT, { recursive: true });

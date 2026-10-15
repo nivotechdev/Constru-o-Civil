@@ -3,14 +3,29 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { VitePWA } from 'vite-plugin-pwa';
+import { isDemoMode, productionEnvError, productionEnvProblems } from './build/env';
 
 // `npm run build` → dist/ (code-split, served over HTTP, installable: manifest + service worker, X02).
+// It is the PRODUCTION build and stops when a required variable is missing (L01, build/env.ts).
+// `npm run build:demo` → the same app on the in-memory demo data (CI, Lighthouse, axe).
 // `npm run build:standalone` → dist-standalone/index.html with everything inlined, which — like the
 // legacy app — also works when opened straight from disk (file://). No service worker there.
 //
-// The Supabase variables (.env.local) turn the real backend on (src/services/mode.ts). The standalone
-// preview and the tests always run on the demo data, so they ignore them.
+// The Supabase variables (.env.local) turn the real backend on (src/services/mode.ts). The demo builds
+// and the tests always run on the demo data, so they ignore them.
 const DEMO_ENV = { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' };
+
+/** L01: a production build without its variables fails before bundling, listing what is missing. */
+function requireProductionEnv(env: Record<string, string>): Plugin {
+  return {
+    name: 'bicos-production-env',
+    apply: 'build',
+    config() {
+      const problems = productionEnvProblems(env);
+      if (problems.length) throw new Error(productionEnvError(problems));
+    }
+  };
+}
 
 /** X02: the link preview (`og:`) needs absolute URLs — `VITE_SITE_URL` is the published address. */
 function siteUrl(url: string): Plugin {
@@ -22,12 +37,14 @@ function siteUrl(url: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   const standalone = mode === 'standalone';
+  const demo = isDemoMode(mode);
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
     // X17: routes are real paths (`/vaga/BC-1`), so the files are referenced from the site's root (or
     // VITE_BASE when it is served under a folder). The standalone preview keeps relative paths.
     base: standalone ? './' : (env.VITE_BASE ?? '/'),
     plugins: [
+      ...(demo ? [] : [requireProductionEnv(env)]),
       react(),
       siteUrl(env.VITE_SITE_URL ?? ''),
       ...(standalone
@@ -83,7 +100,7 @@ export default defineConfig(({ mode }) => {
           ])
     ],
     resolve: standalone ? { alias: { 'virtual:pwa-register': '/src/services/pwaStub.ts' } } : undefined,
-    define: standalone
+    define: demo
       ? Object.fromEntries(Object.entries(DEMO_ENV).map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)]))
       : undefined,
     build: {

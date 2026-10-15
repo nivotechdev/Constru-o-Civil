@@ -140,7 +140,8 @@ cd web
 npm ci
 npm run dev            # http://localhost:5173 (demo se não houver .env.local)
 npm run typecheck && npm run lint && npm run format:check && npm test   # 167 testes Vitest
-npm run build          # ATENÇÃO: sem env gera build de DEMONSTRAÇÃO (é o L01)
+npm run build          # produção: FALHA se faltar variável obrigatória (L01)
+npm run build:demo     # demonstração (dados falsos)
 npm run build:standalone
 # Testes SQL (precisa de Docker):
 ./supabase/tests/local/setup.sh
@@ -174,7 +175,8 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase
 
 ## 7. Armadilhas conhecidas (leia antes de mexer)
 
-1. **Build sem env = app de mentira.** Nunca publique um build sem conferir `IS_DEMO === false`.
+1. **Build sem env = app de mentira.** Resolvido no L01: `npm run build` falha sem as variáveis; a demonstração é
+   `npm run build:demo`. Mesmo assim, nunca publique sem conferir `IS_DEMO === false`.
 2. **Histórico de migrations divergente** em produção: `supabase db push` direto vai tentar reaplicar tudo. Use o
    `repair` documentado em `APLICAR.md`, e só com aprovação.
 3. **`pg_net` não aceita `ALTER EXTENSION … SET SCHEMA`**: para tirar de `public` é `drop extension pg_net` +

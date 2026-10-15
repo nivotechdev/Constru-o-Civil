@@ -1179,3 +1179,25 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   sem colisão (antes era um número aleatório).
 - O contato de WhatsApp é guardado **por candidatura e situação** (pré-selecionado → contratado muda a mensagem
   pronta) e por conta: o segundo toque não lê de novo. Vale nos dois modos; sair da conta limpa.
+
+---
+
+# Rodada de lançamento (L01–L14)
+
+> Os IDs desta rodada repetem números da Fase C (L01–L22 de antes). Aqui eles aparecem como "L01 (lançamento)";
+> os arquivos de teste novos usam o prefixo `lanc_` para não se confundir com `l10_cnpj.sql` e afins.
+
+## L01 (lançamento) — Build de produção nunca sai em modo demonstração
+
+**Problema**: `npm run build` sem `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` gerava, sem aviso, o app de
+demonstração (vagas inventadas). Um deploy com uma variável esquecida publicaria dados falsos.
+
+**O que foi feito**: o modo passou a ser explícito. `npm run build` é produção e, antes de empacotar, confere as
+variáveis obrigatórias (`build/env.ts`, plugin `bicos-production-env` no `vite.config.ts`); faltando alguma — ou
+com endereço sem `https://` — o build para com a lista do que falta. A demonstração é `npm run build:demo`
+(modo `demo`, que zera as variáveis do Supabase como a prévia `standalone`). O CI usa `build:demo` para
+Lighthouse/axe, prova que o build de produção sem variáveis falha e faz o build real com valores de exemplo.
+
+**Por quê**: a falha tem de acontecer na hora do build (barato, visível no deploy), não no navegador do usuário.
+Qualquer outro modo (`--mode staging`, por exemplo) também é tratado como produção — só os modos nomeados de
+demonstração escapam da conferência.

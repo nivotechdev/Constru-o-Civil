@@ -1,5 +1,6 @@
 # X16: every push and pull request touching web/ is checked the way a contributor checks locally —
-# typecheck, lint, format, unit tests, the three builds (demo, real, standalone), the SQL tests on a
+# typecheck, lint, format, unit tests, the three builds (demo, real, standalone; L01: the real one fails
+# without its variables), the SQL tests on a
 # Supabase-like Postgres, and Lighthouse on a phone profile. The standalone preview is published as an
 # artifact (it is no longer kept in Git).
 name: web
@@ -35,12 +36,22 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - name: Build (demonstração)
-        run: npm run build
+        run: npm run build:demo
+      # L01: o build de produção sem as variáveis tem de falhar (nunca sai um app de demonstração por engano).
+      - name: Build de produção sem variáveis falha
+        run: |
+          if npx vite build --outDir dist-sem-env > build-sem-env.log 2>&1; then
+            echo "O build de produção passou sem as variáveis" && exit 1
+          fi
+          grep -q "Build de produção interrompido" build-sem-env.log && cat build-sem-env.log | head -8
       - name: Build (modo real)
         run: npm run build -- --outDir dist-real
         env:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder
+          VITE_SITE_URL: https://bicos.example.com
+          VITE_TURNSTILE_SITE_KEY: ci-placeholder
+          VITE_SENTRY_DSN: https://ci@sentry.example.com/1
       - name: Build (prévia que abre do disco)
         run: npm run build:standalone
       - uses: actions/upload-artifact@v4

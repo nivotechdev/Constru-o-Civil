@@ -11,7 +11,8 @@ automatizada com o app original está em `scripts/parity/` (ver `docs/VALIDACAO.
 ```bash
 npm install
 npm run dev          # servidor de desenvolvimento (http://localhost:5173)
-npm run build        # build de produção em dist/ (code splitting por tela)
+npm run build        # build de produção em dist/ — falha se faltar variável (L01)
+npm run build:demo   # build de demonstração em dist/ (dados falsos em memória)
 npm run preview      # serve o dist/
 npm run build:standalone  # dist-standalone/index.html com tudo embutido — abre direto do disco (file://), como o legado
 ```
@@ -23,7 +24,7 @@ npm run typecheck    # tsc (strict)
 npm run lint         # ESLint (typescript-eslint + react-hooks)
 npm run format       # Prettier
 npm test             # Vitest — inclui testes de paridade de lógica contra os módulos JS do legado
-npm run build && npm run parity   # paridade visual/comportamental contra o app legado (Playwright)
+npm run build:demo && npm run parity   # paridade visual/comportamental contra o app legado (Playwright)
 ```
 
 ## Estrutura
