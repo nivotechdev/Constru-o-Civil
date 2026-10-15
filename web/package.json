@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:demo": "tsc -b && vite build --mode demo",
+    "build:staging": "tsc -b && vite build --mode staging",
     "build:standalone": "tsc -b && vite build --mode standalone",
     "preview": "vite preview",
     "typecheck": "tsc -b",

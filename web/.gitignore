@@ -8,6 +8,7 @@ scripts/parity/.font-cache/
 .env
 .env.*
 !.env.example
+!.env.staging.example
 dist-real/
 deno.lock
 preview/

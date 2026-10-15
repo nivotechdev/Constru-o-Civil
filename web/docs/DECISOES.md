@@ -1201,3 +1201,17 @@ Lighthouse/axe, prova que o build de produção sem variáveis falha e faz o bui
 **Por quê**: a falha tem de acontecer na hora do build (barato, visível no deploy), não no navegador do usuário.
 Qualquer outro modo (`--mode staging`, por exemplo) também é tratado como produção — só os modos nomeados de
 demonstração escapam da conferência.
+
+## L02 (lançamento) — Staging
+
+**Problema**: não havia ambiente entre o falso Supabase dos testes e a produção.
+
+**O que foi feito**: scripts para montar um projeto novo igual à produção (`scripts/staging/aplicar-banco.sh`,
+`publicar-funcoes.sh`), modelos de variáveis (`.env.staging.example`, `supabase/functions/.env.staging.example`),
+`npm run build:staging` e o passo a passo em `docs/STAGING.md`. A criação do projeto espera o "pode".
+
+**Por quê assim**: (1) `APLICAR-TUDO.sql` sozinho não monta um banco vazio — as migrations do app novo ainda leem
+as tabelas do app antigo (`public.profiles` na `bicos_v2_rules`, por exemplo), então o script aplica primeiro
+`/supabase/migrations/0*.sql`, como o setup dos testes. (2) Cada migration do app entra no histórico com a versão
+do **arquivo** (não a hora), que é o que a produção terá depois do `repair`; assim `list_migrations` compara
+igual. (3) Os dois scripts recusam o ref/conexão da produção.
