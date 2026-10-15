@@ -236,6 +236,13 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
   if (data.session) await enterSession(data.session.user);
 }
 
+// ---- terms (L07) ----
+
+export async function acceptTerms(version: string): Promise<void> {
+  const client = await db();
+  await request(() => client.rpc('accept_terms', { p_version: version }));
+}
+
 // ---- password ----
 
 export async function requestPasswordReset(email: string, captcha: CaptchaSource): Promise<void> {

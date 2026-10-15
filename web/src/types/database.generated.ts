@@ -497,6 +497,8 @@ export type Database = {
           document_path: string;
           created_at: string;
           decided_at: string | null;
+          consent_version: string | null;
+          consent_at: string | null;
         };
         Insert: {
           id?: string;
@@ -505,6 +507,8 @@ export type Database = {
           document_path: string;
           created_at?: string;
           decided_at?: string | null;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Update: {
           id?: string;
@@ -513,6 +517,8 @@ export type Database = {
           document_path?: string;
           created_at?: string;
           decided_at?: string | null;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Relationships: [
           {
@@ -1149,6 +1155,20 @@ export type Database = {
         Update: { user_id?: string; role?: string; created_at?: string };
         Relationships: [];
       };
+      terms_acceptances: {
+        Row: { id: number; account_id: string; document: string; version: string; accepted_at: string };
+        Insert: { id?: never; account_id: string; document: string; version: string; accepted_at?: string };
+        Update: { id?: never; account_id?: string; document?: string; version?: string; accepted_at?: string };
+        Relationships: [
+          {
+            foreignKeyName: 'terms_acceptances_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       vagas: {
         Row: {
           id: string;
@@ -1401,6 +1421,7 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      accept_terms: { Args: { p_version: string }; Returns: undefined };
       account_from_old_profile: { Args: { p_user_id: string }; Returns: undefined };
       account_history: { Args: { p_account: string }; Returns: Json };
       add_staff_member: { Args: { p_email: string; p_role?: string }; Returns: string };
@@ -1762,7 +1783,10 @@ export type Database = {
       };
       storage_url_ok: { Args: { p_url: string; p_bucket: string; p_owner: string }; Returns: boolean };
       submit_application: { Args: { p_job_id: string }; Returns: undefined };
-      submit_identity: { Args: { p_selfie_path: string; p_document_path: string }; Returns: undefined };
+      submit_identity: {
+        Args: { p_selfie_path: string; p_document_path: string; p_consent_version: string };
+        Returns: undefined;
+      };
       submit_review: {
         Args: {
           p_application_id: string;

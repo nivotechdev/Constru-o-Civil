@@ -7,9 +7,9 @@ name: web
 
 on:
   push:
-    paths: ["web/**", "supabase/migrations/**", ".github/workflows/web.yml"]
+    paths: ["web/**", "supabase/migrations/**", "legal/**", ".github/workflows/web.yml"]
   pull_request:
-    paths: ["web/**", "supabase/migrations/**", ".github/workflows/web.yml"]
+    paths: ["web/**", "supabase/migrations/**", "legal/**", ".github/workflows/web.yml"]
 
 concurrency:
   group: web-${{ github.ref }}

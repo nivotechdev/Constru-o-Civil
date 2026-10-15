@@ -38,6 +38,8 @@ export interface Session {
   companyId: string | null;
   emailConfirmed: boolean;
   profileComplete: boolean;
+  /** L07: accepted the current version of the terms and the privacy policy (services/legal.ts). */
+  termsCurrent: boolean;
 }
 
 /** A trade from the one catalog (services/catalog.ts): what a job asks for and what a worker does. */

@@ -2,6 +2,7 @@
 // sent to the server, how the answers land in the store, and how errors reach the screens.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authUser, fakeSupabase } from './fakeSupabase';
+import { TERMS_VERSION } from '../services/legal';
 
 const holder = vi.hoisted(() => ({ client: null as unknown }));
 
@@ -22,7 +23,7 @@ const workerAccount = {
   whatsapp_verified_at: null,
   email_confirmed_at: NOW,
   profile_completed_at: NOW,
-  terms_version: '1.0',
+  terms_version: TERMS_VERSION,
   terms_accepted_at: NOW,
   worker_id: 'u-ana',
   company_id: null,
@@ -200,7 +201,8 @@ describe('remote: sign-in and sign-up', () => {
       accountId: 'u-ana',
       role: 'trabalhador',
       workerId: 'u-ana',
-      profileComplete: true
+      profileComplete: true,
+      termsCurrent: true
     });
     expect(m.store.getDb().workers['u-ana'].whatsapp).toBe('11988887777');
   });
@@ -568,7 +570,7 @@ describe('remote: data and actions', () => {
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
     const identity = await import('../services/identity');
     vi.stubGlobal('fetch', async () => new Response(new Blob(['x'], { type: 'image/jpeg' })));
-    await identity.submitIdentity('blob:local/selfie', 'blob:local/doc');
+    await identity.submitIdentity('blob:local/selfie', 'blob:local/doc', '1.0');
     vi.unstubAllGlobals();
     const uploads = fake.calls.filter((c) => c.kind === 'storage');
     expect(uploads.map((u) => u.name)).toEqual(['identidade', 'identidade']);
@@ -576,6 +578,7 @@ describe('remote: data and actions', () => {
     const args = fake.calls.find((c) => c.name === 'submit_identity')?.args as Record<string, unknown>;
     expect(args.p_selfie_path).toBe(uploads[0].args);
     expect(args.p_document_path).toBe(uploads[1].args);
+    expect(args.p_consent_version).toBe('1.0'); // L07: the consent ticked on the screen goes with it
     expect(m.store.getDb().workers['u-ana'].identity).toBe('em_analise');
     await identity.loadMyIdentity();
     expect(m.store.getDb().workers['u-ana']).toMatchObject({ identity: 'recusado', identityReason: 'Foto borrada' });

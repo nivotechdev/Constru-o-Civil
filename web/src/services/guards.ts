@@ -17,6 +17,8 @@ export type GuardResult = { kind: 'ok' } | { kind: 'redirect'; to: string } | { 
 export function homeFor(session: Session): string {
   if (!session.emailConfirmed) return '/verificar-email';
   if (!session.profileComplete) return '/completar-perfil/' + session.role;
+  // L07: a new version of the terms is accepted before anything else.
+  if (!session.termsCurrent) return '/aceitar-termos';
   return '/mural';
 }
 

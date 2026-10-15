@@ -186,9 +186,10 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase
    `src/__tests__/utils.parity.test.ts` + `scripts/parity/` importam `../app`. Mover/apagar `app/` ou as migrations
    legadas (L14) quebra o CI se não ajustar esses três pontos juntos.
 5. `public_job_card` é a única RPC para `anon`; os IDs de vaga são sequenciais (`BC-1`…) → enumeráveis (L10).
-6. Política de privacidade e termos existem em **dois lugares** (`web/src/services/legal.ts` e `/legal/*.md`) e a tela
-   mostra o aviso "Rascunho para revisão jurídica". Mantenha os dois iguais; versão do aceite fica em
-   `accounts.terms_version`.
+6. Política de privacidade e termos: a fonte é `web/src/services/legal.ts`; `/legal/*.md` é **gerado** dele
+   (`LEGAL_WRITE=1 npx vitest run legal`, e o teste falha se divergir). O aviso "Rascunho para revisão jurídica" só
+   some com `LEGAL_REVIEWED = true` (depois do advogado). Mudar `TERMS.version` faz todo mundo aceitar de novo
+   (`/aceitar-termos`); cada aceite fica em `terms_acceptances` (L07).
 7. `SUPPORT_WHATSAPP` tem padrão `5494731661` em `services/features.ts` (10 dígitos — provavelmente errado).
 8. O conector do Supabase pede aprovação manual para mudanças: em sessão sem humano presente, prepare o SQL e pare.
 9. Plano Free: sem backup diário e o projeto pausa por inatividade. Nada destrutivo em produção sem backup manual antes

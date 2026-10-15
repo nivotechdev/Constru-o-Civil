@@ -1,85 +1,68 @@
-> **MINUTA — NÃO PUBLICAR SEM REVISÃO JURÍDICA.** Rascunho técnico que reflete
-> o funcionamento real da plataforma. Precisa de revisão de um advogado,
-> especialmente quanto à natureza jurídica da relação entre NivoTech,
-> construtoras e trabalhadores (a plataforma é uma intermediadora — não
-> emprega nem contrata ninguém — e essa distinção precisa estar
-> juridicamente blindada nestes termos). Campos entre colchetes `[assim]`
-> precisam ser preenchidos antes de publicar.
+# Termos de uso
 
-# Termos de Uso da NivoTech
+**Versão 2.0 · atualizada em 15/10/2026**
 
-**Última atualização: [DATA]** · **Versão: 2026-09-06**
+> **Rascunho para revisão jurídica.** Gerado de `web/src/services/legal.ts` — edite lá, não aqui. Os
+> campos `{{...}}` são preenchidos pela empresa (ver `web/docs/CHECKLIST-LANCAMENTO.md`).
 
-## 1. O que é a NivoTech
+## 1. Quem somos
 
-A NivoTech ([razão social], CNPJ [número]) opera uma plataforma digital que
-conecta profissionais da construção civil ("Trabalhadores") a empresas que
-oferecem oportunidades de trabalho ("Construtoras"). **A NivoTech é uma
-intermediadora tecnológica: não é parte na relação de trabalho entre
-Trabalhador e Construtora, não emprega nenhum dos dois, e não garante a
-concretização, as condições ou o pagamento de nenhuma oportunidade publicada
-na plataforma.**
+A Bicos é um serviço da {{RAZAO_SOCIAL}} ("NivoTech"), CNPJ {{CNPJ}}, com sede em {{ENDERECO}}.
 
-## 2. Cadastro
+Ao criar uma conta você aceita estes termos e a Política de privacidade. Se não concordar, não use a Bicos.
 
-- Para usar a plataforma, é necessário criar uma conta com nome/razão
-  social, CPF ou CNPJ, e e-mail válido, verificado por link de confirmação.
-- Você é responsável pela veracidade das informações cadastradas e pela
-  guarda da sua senha.
-- Cada CPF ou CNPJ só pode estar associado a uma conta.
-- **O tipo de conta (Trabalhador ou Construtora) é definido no cadastro e
-  não pode ser alterado depois.** Para mudar de perfil, é necessário criar
-  uma nova conta com um documento diferente.
+## 2. O que a Bicos faz
 
-## 3. Publicação de vagas (Construtoras)
+A Bicos aproxima construtoras e obras que precisam de gente para diárias e trabalhadores da construção civil que procuram bico.
 
-- A Construtora é integralmente responsável pela veracidade das informações
-  publicadas (valor, local, data, horário) e pelo cumprimento de qualquer
-  obrigação legal, trabalhista ou tributária relacionada à contratação do
-  Trabalhador.
-- A NivoTech pode remover, sem aviso prévio, vagas que violem estes termos,
-  a legislação vigente, ou que sejam identificadas como fraudulentas.
-- Vagas com data de execução já vencida são automaticamente marcadas como
-  expiradas e deixam de ser exibidas no mural.
+A Bicos não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre a construtora e o trabalhador, que respondem por ele.
 
-## 4. Candidatura (Trabalhadores)
+## 3. Sua conta
 
-- Ao se candidatar, o Trabalhador autoriza o compartilhamento do nome e
-  e-mail informados com a Construtora responsável pela vaga.
-- A NivoTech não garante que a candidatura resultará em contratação, nem
-  intermedia pagamento entre as partes.
+Cada conta é de uma pessoa ou empresa e de um lado só: trabalhador ou construtora.
 
-## 5. Condutas proibidas
+Você é responsável pelos dados que informa (CPF, CNPJ, WhatsApp, e-mail) e por manter sua senha em segredo.
 
-É proibido: publicar informação falsa; usar a plataforma para fins
-discriminatórios; tentar acessar dados de outros usuários por meios não
-previstos na interface do site; publicar conteúdo ofensivo, ilegal ou que
-viole direitos de terceiros. Contas que violem estas regras podem ser
-suspensas ou excluídas.
+Para usar a Bicos você precisa ter 18 anos ou mais.
 
-## 6. Limitação de responsabilidade
+## 4. Vagas e candidaturas
 
-A NivoTech se esforça para manter a plataforma disponível e segura, mas não
-garante disponibilidade ininterrupta nem se responsabiliza por prejuízos
-decorrentes: (a) de informações falsas fornecidas por usuários; (b) da
-relação de trabalho estabelecida entre Trabalhador e Construtora fora da
-plataforma; (c) de instabilidades de conectividade ou de terceiros
-provedores de infraestrutura.
+A construtora publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.
 
-## 7. Dados pessoais
+O trabalhador se candidata só a vagas que pode cumprir e avisa pela Bicos se não puder ir.
 
-O tratamento de dados pessoais na plataforma é regido pela nossa
-[Política de Privacidade](politica-de-privacidade.md), parte integrante
-destes Termos.
+O contato por WhatsApp é liberado para os dois lados quando a construtora aprova o candidato. O endereço exato da obra aparece só para quem foi escolhido.
 
-## 8. Alterações e encerramento
+## 5. Verificação
 
-Podemos atualizar estes termos a qualquer momento, com aviso prévio razoável
-para mudanças relevantes. Você pode encerrar sua conta a qualquer momento
-pela própria plataforma.
+A construtora pode ser conferida pelo CNPJ na Receita Federal. O trabalhador pode pedir o selo "Verificado" enviando uma selfie e a foto do documento, com consentimento próprio (veja a Política de privacidade).
 
-## 9. Foro
+O selo indica que conferimos os documentos, não garante o trabalho de ninguém.
 
-Fica eleito o foro da comarca de [cidade/UF] para dirimir eventuais
-controvérsias decorrentes destes Termos, com renúncia a qualquer outro, por
-mais privilegiado que seja.
+## 6. Pagamentos
+
+Para o trabalhador, a Bicos é sempre grátis. Publicar vaga também é grátis.
+
+A construtora paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.
+
+O pagamento da diária é feito direto pela construtora ao trabalhador, como combinado entre eles.
+
+## 7. Avaliações, denúncias e conduta
+
+Depois da diária, cada lado pode avaliar o outro uma vez. A avaliação deve ser verdadeira e respeitosa.
+
+Não é permitido publicar conteúdo falso, ofensivo ou discriminatório, pedir dinheiro adiantado, oferecer trabalho perigoso ou ilegal, nem usar a Bicos para outro fim.
+
+Qualquer pessoa pode denunciar uma vaga, um perfil, uma avaliação ou um post. A equipe analisa e pode ocultar conteúdo ou suspender a conta, registrando o motivo. Quem discordar pode falar com o suporte.
+
+## 8. Encerrar a conta
+
+Você pode excluir sua conta a qualquer momento em Configurações › Privacidade e dados.
+
+Diárias já combinadas devem ser resolvidas antes (ou a desistência confirmada).
+
+## 9. Mudanças e foro
+
+Quando estes termos mudarem, avisamos no app e pedimos um novo aceite antes de continuar.
+
+Fica eleito o foro de {{CIDADE_FORO}}, sem prejuízo do direito do consumidor de usar o foro do seu domicílio.

@@ -27,6 +27,7 @@ import { isValidCnpj, isValidCpf } from '../utils/document';
 import { FEATURES } from './features';
 import { serviceError } from './errors';
 import { isValidEmail } from '../utils/format';
+import { TERMS_VERSION } from './legal';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -271,6 +272,20 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
     updateCompany(session.companyId, { tipoObra: profile.tipoObra, location: profile.city });
   }
   updateAccount(session.accountId, { profileCompletedAt: new Date().toISOString() });
+}
+
+// ---- terms (L07) ----
+
+/**
+ * Accepts the current terms and privacy policy (a new version since the last acceptance). Backend: RPC
+ * accept_terms (stores the version and the time in terms_acceptances).
+ */
+export async function acceptTerms(): Promise<void> {
+  const session = getSession();
+  if (!session) throw serviceError('nao_autorizado');
+  if (!IS_DEMO) await remote.acceptTerms(TERMS_VERSION);
+  else await mockLatency(400);
+  updateAccount(session.accountId, { termsVersion: TERMS_VERSION, termsAcceptedAt: new Date().toISOString() });
 }
 
 // ---- password ----

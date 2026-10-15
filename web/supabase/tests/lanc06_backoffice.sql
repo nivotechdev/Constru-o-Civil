@@ -30,7 +30,7 @@ select pg_temp.fails($$select public.account_history('86000000-0000-0000-0000-00
 select pg_temp.fails($$select public.report_target_info('vaga', 'BC-1')$$, '42501');
 select pg_temp.fails($$select suspended_reason from public.accounts$$, '42501');
 -- A selfie e o documento continuam fechados para quem não é da equipe.
-select public.submit_identity('86000000-0000-0000-0000-0000000000a1/selfie.jpg', '86000000-0000-0000-0000-0000000000a1/doc.jpg');
+select public.submit_identity('86000000-0000-0000-0000-0000000000a1/selfie.jpg', '86000000-0000-0000-0000-0000000000a1/doc.jpg', '1.0');
 select public.report_content('vaga', (select v from t_ids where k = 'j'), 'golpe', 'Pediu PIX adiantado');
 select public.report_content('perfil', '86000000-0000-0000-0000-0000000000a2', 'ofensa', null);
 select pg_temp.logout();

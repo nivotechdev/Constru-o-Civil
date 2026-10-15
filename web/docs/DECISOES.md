@@ -1271,3 +1271,32 @@ validação de formato + aviso — ver `CHECKLIST-LANCAMENTO.md`.
 provam que conta comum e visitante não leem nem chamam nada do admin e que a suspensão vale no banco.
 
 **Demonstração**: não há equipe no modo demo; `/admin` explica que a área é só da equipe.
+
+## L07 (lançamento) — LGPD e jurídico prontos para revisão
+
+**Problema**: política genérica, marcada como rascunho; sem consentimento próprio para a selfie (dado biométrico);
+termos novos não pediam novo aceite; as tabelas do app antigo continuavam lá — e a varredura mostrou que **ainda
+recebiam dados** (gatilho `on_auth_user_created` copiando cada cadastro para `profiles`; aceites indo para
+`consentimentos`).
+
+**O que foi feito**:
+
+- Textos 2.0 em `services/legal.ts` (fonte única; `/legal/*.md` gerado e conferido por `legal.test.ts`):
+  controlador e DPO com campos `{{...}}`, selfie/documento como dado sensível (art. 11: finalidade, base, quem
+  acessa, 30 dias), operadores e transferência internacional, retenção por tipo de dado, direitos, segurança.
+  `LEGAL_REVIEWED = false` mantém o aviso de rascunho até a revisão do advogado.
+- Migration `lanc07_aceites`: `terms_acceptances` (cada aceite com versão e hora; cópia do que estava em
+  `consentimentos` e em `accounts`), `accept_terms`, `create_account_for` sem tocar no app antigo,
+  `submit_identity` exigindo a versão do consentimento (gravada em `identity_submissions`), e `export_my_data`
+  com aceites e verificações.
+- Tela de verificação com um quadro de consentimento destacado e caixa própria (`IDENTITY_CONSENT`); o envio só
+  sai com ela marcada (no app e no banco).
+- `Session.termsCurrent` + `homeFor` → `/aceitar-termos` quando `TERMS.version` muda.
+- **Pendente de "pode"**: `supabase/pendentes/…_lanc07_apagar_app_antigo.sql` (apaga as 7 tabelas, o gatilho e
+  as funções antigas; testado com todos os testes SQL) e `scripts/exportar-app-antigo.sh` para guardar os dados
+  antes. Não está em `migrations/` para não ser aplicado por engano.
+
+**Por quê não apagar a chave do Vault**: `nivotech_documento_key` cifra o CPF/CNPJ das contas **atuais**
+(`accounts.document_cipher`). Apagá-la, como o pedido sugeria, tornaria esses documentos ilegíveis.
+
+**Mapa completo**: `docs/LGPD.md` (dado → onde → finalidade → base legal → prazo, operadores, achados).

@@ -78,6 +78,7 @@ const NotificationSettings = screen(() => import('./pages/shared/NotificationSet
 const Reviews = screen(() => import('./pages/shared/ReviewsScreen'));
 const Help = screen(() => import('./pages/shared/Help'));
 const Admin = screen(() => import('./pages/admin/Admin'));
+const AcceptTerms = screen(() => import('./pages/shared/AcceptTerms'));
 
 const Feed = screen(() => import('./pages/worker/feed/Feed'));
 const JobDetail = screen(() => import('./pages/worker/JobDetail'));
@@ -120,6 +121,7 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/cadastro/:role', guest(Signup)),
   compileRoute('/verificar-email', onboarding(VerifyEmail)),
   compileRoute('/completar-perfil/:role', onboarding(CompleteProfile)),
+  compileRoute('/aceitar-termos', onboarding(AcceptTerms)),
   compileRoute('/login', guest(Login)),
   compileRoute('/esqueci-senha', anyone(ForgotPassword)),
   compileRoute('/redefinir-senha', anyone(ResetPassword)),
@@ -179,6 +181,7 @@ const AUTH_FLOW = new Set([
   '/splash',
   '/escolha-perfil',
   '/verificar-email',
+  '/aceitar-termos',
   '/login',
   '/esqueci-senha',
   '/redefinir-senha',

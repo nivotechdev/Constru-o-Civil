@@ -4,6 +4,7 @@ import { BackBar } from '../../components/BackBar';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { QueryView } from '../../components/QueryView';
@@ -12,6 +13,7 @@ import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
 import { demoApproveIdentity, identityOf, loadMyIdentity, submitIdentity } from '../../services/identity';
+import { IDENTITY_CONSENT } from '../../services/legal';
 import { IS_DEMO } from '../../services/mode';
 import { goBack } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
@@ -64,6 +66,7 @@ export default function VerifyIdentity() {
   const query = useQuery('my-identity', loadMyIdentity);
   const [selfie, setSelfie] = useState<string | null>(null);
   const [doc, setDoc] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
   const picked = useRef<(string | null)[]>([]);
   useEffect(() => {
     picked.current = [selfie, doc];
@@ -133,14 +136,28 @@ export default function VerifyIdentity() {
                   value={doc}
                   onChange={setDoc}
                 />
+                {/* L07: consent of its own, highlighted, apart from the terms (LGPD art. 11 — biometric data). */}
+                <Card tone="sunken" padding="md">
+                  <div className="flex flex-col gap-2" role="group" aria-labelledby="identity-consent-title">
+                    <h2 id="identity-consent-title" className="font-bold text-concrete-900">
+                      {IDENTITY_CONSENT.title}
+                    </h2>
+                    <ul className="flex flex-col gap-1 text-sm text-concrete-700 list-disc pl-5">
+                      {IDENTITY_CONSENT.points.map((p) => (
+                        <li key={p}>{p}</li>
+                      ))}
+                    </ul>
+                    <Checkbox label={IDENTITY_CONSENT.checkbox} checked={consent} onChange={setConsent} />
+                  </div>
+                </Card>
                 {send.error ? <FieldError message={send.error} /> : null}
                 <Button
                   label="Enviar para verificação"
                   size="lg"
                   fullWidth
-                  disabled={!selfie || !doc}
+                  disabled={!selfie || !doc || !consent}
                   loading={send.loading}
-                  onClick={() => void send.run(selfie ?? '', doc ?? '')}
+                  onClick={() => void send.run(selfie ?? '', doc ?? '', consent ? IDENTITY_CONSENT.version : null)}
                 />
               </>
             )
