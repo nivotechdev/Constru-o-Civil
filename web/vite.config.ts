@@ -41,6 +41,19 @@ function commitRelease(env: Record<string, string>): string {
   }
 }
 
+/**
+ * L08: the "open from disk" hint in index.html is for the development source only. The published build drops it,
+ * so the page has no inline script and the CSP (public/_headers) needs no 'unsafe-inline' for scripts.
+ */
+function dropDevOnlyScript(): Plugin {
+  return {
+    name: 'bicos-drop-dev-script',
+    apply: 'build',
+    transformIndexHtml: (html) =>
+      html.replace(/\s*<script>(?:(?!<\/script>)[\s\S])*location\.protocol === 'file:'[\s\S]*?<\/script>/, '')
+  };
+}
+
 /** X02: the link preview (`og:`) needs absolute URLs — `VITE_SITE_URL` is the published address. */
 function siteUrl(url: string): Plugin {
   return {
@@ -61,6 +74,7 @@ export default defineConfig(({ mode }) => {
       ...(demo ? [] : [requireProductionEnv(env)]),
       react(),
       siteUrl(env.VITE_SITE_URL ?? ''),
+      ...(standalone ? [] : [dropDevOnlyScript()]),
       ...(standalone
         ? [viteSingleFile()]
         : [

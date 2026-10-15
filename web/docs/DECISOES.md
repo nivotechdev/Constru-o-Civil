@@ -1318,3 +1318,21 @@ links fica em 1 hora (padrão do Supabase, vale para todos os tipos); a tela "Co
 
 **Não feito (depende do responsável)**: autenticar o domínio na Brevo e criar os registros no DNS; o aceite
 "chega na caixa de entrada do Gmail e do Outlook" só pode ser conferido depois disso.
+
+## L08 (lançamento) — Infraestrutura de produção
+
+**O que foi feito**: `public/_headers` (Cloudflare Pages) com CSP restrita ao que o app carrega (Supabase,
+Turnstile, Mercado Pago, Sentry, BrasilAPI/ViaCEP), HSTS de 1 ano, `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`, `Permissions-Policy` e cache longo para `/assets/*`. O build publicado não tem mais script
+inline (o aviso "abra pelo servidor" do `index.html` só existe no código-fonte — plugin `bicos-drop-dev-script`),
+então a CSP não precisa de `'unsafe-inline'` em scripts; estilos ainda precisam (o CSS crítico do `index.html`).
+`headers.test.ts` confere os cabeçalhos e que cada endereço externo do código está liberado. Deploy num comando:
+`scripts/deploy.sh` (`npm run deploy:staging|deploy:producao`), que se recusa a publicar a demonstração (armadilha 1).
+
+**Câmera**: o pedido falava em liberar a câmera só na tela da selfie. Como a selfie usa `<input capture>` (o app
+de câmera do próprio celular), a página não precisa da permissão `camera` em nenhuma tela; ela fica bloqueada em
+todas (`camera=()`). Além disso, num app de página única a política vale para o documento inteiro: uma regra por
+caminho não funcionaria ao navegar dentro do app.
+
+**Depende do responsável**: plano Pro, backups/PITR, leaked password protection, URL Configuration, limites do
+Auth, alerta de uso, projeto no Cloudflare Pages com domínio, e a nota A no securityheaders.com (checklist).

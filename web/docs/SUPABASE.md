@@ -126,7 +126,10 @@ na demonstração tudo é simulado.
   (`/vaga/BC-1`): o servidor responde `index.html` para todo caminho que não for arquivo. **Cloudflare Pages** faz isso
   sozinho (sem `404.html`); Netlify: `/* /index.html 200` em `_redirects`; nginx: `try_files $uri /index.html`.
 - `VITE_SITE_URL` (prévia do link no WhatsApp) e `APP_ORIGIN` (CORS das funções) = o domínio publicado.
-- Staging separado: recomendado um segundo projeto Supabase (gratuito) com as mesmas migrations; ver DECISOES (X16).
+- **Deploy (L08)**: `npm run deploy:staging` / `npm run deploy:producao` (`scripts/deploy.sh`): build que falha sem
+  variável, recusa publicar a demonstração, envia os source maps ao Sentry e publica no Cloudflare Pages. Os
+  cabeçalhos de segurança (CSP, HSTS…) estão em `public/_headers`.
+- Staging: `docs/STAGING.md` (L02).
 
 ## 7. Onde está cada coisa no código
 
