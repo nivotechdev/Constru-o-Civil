@@ -522,6 +522,81 @@ export interface SupabaseDatabase {
         Returns: Json[];
       };
       export_my_data: { Args: never; Returns: Json };
+      // L06 (lançamento): the team's back-office (each one checks is_staff() on the server).
+      is_staff: { Args: never; Returns: boolean };
+      admin_identity_queue: {
+        Args: never;
+        Returns: {
+          worker_id: string;
+          name: string;
+          oficio: string | null;
+          city: string;
+          photo_url: string | null;
+          document: string;
+          created_at: string;
+          submitted_at: string | null;
+          selfie_path: string | null;
+          document_path: string | null;
+          submissions: number;
+        }[];
+      };
+      admin_decide_identity: {
+        Args: { p_worker: string; p_status: 'verificado' | 'recusado'; p_reason: string | null };
+        Returns: undefined;
+      };
+      admin_company_queue: {
+        Args: never;
+        Returns: {
+          company_id: string;
+          name: string;
+          location: string;
+          tipo_obra: string | null;
+          email: string;
+          document: string;
+          document_kind: string;
+          created_at: string;
+          cnpj_check: Json | null;
+        }[];
+      };
+      admin_decide_company: {
+        Args: { p_company: string; p_status: CompanyVerification; p_reason: string | null };
+        Returns: undefined;
+      };
+      admin_report_queue: {
+        Args: { p_status: 'aberta' | 'analisada' };
+        Returns: {
+          id: string;
+          target_type: ReportTarget;
+          target_id: string;
+          reason: string;
+          details: string | null;
+          status: string;
+          resolution: string | null;
+          created_at: string;
+          resolved_at: string | null;
+          reports_on_target: number;
+          target: Json;
+          account: Json | null;
+        }[];
+      };
+      admin_resolve_report: {
+        Args: { p_report: string; p_action: string; p_reason: string | null };
+        Returns: undefined;
+      };
+      admin_unsuspend_account: { Args: { p_account: string; p_reason: string | null }; Returns: undefined };
+      admin_unhide_job: { Args: { p_job: string; p_reason: string | null }; Returns: undefined };
+      admin_actions: {
+        Args: { p_limit: number };
+        Returns: {
+          id: number;
+          staff_email: string | null;
+          action: string;
+          target_type: string;
+          target_id: string;
+          reason: string | null;
+          created_at: string;
+        }[];
+      };
       delete_my_account: { Args: { p_confirm_commitments: boolean }; Returns: undefined };
     };
     Enums: {

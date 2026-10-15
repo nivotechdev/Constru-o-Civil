@@ -1185,7 +1185,7 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
 # Rodada de lançamento (L01–L14)
 
 > Os IDs desta rodada repetem números da Fase C (L01–L22 de antes). Aqui eles aparecem como "L01 (lançamento)";
-> os arquivos de teste novos usam o prefixo `lanc_` para não se confundir com `l10_cnpj.sql` e afins.
+> as migrations e os testes novos usam o prefixo `lancNN_` (ex.: `lanc06_backoffice`) para não se confundir com `l10_cnpj.sql` e afins.
 
 ## L01 (lançamento) — Build de produção nunca sai em modo demonstração
 
@@ -1242,3 +1242,32 @@ de deixar a porta aberta em produção sem ninguém perceber.
 
 **Pendente com o responsável**: código do WhatsApp (Twilio Verify) obrigatório antes da 1ª candidatura **ou**
 validação de formato + aviso — ver `CHECKLIST-LANCAMENTO.md`.
+
+## L06 (lançamento) — Back-office mínimo
+
+**Problema**: verificar identidade, aprovar construtora e tratar denúncia só era possível por SQL no painel.
+
+**O que foi feito** (migration `lanc06_backoffice`, tela `pages/admin/Admin.tsx`, serviço `services/admin.ts`):
+
+- **Equipe**: tabela `staff_members` (entra só pelo SQL Editor com `add_staff_member`), `is_staff()` e
+  `staff_guard()` no começo de cada RPC `admin_*` (BC401 para quem não é). Nenhuma chave `service_role` no
+  navegador: o app chama as RPCs com a sessão comum, e o banco decide.
+- **Filas**: identidades em análise (selfie e documento por **URL assinada de 5 min** — o bucket continua privado;
+  a única política de leitura nova é "Equipe lê as fotos de identidade"); construtoras pendentes com o CNPJ inteiro
+  e o que a Receita respondeu (`companies.cnpj_check`, gravado agora pela `verificar-cnpj`); denúncias com o
+  conteúdo, a conta responsável e o histórico dela (idade, nota, vagas/candidaturas, denúncias, ações da equipe).
+- **Ações**: aprovar/recusar (motivo obrigatório na recusa, avisa a pessoa), arquivar denúncia, ocultar vaga
+  (`jobs.hidden_at`: sai do mural, do link público e das candidaturas novas; a dona e quem já se candidatou
+  continuam vendo, como na vaga excluída), suspender conta e desfazer as duas últimas. Resolver uma denúncia
+  resolve as outras abertas sobre o mesmo conteúdo.
+- **Suspensão**: `accounts.suspended_at`; o Auth recusa o login (`banned_until = infinity`) e as sessões abertas
+  são apagadas; gatilhos impedem publicar vaga e se candidatar mesmo com um token ainda válido; as vagas abertas
+  da construtora saem do mural e as candidaturas pendentes do trabalhador saem. O login mostra "Sua conta está
+  suspensa".
+- **Auditoria**: `staff_actions` (quem, ação, alvo, motivo, quando), sem acesso direto; a aba "Registro" lê por
+  `admin_actions()`.
+
+**Por quê**: tudo no banco, como o resto do app — a tela é só uma porta. Os testes SQL (`lanc06_backoffice.sql`)
+provam que conta comum e visitante não leem nem chamam nada do admin e que a suspensão vale no banco.
+
+**Demonstração**: não há equipe no modo demo; `/admin` explica que a área é só da equipe.

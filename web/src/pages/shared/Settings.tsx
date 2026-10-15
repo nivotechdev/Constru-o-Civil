@@ -2,7 +2,9 @@ import { useSyncExternalStore, type ReactNode } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Icon, type IconName } from '../../components/icons/Icon';
 import { Switch } from '../../components/Switch';
-import { useRole } from '../../hooks/useStore';
+import { useQuery } from '../../hooks/useQuery';
+import { useRole, useUI } from '../../hooks/useStore';
+import { ADMIN_DEFAULTS, ADMIN_KEY, checkStaff } from '../../services/admin';
 import { isFailureMode, setFailureMode, subscribeFailureMode } from '../../services/demo';
 import { IS_DEMO } from '../../services/mode';
 import { goBack, navigate } from '../../services/router';
@@ -53,6 +55,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 export default function Settings() {
   const role = useRole();
+  // L06: the team's area shows up only for staff accounts (the server answers; demo: never).
+  useQuery('admin-staff', checkStaff);
+  const [admin] = useUI(ADMIN_KEY, ADMIN_DEFAULTS);
   const failing = useSyncExternalStore(subscribeFailureMode, isFailureMode);
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 gap-6 pb-8 lg:bg-transparent lg:min-h-0">
@@ -106,6 +111,16 @@ export default function Settings() {
           <Row icon="file-check" label="Termos de uso" onClick={() => navigate('/termos')} />
           <Row icon="shield-check" label="Política de privacidade" onClick={() => navigate('/privacidade')} />
         </Section>
+        {admin.isStaff ? (
+          <Section title="Equipe">
+            <Row
+              icon="shield-check"
+              label="Área da equipe"
+              description="Identidades, construtoras e denúncias"
+              onClick={() => navigate('/admin')}
+            />
+          </Section>
+        ) : null}
         <Section title="">
           <Row icon="log-out" label="Sair da conta" danger onClick={() => askSignOut()} />
         </Section>

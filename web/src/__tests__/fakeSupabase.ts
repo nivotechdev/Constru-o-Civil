@@ -190,7 +190,14 @@ export function fakeSupabase(options: FakeOptions = {}) {
         getPublicUrl: (path: string) => ({
           data: { publicUrl: `https://x.supabase.co/storage/v1/object/public/${bucket}/${path}` }
         }),
-        remove: async () => ({ data: null, error: null })
+        remove: async () => ({ data: null, error: null }),
+        createSignedUrl: async (path: string, expiresIn: number) => {
+          calls.push({ kind: 'storage', name: bucket, args: { path, expiresIn } });
+          return {
+            data: { signedUrl: `https://x.supabase.co/storage/v1/object/sign/${bucket}/${path}?token=t` },
+            error: null
+          };
+        }
       })
     }
   };

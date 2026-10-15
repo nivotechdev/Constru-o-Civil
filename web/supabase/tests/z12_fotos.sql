@@ -18,8 +18,9 @@ select pg_temp.fails($$insert into public.worker_posts (worker_id, media_url, ca
 update public.workers set photo_url = null where id = '70000000-0000-0000-0000-0000000000a1';
 select pg_temp.ok((select photo_url is null from public.workers where id = '70000000-0000-0000-0000-0000000000a1'), 'tirar a foto é aceito');
 
--- Ninguém lista os arquivos dos buckets.
-select pg_temp.ok(not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and cmd = 'SELECT'),
+-- Ninguém lista os arquivos dos buckets (L06: a única leitura é a da equipe, no bucket privado de identidade).
+select pg_temp.ok(not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and cmd = 'SELECT'
+                                 and policyname <> 'Equipe lê as fotos de identidade'),
   'sem política de leitura (listagem) nos objetos');
 select pg_temp.logout();
 

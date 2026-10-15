@@ -77,6 +77,7 @@ const BlockedAccounts = screen(() => import('./pages/shared/BlockedAccounts'));
 const NotificationSettings = screen(() => import('./pages/shared/NotificationSettings'));
 const Reviews = screen(() => import('./pages/shared/ReviewsScreen'));
 const Help = screen(() => import('./pages/shared/Help'));
+const Admin = screen(() => import('./pages/admin/Admin'));
 
 const Feed = screen(() => import('./pages/worker/feed/Feed'));
 const JobDetail = screen(() => import('./pages/worker/JobDetail'));
@@ -137,6 +138,8 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/configuracoes/excluir-conta', app(DeleteAccount)),
   compileRoute('/conta-excluida', anyone(AccountDeleted)),
   compileRoute('/ajuda', anyone(Help)),
+  // L06 (lançamento): the team's back-office; the server checks is_staff() on every call.
+  compileRoute('/admin', app(Admin)),
 
   compileRoute('/mural', app(Feed)),
   compileRoute('/vaga/:id', app(JobDetail)),

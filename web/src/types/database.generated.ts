@@ -23,6 +23,8 @@ export type Database = {
           worker_id: string | null;
           company_id: string | null;
           created_at: string;
+          suspended_at: string | null;
+          suspended_reason: string | null;
         };
         Insert: {
           id: string;
@@ -40,6 +42,8 @@ export type Database = {
           worker_id?: string | null;
           company_id?: string | null;
           created_at?: string;
+          suspended_at?: string | null;
+          suspended_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -57,6 +61,8 @@ export type Database = {
           worker_id?: string | null;
           company_id?: string | null;
           created_at?: string;
+          suspended_at?: string | null;
+          suspended_reason?: string | null;
         };
         Relationships: [
           {
@@ -392,6 +398,7 @@ export type Database = {
           verification_status: Database['public']['Enums']['company_verification'];
           verified_at: string | null;
           contact_name: string | null;
+          cnpj_check: Json | null;
         };
         Insert: {
           id?: string;
@@ -413,6 +420,7 @@ export type Database = {
           verification_status?: Database['public']['Enums']['company_verification'];
           verified_at?: string | null;
           contact_name?: string | null;
+          cnpj_check?: Json | null;
         };
         Update: {
           id?: string;
@@ -434,6 +442,7 @@ export type Database = {
           verification_status?: Database['public']['Enums']['company_verification'];
           verified_at?: string | null;
           contact_name?: string | null;
+          cnpj_check?: Json | null;
         };
         Relationships: [];
       };
@@ -660,6 +669,8 @@ export type Database = {
           payment_method: string | null;
           payment_note: string | null;
           area_geog: unknown | null;
+          hidden_at: string | null;
+          hidden_reason: string | null;
         };
         Insert: {
           id?: string;
@@ -699,6 +710,8 @@ export type Database = {
           payment_method?: string | null;
           payment_note?: string | null;
           area_geog?: never;
+          hidden_at?: string | null;
+          hidden_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -738,6 +751,8 @@ export type Database = {
           payment_method?: string | null;
           payment_note?: string | null;
           area_geog?: never;
+          hidden_at?: string | null;
+          hidden_reason?: string | null;
         };
         Relationships: [
           {
@@ -984,6 +999,9 @@ export type Database = {
           details: string | null;
           status: string;
           created_at: string;
+          resolution: string | null;
+          resolved_by: string | null;
+          resolved_at: string | null;
         };
         Insert: {
           id?: string;
@@ -994,6 +1012,9 @@ export type Database = {
           details?: string | null;
           status?: string;
           created_at?: string;
+          resolution?: string | null;
+          resolved_by?: string | null;
+          resolved_at?: string | null;
         };
         Update: {
           id?: string;
@@ -1004,6 +1025,9 @@ export type Database = {
           details?: string | null;
           status?: string;
           created_at?: string;
+          resolution?: string | null;
+          resolved_by?: string | null;
+          resolved_at?: string | null;
         };
         Relationships: [];
       };
@@ -1088,6 +1112,42 @@ export type Database = {
             referencedColumns: ['id'];
           }
         ];
+      };
+      staff_actions: {
+        Row: {
+          id: number;
+          staff_id: string | null;
+          action: string;
+          target_type: string;
+          target_id: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          staff_id?: string | null;
+          action: string;
+          target_type: string;
+          target_id: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: never;
+          staff_id?: string | null;
+          action?: string;
+          target_type?: string;
+          target_id?: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      staff_members: {
+        Row: { user_id: string; role: string; created_at: string };
+        Insert: { user_id: string; role?: string; created_at?: string };
+        Update: { user_id?: string; role?: string; created_at?: string };
+        Relationships: [];
       };
       vagas: {
         Row: {
@@ -1342,6 +1402,77 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       account_from_old_profile: { Args: { p_user_id: string }; Returns: undefined };
+      account_history: { Args: { p_account: string }; Returns: Json };
+      add_staff_member: { Args: { p_email: string; p_role?: string }; Returns: string };
+      admin_actions: {
+        Args: { p_limit?: number };
+        Returns: {
+          id: number;
+          staff_email: string;
+          action: string;
+          target_type: string;
+          target_id: string;
+          reason: string;
+          created_at: string;
+        }[];
+      };
+      admin_company_queue: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          company_id: string;
+          name: string;
+          location: string;
+          tipo_obra: string;
+          email: string;
+          document: string;
+          document_kind: string;
+          created_at: string;
+          cnpj_check: Json;
+        }[];
+      };
+      admin_decide_company: {
+        Args: { p_company: string; p_status: Database['public']['Enums']['company_verification']; p_reason?: string };
+        Returns: undefined;
+      };
+      admin_decide_identity: { Args: { p_worker: string; p_status: string; p_reason?: string }; Returns: undefined };
+      admin_hide_job: { Args: { p_job: string; p_reason: string }; Returns: undefined };
+      admin_identity_queue: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          worker_id: string;
+          name: string;
+          oficio: string;
+          city: string;
+          photo_url: string;
+          document: string;
+          created_at: string;
+          submitted_at: string;
+          selfie_path: string;
+          document_path: string;
+          submissions: number;
+        }[];
+      };
+      admin_report_queue: {
+        Args: { p_status?: string };
+        Returns: {
+          id: string;
+          target_type: Database['public']['Enums']['report_target'];
+          target_id: string;
+          reason: string;
+          details: string;
+          status: string;
+          resolution: string;
+          created_at: string;
+          resolved_at: string;
+          reports_on_target: number;
+          target: Json;
+          account: Json;
+        }[];
+      };
+      admin_resolve_report: { Args: { p_report: string; p_action: string; p_reason?: string }; Returns: undefined };
+      admin_suspend_account: { Args: { p_account: string; p_reason: string }; Returns: undefined };
+      admin_unhide_job: { Args: { p_job: string; p_reason?: string }; Returns: undefined };
+      admin_unsuspend_account: { Args: { p_account: string; p_reason?: string }; Returns: undefined };
       answer_invite: { Args: { p_job_id: string; p_accept: boolean }; Returns: undefined };
       application_conclude: {
         Args: { p_app_id: string; p_actor: Database['public']['Enums']['application_actor'] };
@@ -1516,6 +1647,7 @@ export type Database = {
       initials_of: { Args: { p_name: string }; Returns: string };
       invite_worker: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
       is_my_job: { Args: { p_job_id: string }; Returns: boolean };
+      is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
       job_close_applications: { Args: { p_job: Database['public']['Tables']['jobs']['Row'] }; Returns: undefined };
       job_close_if_team_done: { Args: { p_job_id: string }; Returns: undefined };
       job_extras_from_draft: { Args: { p: Json }; Returns: unknown };
@@ -1591,6 +1723,7 @@ export type Database = {
       reiniciar_cadastro_pendente_documento: { Args: { p_documento: string }; Returns: boolean };
       reiniciar_cadastro_pendente_email: { Args: { p_email: string }; Returns: boolean };
       remind_presence: { Args: Record<PropertyKey, never>; Returns: number };
+      remove_staff_member: { Args: { p_email: string }; Returns: undefined };
       report_content: {
         Args: {
           p_target_type: Database['public']['Enums']['report_target'];
@@ -1599,6 +1732,10 @@ export type Database = {
           p_details?: string;
         };
         Returns: undefined;
+      };
+      report_target_info: {
+        Args: { p_type: Database['public']['Enums']['report_target']; p_id: string };
+        Returns: Json;
       };
       salvar_documento: { Args: { documento_texto: string }; Returns: undefined };
       save_job_alert: {
@@ -1618,6 +1755,11 @@ export type Database = {
       set_identity_status: { Args: { p_worker: string; p_status: string; p_reason?: string }; Returns: undefined };
       set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
       short_datetime_br: { Args: { p_at: string }; Returns: string };
+      staff_guard: { Args: Record<PropertyKey, never>; Returns: string };
+      staff_log: {
+        Args: { p_action: string; p_target_type: string; p_target_id: string; p_reason: string };
+        Returns: undefined;
+      };
       storage_url_ok: { Args: { p_url: string; p_bucket: string; p_owner: string }; Returns: boolean };
       submit_application: { Args: { p_job_id: string }; Returns: undefined };
       submit_identity: { Args: { p_selfie_path: string; p_document_path: string }; Returns: undefined };

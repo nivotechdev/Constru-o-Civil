@@ -91,6 +91,9 @@ export async function signIn(identifier: string, password: string, captcha: Capt
     // Y19: no session (and no way to know the side) until the link is opened: the login says so.
     if (code === 'email_not_confirmed') return { ok: false, reason: 'email-nao-confirmado', email };
     if (code === 'over_request_rate_limit') throw serviceError('conflito', TOO_MANY);
+    // L06: the team suspended the account (banned in the Auth).
+    if (code === 'user_banned')
+      throw serviceError('nao_autorizado', 'Sua conta está suspensa. Fale com o suporte pela Ajuda.');
     if (code === 'captcha_failed') throw serviceError('validacao', NOT_A_ROBOT);
     throw toServiceError(result.error);
   }

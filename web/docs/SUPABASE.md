@@ -59,8 +59,10 @@ Advisors depois de aplicar (Database › Advisors): segurança sem nenhum ERROR;
   na própria pasta) e `identidade` (privado; só a equipe lê).
 - **Vault**: `nivotech_documento_key` (cifra CPF/CNPJ; já existe) e, quando configurados, `bicos_push_url`,
   `bicos_push_secret`, `bicos_cleanup_url`, `bicos_cleanup_secret`.
-- **Equipe** (painel/SQL Editor, com service_role): `set_company_verification(empresa, status)`,
-  `set_identity_status(trabalhador, status, motivo)`, `funnel_daily(de, até)`; denúncias em `reports`.
+- **Equipe** (L06): a área `/admin` do app (filas de identidade, construtoras e denúncias; registro de auditoria).
+  Quem é da equipe está em `staff_members` e só entra pelo SQL Editor:
+  `select public.add_staff_member('email@da.conta', 'admin');` (sair: `remove_staff_member`). Continuam
+  existindo, para o SQL Editor: `set_company_verification`, `set_identity_status`, `funnel_daily(de, até)`.
 
 ## 3. Painel › Authentication
 
