@@ -4161,7 +4161,9 @@ begin
     return; -- já estava suspensa
   end if;
   -- Não entra mais: o Auth recusa login e renovação de sessão; as sessões abertas acabam.
-  update auth.users set banned_until = 'infinity' where id = p_account;
+  -- Data distante, não 'infinity': o Auth (GoTrue, em Go) não lê 'infinity' e o login quebraria com erro 500
+  -- em vez de responder "user_banned" (achado pelo E2E, L03). É o que o painel faz ao banir.
+  update auth.users set banned_until = now() + interval '100 years' where id = p_account;
   if to_regclass('auth.sessions') is not null then
     execute 'delete from auth.sessions where user_id = $1' using p_account;
   end if;

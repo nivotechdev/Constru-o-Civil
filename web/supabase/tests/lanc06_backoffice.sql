@@ -102,7 +102,7 @@ select public.admin_unhide_job((select v from t_ids where k = 'j'), 'Engano');
 select public.admin_suspend_account('86000000-0000-0000-0000-0000000000c1', 'Teste de suspensão de construtora');
 select pg_temp.logout();
 
-select pg_temp.ok((select banned_until = 'infinity' from auth.users where id = '86000000-0000-0000-0000-0000000000a2'), 'login bloqueado no Auth');
+select pg_temp.ok((select banned_until > now() + interval '50 years' and banned_until <> 'infinity' from auth.users where id = '86000000-0000-0000-0000-0000000000a2'), 'login bloqueado no Auth');
 select pg_temp.ok((select suspended_at is not null from public.accounts where id = '86000000-0000-0000-0000-0000000000a2'), 'conta marcada como suspensa');
 select pg_temp.ok((select hidden_reason = 'conta suspensa' from public.jobs where id = (select v from t_ids where k = 'j')), 'vagas da construtora suspensa saem do mural');
 select pg_temp.fails($$select pg_temp.new_job('86000000-0000-0000-0000-0000000000c1')$$, 'BC401');

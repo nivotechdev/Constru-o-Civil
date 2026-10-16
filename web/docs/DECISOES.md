@@ -1260,7 +1260,7 @@ validação de formato + aviso — ver `CHECKLIST-LANCAMENTO.md`.
   (`jobs.hidden_at`: sai do mural, do link público e das candidaturas novas; a dona e quem já se candidatou
   continuam vendo, como na vaga excluída), suspender conta e desfazer as duas últimas. Resolver uma denúncia
   resolve as outras abertas sobre o mesmo conteúdo.
-- **Suspensão**: `accounts.suspended_at`; o Auth recusa o login (`banned_until = infinity`) e as sessões abertas
+- **Suspensão**: `accounts.suspended_at`; o Auth recusa o login (`banned_until` = agora + 100 anos; `infinity` quebra o GoTrue — achado pelo E2E) e as sessões abertas
   são apagadas; gatilhos impedem publicar vaga e se candidatar mesmo com um token ainda válido; as vagas abertas
   da construtora saem do mural e as candidaturas pendentes do trabalhador saem. O login mostra "Sua conta está
   suspensa".
