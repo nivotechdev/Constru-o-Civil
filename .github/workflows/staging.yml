@@ -1,0 +1,52 @@
+# L09: o staging (projeto bicos-staging) recebe as migrations do repo ANTES da produção, e o histórico dele
+# (supabase_migrations.schema_migrations) tem de ser igual aos arquivos de web/supabase/migrations.
+# - push no master que mexe em migration: aplica no staging e confere;
+# - Actions › staging › Run workflow: o mesmo à mão, em qualquer branch (para ensaiar antes do merge).
+# Sem os segredos STAGING_DB_URL e STAGING_URL o job só avisa e passa (web/docs/STAGING.md).
+name: staging
+
+on:
+  push:
+    branches: [master]
+    paths: ["web/supabase/migrations/**", "supabase/migrations/**", "web/scripts/staging/**", ".github/workflows/staging.yml"]
+  workflow_dispatch:
+    inputs:
+      aplicar:
+        description: "Aplicar as migrations que faltam antes de conferir"
+        type: boolean
+        default: true
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+      STAGING_URL: ${{ secrets.STAGING_URL }}
+    steps:
+      - name: Segredos do staging
+        id: cfg
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -z "$STAGING_DB_URL" ] || [ -z "$STAGING_URL" ]; then
+            echo "::warning::Staging não conferido: faltam os segredos STAGING_DB_URL e STAGING_URL (web/docs/STAGING.md)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ok == 'true'
+      - name: Aplicar no staging
+        if: steps.cfg.outputs.ok == 'true' && (github.event_name == 'push' || inputs.aplicar)
+        run: ./scripts/staging/aplicar-banco.sh
+      - name: Histórico do staging = arquivos do repo
+        if: steps.cfg.outputs.ok == 'true'
+        run: DB_URL="$STAGING_DB_URL" ./scripts/staging/conferir-migrations.sh

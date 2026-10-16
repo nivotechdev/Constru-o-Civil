@@ -33,8 +33,10 @@ create schema if not exists supabase_migrations;
 create table if not exists supabase_migrations.schema_migrations (version text primary key, statements text[], name text);
 SQL
 
-# O app antigo nunca entrou no histórico da produção: aplica só se a tabela dele ainda não existe.
-if [ "$(psql_ -tAc "select to_regclass('public.profiles') is null")" = "t" ]; then
+# O app antigo nunca entrou no histórico da produção: aplica enquanto o app novo não começou (sem `accounts`).
+# As migrations antigas são idempotentes, então completam um banco que parou no meio delas; depois que o app
+# novo existe, nunca rodam de novo (devolveriam permissões que a Z08 tirou).
+if [ "$(psql_ -tAc "select to_regclass('public.accounts') is null")" = "t" ]; then
   for f in "$root"/supabase/migrations/0*.sql; do
     echo "→ (app antigo) $(basename "$f")"
     psql_ -f "$f"

@@ -31,7 +31,7 @@ supabase migration repair --status reverted \
   20261012031241 20261012031317 20261012031333 20261012031345 20261012031350 20261012031413 20261012031419 \
   20261012031435 20261012031446 20261012031450 20261012031504 20261012031534 20261012031554 20261012031612 \
   20261012031643 20261012031654 20261012031658 20261012031738 20261012031821 20261012031841 20261012031857 \
-  20261012031915 20261012031930 20261012032837 20261012032951 20261012033541
+  20261012031915 20261012031930 20261012032837 20261012032951
 supabase migration repair --status applied \
   20261009000100 20261009000200 20261009000300 20261010000100 20261010000200 20261010000300 20261010000400 \
   20261010000500 20261010000600 20261010000700 20261011000100 20261011000200 20261011000300 20261011000400 \
@@ -42,7 +42,11 @@ supabase migration repair --status applied \
 supabase migration list   # local e remoto iguais
 ```
 
-(`habilitar_pg_net` é só `create extension if not exists pg_net`, o que o painel faz em Database › Extensions.)
+(`20261012033541_habilitar_pg_net` — só `create extension if not exists pg_net` — agora também é arquivo do repo
+(L09), com a mesma versão: fica como está no histórico, sem `repair`.)
+
+Conferência automática (L09): `DB_URL=… ./scripts/staging/conferir-migrations.sh` compara o histórico com os
+arquivos e aponta o que falta e o que sobra. No CI roda contra o staging (`.github/workflows/staging.yml`).
 
 `repair` só mexe na tabela de histórico (`supabase_migrations.schema_migrations`), nunca no esquema.
 Daí em diante, toda mudança no banco entra por arquivo novo em `web/supabase/migrations` e `supabase db push`.
@@ -455,6 +459,41 @@ select command from cron.job where jobname = 'bicos-limpar-tentativas';   -- sel
 ```sql
 select count(*) from pg_indexes where indexname in ('blocks_blocked_idx', 'company_members_user_idx',
   'identity_submissions_worker_idx', 'job_alerts_oficio_idx', 'job_invites_company_idx');   -- 5
+```
+
+## Rodada de lançamento (L01–L14) — **ainda não aplicadas na produção**
+
+Primeiro no staging (`.github/workflows/staging.yml` aplica e confere o histórico), depois na produção **só
+com aprovação** e com backup manual antes (plano Free: sem backup diário).
+
+### 39. `20261015000100_lanc06_backoffice.sql` (L06)
+
+Área da equipe (`/admin`): `staff_members`, `staff_actions`, filas de identidade/construtoras/denúncias,
+ocultar vaga, suspender conta. Depois de aplicar, cadastrar a equipe:
+`select public.add_staff_member('<email>', 'admin');`
+
+```sql
+select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname like 'admin\_%';   -- 11
+```
+
+### 40. `20261015000200_lanc07_aceites.sql` (L07)
+
+Aceites com versão (`terms_acceptances`, copiando `consentimentos`), `accept_terms`, consentimento da
+verificação de identidade.
+
+```sql
+select count(*) from public.terms_acceptances;   -- >= linhas de consentimentos das contas do app novo
+```
+
+### 41. `20261016000100_lanc09_pg_net.sql` (L09)
+
+Tira o `pg_net` do `public` (apaga e cria de novo no `extensions`; as funções continuam em `net.*`). Perde só a
+fila de chamadas ainda não enviadas: rodar longe das 4h40 e das 21h. Some o aviso `extension_in_public`.
+
+```sql
+select n.nspname from pg_extension e join pg_namespace n on n.oid = e.extnamespace where extname = 'pg_net';  -- extensions
+select to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is not null;                          -- true
+select public.call_storage_cleanup();   -- sem erro (com CLEANUP_SECRET ainda vazio, a função responde 401)
 ```
 
 ## Testes

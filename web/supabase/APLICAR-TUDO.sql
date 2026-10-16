@@ -1,5 +1,5 @@
 -- GERADO por scripts/aplicar-tudo.mjs — não edite à mão. Ordem e conferências em APLICAR.md.
--- 40 migrations (20261010000100_z01_rpcs_candidatura.sql … 20261015000200_lanc07_aceites.sql).
+-- 42 migrations (20261010000100_z01_rpcs_candidatura.sql … 20261016000100_lanc09_pg_net.sql).
 -- Cole tudo no SQL Editor do Supabase e rode. Cada migration é idempotente: rodar de novo não estraga nada.
 
 -- Parte 1: valores novos de enum (precisam estar gravados antes do resto).
@@ -2624,6 +2624,11 @@ create trigger accounts_company_owner after insert on public.accounts
   for each row execute function public.company_owner_member();
 revoke all on function public.company_owner_member() from public, anon, authenticated;
 
+-- ===== 20261012033541_habilitar_pg_net.sql =====
+-- Trazida da produção (L09): aplicada lá em 12/10 pelo conector do Supabase e nunca versionada. Mesmo comando
+-- que ficou no histórico da produção; o L09 (20261016000100_lanc09_pg_net) tira a extensão do `public` depois.
+create extension if not exists pg_net;
+
 -- ===== 20261013000100_f09_vaga_publica.sql =====
 -- F09: a página pública da vaga (link compartilhado), que abre sem login. Só o que o mural já mostra para
 -- quem está logado: área (bairro/cidade), datas, valor, descrição, requisitos, pagamento e a construtora (nome,
@@ -4484,5 +4489,37 @@ revoke all on function public.create_account_for(uuid, text, public.app_role, te
   from public, anon, authenticated;
 grant execute on function public.accept_terms(text), public.submit_identity(text, text, text), public.export_my_data()
   to authenticated;
+
+-- ===== 20261016000100_lanc09_pg_net.sql =====
+-- L09 (lançamento): pg_net sai do schema `public` (aviso `extension_in_public` do advisor).
+--
+-- Na produção o pg_net foi ligado em 12/10 pelo conector (migration 20261012033541_habilitar_pg_net, que só
+-- existe lá) e caiu no `public`. A extensão não é relocável (`alter extension … set schema` não funciona):
+-- o caminho é apagar e criar de novo no `extensions`. As funções dela continuam em `net.*` — o schema `net`
+-- é dela, não do `public` —, então push_new_notification e call_storage_cleanup (que chamam
+-- `net.http_post` por `execute`, sem depender do objeto) não mudam.
+--
+-- O que se perde: a fila de chamadas ainda não enviadas e as respostas guardadas (net.http_request_queue e
+-- net._http_response), que são passageiras. Rodar fora do horário dos crons que usam a rede (4h40, 21h).
+-- Sem `cascade`: se algo novo depender do pg_net, a migration para em vez de apagar junto.
+-- Banco sem pg_net instalado (testes locais): liga no `extensions`, como no staging e na produção.
+
+do $$
+declare
+  v_schema text;
+begin
+  select n.nspname into v_schema
+    from pg_extension e join pg_namespace n on n.oid = e.extnamespace
+   where e.extname = 'pg_net';
+  if v_schema = 'extensions' then
+    return;
+  end if;
+  if v_schema is not null then
+    execute 'drop extension pg_net';
+  end if;
+  if exists (select 1 from pg_available_extensions where name = 'pg_net') then
+    execute 'create extension pg_net with schema extensions';
+  end if;
+end $$;
 
 commit;

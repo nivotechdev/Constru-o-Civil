@@ -1357,3 +1357,22 @@ falso (token de teste da Cloudflare). O modo de build `e2e` exige as variáveis 
 **Achados**: (1) a Z12 fixa o endereço do Storage da produção em `app_config` — num projeto novo toda foto é
 recusada; o script do staging agora troca. (2) `banned_until = 'infinity'` quebra o GoTrue — corrigido no L06.
 (3) A rotina conclui a diária 2 dias depois do último dia (prazo para marcar falta) — o teste respeita isso.
+
+## L09 (lançamento) — `pg_net` fora do `public` e histórico de migrations conferido
+
+**Problema**: o `pg_net` foi ligado na produção pelo conector (migration `20261012033541_habilitar_pg_net`, que
+não estava no repo) e caiu no `public` (aviso `extension_in_public`). E nada impedia o histórico do banco de
+divergir dos arquivos de novo.
+
+**O que foi feito**: (1) o arquivo `20261012033541_habilitar_pg_net.sql` entrou no repo com a mesma versão e o
+mesmo comando gravado na produção — o histórico passa a bater sem `repair` para ele. (2) `lanc09_pg_net` apaga e
+recria o `pg_net` no `extensions` (não é relocável); sem `cascade`, para não levar nada junto. As funções ficam em
+`net.*` e as duas que chamam a rede (push e limpeza) usam `execute`, então não dependem do objeto e não mudam.
+Testado num Postgres com o `pg_net` no `public`, como a produção. (3) `conferir-migrations.sh` compara o
+histórico com os arquivos (falta e sobra) e o workflow `staging` aplica e confere a cada migration no `master`.
+
+**Por que pelo GitHub e não pelo conector**: o conector do Supabase pede aprovação manual a cada comando com
+`drop`, e as migrations recriam políticas e funções com `drop … if exists`; sem alguém aprovando na hora, a
+chamada expira. Montar o staging pelo workflow (com a senha do banco num segredo do GitHub) é repetível e não
+depende de uma sessão aberta. O script também passou a decidir pelo `accounts` (app novo) se roda as migrations
+antigas, para completar um banco que parou no meio delas.

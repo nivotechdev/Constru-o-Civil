@@ -17,7 +17,19 @@ dado real. Nada de produção é usado aqui: outra URL, outras chaves, outros se
 Painel → New project → organização `nivotech.contato@gmail.com`, nome `bicos-staging`, região **South America
 (São Paulo)**, senha forte do banco (guardar no cofre de senhas). Anote o **ref** (o código na URL do projeto).
 
+**Criado em 16/10/2026**: ref `setyxomsbfrkneqqfoam` (https://setyxomsbfrkneqqfoam.supabase.co), organização
+`cdbmayszwthxqckwozjg`, `sa-east-1`. Já tem `pg_cron`, `pg_net` (no `public`, como a produção — o L09 tira de lá),
+PostGIS no `extensions` e a chave `nivotech_documento_key` no Vault (aleatória, só do staging).
+
 ## 2. Banco
+
+**Pelo GitHub (recomendado)**: segredos `STAGING_DB_URL` e `STAGING_URL` no repositório → Actions › staging ›
+Run workflow. O workflow (`.github/workflows/staging.yml`) roda o script abaixo e depois confere que o histórico
+do banco é igual aos arquivos (`conferir-migrations.sh`, L09); também roda sozinho a cada migration nova no
+`master`. (O conector do Supabase usado pela IA pede aprovação manual para cada comando com `drop`, e as
+migrations têm muitos `drop policy`/`drop function` de recriação — por isso o banco não é montado por ele.)
+
+**Ou à mão:**
 
 ```bash
 cd web

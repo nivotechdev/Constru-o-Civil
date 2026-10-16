@@ -1,5 +1,13 @@
 # Advisors do Supabase (X13)
 
+## Rodada de lançamento (L09)
+
+O `extension_in_public` do `pg_net` (ligado em 12/10 pelo conector, caiu no `public`) sai com a
+`20261016000100_lanc09_pg_net.sql`: a extensão é apagada e criada de novo no `extensions` (não é relocável).
+Conferido no Postgres local com o `pg_net` no `public`, como na produção: depois da migration ele fica no
+`extensions`, `net.http_post` continua no lugar e os testes do push (X03) e da limpeza (X09) passam. Na
+produção, só depois de passar no staging e com aprovação (`supabase/APLICAR.md` › 41).
+
 ## Depois de aplicar tudo (12/10/2026)
 
 Com as 38 migrations de `APLICAR.md` aplicadas em `ppnxdajiihsjaojxokzh`:
