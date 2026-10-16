@@ -54,11 +54,13 @@ Advisors depois de aplicar (Database › Advisors): segurança sem nenhum ERROR;
   `conflito`, `validacao`) e mensagem pronta.
 - **Rotinas (pg_cron)**: concluir diárias (`7 * * * *`), vencer PIX (`*/10`), lembrete de presença (`0 21 * * *`),
   limpar cadastros nunca confirmados (`23 3 * * *`), limpar registro de tentativas (`17 4 * * *`) e limpar arquivos
-  órfãos (`40 4 * * *`, só com a Edge Function configurada).
+  órfãos (`40 4 * * *`, só com a Edge Function configurada). **Vigia (L12)**: `bicos-vigiar-cron` (`12 * * * *`)
+  alerta no Sentry quando uma rotina falha 2 vezes seguidas e manda o sinal de vida ao monitor de fora; estado de
+  todas: `select * from public.cron_health();` (seção 5.1).
 - **Storage**: `avatars`, `portfolio`, `vagas` (públicos para abrir pelo endereço, sem listagem; cada conta só envia
   na própria pasta) e `identidade` (privado; só a equipe lê).
 - **Vault**: `nivotech_documento_key` (cifra CPF/CNPJ; já existe) e, quando configurados, `bicos_push_url`,
-  `bicos_push_secret`, `bicos_cleanup_url`, `bicos_cleanup_secret`.
+  `bicos_push_secret`, `bicos_cleanup_url`, `bicos_cleanup_secret`, `bicos_sentry_dsn` e `bicos_heartbeat_url` (L12).
 - **Equipe** (L06): a área `/admin` do app (filas de identidade, construtoras e denúncias; registro de auditoria).
   Quem é da equipe está em `staff_members` e só entra pelo SQL Editor:
   `select public.add_staff_member('email@da.conta', 'admin');` (sair: `remove_staff_member`). Continuam
@@ -119,6 +121,43 @@ na demonstração tudo é simulado.
 | **Erros (Sentry)**                     | **obrigatório na produção (L05)**: o build não sai sem `VITE_SENTRY_DSN`; nada pessoal sai (`beforeSend`)                             | projeto no Sentry; `VITE_SENTRY_DSN` no build e `SENTRY_DSN` nos Secrets; para os source maps, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` e `SENTRY_PROJECT` no ambiente do deploy (`scripts/sentry-sourcemaps.mjs`)                                                                                                                                                                      |
 | **WhatsApp do suporte**                | **obrigatório na produção (L11)**: o build não sai sem um celular com DDD válido                                                      | `VITE_SUPORTE_WHATSAPP` no build (ex.: `11987654321`); na demonstração a Ajuda mostra só o e-mail                                                                                                                                                                                                                                                                                |
 | **Verificação de identidade (F07)**    | funciona: a equipe aprova/recusa por `set_identity_status`                                                                            | (opcional, futuro) verificação automática por um provedor pago                                                                                                                                                                                                                                                                                                                   |
+
+### 5.1 Rotinas vigiadas (L12) — **ação do responsável** para ligar o aviso
+
+O vigia já roda de hora em hora; sem os dois itens abaixo ele só registra o alerta em `cron_alerts` (ninguém é
+avisado). Para ligar:
+
+1. **Sentry** (o mesmo projeto do L05): no SQL Editor da produção,
+   `select vault.create_secret('<o DSN do Sentry>', 'bicos_sentry_dsn');`. Depois, no Sentry › Alerts › Create
+   Alert › Issues: "A new issue is created" com o filtro `origem` = `pg_cron` → ação "Send a notification to"
+   os e-mails dos sócios.
+2. **Sinal de vida** (cobre o banco pausado ou o pg_cron parado): conta grátis em https://healthchecks.io → Add
+   Check → Period **1 hour**, Grace **1 hour** → copiar a "ping URL" → no SQL Editor:
+   `select vault.create_secret('<ping URL>', 'bicos_heartbeat_url');` → em Integrations, e-mail dos sócios.
+3. Conferir: `select * from public.cron_health();` (todas com `last_status = succeeded`) e, uma hora depois, o
+   check do healthchecks.io verde.
+
+### 5.2 Notificações no celular (push) — **desligadas no lançamento** (L12)
+
+O código está pronto (Edge Function `enviar-push` publicada, gatilho no banco, tela de permissão), mas o push fica
+**escondido** enquanto `VITE_VAPID_PUBLIC_KEY` estiver vazio no build: ninguém vê o convite para ativar, e o gatilho
+do banco não chama nada enquanto faltar `bicos_push_secret` no Vault. O sino dentro do app funciona normalmente.
+Para ligar depois (tudo **ação do responsável**, nessa ordem):
+
+1. Gerar o par de chaves (no computador, uma vez): `npx web-push@3.6.7 generate-vapid-keys` → anotar a pública e
+   a privada (cofre de senhas).
+2. Gerar o segredo do webhook: `openssl rand -hex 32` (ou um gerador de senha com 64 caracteres).
+3. Edge Functions › Secrets (https://supabase.com/dashboard/project/ppnxdajiihsjaojxokzh/functions/secrets):
+   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:nivotech.dev@gmail.com` e
+   `PUSH_WEBHOOK_SECRET` = o segredo do passo 2.
+4. SQL Editor (com o mesmo segredo do passo 2):
+   `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');`
+   `select vault.create_secret('<segredo do passo 2>', 'bicos_push_secret');`
+5. `VITE_VAPID_PUBLIC_KEY` = a chave pública nas variáveis do deploy → publicar o front de novo.
+6. Conferir: com uma conta de teste, ativar as notificações no celular e mandar uma candidatura — o aviso chega
+   com o app fechado. Logs em Edge Functions › `enviar-push` › Logs.
+
+Fazer primeiro no staging (mesmos passos, com a URL do staging).
 
 ## 6. Hospedagem
 

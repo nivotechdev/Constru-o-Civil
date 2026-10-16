@@ -507,6 +507,17 @@ select count(*) from public.jobs where public_slug is null;                     
 select pg_get_function_identity_arguments('public.public_job_card'::regproc);                     -- p_slug text
 ```
 
+### 43. `20261016000300_lanc12_vigia_cron.sql` (L12)
+
+Vigia das rotinas: `cron_health()` (estado), `check_cron_failures()` de hora em hora (`bicos-vigiar-cron`), alerta
+no Sentry depois de 2 falhas seguidas (DSN no Vault: `bicos_sentry_dsn`), sinal de vida para um monitor de fora
+(`bicos_heartbeat_url`) e histórico do pg_cron limitado a 14 dias. Ligar os avisos: `docs/SUPABASE.md` › 5.1.
+
+```sql
+select jobname, schedule from cron.job where jobname = 'bicos-vigiar-cron';   -- 12 * * * *
+select * from public.cron_health();                                           -- 7 rotinas
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

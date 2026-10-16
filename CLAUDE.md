@@ -102,7 +102,8 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
   **Não existe área de admin no app** — é isso que o L06 constrói, reaproveitando essas funções.
 - Cron (`pg_cron`): `bicos-concluir-diarias` (`7 * * * *`), `bicos-vencer-pix` (`*/10`), `bicos-lembrar-presenca`
   (`0 21 * * *`), `bicos-limpar-cadastros` (`23 3 * * *`), `bicos-limpar-tentativas` (`17 4 * * *`),
-  `bicos-limpar-arquivos` (`40 4 * * *`).
+  `bicos-limpar-arquivos` (`40 4 * * *`), `bicos-vigiar-cron` (`12 * * * *`, L12: alerta no Sentry após 2 falhas
+  seguidas; estado em `select * from public.cron_health()`).
 - Storage: `avatars`, `portfolio`, `vagas` (públicos por URL, sem listagem; cada conta só escreve na própria pasta
   `<uid>/…`) e `identidade` (privado — selfie + documento).
 - Vault: `nivotech_documento_key`, `bicos_cleanup_url`, `bicos_cleanup_secret`. **Faltam** `bicos_push_url`,

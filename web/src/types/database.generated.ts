@@ -489,6 +489,12 @@ export type Database = {
           }
         ];
       };
+      cron_alerts: {
+        Row: { id: number; jobname: string; runid: number; message: string; sent: boolean; alerted_at: string };
+        Insert: { id?: never; jobname: string; runid: number; message: string; sent?: boolean; alerted_at?: string };
+        Update: { id?: never; jobname?: string; runid?: number; message?: string; sent?: boolean; alerted_at?: string };
+        Relationships: [];
+      };
       identity_submissions: {
         Row: {
           id: string;
@@ -1558,6 +1564,7 @@ export type Database = {
       };
       call_storage_cleanup: { Args: Record<PropertyKey, never>; Returns: undefined };
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
+      check_cron_failures: { Args: Record<PropertyKey, never>; Returns: number };
       claim_document_for: { Args: { p_user_id: string; p_digits: string }; Returns: undefined };
       close_job: { Args: { p_job_id: string }; Returns: undefined };
       cnpj_valid: { Args: { p_document: string }; Returns: boolean };
@@ -1596,6 +1603,18 @@ export type Database = {
           p_contact_name?: string;
         };
         Returns: undefined;
+      };
+      cron_health: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          jobname: string;
+          schedule: string;
+          active: boolean;
+          last_run: string;
+          last_status: string;
+          failures_in_a_row: number;
+          last_error: string;
+        }[];
       };
       decidir_candidatura: { Args: { p_candidatura_id: string; p_decisao: string }; Returns: undefined };
       delete_job: { Args: { p_job_id: string }; Returns: undefined };
@@ -1778,6 +1797,8 @@ export type Database = {
         Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent: string };
         Returns: undefined;
       };
+      scrub_error_text: { Args: { p_text: string }; Returns: string };
+      send_sentry_event: { Args: { p_message: string; p_tags: Json }; Returns: boolean };
       session_authenticated_at: { Args: Record<PropertyKey, never>; Returns: string };
       set_company_verification: {
         Args: { p_company: string; p_status: Database['public']['Enums']['company_verification'] };

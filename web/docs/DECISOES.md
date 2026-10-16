@@ -1405,3 +1405,21 @@ conferência de formato: celular com DDD (DDD + 9 + 8 dígitos), com ou sem `55`
 demonstração não há número e a Ajuda oferece só o e-mail. De quebra, `whatsappUrl` passou a decidir o `55` pelo
 tamanho do número: antes, um celular do DDD 55 (Santa Maria e região, RS) sem o código do país era tratado como se
 já tivesse o `55` e o link abria o número errado — valia para todos os botões de WhatsApp do app.
+
+## L12 (lançamento) — rotinas vigiadas e push desligado de propósito
+
+**Problema**: as rotinas do pg_cron (concluir diárias, vencer PIX, lembrete, limpezas) falhavam em silêncio — o erro
+ficava em `cron.job_run_details`, que ninguém olha, e o histórico crescia sem limite. E o push dependia de dois
+segredos no Vault que não estavam documentados passo a passo.
+
+**O que foi feito**: `check_cron_failures()` de hora em hora: rotina com as 2 últimas execuções falhadas vira um
+alerta em `cron_alerts` e um evento no Sentry pela API "store" (a mesma que o app usa, sem SDK), com a mensagem
+sem e-mail nem sequência longa de dígitos e cortada em 300 caracteres; no máximo um alerta por rotina a cada 24 h.
+`cron_health()` mostra o estado de todas no SQL Editor. O vigia também manda um "sinal de vida" a um monitor de fora
+(healthchecks.io, grátis), porque o caso mais provável no plano Free — projeto pausado — o banco não tem como
+avisar. Push: **fica desligado no lançamento** (escondido sem `VITE_VAPID_PUBLIC_KEY`; o gatilho não chama nada sem
+`bicos_push_secret`), com o passo a passo para ligar em `docs/SUPABASE.md` › 5.2.
+
+**Por que pelo banco e não por uma Edge Function**: tudo o que o vigia precisa já está no banco (pg_cron, pg_net,
+Vault); uma função a mais seria mais um segredo e mais um ponto para falhar. O e-mail sai pela regra de alerta do
+Sentry, que já é ação do responsável no L05.
