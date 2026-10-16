@@ -84,7 +84,7 @@ select pg_temp.fails($$select public.admin_suspend_account('86000000-0000-0000-0
 select pg_temp.logout();
 
 select pg_temp.ok((select hidden_at is not null from public.jobs where id = (select v from t_ids where k = 'j')), 'vaga oculta');
-select pg_temp.ok(public.public_job_card((select v from t_ids where k = 'j')) is null, 'link público não abre a vaga oculta');
+select pg_temp.ok(public.public_job_card((select public_slug from public.jobs where id = (select v from t_ids where k = 'j'))) is null, 'link público não abre a vaga oculta');
 select pg_temp.ok(exists (select 1 from public.notifications where company_id = '86000000-0000-0000-0000-0000000000c1'
                             and title = 'Vaga retirada do mural'), 'construtora avisada');
 select pg_temp.login('86000000-0000-0000-0000-0000000000a2');

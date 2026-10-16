@@ -496,6 +496,17 @@ select to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is not n
 select public.call_storage_cleanup();   -- sem erro (com CLEANUP_SECRET ainda vazio, a função responde 401)
 ```
 
+### 42. `20261016000200_lanc10_link_publico.sql` (L10)
+
+Link público pelo `public_slug` aleatório (o BC-n é sequencial e permitia baixar o mural inteiro sem conta);
+`public_job_card(p_slug)` com limite por IP; `public_link_hits` apagada todo dia pela limpeza das 4h17. Publicar o
+front novo **junto** (o antigo chama a RPC com `p_job_id` e a página da vaga pública daria erro).
+
+```sql
+select count(*) from public.jobs where public_slug is null;                                       -- 0
+select pg_get_function_identity_arguments('public.public_job_card'::regproc);                     -- p_slug text
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

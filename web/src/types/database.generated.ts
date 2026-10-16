@@ -677,6 +677,7 @@ export type Database = {
           area_geog: unknown | null;
           hidden_at: string | null;
           hidden_reason: string | null;
+          public_slug: string;
         };
         Insert: {
           id?: string;
@@ -718,6 +719,7 @@ export type Database = {
           area_geog?: never;
           hidden_at?: string | null;
           hidden_reason?: string | null;
+          public_slug?: string;
         };
         Update: {
           id?: string;
@@ -759,6 +761,7 @@ export type Database = {
           area_geog?: never;
           hidden_at?: string | null;
           hidden_reason?: string | null;
+          public_slug?: string;
         };
         Relationships: [
           {
@@ -928,6 +931,12 @@ export type Database = {
           regiao_atuacao?: string | null;
           capa_url?: string | null;
         };
+        Relationships: [];
+      };
+      public_link_hits: {
+        Row: { ip_hash: string; at: string };
+        Insert: { ip_hash: string; at?: string };
+        Update: { ip_hash?: string; at?: string };
         Relationships: [];
       };
       publicacoes_trabalhador: {
@@ -1700,6 +1709,7 @@ export type Database = {
       my_job_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       my_unread_count: { Args: Record<PropertyKey, never>; Returns: number };
       my_worker_id: { Args: Record<PropertyKey, never>; Returns: string };
+      new_public_slug: { Args: Record<PropertyKey, never>; Returns: string };
       notification_group: { Args: { p_kind: Database['public']['Enums']['notification_kind'] }; Returns: string };
       notify: {
         Args: {
@@ -1736,7 +1746,7 @@ export type Database = {
         Args: { p_candidatura_id: string; p_nota: number; p_comentario?: string };
         Returns: undefined;
       };
-      public_job_card: { Args: { p_job_id: string }; Returns: Json };
+      public_job_card: { Args: { p_slug: string }; Returns: Json };
       publish_job: { Args: { p: Json }; Returns: string };
       purge_auth_attempts: { Args: Record<PropertyKey, never>; Returns: number };
       purge_unconfirmed_signups: { Args: Record<PropertyKey, never>; Returns: number };

@@ -1376,3 +1376,21 @@ histórico com os arquivos (falta e sobra) e o workflow `staging` aplica e confe
 chamada expira. Montar o staging pelo workflow (com a senha do banco num segredo do GitHub) é repetível e não
 depende de uma sessão aberta. O script também passou a decidir pelo `accounts` (app novo) se roda as migrations
 antigas, para completar um banco que parou no meio delas.
+
+## L10 (lançamento) — link público pelo slug, com limite por IP
+
+**Problema**: os IDs das vagas são sequenciais (`BC-1`, `BC-2`…) e `public_job_card`, a única RPC para visitante,
+abria qualquer um: dava para baixar o mural inteiro sem conta, uma vaga atrás da outra.
+
+**O que foi feito**: cada vaga ganha `public_slug` (12 caracteres aleatórios de um alfabeto de 31 sem `0/o/1/l/i`,
+~59 bits; gerado pelo banco, único) e o link compartilhado é `/v/<slug>`. A RPC só abre pelo slug; o BC-n continua
+sendo o ID e aparece na página ("Vaga BC-12"). Limite de 60 consultas a cada 10 minutos por IP (BC409 com a mensagem
+pronta), contadas em `public_link_hits` só com o hash do IP com a data — apagadas no dia seguinte pela limpeza das
+4h17. Links antigos (`/v/BC-12`): logado vai direto para a vaga; visitante vê "Entre para ver a vaga BC-12" e o
+login devolve para ela.
+
+**Por que assim**: 59 bits tornam adivinhar um slug inviável mesmo sem o limite; o limite segura a raspagem de quem
+já tem links. O IP vem do `cf-connecting-ip` (posto pela Cloudflare na frente do Supabase, o cliente não forja); os
+outros cabeçalhos só de reserva. Não há links antigos de verdade (a produção tem 0 vagas), mas o caminho existe para
+não dar erro em quem guardou um link de teste. O front novo tem de ir junto com a migration (o parâmetro da RPC
+mudou de nome).

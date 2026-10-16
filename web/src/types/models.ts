@@ -209,6 +209,8 @@ export interface Job {
   paymentNote?: string;
   /** When it was published (ISO); a job with the date to be arranged expires 30 days later (Y04). */
   createdAt?: string;
+  /** L10: the random code of the public link (/v/<slug>); the id (BC-n) is sequential, so it isn't used there. */
+  publicSlug?: string;
 }
 
 /**

@@ -1,5 +1,7 @@
-// F09: the page a shared job link opens (/v/:id), without signing in. Someone signed in goes straight to
+// F09: the page a shared job link opens (/v/:slug), without signing in. Someone signed in goes straight to
 // the job; anyone else sees the summary and "Entrar para me candidatar" (the login comes back to the job).
+// L10: the link carries the job's random slug. A link from before (/v/BC-12) only opens after signing in —
+// the sequential ids would let anyone list every job.
 import { useEffect, useState } from 'react';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
@@ -12,13 +14,14 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { useSession } from '../../hooks/useStore';
 import { jobTitle } from '../../services/catalog';
 import { errorMessage } from '../../services/errors';
-import { RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
+import { homeFor, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { loadPublicJob, type PublicJob as PublicJobCard } from '../../services/jobs';
 import { navigate } from '../../services/router';
 import { setUI } from '../../services/store';
 import type { ScreenProps } from '../../types/screen';
 import { formatPay } from '../../utils/format';
 import { dateText, hoursText, paymentText, placeText } from '../../utils/jobInfo';
+import { isLegacyJobLink } from '../../utils/share';
 
 type State =
   { status: 'loading' } | { status: 'ready'; card: PublicJobCard | null } | { status: 'error'; message: string };
@@ -27,36 +30,52 @@ export default function PublicJob({ params }: ScreenProps) {
   const session = useSession();
   const [state, setState] = useState<State>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
-  const target = '/vaga/' + params.id;
+  const key = params.id;
+  const legacy = isLegacyJobLink(key);
 
   useEffect(() => {
-    if (session) {
-      navigate(target, { replace: true });
+    if (legacy) {
+      if (session) navigate('/vaga/' + key.toUpperCase(), { replace: true });
       return;
     }
     let alive = true;
-    loadPublicJob(params.id).then(
-      (card) => alive && setState({ status: 'ready', card }),
+    loadPublicJob(key).then(
+      (card) => {
+        if (!alive) return;
+        if (card && session) navigate('/vaga/' + card.job.id, { replace: true });
+        else setState({ status: 'ready', card });
+      },
       (e: unknown) => alive && setState({ status: 'error', message: errorMessage(e) })
     );
     return () => {
       alive = false;
     };
-  }, [session, params.id, target, attempt]);
+  }, [session, key, legacy, attempt]);
 
-  const enter = (path: string) => {
-    setUI<ReturnToUI>(RETURN_TO_KEY, { path: target });
+  /** Sign in (or up) and come back to the job. */
+  const enter = (path: string, jobId?: string) => {
+    if (jobId) setUI<ReturnToUI>(RETURN_TO_KEY, { path: '/vaga/' + jobId });
     navigate(path);
   };
+  const elsewhere = () => (session ? navigate(homeFor(session)) : enter('/login'));
+  const card = state.status === 'ready' ? state.card : null;
 
   return (
     <div className="min-h-screen bg-concrete-50">
       <header className="flex items-center justify-between min-h-14 px-4 bg-white border-b border-concrete-200">
         <Logo compact />
-        <Button label="Entrar" variant="ghost" size="sm" onClick={() => enter('/login')} />
+        {session ? null : <Button label="Entrar" variant="ghost" size="sm" onClick={() => enter('/login')} />}
       </header>
       <div className="max-w-app mx-auto flex flex-col gap-4 px-4 py-5">
-        {state.status === 'loading' ? (
+        {legacy && !session ? (
+          <EmptyState
+            icon="log-in"
+            title={`Entre para ver a vaga ${key.toUpperCase()}`}
+            description="Esse link é antigo e só abre para quem tem conta. Depois de entrar, a vaga aparece."
+            actionLabel="Entrar"
+            onAction={() => enter('/login', key.toUpperCase())}
+          />
+        ) : state.status === 'loading' ? (
           <PageSkeleton />
         ) : state.status === 'error' ? (
           <EmptyState
@@ -69,16 +88,20 @@ export default function PublicJob({ params }: ScreenProps) {
               setAttempt((n) => n + 1);
             }}
           />
-        ) : !state.card ? (
+        ) : !card ? (
           <EmptyState
             icon="search-x"
             title="Essa vaga não existe mais"
             description="A construtora pode ter removido. Entre para ver outros bicos perto de você."
             actionLabel="Ver bicos"
-            onAction={() => enter('/login')}
+            onAction={elsewhere}
           />
         ) : (
-          <JobSummary card={state.card} onApply={() => enter('/login')} onSignUp={() => enter('/escolha-perfil')} />
+          <JobSummary
+            card={card}
+            onApply={() => enter('/login', card.job.id)}
+            onSignUp={() => enter('/escolha-perfil', card.job.id)}
+          />
         )}
       </div>
     </div>
@@ -98,6 +121,7 @@ function JobSummary({ card, onApply, onSignUp }: { card: PublicJobCard; onApply:
             </div>
           ) : null}
           <h1 className="font-display font-bold text-2xl text-concrete-900">{jobTitle(job)}</h1>
+          <span className="text-xs text-concrete-500">Vaga {job.id}</span>
           <span className="font-mono font-bold text-2xl text-concrete-900">
             {formatPay(job.pay)}
             {job.pay ? <span className="font-sans font-normal text-base text-concrete-500"> por diária</span> : null}

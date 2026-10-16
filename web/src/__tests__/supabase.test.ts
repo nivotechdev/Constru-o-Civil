@@ -95,7 +95,9 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       area_lat: 0,
       area_lon: 0,
       ...r,
-      id: r.id ?? ''
+      id: r.id ?? '',
+      // The database fills it (L10); demo jobs have none, and the round trip keeps it that way.
+      public_slug: r.public_slug as string
     })),
     applications: inserts.applications.map((r): TableRow<'applications'> => ({
       presence_confirmed_at: null,

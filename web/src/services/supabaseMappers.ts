@@ -268,6 +268,7 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
   setIf(job, 'createdAt', row.created_at);
   setIf(job, 'payment', row.payment_method);
   setIf(job, 'paymentNote', row.payment_note);
+  setIf(job, 'publicSlug', row.public_slug);
   return job;
 }
 
@@ -323,7 +324,8 @@ export function jobToRow(job: Job, deletedAt: string | null = null): TableInsert
     payment_method: job.payment ?? null,
     payment_note: job.paymentNote ?? null,
     deleted_at: deletedAt,
-    ...(job.createdAt ? { created_at: job.createdAt } : {})
+    ...(job.createdAt ? { created_at: job.createdAt } : {}),
+    ...(job.publicSlug ? { public_slug: job.publicSlug } : {})
   };
 }
 

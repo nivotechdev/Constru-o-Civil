@@ -4,12 +4,20 @@ import { jobTitle } from '../services/catalog';
 import { formatPay } from './format';
 import { routeUrl } from '../services/router';
 
-/** The job's public link (opens without signing in: /v/:id). */
+/**
+ * The job's public link (opens without signing in: /v/<slug>). L10: the random slug, not the id — the ids
+ * (BC-1, BC-2…) are sequential and would let anyone list every job. Demo jobs have no slug: their id.
+ */
 export function jobShareUrl(
-  jobId: string,
+  job: Pick<Job, 'id' | 'publicSlug'>,
   loc: Pick<Location, 'origin' | 'pathname' | 'protocol'> = window.location
 ): string {
-  return routeUrl('/v/' + jobId, loc);
+  return routeUrl('/v/' + (job.publicSlug ?? job.id), loc);
+}
+
+/** L10: a link from before the slugs (/v/BC-12): opens only for someone signed in. */
+export function isLegacyJobLink(key: string): boolean {
+  return /^BC-\d+$/i.test(key);
 }
 
 export function jobShareText(job: Pick<Job, 'oficioId' | 'title' | 'pay' | 'address'>): string {
@@ -20,7 +28,7 @@ export function jobShareText(job: Pick<Job, 'oficioId' | 'title' | 'pay' | 'addr
 
 /** Opens the share sheet (or WhatsApp). Answers how it went. */
 export async function shareJob(job: Job): Promise<'compartilhado' | 'whatsapp' | 'cancelado'> {
-  const url = jobShareUrl(job.id);
+  const url = jobShareUrl(job);
   const text = jobShareText(job);
   const nav = globalThis.navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
   if (nav?.share) {

@@ -143,10 +143,13 @@ describe('profile edit checks (L11)', () => {
 
 describe('sharing a job (F09)', () => {
   it('links to the public page and says what and where', async () => {
-    const { jobShareUrl, jobShareText } = await import('../utils/share');
-    expect(jobShareUrl('BC-1', { origin: 'https://bicos.app', pathname: '/', protocol: 'https:' })).toBe(
-      'https://bicos.app/v/BC-1'
-    );
+    const { jobShareUrl, jobShareText, isLegacyJobLink } = await import('../utils/share');
+    const loc = { origin: 'https://bicos.app', pathname: '/', protocol: 'https:' };
+    // L10: the random slug, never the sequential id; demo jobs (no slug) keep the id.
+    expect(jobShareUrl({ id: 'BC-1', publicSlug: 'k7m2q9x4tbn3' }, loc)).toBe('https://bicos.app/v/k7m2q9x4tbn3');
+    expect(jobShareUrl({ id: 'BC-1' }, loc)).toBe('https://bicos.app/v/BC-1');
+    expect(isLegacyJobLink('BC-12')).toBe(true);
+    expect(isLegacyJobLink('k7m2q9x4tbn3')).toBe(false);
     expect(
       jobShareText({
         oficioId: 'pintor',
