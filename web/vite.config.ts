@@ -17,12 +17,12 @@ import { isDemoMode, productionEnvError, productionEnvProblems } from './build/e
 const DEMO_ENV = { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' };
 
 /** L01: a production build without its variables fails before bundling, listing what is missing. */
-function requireProductionEnv(env: Record<string, string>): Plugin {
+function requireProductionEnv(env: Record<string, string>, mode: string): Plugin {
   return {
     name: 'bicos-production-env',
     apply: 'build',
     config() {
-      const problems = productionEnvProblems(env);
+      const problems = productionEnvProblems(env, mode);
       if (problems.length) throw new Error(productionEnvError(problems));
     }
   };
@@ -71,7 +71,7 @@ export default defineConfig(({ mode }) => {
     // VITE_BASE when it is served under a folder). The standalone preview keeps relative paths.
     base: standalone ? './' : (env.VITE_BASE ?? '/'),
     plugins: [
-      ...(demo ? [] : [requireProductionEnv(env)]),
+      ...(demo ? [] : [requireProductionEnv(env, mode)]),
       react(),
       siteUrl(env.VITE_SITE_URL ?? ''),
       ...(standalone ? [] : [dropDevOnlyScript()]),

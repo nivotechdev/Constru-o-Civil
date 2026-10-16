@@ -9,8 +9,13 @@
 #   STAGING_DB_URL='postgresql://postgres.<ref>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres' \
 #     ./scripts/staging/aplicar-banco.sh
 # Rodar de novo é seguro: migrations já registradas são puladas.
+#
+# STAGING_URL (https://<ref>.supabase.co) é obrigatório: a migration Z12 grava o endereço do Storage da PRODUÇÃO
+# em app_config.storage_public_base, e o banco só aceita fotos desse endereço — sem trocar, toda foto do
+# staging seria recusada (achado pelo E2E, L03).
 set -euo pipefail
 : "${STAGING_DB_URL:?Defina STAGING_DB_URL (conexão do projeto de staging — nunca a da produção)}"
+: "${STAGING_URL:?Defina STAGING_URL (https://<ref-do-staging>.supabase.co)}"
 case "$STAGING_DB_URL" in
   *ppnxdajiihsjaojxokzh*) echo "Recusado: essa é a conexão da PRODUÇÃO." >&2; exit 1 ;;
 esac
@@ -50,4 +55,6 @@ for f in "$web"/supabase/migrations/*.sql; do
   psql_ -f "$f"
   psql_ -c "insert into supabase_migrations.schema_migrations (version, name) values ('$version', '$name')"
 done
+echo "→ endereço do Storage deste projeto (app_config.storage_public_base)"
+psql_ -c "update public.app_config set value = '${STAGING_URL%/}/storage/v1/object/public/' where key = 'storage_public_base'"
 echo "Banco de staging em dia: $(psql_ -tAc 'select count(*) from supabase_migrations.schema_migrations') migrations no histórico."

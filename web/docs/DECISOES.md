@@ -1336,3 +1336,24 @@ caminho não funcionaria ao navegar dentro do app.
 
 **Depende do responsável**: plano Pro, backups/PITR, leaked password protection, URL Configuration, limites do
 Auth, alerta de uso, projeto no Cloudflare Pages com domínio, e a nota A no securityheaders.com (checklist).
+
+## L03 (lançamento) — E2E num backend de verdade
+
+**Problema**: os critérios de aceite 1–6 só tinham rodado contra mocks e o falso Supabase.
+
+**O que foi feito**: Playwright em `web/e2e/` (7 arquivos, 13 testes): os 6 fluxos pedidos e o da área da equipe
+(L06). Tudo pela tela do app, como a pessoa faz; a Admin API (service_role, só no Node do teste) entra para o que
+o teste não consegue fazer pela tela — o link do e-mail de confirmação/recuperação, criar o "outro lado" de um
+fluxo, fazer o tempo passar (datas da vaga) e rodar a rotina do cron. Contas com e-mail `+e2e-<execução>`, apagadas
+no fim pela `excluir-conta`. Cada etapa vira um print em `docs/E2E.md`. Job `e2e` no CI contra o staging (segredos
+`E2E_*`); sem eles, avisa e não falha.
+
+**Onde rodou**: o staging ainda não existe (L02 espera o "pode"), então a suíte foi desenvolvida e rodada contra
+um **Supabase local completo** (`supabase start`: Postgres 17, GoTrue, PostgREST, Storage, Kong) com todas as
+migrations e as Edge Functions no Deno — 13/13 verdes. Sem Realtime (não sobe neste ambiente) e com o Turnstile
+falso (token de teste da Cloudflare). O modo de build `e2e` exige as variáveis da produção (L01), mas aceita
+`http://localhost`.
+
+**Achados**: (1) a Z12 fixa o endereço do Storage da produção em `app_config` — num projeto novo toda foto é
+recusada; o script do staging agora troca. (2) `banned_until = 'infinity'` quebra o GoTrue — corrigido no L06.
+(3) A rotina conclui a diária 2 dias depois do último dia (prazo para marcar falta) — o teste respeita isso.

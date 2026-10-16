@@ -13,3 +13,6 @@ dist-real/
 deno.lock
 preview/
 lighthouse*.json
+dist-e2e/
+e2e/resultados/
+e2e/.auth/

@@ -10,6 +10,8 @@ on:
     paths: ["web/**", "supabase/migrations/**", "legal/**", ".github/workflows/web.yml"]
   pull_request:
     paths: ["web/**", "supabase/migrations/**", "legal/**", ".github/workflows/web.yml"]
+  # L03: o E2E no staging também roda à mão (Actions › web › Run workflow).
+  workflow_dispatch:
 
 concurrency:
   group: web-${{ github.ref }}
@@ -112,3 +114,64 @@ jobs:
         run: npm run gen:types && git diff --exit-code -- src/types/database.generated.ts
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:54322/postgres
+
+  # L03: os fluxos de ponta a ponta (web/e2e) no STAGING, com contas criadas e apagadas pelo próprio teste.
+  # Roda no master e à mão. Sem os segredos do staging (E2E_*), avisa e termina sem falhar.
+  e2e:
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    needs: [checks, sql]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      E2E_ANON_KEY: ${{ secrets.E2E_ANON_KEY }}
+      E2E_SERVICE_ROLE_KEY: ${{ secrets.E2E_SERVICE_ROLE_KEY }}
+      E2E_EMAIL_BASE: ${{ secrets.E2E_EMAIL_BASE }}
+    steps:
+      - name: Segredos do staging
+        id: cfg
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -z "$E2E_SUPABASE_URL" ] || [ -z "$E2E_SERVICE_ROLE_KEY" ]; then
+            echo "::warning::E2E pulado: faltam os segredos E2E_* do staging (web/e2e/LEIA.md)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - if: steps.cfg.outputs.ok == 'true'
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Build do app apontando para o staging
+        if: steps.cfg.outputs.ok == 'true'
+        run: npx vite build --mode e2e --outDir dist-e2e
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.E2E_ANON_KEY }}
+          VITE_SITE_URL: http://localhost:4173
+          VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+          VITE_SENTRY_DSN: https://e2e@sentry.invalid/1
+      - name: E2E (Playwright)
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          (npx vite preview --outDir dist-e2e --port 4173 --strictPort &) && sleep 3
+          npm run e2e
+        env:
+          E2E_RELATORIO: "1"
+          E2E_AMBIENTE: staging (GitHub Actions)
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.cfg.outputs.ok == 'true'
+        with:
+          name: e2e
+          path: |
+            web/e2e/resultados/relatorio
+            web/e2e/resultados/artefatos
+            web/docs/E2E.md
+            web/docs/e2e-prints
+          if-no-files-found: ignore

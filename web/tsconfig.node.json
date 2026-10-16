@@ -13,5 +13,6 @@
     "strict": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "build"]
+  "include": ["vite.config.ts", "build", "e2e"],
+  "exclude": ["e2e/local/serve-fn.ts"]
 }

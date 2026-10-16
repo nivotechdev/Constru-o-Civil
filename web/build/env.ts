@@ -23,6 +23,12 @@ interface Rule {
 }
 
 const httpsUrl = (value: string) => (/^https:\/\/[^\s/]+/.test(value) ? null : 'precisa ser um endereço https://');
+/** L03: the local E2E build talks to a Supabase on this machine (http://127.0.0.1:…). */
+const localOrHttps = (value: string) =>
+  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(value) ? null : httpsUrl(value);
+
+/** The mode of the E2E build (e2e/LEIA.md): every variable required, but local addresses allowed. */
+export const E2E_MODE = 'e2e';
 
 /** The variables a production build can't do without. */
 export const PRODUCTION_ENV: readonly Rule[] = [
@@ -34,7 +40,7 @@ export const PRODUCTION_ENV: readonly Rule[] = [
 ];
 
 /** One line per missing or malformed variable; empty when the production build may go on. */
-export function productionEnvProblems(env: Env): string[] {
+export function productionEnvProblems(env: Env, mode = 'production'): string[] {
   const problems: string[] = [];
   for (const rule of PRODUCTION_ENV) {
     const value = env[rule.name]?.trim() ?? '';
@@ -42,7 +48,8 @@ export function productionEnvProblems(env: Env): string[] {
       problems.push(`${rule.name} — falta (${rule.what})`);
       continue;
     }
-    const problem = rule.check?.(value);
+    const check = mode === E2E_MODE && rule.check === httpsUrl ? localOrHttps : rule.check;
+    const problem = check?.(value);
     if (problem) problems.push(`${rule.name} — ${problem}`);
   }
   return problems;

@@ -36,6 +36,13 @@ describe('build de produção (L01)', () => {
     ]);
   });
 
+  it('only the local E2E build accepts a Supabase on this machine', () => {
+    const local = { ...FULL, VITE_SUPABASE_URL: 'http://127.0.0.1:55400', VITE_SITE_URL: 'http://localhost:4173' };
+    expect(productionEnvProblems(local, 'e2e')).toEqual([]);
+    expect(productionEnvProblems(local)).toHaveLength(2);
+    expect(productionEnvProblems(local, 'staging')).toHaveLength(2);
+  });
+
   it('only the demo modes skip the check', () => {
     expect(isDemoMode('demo')).toBe(true);
     expect(isDemoMode('standalone')).toBe(true);

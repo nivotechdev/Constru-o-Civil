@@ -22,10 +22,13 @@ Painel → New project → organização `nivotech.contato@gmail.com`, nome `bic
 ```bash
 cd web
 STAGING_DB_URL='postgresql://postgres.<ref>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres' \
+STAGING_URL='https://<ref>.supabase.co' \
   ./scripts/staging/aplicar-banco.sh
 ```
 
-O script liga `pg_cron` e `pg_net`, aplica as migrations do app antigo (as novas ainda dependem delas — armadilha 4) e depois as 41+ do app, registrando cada uma no histórico com a versão do arquivo. Recusa a conexão da
+O script liga `pg_cron` e `pg_net`, aplica as migrations do app antigo (as novas ainda dependem delas — armadilha 4) e depois as do app, registrando cada uma no histórico com a versão do arquivo, e troca o endereço do Storage
+gravado pela Z12 (`app_config.storage_public_base`, que vem com o da produção) pelo do staging — sem isso toda
+foto é recusada. Recusa a conexão da
 produção. Rodar de novo é seguro.
 
 Conferência: `list_migrations` do staging = arquivos de `web/supabase/migrations/`. A produção só fica igual
