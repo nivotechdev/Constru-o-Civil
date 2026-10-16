@@ -62,6 +62,8 @@ describe('whatsapp links', () => {
     expect(whatsappUrl('', 'oi')).toBeNull();
     expect(whatsappUrl('(11) 98842-3310', 'oi')).toBe('https://wa.me/5511988423310?text=oi');
     expect(whatsappUrl('5511988423310')).toBe('https://wa.me/5511988423310');
+    // L11: DDD 55 (RS) without the country code still gets it.
+    expect(whatsappUrl('(55) 99123-4567')).toBe('https://wa.me/5555991234567');
   });
 });
 

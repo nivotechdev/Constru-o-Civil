@@ -23,6 +23,9 @@ export const FEATURES = {
 export const MP_PUBLIC_KEY = env.VITE_MP_PUBLIC_KEY ?? '';
 export const TURNSTILE_SITE_KEY = env.VITE_TURNSTILE_SITE_KEY ?? '';
 export const VAPID_PUBLIC_KEY = env.VITE_VAPID_PUBLIC_KEY ?? '';
-/** Support WhatsApp (digits, with area code). */
-export const SUPPORT_WHATSAPP = (env.VITE_SUPORTE_WHATSAPP ?? '5494731661').replace(/\D/g, '');
+/**
+ * Support WhatsApp (digits, with area code). L11: no default — the production build refuses to run without a
+ * valid mobile (build/env.ts); the demo has none and the Help screen offers only the e-mail.
+ */
+export const SUPPORT_WHATSAPP = (env.VITE_SUPORTE_WHATSAPP ?? '').replace(/\D/g, '');
 export const SUPPORT_EMAIL = 'nivotech.dev@gmail.com';

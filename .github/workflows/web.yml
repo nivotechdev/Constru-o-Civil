@@ -61,6 +61,7 @@ jobs:
           VITE_SITE_URL: https://bicos.example.com
           VITE_TURNSTILE_SITE_KEY: ci-placeholder
           VITE_SENTRY_DSN: https://ci@sentry.example.com/1
+          VITE_SUPORTE_WHATSAPP: "11987654321"
       - name: Build (prévia que abre do disco)
         run: npm run build:standalone
       - uses: actions/upload-artifact@v4
@@ -157,6 +158,7 @@ jobs:
           VITE_SITE_URL: http://localhost:4173
           VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
           VITE_SENTRY_DSN: https://e2e@sentry.invalid/1
+          VITE_SUPORTE_WHATSAPP: "11987654321"
       - name: E2E (Playwright)
         if: steps.cfg.outputs.ok == 'true'
         run: |

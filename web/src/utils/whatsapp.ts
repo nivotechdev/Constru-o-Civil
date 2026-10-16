@@ -5,7 +5,8 @@ import type { Job } from '../types/models';
 export function whatsappUrl(phone: string | null | undefined, text?: string): string | null {
   const digits = String(phone || '').replace(/\D/g, '');
   if (!digits) return null;
-  const number = digits.startsWith('55') ? digits : '55' + digits;
+  // L11: decide by the length, not by a leading 55 — DDD 55 (Santa Maria, RS…) is also "55".
+  const number = digits.length <= 11 ? '55' + digits : digits;
   return `https://wa.me/${number}` + (text ? `?text=${encodeURIComponent(text)}` : '');
 }
 

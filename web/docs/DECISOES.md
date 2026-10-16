@@ -1394,3 +1394,14 @@ já tem links. O IP vem do `cf-connecting-ip` (posto pela Cloudflare na frente d
 outros cabeçalhos só de reserva. Não há links antigos de verdade (a produção tem 0 vagas), mas o caminho existe para
 não dar erro em quem guardou um link de teste. O front novo tem de ir junto com a migration (o parâmetro da RPC
 mudou de nome).
+
+## L11 (lançamento) — WhatsApp do suporte obrigatório e conferido
+
+**Problema**: o número do suporte tinha um padrão no código (`5494731661`, 10 dígitos — um a menos para celular) e
+o botão "Falar no WhatsApp" da Ajuda levaria a um número que não existe.
+
+**O que foi feito**: `VITE_SUPORTE_WHATSAPP` entrou nas variáveis obrigatórias do build de produção (L01), com
+conferência de formato: celular com DDD (DDD + 9 + 8 dígitos), com ou sem `55` e pontuação. O padrão saiu; na
+demonstração não há número e a Ajuda oferece só o e-mail. De quebra, `whatsappUrl` passou a decidir o `55` pelo
+tamanho do número: antes, um celular do DDD 55 (Santa Maria e região, RS) sem o código do país era tratado como se
+já tivesse o `55` e o link abria o número errado — valia para todos os botões de WhatsApp do app.

@@ -27,6 +27,16 @@ const httpsUrl = (value: string) => (/^https:\/\/[^\s/]+/.test(value) ? null : '
 const localOrHttps = (value: string) =>
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(value) ? null : httpsUrl(value);
 
+/**
+ * L11: a Brazilian mobile with its area code — DDD + 9 digits, with or without the 55 and the punctuation.
+ * The support number used to default to 5494731661 (one digit short); now it must be given and be right.
+ */
+export function brMobileProblem(value: string): string | null {
+  const digits = value.replace(/\D/g, '');
+  const local = digits.length === 13 && digits.startsWith('55') ? digits.slice(2) : digits;
+  return /^[1-9][1-9]9\d{8}$/.test(local) ? null : 'precisa ser um celular com DDD (ex.: 11 98765-4321)';
+}
+
 /** The mode of the E2E build (e2e/LEIA.md): every variable required, but local addresses allowed. */
 export const E2E_MODE = 'e2e';
 
@@ -36,7 +46,8 @@ export const PRODUCTION_ENV: readonly Rule[] = [
   { name: 'VITE_SUPABASE_ANON_KEY', what: 'chave pública (anon) do Supabase' },
   { name: 'VITE_SITE_URL', what: 'endereço publicado do app', check: httpsUrl },
   { name: 'VITE_TURNSTILE_SITE_KEY', what: 'site key do captcha (Cloudflare Turnstile)' },
-  { name: 'VITE_SENTRY_DSN', what: 'DSN do Sentry (erros de produção)', check: httpsUrl }
+  { name: 'VITE_SENTRY_DSN', what: 'DSN do Sentry (erros de produção)', check: httpsUrl },
+  { name: 'VITE_SUPORTE_WHATSAPP', what: 'WhatsApp do suporte, celular com DDD', check: brMobileProblem }
 ];
 
 /** One line per missing or malformed variable; empty when the production build may go on. */

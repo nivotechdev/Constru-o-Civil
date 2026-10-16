@@ -30,7 +30,7 @@ Segredos do repositório (Settings › Secrets and variables › Actions): `E2E_
 ```bash
 cd web
 VITE_SUPABASE_URL=https://<ref>.supabase.co VITE_SUPABASE_ANON_KEY=… VITE_SITE_URL=http://localhost:4173 \
-VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA VITE_SENTRY_DSN=https://e2e@sentry.invalid/1 \
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA VITE_SENTRY_DSN=https://e2e@sentry.invalid/1 VITE_SUPORTE_WHATSAPP=11987654321 \
   npx vite build --mode e2e --outDir dist-e2e
 npx vite preview --outDir dist-e2e --port 4173 &
 E2E_SUPABASE_URL=https://<ref>.supabase.co E2E_ANON_KEY=… E2E_SERVICE_ROLE_KEY=… npm run e2e
