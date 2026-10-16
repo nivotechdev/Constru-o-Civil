@@ -16,6 +16,7 @@ import { jobTitle } from '../../services/catalog';
 import { errorMessage } from '../../services/errors';
 import { homeFor, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { loadPublicJob, type PublicJob as PublicJobCard } from '../../services/jobs';
+import { IS_DEMO } from '../../services/mode';
 import { navigate } from '../../services/router';
 import { setUI } from '../../services/store';
 import type { ScreenProps } from '../../types/screen';
@@ -31,7 +32,8 @@ export default function PublicJob({ params }: ScreenProps) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const key = params.id;
-  const legacy = isLegacyJobLink(key);
+  // The demo's jobs have no slug: their link carries the id and opens like any other.
+  const legacy = !IS_DEMO && isLegacyJobLink(key);
 
   useEffect(() => {
     if (legacy) {
