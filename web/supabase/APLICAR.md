@@ -518,6 +518,17 @@ select jobname, schedule from cron.job where jobname = 'bicos-vigiar-cron';   --
 select * from public.cron_health();                                           -- 7 rotinas
 ```
 
+### 44. `20261016000400_lanc13_mural_volume.sql` (L13)
+
+Mural mais rápido com volume: coluna calculada `jobs.last_day` + índice `jobs_feed_city_idx`; `feed_jobs` sem a
+chamada de `job_is_open` por vaga e com o `public_slug` em cada linha. Medição em `docs/VOLUME.md`. A coluna nova
+reescreve a tabela `jobs` (rápido: a produção tem 0 vagas).
+
+```sql
+select count(*) from public.jobs where last_day is distinct from public.job_last_day(jobs);   -- 0
+select indexname from pg_indexes where indexname = 'jobs_feed_city_idx';                       -- 1 linha
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

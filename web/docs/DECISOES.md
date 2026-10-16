@@ -1423,3 +1423,22 @@ avisar. Push: **fica desligado no lançamento** (escondido sem `VITE_VAPID_PUBLI
 **Por que pelo banco e não por uma Edge Function**: tudo o que o vigia precisa já está no banco (pg_cron, pg_net,
 Vault); uma função a mais seria mais um segredo e mais um ponto para falhar. O e-mail sai pela regra de alerta do
 Sentry, que já é ação do responsável no L05.
+
+## L13 (lançamento) — teste de volume do mural
+
+**Problema**: o mural nunca tinha rodado com volume. Meta: 2.000 vagas e 20.000 candidaturas com p95 < 300 ms.
+
+**O que foi feito**: `scripts/volume/` popula dados sintéticos marcados (pelos mesmos gatilhos do app), mede 6
+cenários × 50 chamadas e apaga tudo no fim (conferindo que não sobrou nada). Medido no Postgres local igual ao do
+Supabase: antes, p95 de 37 a 275 ms (passava, com pouca folga para a instância do plano Free); o gargalo era
+`job_is_open` chamada por vaga (~50 µs cada, porque função com `search_path` fixo não é "aberta" pelo planejador).
+Depois da `lanc13_mural_volume` (coluna calculada `last_day` + índice parcial; o mural compara com o "hoje" uma vez;
+texto da busca normalizado uma vez): p95 de 14 a 133 ms. Resultados em `docs/VOLUME.md`.
+
+**Por que a regra "aberta" ficou escrita no mural em vez de chamar `job_is_open`**: é a única forma de o planejador
+usar o índice e não pagar a chamada por linha. Para não divergir, o teste `lanc13_mural_volume.sql` compara, vaga a
+vaga (datas, "a combinar" vencida, encerrada, excluída, oculta, cheia), o mural com `job_is_open`; e
+`last_day` com `job_last_day`.
+
+**Pendente**: rodar no staging (precisa do banco montado — segredos do L02). **Achado**: apagar conta pela tela do
+Auth deixa o perfil público para trás; a regra é usar a exclusão do app (registrado em `docs/VOLUME.md`).

@@ -109,7 +109,9 @@ export const putJobs =
         !('payment_method' in row) && prev?.payment
           ? { payment: prev.payment, ...(prev.paymentNote ? { paymentNote: prev.paymentNote } : {}) }
           : {};
-      jobs[row.id] = { ...(sameArea ? { ...fresh, address: old } : fresh), ...payment };
+      // L10: a read without the public link's slug keeps the one already known (the share button uses it).
+      const slug = !fresh.publicSlug && prev?.publicSlug ? { publicSlug: prev.publicSlug } : {};
+      jobs[row.id] = { ...(sameArea ? { ...fresh, address: old } : fresh), ...payment, ...slug };
       if (row.deleted_at) deleted.add(row.id);
       else deleted.delete(row.id);
     }

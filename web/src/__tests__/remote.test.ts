@@ -360,6 +360,8 @@ describe('remote: data and actions', () => {
     // BC-5001 has its only slot taken: the mural reads it as full without seeing the candidacy.
     expect(m.selectors.isJobFull(db, db.jobs['BC-5001'])).toBe(true);
     expect(m.selectors.isJobFull(db, db.jobs['BC-5002'])).toBe(false);
+    // L10/L13: the mural brings the public link's slug, for the share button.
+    expect(db.jobs['BC-5001'].publicSlug).toBe('slug22225001');
   });
 
   it('the mural comes in pages from the server; a job gone meanwhile leaves the screen (X01, Y10)', async () => {

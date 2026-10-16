@@ -684,6 +684,7 @@ export type Database = {
           hidden_at: string | null;
           hidden_reason: string | null;
           public_slug: string;
+          last_day: string | null;
         };
         Insert: {
           id?: string;
@@ -726,6 +727,7 @@ export type Database = {
           hidden_at?: string | null;
           hidden_reason?: string | null;
           public_slug?: string;
+          last_day?: never;
         };
         Update: {
           id?: string;
@@ -768,6 +770,7 @@ export type Database = {
           hidden_at?: string | null;
           hidden_reason?: string | null;
           public_slug?: string;
+          last_day?: never;
         };
         Relationships: [
           {
