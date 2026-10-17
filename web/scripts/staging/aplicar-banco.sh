@@ -60,3 +60,17 @@ done
 echo "→ endereço do Storage deste projeto (app_config.storage_public_base)"
 psql_ -c "update public.app_config set value = '${STAGING_URL%/}/storage/v1/object/public/' where key = 'storage_public_base'"
 echo "Banco de staging em dia: $(psql_ -tAc 'select count(*) from supabase_migrations.schema_migrations') migrations no histórico."
+
+# R05: o mesmo que o advisor `rls_disabled_in_public` (ERROR): nenhuma tabela do public sem RLS — nem as do app
+# antigo, nem uma que tenha sobrado de uma montagem que parou no meio. Sem RLS, a tabela inteira sai pela API.
+echo "→ conferência: RLS em todas as tabelas do public"
+sem_rls="$(psql_ -tAc "select string_agg(c.relname, ', ' order by c.relname) from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relrowsecurity")"
+if [ -n "$sem_rls" ]; then
+  echo "ERRO: tabelas do public sem RLS (expostas pela API): $sem_rls" >&2
+  exit 1
+fi
+echo "   $(psql_ -tAc "select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind in ('r', 'p')") tabelas, todas com RLS."
+DB_URL="$STAGING_DB_URL" "$here/conferir-migrations.sh"

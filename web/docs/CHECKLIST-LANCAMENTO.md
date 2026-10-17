@@ -156,3 +156,9 @@ Situação da Brevo (consultada em 15/10/2026): plano **Free** (300 e-mails/dia 
 | Feito pela IA                                                                                                                                                                                                                                                                  | Ação do responsável                                                                 |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | Migration `r04_exclusao_pelo_painel`: `anonymize_account` (a limpeza da exclusão pelo app, agora também ocultando as vagas da construtora e apagando o envio da selfie) + gatilho em `auth.users`; teste SQL; conferido com o `deleteUser` do Auth de verdade (Supabase local) | [ ] Dizer "pode" para aplicar no staging e na produção (`supabase/APLICAR.md` › 46) |
+
+## R05 — Staging sem tabela exposta
+
+| Feito pela IA                                                                                                                                                                                      | Ação do responsável                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `aplicar-banco.sh` termina conferindo RLS em todas as tabelas do `public` e o histórico de migrations; testado num Postgres vazio com a `profiles` sem RLS (passa) e com uma tabela exposta (para) | — (roda no R08, com o acesso ao staging) |

@@ -41,7 +41,8 @@ STAGING_URL='https://<ref>.supabase.co' \
 O script liga `pg_cron` e `pg_net`, aplica as migrations do app antigo (as novas ainda dependem delas — armadilha 4) e depois as do app, registrando cada uma no histórico com a versão do arquivo, e troca o endereço do Storage
 gravado pela Z12 (`app_config.storage_public_base`, que vem com o da produção) pelo do staging — sem isso toda
 foto é recusada. Recusa a conexão da
-produção. Rodar de novo é seguro.
+produção. Rodar de novo é seguro. No fim, confere que **toda tabela do `public` tem RLS** e que o histórico é igual aos
+arquivos — se não, para com erro (R05).
 
 Conferência: `list_migrations` do staging = arquivos de `web/supabase/migrations/`. A produção só fica igual
 depois do `repair` de `supabase/APLICAR.md` › "Histórico de migrations" (**com aprovação**). A checagem

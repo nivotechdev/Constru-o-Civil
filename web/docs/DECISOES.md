@@ -1503,3 +1503,15 @@ continua com a limpeza do Z01 (o perfil vazio sai). Conferido também com o `del
 **Por que limpeza completa e não só ocultar**: é o mesmo resultado que a pessoa teria pelo app, testado há várias
 rodadas; um segundo comportamento só para o painel seria mais um caminho para manter. A exclusão pelo app marca a
 transação (`bicos.conta_ja_limpa`) para o gatilho não repetir a limpeza.
+
+## R05 — Staging montável do zero sem tabela exposta
+
+**Problema**: o staging ficou com `public.profiles` **sem RLS** — sobra de uma montagem pelo conector que parou no meio
+(a tabela foi criada; o `enable row level security` da mesma migration não chegou a rodar). Sem RLS, a tabela inteira
+sai pela API.
+
+**O que foi feito**: `scripts/staging/aplicar-banco.sh` já completa as migrations antigas enquanto o app novo não
+existe (L09) — o que liga a RLS da `profiles` — e agora termina com duas conferências que fazem o script falhar: toda
+tabela do `public` com RLS (o equivalente em SQL do ERROR `rls_disabled_in_public` do advisor) e o histórico igual
+aos arquivos (`conferir-migrations.sh`). Rodado num Postgres vazio com a `profiles` desprotegida, como o staging:
+50 migrations, 37 tabelas, todas com RLS; com uma tabela sem RLS criada de propósito, o script para e diz qual.
