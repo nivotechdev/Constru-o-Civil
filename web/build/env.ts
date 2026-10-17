@@ -75,3 +75,55 @@ export function productionEnvError(problems: string[]): string {
     'Para uma demonstração com dados falsos use: npm run build:demo'
   ].join('\n');
 }
+
+// ---- R01: the legal texts ----
+
+/**
+ * The escape for a closed pilot launched with the "draft for legal review" notice — only if the company decides
+ * so (CHECKLIST-LANCAMENTO.md). It never lets blank fields ({{CNPJ}}…) through.
+ */
+export const PILOT_WITHOUT_LEGAL_REVIEW = 'BICOS_PILOTO_SEM_REVISAO_JURIDICA';
+
+export interface LegalState {
+  /** legal.ts › LEGAL_REVIEWED */
+  reviewed: boolean;
+  /** Every text the public reads (terms, privacy policy, identity consent). */
+  texts: string[];
+}
+
+/**
+ * What stops a production build from publishing unfinished legal texts: fields the company still has to fill in
+ * ({{RAZAO_SOCIAL}}, {{CNPJ}}…) and the lawyer's review not done. In production they are errors; in staging and
+ * E2E builds only warnings (the texts there are a rehearsal).
+ */
+export function legalProblems(legal: LegalState, mode: string, env: Env): { errors: string[]; warnings: string[] } {
+  const blanks = [...new Set(legal.texts.flatMap((t) => t.match(/\{\{[A-Z0-9_]+\}\}/g) ?? []))].sort();
+  const problems: { text: string; escapable: boolean }[] = [];
+  if (blanks.length)
+    problems.push({
+      text: `textos legais com campos sem preencher: ${blanks.join(', ')} (web/src/services/legal.ts)`,
+      escapable: false
+    });
+  if (!legal.reviewed)
+    problems.push({
+      text:
+        'textos legais sem revisão do advogado (LEGAL_REVIEWED = false em web/src/services/legal.ts); para um ' +
+        `piloto fechado com o aviso de rascunho, decisão da empresa: ${PILOT_WITHOUT_LEGAL_REVIEW}=1`,
+      escapable: true
+    });
+  if (mode !== 'production') return { errors: [], warnings: problems.map((p) => p.text) };
+  const pilot = env[PILOT_WITHOUT_LEGAL_REVIEW]?.trim() === '1';
+  return {
+    errors: problems.filter((p) => !(p.escapable && pilot)).map((p) => p.text),
+    warnings: problems.filter((p) => p.escapable && pilot).map((p) => p.text)
+  };
+}
+
+/** The message the build prints when the legal texts stop it. */
+export function legalError(errors: string[]): string {
+  return [
+    'Build de produção interrompido: textos jurídicos incompletos.',
+    ...errors.map((e) => `  • ${e}`),
+    'O público veria esses campos em branco e o aviso de rascunho. Ver web/docs/CHECKLIST-LANCAMENTO.md › L07.'
+  ].join('\n');
+}

@@ -53,8 +53,26 @@ jobs:
             echo "O build de produção passou sem as variáveis" && exit 1
           fi
           grep -q "Build de produção interrompido" build-sem-env.log && cat build-sem-env.log | head -8
-      - name: Build (modo real)
-        run: npm run build -- --outDir dist-real
+      # R01: com todas as variáveis, o build de PRODUÇÃO ainda para enquanto os textos legais tiverem campos
+      # {{…}} ou faltar a revisão do advogado. O build real do CI é o de staging (só avisa).
+      - name: Build de produção com textos legais incompletos falha
+        run: |
+          if npx vite build --outDir dist-sem-juridico > build-juridico.log 2>&1; then
+            if grep -q "{{" src/services/legal.ts || grep -q "LEGAL_REVIEWED = false" src/services/legal.ts; then
+              echo "O build de produção passou com os textos legais incompletos" && exit 1
+            fi
+          else
+            grep -q "textos jurídicos incompletos" build-juridico.log && head -6 build-juridico.log
+          fi
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder
+          VITE_SITE_URL: https://bicos.example.com
+          VITE_TURNSTILE_SITE_KEY: ci-placeholder
+          VITE_SENTRY_DSN: https://ci@sentry.example.com/1
+          VITE_SUPORTE_WHATSAPP: "11987654321"
+      - name: Build (modo real, staging)
+        run: npm run build:staging -- --outDir dist-real
         env:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder

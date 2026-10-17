@@ -1,6 +1,14 @@
 // L01 (lançamento): the production build refuses to run without its variables.
 import { describe, expect, it } from 'vitest';
-import { brMobileProblem, isDemoMode, productionEnvError, productionEnvProblems } from '../../build/env';
+import {
+  brMobileProblem,
+  isDemoMode,
+  legalError,
+  legalProblems,
+  productionEnvError,
+  productionEnvProblems
+} from '../../build/env';
+import { IDENTITY_CONSENT, LEGAL_REVIEWED, PRIVACY, TERMS } from '../services/legal';
 
 const FULL = {
   VITE_SUPABASE_URL: 'https://abcdefgh.supabase.co',
@@ -64,5 +72,44 @@ describe('WhatsApp do suporte (L11)', () => {
     expect(productionEnvProblems({ ...FULL, VITE_SUPORTE_WHATSAPP: '5494731661' })).toEqual([
       'VITE_SUPORTE_WHATSAPP — precisa ser um celular com DDD (ex.: 11 98765-4321)'
     ]);
+  });
+});
+
+describe('textos legais no build (R01)', () => {
+  const filled = { reviewed: true, texts: ['A Bicos é um serviço da NivoTech Ltda., CNPJ 12.345.678/0001-90.'] };
+  const blank = { reviewed: true, texts: ['CNPJ {{CNPJ}}, sede em {{ENDERECO}}.', 'De novo {{CNPJ}}.'] };
+  const draft = { reviewed: false, texts: filled.texts };
+  const PILOT = { BICOS_PILOTO_SEM_REVISAO_JURIDICA: '1' };
+
+  it('production: blank fields stop the build, even for the pilot', () => {
+    for (const env of [{}, PILOT]) {
+      const { errors } = legalProblems(blank, 'production', env);
+      expect(errors).toEqual([
+        'textos legais com campos sem preencher: {{CNPJ}}, {{ENDERECO}} (web/src/services/legal.ts)'
+      ]);
+    }
+    expect(legalError(['x'])).toContain('Build de produção interrompido: textos jurídicos incompletos.');
+  });
+
+  it('production: without the lawyer it stops, unless the company chose the closed pilot', () => {
+    expect(legalProblems(draft, 'production', {}).errors[0]).toContain('sem revisão do advogado');
+    expect(legalProblems(draft, 'production', PILOT)).toEqual({
+      errors: [],
+      warnings: [expect.stringContaining('sem revisão do advogado')]
+    });
+    expect(legalProblems(filled, 'production', {})).toEqual({ errors: [], warnings: [] });
+  });
+
+  it('staging and E2E builds only warn', () => {
+    for (const mode of ['staging', 'e2e']) {
+      const { errors, warnings } = legalProblems({ ...blank, reviewed: false }, mode, {});
+      expect(errors).toEqual([]);
+      expect(warnings).toHaveLength(2);
+    }
+  });
+
+  it('today the texts are not ready: the production build would stop', () => {
+    const texts = [TERMS, PRIVACY].flatMap((d) => d.sections.flatMap((s) => s.body)).concat(IDENTITY_CONSENT.points);
+    expect(legalProblems({ reviewed: LEGAL_REVIEWED, texts }, 'production', {}).errors.length).toBeGreaterThan(0);
   });
 });

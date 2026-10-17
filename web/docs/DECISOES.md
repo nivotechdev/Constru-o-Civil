@@ -1442,3 +1442,17 @@ vaga (datas, "a combinar" vencida, encerrada, excluída, oculta, cheia), o mural
 
 **Pendente**: rodar no staging (precisa do banco montado — segredos do L02). **Achado**: apagar conta pela tela do
 Auth deixa o perfil público para trás; a regra é usar a exclusão do app (registrado em `docs/VOLUME.md`).
+
+## R01 — Build de produção não publica texto jurídico incompleto
+
+**Problema**: `npm run build` passava com `{{RAZAO_SOCIAL}}`, `{{CNPJ}}`, `{{DPO_EMAIL}}`… em `legal.ts` e com
+`LEGAL_REVIEWED = false`: o público veria "CNPJ {{CNPJ}}" e o aviso de rascunho.
+
+**O que foi feito**: `build/env.ts › legalProblems` confere os textos (termos, política e consentimento da selfie)
+antes do build. Produção: campo `{{…}}` ou falta de revisão param o build. Staging e E2E: só avisam. Escape único,
+para piloto fechado e só por decisão registrada da empresa: `BICOS_PILOTO_SEM_REVISAO_JURIDICA=1` libera a falta de
+revisão (o aviso de rascunho continua na tela), nunca os campos em branco. O CI prova que o build de produção para e
+passou a fazer o build real em modo `staging`.
+
+**Por que o escape não cobre os `{{…}}`**: um piloto pode começar antes do advogado, mas nunca sem dizer quem é a
+empresa, o CNPJ e o canal do encarregado de dados — a LGPD exige isso de qualquer tratamento.

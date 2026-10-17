@@ -4,7 +4,15 @@ import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
-import { isDemoMode, productionEnvError, productionEnvProblems } from './build/env';
+import {
+  isDemoMode,
+  legalError,
+  legalProblems,
+  productionEnvError,
+  productionEnvProblems,
+  type LegalState
+} from './build/env';
+import { IDENTITY_CONSENT, LEGAL_REVIEWED, PRIVACY, TERMS } from './src/services/legal';
 
 // `npm run build` → dist/ (code-split, served over HTTP, installable: manifest + service worker, X02).
 // It is the PRODUCTION build and stops when a required variable is missing (L01, build/env.ts).
@@ -17,6 +25,13 @@ import { isDemoMode, productionEnvError, productionEnvProblems } from './build/e
 const DEMO_ENV = { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' };
 
 /** L01: a production build without its variables fails before bundling, listing what is missing. */
+const LEGAL_TEXTS: LegalState = {
+  reviewed: LEGAL_REVIEWED,
+  texts: [TERMS, PRIVACY]
+    .flatMap((d) => [d.title, ...d.sections.flatMap((s) => [s.title, ...s.body])])
+    .concat(IDENTITY_CONSENT.title, IDENTITY_CONSENT.points, IDENTITY_CONSENT.checkbox)
+};
+
 function requireProductionEnv(env: Record<string, string>, mode: string): Plugin {
   return {
     name: 'bicos-production-env',
@@ -24,6 +39,10 @@ function requireProductionEnv(env: Record<string, string>, mode: string): Plugin
     config() {
       const problems = productionEnvProblems(env, mode);
       if (problems.length) throw new Error(productionEnvError(problems));
+      // R01: no blank fields nor unreviewed legal texts in front of the public.
+      const legal = legalProblems(LEGAL_TEXTS, mode, { ...env, ...process.env });
+      for (const w of legal.warnings) console.warn(`Aviso (textos legais): ${w}`);
+      if (legal.errors.length) throw new Error(legalError(legal.errors));
     }
   };
 }
