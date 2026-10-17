@@ -4529,7 +4529,7 @@ end $$;
 -- Antes: /v/BC-1, /v/BC-2… — os IDs são sequenciais e `public_job_card` (a única RPC para visitante) abria
 -- qualquer um, então dava para baixar o mural inteiro sem conta, uma vaga atrás da outra.
 -- Agora:
---   * cada vaga ganha um `public_slug` aleatório (12 caracteres de um alfabeto de 32, ~60 bits) e o link
+--   * cada vaga ganha um `public_slug` aleatório (12 caracteres de um alfabeto de 31 — sem 0/o, 1/l/i —, ~59 bits) e o link
 --     compartilhado é /v/<slug>. O código BC-n continua sendo o ID e aparecendo na tela;
 --   * `public_job_card(p_slug)` só abre pelo slug — um BC-n devolve nada (o app manda para o login e de lá para
 --     a vaga, o que serve aos links antigos);

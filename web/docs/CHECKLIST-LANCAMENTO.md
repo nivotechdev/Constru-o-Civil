@@ -168,3 +168,9 @@ Situação da Brevo (consultada em 15/10/2026): plano **Free** (300 e-mails/dia 
 | Feito pela IA                                                                                                                                                                               | Ação do responsável |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
 | README do produto; migrations antigas em `web/supabase/legado/`; app legado, conversas e protótipos em `archive/` (com `LEIA.md`); `web/README.md` reescrito; `grep -r "../app" web/` vazio | —                   |
+
+## R07 — Pequenos acertos
+
+| Feito pela IA                                                                                                                | Ação do responsável |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Comentário do slug corrigido (31 caracteres, ~59 bits); `docs/ADVISORS.md` com o estado esperado depois das migrations novas | —                   |

@@ -1530,3 +1530,12 @@ continuam necessárias para montar um banco do zero); (3) `app/`, `chats/`, `pro
 **Por que os testes de paridade ficaram**: `utils.parity.test.ts` ainda pega diferença de formatação (valores,
 datas, telefone) em relação ao app que as pessoas já usaram, e custa nada no CI; só passou a importar
 `archive/app`. O `npm run parity` (visual) continua manual.
+
+## R07 — Pequenos acertos
+
+- O comentário da `lanc10_link_publico` dizia alfabeto de 32 caracteres (~60 bits); são 31 (sem `0/o`, `1/l/i`),
+  ~59 bits. Só o comentário mudou (a função está certa); a migration ainda não foi aplicada em lugar nenhum.
+- `docs/ADVISORS.md` ganhou o estado **esperado** depois das migrations `lanc*` e `r*`, calculado com as mesmas
+  consultas do advisor num Postgres igual ao do Supabase — para o R08 e o R10 compararem com o real. A lista das 55
+  funções `security definer` executáveis por `authenticated` foi conferida uma a uma: nenhuma interna exposta
+  (as de limpeza, alerta e anonimização são só do dono do banco).
