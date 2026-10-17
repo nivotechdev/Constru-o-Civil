@@ -40,7 +40,6 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 /                      ← raiz é um "handoff bundle" antigo do Claude Design (README da raiz NÃO descreve o app)
 ├─ web/                ← O APP. Tudo o que importa está aqui.
 ├─ app/                ← app legado (HTML + JS, bundle.js 487 KB). Só referência de paridade.
-├─ supabase/migrations/000–012  ← migrations do app LEGADO (ainda usadas pelo setup dos testes SQL!)
 ├─ chats/, project/    ← transcrições e protótipos de design (histórico)
 ├─ legal/              ← termos e política em .md (espelho de web/src/services/legal.ts)
 └─ .github/workflows/web.yml   ← CI
@@ -194,7 +193,7 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase
 3. **`pg_net` não aceita `ALTER EXTENSION … SET SCHEMA`**: para tirar de `public` é `drop extension pg_net` +
    `create extension pg_net with schema extensions`; as funções continuam em `net.*`. Teste no staging; confira
    `call_storage_cleanup` e o gatilho de push depois.
-4. **O setup dos testes SQL aplica as migrations legadas** de `/supabase/migrations/0*.sql` antes das novas, e
+4. **O setup dos testes SQL aplica as migrations legadas** de `web/supabase/legado/0*.sql` antes das novas, e
    `src/__tests__/utils.parity.test.ts` + `scripts/parity/` importam `../app`. Mover/apagar `app/` ou as migrations
    legadas (L14) quebra o CI se não ajustar esses três pontos juntos.
 5. `public_job_card` é a única RPC para `anon`; os IDs de vaga são sequenciais (`BC-1`…) → enumeráveis (L10).

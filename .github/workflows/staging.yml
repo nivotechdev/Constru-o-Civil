@@ -8,7 +8,7 @@ name: staging
 on:
   push:
     branches: [master]
-    paths: ["web/supabase/migrations/**", "supabase/migrations/**", "web/scripts/staging/**", ".github/workflows/staging.yml"]
+    paths: ["web/supabase/migrations/**", "web/supabase/legado/**", "web/scripts/staging/**", ".github/workflows/staging.yml"]
   workflow_dispatch:
     inputs:
       aplicar:

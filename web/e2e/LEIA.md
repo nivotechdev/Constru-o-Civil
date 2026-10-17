@@ -44,7 +44,7 @@ O modo de build `e2e` exige as mesmas variáveis da produção (L01), mas aceita
 "http://localhost:4173/"`, `additional_redirect_urls = ["http://localhost:4173/**"]`, `[auth.email]
 enable_confirmations = true` e `[realtime] enabled = false`; em `supabase/migrations/`: um arquivo com
    `create extension if not exists pg_cron; create extension if not exists pg_net;`, as migrations antigas de
-   `/supabase/migrations/0*.sql` renomeadas com data (`20260901000000_legacy_000_baseline.sql`…) e as de
+   `web/supabase/legado/0*.sql` renomeadas com data (`20260901000000_legacy_000_baseline.sql`…) e as de
    `web/supabase/migrations/`.
 2. `supabase start -x studio,logflare,vector,imgproxy,supavisor,postgres-meta,edge-runtime` (com
    `SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io` se o ECR recusar).

@@ -7,9 +7,9 @@ name: web
 
 on:
   push:
-    paths: ["web/**", "supabase/migrations/**", "legal/**", ".github/workflows/web.yml"]
+    paths: ["web/**", "legal/**", ".github/workflows/web.yml"]
   pull_request:
-    paths: ["web/**", "supabase/migrations/**", "legal/**", ".github/workflows/web.yml"]
+    paths: ["web/**", "legal/**", ".github/workflows/web.yml"]
   # L03: o E2E no staging também roda à mão (Actions › web › Run workflow).
   workflow_dispatch:
 

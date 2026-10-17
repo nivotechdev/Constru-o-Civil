@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # L02 — Monta o banco de um projeto Supabase NOVO (staging) igual ao da produção, na mesma ordem dos testes
-# SQL (supabase/tests/local/setup.sh): extensões → migrations do app antigo (/supabase/migrations/0*.sql, que
+# SQL (supabase/tests/local/setup.sh): extensões → migrations do app antigo (web/supabase/legado/0*.sql, que
 # as novas ainda usam) → migrations do app (web/supabase/migrations). Cada migration do app é registrada no
 # histórico (supabase_migrations.schema_migrations) com a versão do ARQUIVO — o mesmo que a produção terá
 # depois do `repair` de APLICAR.md — para `list_migrations` dar igual nos dois.
@@ -21,7 +21,6 @@ case "$STAGING_DB_URL" in
 esac
 here="$(cd "$(dirname "$0")" && pwd)"
 web="$(cd "$here/../.." && pwd)"
-root="$(cd "$web/.." && pwd)"
 export PGOPTIONS="-c client_min_messages=warning"
 psql_() { psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 -q "$@"; }
 
@@ -37,7 +36,7 @@ SQL
 # As migrations antigas são idempotentes, então completam um banco que parou no meio delas; depois que o app
 # novo existe, nunca rodam de novo (devolveriam permissões que a Z08 tirou).
 if [ "$(psql_ -tAc "select to_regclass('public.accounts') is null")" = "t" ]; then
-  for f in "$root"/supabase/migrations/0*.sql; do
+  for f in "$web"/supabase/legado/0*.sql; do
     echo "→ (app antigo) $(basename "$f")"
     psql_ -f "$f"
   done
