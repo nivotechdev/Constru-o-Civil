@@ -1,4 +1,5 @@
-// L05: de onde o navegador pode chamar as funções (CORS). APP_ORIGIN é obrigatório — sem ele as funções não
+// L05: de onde o navegador pode chamar as funções (CORS). APP_ORIGIN é obrigatório nas funções do navegador
+// (R02: as servidor-a-servidor não usam) — sem ele elas não
 // sobem (antes caía para "*", qualquer site podia chamar). Aceita uma lista separada por vírgula, com "*"
 // só no começo do nome do servidor para as prévias por PR (ex.: https://*.bicos-app.pages.dev).
 // Sem Deno aqui: os testes do app (Vitest) importam este arquivo.
@@ -31,3 +32,23 @@ export function allowedOrigin(origins: string[], requestOrigin: string | null): 
   }
   return origins[0];
 }
+
+/** Os cabeçalhos CORS de uma resposta a `requestOrigin`. */
+export function corsHeaders(origins: string[], requestOrigin: string | null): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin(origins, requestOrigin),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    Vary: 'Origin'
+  };
+}
+
+/** R02: as funções que o navegador chama (exigem APP_ORIGIN). As outras são chamadas pelo banco ou por provedor. */
+export const BROWSER_FUNCTIONS = [
+  'codigo-whatsapp',
+  'criar-cobranca',
+  'entrar-com-documento',
+  'excluir-conta',
+  'verificar-cnpj'
+] as const;
+export const SERVER_FUNCTIONS = ['enviar-push', 'limpar-arquivos', 'webhook-pagamento'] as const;

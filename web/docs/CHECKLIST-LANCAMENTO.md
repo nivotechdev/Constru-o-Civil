@@ -138,3 +138,9 @@ Situação da Brevo (consultada em 15/10/2026): plano **Free** (300 e-mails/dia 
 | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Build de produção para com campos `{{…}}` ou sem revisão do advogado; staging/E2E só avisam; CI prova | [ ] Mandar os dados: razão social, CNPJ, endereço, encarregado de dados (nome e e-mail), foro, prazos de guarda (pagamentos, registros de acesso, auditoria) e a base da transferência internacional |
 | Escape `BICOS_PILOTO_SEM_REVISAO_JURIDICA=1` documentado em `.env.example`                            | [ ] Advogado revisa → a IA põe `LEGAL_REVIEWED = true`; **ou** decidir por escrito o piloto fechado com o aviso de rascunho                                                                          |
+
+## R02 — `APP_ORIGIN` só onde o navegador chama
+
+| Feito pela IA                                                                                                                          | Ação do responsável                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| 5 funções do navegador exigem `APP_ORIGIN`; `webhook-pagamento`, `enviar-push` e `limpar-arquivos` sobem sem ele; teste + `deno check` | — (vale na republicação das funções, R10 › passo 5) |

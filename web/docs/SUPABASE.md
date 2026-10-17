@@ -99,8 +99,11 @@ segredos da tabela, cada função recusa o pedido (401 ou 503) — nada acontece
 | `enviar-push`          | notificação no celular a cada aviso novo (X03)             | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_WEBHOOK_SECRET`                            | sim     |
 | `limpar-arquivos`      | apagar arquivos órfãos e fotos de identidade antigas (X09) | `CLEANUP_SECRET`                                                                                           | sim     |
 
-Todas: `APP_ORIGIN` (**obrigatório** — sem ele a função não sobe, L05; o endereço publicado, ou uma lista separada
-por vírgula, com `https://*.dominio` para prévias), `SENTRY_DSN` e `RELEASE` (opcionais, X21). `SUPABASE_URL`,
+As chamadas pelo navegador (`entrar-com-documento`, `excluir-conta`, `codigo-whatsapp`, `verificar-cnpj`,
+`criar-cobranca`): `APP_ORIGIN` (**obrigatório** — sem ele a função não sobe, L05; o endereço publicado, ou uma
+lista separada por vírgula, com `https://*.dominio` para prévias). As servidor-a-servidor (`webhook-pagamento`,
+`enviar-push`, `limpar-arquivos`) **não usam** `APP_ORIGIN` nem mandam cabeçalho CORS (R02): um segredo esquecido não
+derruba o webhook nem o cron. Todas: `SENTRY_DSN` e `RELEASE` (opcionais, X21). `SUPABASE_URL`,
 `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` o Supabase já põe sozinho.
 
 ## 5. Recursos que dependem de serviço externo

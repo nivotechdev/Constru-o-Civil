@@ -9,8 +9,11 @@
 //
 // Respostas: 200 { ok: true, arquivos } · 401/409/422 { erro, mensagem }.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { adminClient, CORS, json, requestUser, rpcError } from '../_shared/http.ts';
+import { adminClient, json, preflight, requestUser, requireAppOrigin, rpcError } from '../_shared/http.ts';
 import { monitored } from '../_shared/monitoring.ts';
+
+// R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
+requireAppOrigin();
 
 const BUCKETS = ['avatars', 'portfolio', 'vagas'];
 
@@ -31,7 +34,7 @@ async function removeFolder(admin: ReturnType<typeof adminClient>, bucket: strin
 
 Deno.serve(
   monitored('excluir-conta', async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    if (req.method === 'OPTIONS') return preflight(req);
     if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
 
     const user = await requestUser(req);

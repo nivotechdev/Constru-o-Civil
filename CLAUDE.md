@@ -134,7 +134,8 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 | `limpar-arquivos` | apaga órfãos e identidades 30 dias após decisão | **não** | `CLEANUP_SECRET` |
 
 Todas: `SENTRY_DSN`, `RELEASE`. `APP_ORIGIN` (CORS): **obrigatório** desde o L05 — sem ele a função não sobe (não
-cai mais para `*`; o R02 restringe a exigência às funções chamadas pelo navegador). **Na produção as funções ainda
+cai mais para `*`). R02: só as funções chamadas pelo navegador exigem `APP_ORIGIN` (`requireAppOrigin()` no topo);
+`webhook-pagamento`, `enviar-push` e `limpar-arquivos` sobem sem ele e não mandam CORS. **Na produção as funções ainda
 estão na versão anterior ao L05** (republicar só com "pode", depois dos segredos). Helpers em `_shared/`
 (`http.ts`: `adminClient`, `requestUser`, `json`, `rpcError`). As "sem JWT" conferem segredo em tempo constante.
 Publicar: `supabase functions deploy <nome>` (as sem JWT com `--no-verify-jwt`).

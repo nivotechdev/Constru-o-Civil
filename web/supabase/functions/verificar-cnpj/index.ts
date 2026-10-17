@@ -10,14 +10,17 @@
 // Não precisa de chave: a BrasilAPI é aberta. BRASILAPI_URL troca o endereço (testes).
 // L06: a resposta (razão social, situação, abertura, atividade, cidade) fica em companies.cnpj_check para a
 // fila de construtoras do /admin.
-import { adminClient, CORS, json, requestUser } from '../_shared/http.ts';
+import { adminClient, json, preflight, requestUser, requireAppOrigin } from '../_shared/http.ts';
 import { monitored } from '../_shared/monitoring.ts';
+
+// R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
+requireAppOrigin();
 
 const API = Deno.env.get('BRASILAPI_URL') ?? 'https://brasilapi.com.br/api/cnpj/v1/';
 
 Deno.serve(
   monitored('verificar-cnpj', async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    if (req.method === 'OPTIONS') return preflight(req);
     if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
     const user = await requestUser(req);
     if (!user) return json({ erro: 'BC401', mensagem: 'Entre na sua conta de novo para continuar.' }, 401);

@@ -1456,3 +1456,15 @@ passou a fazer o build real em modo `staging`.
 
 **Por que o escape não cobre os `{{…}}`**: um piloto pode começar antes do advogado, mas nunca sem dizer quem é a
 empresa, o CNPJ e o canal do encarregado de dados — a LGPD exige isso de qualquer tratamento.
+
+## R02 — Funções servidor-a-servidor não dependem de `APP_ORIGIN`
+
+**Problema**: desde o L05, `_shared/http.ts` lia `APP_ORIGIN` ao carregar e derrubava **toda** função sem ele — também
+`webhook-pagamento` (Mercado Pago), `enviar-push` (banco) e `limpar-arquivos` (cron), que ninguém chama do navegador.
+Um segredo esquecido derrubaria o webhook e o cron juntos.
+
+**O que foi feito**: `requireAppOrigin()` lê e confere `APP_ORIGIN`; só as 5 funções do navegador o chamam no topo do
+arquivo (sem ele, não sobem, como no L05). O CORS (`preflight`, `withCors`) só aparece depois disso; nas outras 3,
+nenhuma resposta leva cabeçalho CORS. Teste (`edgeOrigin.test.ts`) confere a lista das 8 funções e quem chama o quê;
+`deno check` verde; conferido subindo as funções sem `APP_ORIGIN` (as 3 servidor-a-servidor sobem e respondem 401
+sem CORS; `excluir-conta` e `verificar-cnpj` não sobem).
