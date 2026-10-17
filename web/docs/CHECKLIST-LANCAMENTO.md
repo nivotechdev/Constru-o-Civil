@@ -162,3 +162,9 @@ Situação da Brevo (consultada em 15/10/2026): plano **Free** (300 e-mails/dia 
 | Feito pela IA                                                                                                                                                                                      | Ação do responsável                      |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `aplicar-banco.sh` termina conferindo RLS em todas as tabelas do `public` e o histórico de migrations; testado num Postgres vazio com a `profiles` sem RLS (passa) e com uma tabela exposta (para) | — (roda no R08, com o acesso ao staging) |
+
+## R06 — Repositório arrumado
+
+| Feito pela IA                                                                                                                                                                               | Ação do responsável |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| README do produto; migrations antigas em `web/supabase/legado/`; app legado, conversas e protótipos em `archive/` (com `LEIA.md`); `web/README.md` reescrito; `grep -r "../app" web/` vazio | —                   |

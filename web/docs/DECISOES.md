@@ -1515,3 +1515,18 @@ existe (L09) — o que liga a RLS da `profiles` — e agora termina com duas con
 tabela do `public` com RLS (o equivalente em SQL do ERROR `rls_disabled_in_public` do advisor) e o histórico igual
 aos arquivos (`conferir-migrations.sh`). Rodado num Postgres vazio com a `profiles` desprotegida, como o staging:
 50 migrations, 37 tabelas, todas com RLS; com uma tabela sem RLS criada de propósito, o script para e diz qual.
+
+## R06 — Higiene do repositório
+
+**Problema**: a raiz ainda era o "handoff bundle" do Claude Design (README falando de protótipos), com o app legado,
+as conversas de design e as migrations antigas misturados com o app de verdade; `web/README.md` descrevia a migração
+de 2026-09 (hash router, Supabase "não conectado").
+
+**O que foi feito**, em quatro passos com os testes verdes entre eles: (1) README da raiz descreve o produto;
+(2) migrations 000–012 em `web/supabase/legado/` (setup dos testes SQL, `aplicar-banco.sh` e CI ajustados — elas
+continuam necessárias para montar um banco do zero); (3) `app/`, `chats/`, `project/` e `SETUP-SUPABASE.md` em
+`archive/` com um `LEIA.md`; (4) `web/README.md` reescrito a partir do que existe hoje.
+
+**Por que os testes de paridade ficaram**: `utils.parity.test.ts` ainda pega diferença de formatação (valores,
+datas, telefone) em relação ao app que as pessoas já usaram, e custa nada no CI; só passou a importar
+`archive/app`. O `npm run parity` (visual) continua manual.
