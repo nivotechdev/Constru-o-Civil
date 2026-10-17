@@ -1,4 +1,4 @@
-// The app's single source of truth — a typed port of the legacy in-memory store (app/js/store.js).
+// The app's single source of truth — a typed port of the legacy in-memory store (archive/app/js/store.js).
 //
 // There is no backend: the "database" is seeded from data/seed.ts and lives only in memory, exactly
 // like the legacy app (a reload brings the seed back). Unlike the legacy store, every update here is

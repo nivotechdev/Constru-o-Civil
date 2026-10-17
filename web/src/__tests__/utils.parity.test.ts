@@ -1,6 +1,6 @@
 // Pure helpers: every legacy function and its TypeScript port must return the same thing.
 import { describe, expect, it } from 'vitest';
-import * as legacyFormat from '../../../app/js/utils/format.js';
+import * as legacyFormat from '../../../archive/app/js/utils/format.js';
 import { nearestCity, popularCities, searchCities } from '../services/cities';
 import { formatBRL, formatPostDate, isValidEmail, maskCNPJ, maskCPF, passwordStrength } from '../utils/format';
 import { whatsappUrl } from '../utils/whatsapp';

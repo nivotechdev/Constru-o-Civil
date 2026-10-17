@@ -37,12 +37,13 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 ## 3. Repositório
 
 ```
-/                      ← raiz é um "handoff bundle" antigo do Claude Design (README da raiz NÃO descreve o app)
+/                      ← README.md descreve o produto (R06)
 ├─ web/                ← O APP. Tudo o que importa está aqui.
-├─ app/                ← app legado (HTML + JS, bundle.js 487 KB). Só referência de paridade.
-├─ chats/, project/    ← transcrições e protótipos de design (histórico)
-├─ legal/              ← termos e política em .md (espelho de web/src/services/legal.ts)
-└─ .github/workflows/web.yml   ← CI
+│  └─ supabase/legado/ ← migrations 000–012 do app LEGADO (ainda usadas para montar um banco do zero!)
+├─ archive/            ← app legado (archive/app, referência de paridade), chats/ e project/ do design,
+│                        SETUP-SUPABASE.md antigo — ver archive/LEIA.md (R06)
+├─ legal/              ← termos e política em .md (gerados de web/src/services/legal.ts)
+└─ .github/workflows/  ← web.yml (CI) e staging.yml (aplica e confere o staging)
 ```
 
 ### web/
@@ -193,9 +194,9 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase
 3. **`pg_net` não aceita `ALTER EXTENSION … SET SCHEMA`**: para tirar de `public` é `drop extension pg_net` +
    `create extension pg_net with schema extensions`; as funções continuam em `net.*`. Teste no staging; confira
    `call_storage_cleanup` e o gatilho de push depois.
-4. **O setup dos testes SQL aplica as migrations legadas** de `web/supabase/legado/0*.sql` antes das novas, e
-   `src/__tests__/utils.parity.test.ts` + `scripts/parity/` importam `../app`. Mover/apagar `app/` ou as migrations
-   legadas (L14) quebra o CI se não ajustar esses três pontos juntos.
+4. **O setup dos testes SQL e o `aplicar-banco.sh` aplicam as migrations legadas** de `web/supabase/legado/0*.sql`
+   antes das novas, e `src/__tests__/utils.parity.test.ts` + `scripts/parity/` importam `archive/app`. Mover ou
+   apagar qualquer um desses quebra o CI se não ajustar os pontos juntos (R06).
 5. `public_job_card` é a única RPC para `anon`; os IDs de vaga são sequenciais (`BC-1`…) → enumeráveis (L10).
 6. Política de privacidade e termos: a fonte é `web/src/services/legal.ts`; `/legal/*.md` é **gerado** dele
    (`LEGAL_WRITE=1 npx vitest run legal`, e o teste falha se divergir). O aviso "Rascunho para revisão jurídica" só

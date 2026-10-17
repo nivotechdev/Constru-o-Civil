@@ -1,4 +1,4 @@
-// Visual + behavioural parity check: the legacy vanilla-JS app (../app) vs. this React build (dist/).
+// Visual + behavioural parity check: the legacy vanilla-JS app (archive/app) vs. this React build (dist/).
 //
 // Both apps are served side by side and driven through the same scripted journeys (scenarios.mjs) at
 // three viewport widths (phone, tablet, desktop). After every step it compares:
@@ -28,7 +28,7 @@ const REACT_DIR = path.resolve(webRoot, 'dist');
 // at another build instead (e.g. the React build before a refactor, for a zero-difference check).
 const REFERENCE_DIR = process.env.PARITY_REFERENCE
   ? path.resolve(process.env.PARITY_REFERENCE)
-  : path.resolve(webRoot, '../app');
+  : path.resolve(webRoot, '../archive/app');
 const REFERENCE_LABEL = process.env.PARITY_REFERENCE ? 'referência' : 'legado';
 const OUT = path.resolve(here, 'output');
 // pixelmatch's YIQ threshold: 0.01 ignores only ±1-level rasterisation noise in a colour channel.
