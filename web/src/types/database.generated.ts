@@ -1512,6 +1512,10 @@ export type Database = {
       admin_suspend_account: { Args: { p_account: string; p_reason: string }; Returns: undefined };
       admin_unhide_job: { Args: { p_job: string; p_reason?: string }; Returns: undefined };
       admin_unsuspend_account: { Args: { p_account: string; p_reason?: string }; Returns: undefined };
+      anonymize_account: {
+        Args: { p_account: Database['public']['Tables']['accounts']['Row']; p_reason: string };
+        Returns: undefined;
+      };
       answer_invite: { Args: { p_job_id: string; p_accept: boolean }; Returns: undefined };
       application_conclude: {
         Args: { p_app_id: string; p_actor: Database['public']['Enums']['application_actor'] };

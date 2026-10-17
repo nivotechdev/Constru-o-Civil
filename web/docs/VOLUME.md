@@ -49,9 +49,9 @@ O staging (`setyxomsbfrkneqqfoam`) ainda não tem o banco montado (precisa dos s
 Se o p95 do staging passar de 300 ms, os próximos passos são: tirar a chamada de `job_holding` por linha (contagem
 num `left join` agrupado) e guardar o texto da busca numa coluna atualizada por gatilho.
 
-## Achado
+## Achado (resolvido no R04)
 
-Apagar uma conta direto no Auth (painel › Authentication › Users › Delete) apaga a `accounts`, mas deixa o perfil
-de trabalhador/construtora para trás (nome, foto e nota continuam visíveis). O caminho do app (`excluir-conta`) faz
-tudo certo. Regra: **nunca apagar conta pela tela do Auth** — usar a exclusão do app ou, para a equipe, suspender
-(L06). (O `apagar.sql` do teste apaga os perfis à parte por isso.)
+Apagar uma conta direto no Auth (painel › Authentication › Users › Delete) apagava a `accounts`, mas deixava o perfil
+de trabalhador/construtora para trás (nome, foto e nota visíveis). Desde o R04, um gatilho em `auth.users` roda a
+mesma limpeza da exclusão pelo app (`anonymize_account`). O `apagar.sql` continua apagando os perfis sintéticos à
+parte, porque no teste de volume eles não precisam ficar nem anonimizados.

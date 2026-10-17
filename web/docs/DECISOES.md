@@ -1485,3 +1485,21 @@ aprovado/contratado nas vagas dela recebe "Bico cancelado pela equipe… Não v�
 
 **Por que um status novo e não `cancelado_pela_construtora`**: a construtora não cancelou; o histórico e a nota dela
 ficariam errados. Reativar a conta não desfaz os cancelamentos — o bico já foi avisado como cancelado aos dois lados.
+
+## R04 — Conta apagada pelo painel não deixa perfil órfão
+
+**Problema** (achado do L13): apagar o usuário em Authentication › Users removia `accounts` (cascata), mas `workers`
+e `companies` continuavam com nome, foto e nota à vista; as vagas da construtora seguiam abrindo pelo link; e a selfie
+da verificação ficava guardada.
+
+**O que foi feito**: a limpeza da exclusão pelo app virou `anonymize_account(conta, motivo)`, usada pelo
+`delete_my_account` (que continua exigindo login recente e a confirmação dos compromissos) e por um gatilho
+**BEFORE DELETE** em `auth.users` — antes da cascata, enquanto a `accounts` ainda existe. Nos dois caminhos agora
+também: vagas da construtora ocultas (fora do mural, da busca e do link público) e sem fotos, e os envios de
+verificação de identidade apagados (a selfie de uma verificação ainda não decidida ficava para sempre). Os arquivos
+ficam sem uso e `orphan_storage_objects` (limpeza diária) os pega — conferido no teste. Cadastro nunca concluído
+continua com a limpeza do Z01 (o perfil vazio sai). Conferido também com o `deleteUser` do Auth de verdade.
+
+**Por que limpeza completa e não só ocultar**: é o mesmo resultado que a pessoa teria pelo app, testado há várias
+rodadas; um segundo comportamento só para o painel seria mais um caminho para manter. A exclusão pelo app marca a
+transação (`bicos.conta_ja_limpa`) para o gatilho não repetir a limpeza.

@@ -540,6 +540,16 @@ select count(*) from pg_enum where enumlabel = 'cancelado_pela_equipe';         
 select public.application_next_status('cancelar_por_suspensao', 'contratado', 'sistema');                -- cancelado_pela_equipe
 ```
 
+### 46. `20261017000200_r04_exclusao_pelo_painel.sql` (R04)
+
+`anonymize_account` (a limpeza que `delete_my_account` fazia, mais: vagas da construtora ocultas e sem fotos, envios
+de selfie apagados) e o gatilho `on_auth_user_deleted` (BEFORE DELETE em `auth.users`): apagar pelo painel ou pela
+Admin API limpa igual à exclusão pelo app. Os arquivos saem na limpeza diária.
+
+```sql
+select tgname from pg_trigger where tgname = 'on_auth_user_deleted';   -- 1 linha
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
