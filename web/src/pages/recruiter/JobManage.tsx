@@ -295,7 +295,8 @@ export default function JobManage({ params }: ScreenProps) {
                     'desistiu',
                     'cancelado_pela_construtora',
                     'nao_compareceu',
-                    'expirada'
+                    'expirada',
+                    'cancelado_pela_equipe'
                   ];
                   return (
                     <CandidateRow

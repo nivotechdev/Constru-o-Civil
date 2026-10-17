@@ -1209,7 +1209,8 @@ const PATH: Record<ApplicationStatus, ApplicationStatus[]> = {
   desistiu: ['enviada', 'em_analise', 'pre_selecionado', 'desistiu'],
   cancelado_pela_construtora: ['enviada', 'em_analise', 'pre_selecionado', 'cancelado_pela_construtora'],
   nao_compareceu: ['enviada', 'em_analise', 'pre_selecionado', 'contratado', 'nao_compareceu'],
-  expirada: ['enviada', 'em_analise', 'pre_selecionado', 'expirada']
+  expirada: ['enviada', 'em_analise', 'pre_selecionado', 'expirada'],
+  cancelado_pela_equipe: ['enviada', 'em_analise', 'pre_selecionado', 'cancelado_pela_equipe']
 };
 const BY: Record<ApplicationStatus, Actor> = {
   enviada: 'trabalhador',
@@ -1221,7 +1222,8 @@ const BY: Record<ApplicationStatus, Actor> = {
   desistiu: 'trabalhador',
   cancelado_pela_construtora: 'construtora',
   nao_compareceu: 'construtora',
-  expirada: 'sistema'
+  expirada: 'sistema',
+  cancelado_pela_equipe: 'sistema'
 };
 
 /** A candidacy sent `sentHoursAgo` hours ago that reached `status` (one step every `stepHours`). */

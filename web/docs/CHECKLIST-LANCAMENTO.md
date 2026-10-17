@@ -144,3 +144,9 @@ Situação da Brevo (consultada em 15/10/2026): plano **Free** (300 e-mails/dia 
 | Feito pela IA                                                                                                                          | Ação do responsável                                 |
 | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | 5 funções do navegador exigem `APP_ORIGIN`; `webhook-pagamento`, `enviar-push` e `limpar-arquivos` sobem sem ele; teste + `deno check` | — (vale na republicação das funções, R10 › passo 5) |
+
+## R03 — Suspensão completa
+
+| Feito pela IA                                                                                                                                                                                                                                         | Ação do responsável                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Migration `r03_suspensao_completa` (status `cancelado_pela_equipe`, transição do sistema, avisos, `get_contact` fechado) + teste SQL dos 3 casos e da tabela inteira; telas; E2E fluxo 7 cobre a construtora suspensa (13/13 verde no Supabase local) | [ ] Dizer "pode" para aplicar no staging e na produção (`supabase/APLICAR.md` › 45) |

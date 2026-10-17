@@ -529,6 +529,17 @@ select count(*) from public.jobs where last_day is distinct from public.job_last
 select indexname from pg_indexes where indexname = 'jobs_feed_city_idx';                       -- 1 linha
 ```
 
+### 45. `20261017000100_r03_suspensao_completa.sql` (R03)
+
+Status `cancelado_pela_equipe` e transição do sistema `cancelar_por_suspensao`; `admin_suspend_account` cancela os
+bicos aprovados/contratados do suspenso (avisa o outro lado, libera a posição); `get_contact` não abre com conta
+suspensa. O valor novo do enum vai antes, numa transação própria (APLICAR-TUDO já faz isso).
+
+```sql
+select count(*) from pg_enum where enumlabel = 'cancelado_pela_equipe';                                   -- 1
+select public.application_next_status('cancelar_por_suspensao', 'contratado', 'sistema');                -- cancelado_pela_equipe
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

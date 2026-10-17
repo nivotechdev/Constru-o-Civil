@@ -1468,3 +1468,20 @@ arquivo (sem ele, não sobem, como no L05). O CORS (`preflight`, `withCors`) só
 nenhuma resposta leva cabeçalho CORS. Teste (`edgeOrigin.test.ts`) confere a lista das 8 funções e quem chama o quê;
 `deno check` verde; conferido subindo as funções sem `APP_ORIGIN` (as 3 servidor-a-servidor sobem e respondem 401
 sem CORS; `excluir-conta` e `verificar-cnpj` não sobem).
+
+## R03 — Suspensão completa
+
+**Problema**: suspender (L06) apagava só as candidaturas pendentes e tirava as vagas do mural. Quem já estava
+pré-selecionado ou contratado ficava num bico que não ia acontecer: a posição continuava ocupada, ninguém era avisado
+e o WhatsApp do suspenso continuava abrindo.
+
+**O que foi feito**: status novo `cancelado_pela_equipe` e a transição do **sistema** `cancelar_por_suspensao`
+(de pré-selecionado ou contratado), nos dois lados (`applicationMachine.ts` e `application_next_status`); a tabela
+inteira é conferida igual nos dois (teste Vitest e teste SQL com a mesma lista). Trabalhador suspenso: cada bico é
+cancelado com motivo "conta suspensa", a construtora recebe "Bico cancelado pela equipe" e a posição libera (quem
+foi recusado automaticamente volta para análise, como na desistência). Construtora suspensa: cada trabalhador
+aprovado/contratado nas vagas dela recebe "Bico cancelado pela equipe… Não vá até a obra". `get_contact` recusa
+(BC404) quando qualquer um dos lados está suspenso. Telas: selo "Cancelado pela equipe" para os dois lados.
+
+**Por que um status novo e não `cancelado_pela_construtora`**: a construtora não cancelou; o histórico e a nota dela
+ficariam errados. Reativar a conta não desfaz os cancelamentos — o bico já foi avisado como cancelado aos dois lados.

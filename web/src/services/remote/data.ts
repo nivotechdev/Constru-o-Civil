@@ -298,7 +298,8 @@ const DONE_STATUSES = [
   'desistiu',
   'cancelado_pela_construtora',
   'nao_compareceu',
-  'expirada'
+  'expirada',
+  'cancelado_pela_equipe'
 ] as const;
 const PAGE = 30;
 

@@ -70,6 +70,36 @@ test('equipe aprova identidade e construtora e trata a denúncia', async ({ brow
     .single();
   expect(co!.verification_status).toBe('verificada');
 
+  // R03: uma trabalhadora contratada numa vaga da construtora que vai ser suspensa.
+  const contratada = await contaPorApi('contratada', 'trabalhador', 'Contratada Pela Obra E2E');
+  const hoje = new Date();
+  const dia = (n: number) => new Date(hoje.getTime() + n * 86400000).toISOString().slice(0, 10);
+  const { data: bico, error: eb } = await admin()
+    .from('jobs')
+    .insert({
+      company_id: contas.construtora.id,
+      oficio_id: 'pedreiro',
+      pay: 200,
+      cep: '03307-000',
+      street: 'Rua Tuiuti',
+      number: '100',
+      neighborhood: 'Tatuapé',
+      city: 'São Paulo',
+      uf: 'SP',
+      lat: -23.5403,
+      lon: -46.5765,
+      start_date: dia(3),
+      end_date: dia(3),
+      description: 'Reboco de uma parede do quintal (teste de suspensão).'
+    })
+    .select('id')
+    .single();
+  expect(eb).toBeNull();
+  const { error: ea } = await admin()
+    .from('applications')
+    .insert({ job_id: bico!.id, worker_id: contratada.id, status: 'contratado' });
+  expect(ea).toBeNull();
+
   // Fila de denúncias: a do fluxo 5 → suspender a conta denunciada → não entra mais → reativar.
   await e.getByRole('tab', { name: 'Denúncias' }).click();
   await expect(e.getByText('Golpe ou pedido de dinheiro').first()).toBeVisible();
@@ -85,6 +115,21 @@ test('equipe aprova identidade e construtora e trata a denúncia', async ({ brow
   await expect(motivo).toBeHidden();
   const { data: acc } = await admin().from('accounts').select('suspended_at').eq('id', contas.construtora.id).single();
   expect(acc!.suspended_at).not.toBeNull();
+  // R03: o bico contratado foi cancelado pela equipe e a trabalhadora vê isso nas candidaturas.
+  const { data: cancelada } = await admin()
+    .from('applications')
+    .select('status')
+    .eq('job_id', bico!.id)
+    .eq('worker_id', contratada.id)
+    .single();
+  expect(cancelada!.status).toBe('cancelado_pela_equipe');
+  const t = await browser.newPage();
+  await prepararPagina(t);
+  await entrar(t, contratada.email);
+  await t.goto('/minhas-candidaturas');
+  await expect(t.getByText('Cancelado pela equipe').first()).toBeVisible();
+  await print(t, 'f7', 'bico cancelado pela equipe');
+  await t.close();
 
   const s = await browser.newPage();
   await prepararPagina(s);

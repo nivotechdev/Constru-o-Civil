@@ -229,7 +229,9 @@ export type ApplicationStatus =
   | 'cancelado_pela_construtora'
   | 'nao_compareceu'
   /** Picked, but the job's time ran out without the hire being confirmed (Y04). */
-  | 'expirada';
+  | 'expirada'
+  /** R03: picked or hired, cancelled by the system because the team suspended one of the two accounts. */
+  | 'cancelado_pela_equipe';
 
 /** Who made a change: the worker, the company, or the system (automatic rules). */
 export type Actor = 'trabalhador' | 'construtora' | 'sistema';

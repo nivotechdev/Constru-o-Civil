@@ -1859,7 +1859,8 @@ export type Database = {
         | 'desistiu'
         | 'cancelado_pela_construtora'
         | 'nao_compareceu'
-        | 'expirada';
+        | 'expirada'
+        | 'cancelado_pela_equipe';
       boost_plan: '24h' | '3d' | 'whats';
       company_member_role: 'dono' | 'recrutador';
       company_verification: 'pendente' | 'verificada' | 'reprovada';
