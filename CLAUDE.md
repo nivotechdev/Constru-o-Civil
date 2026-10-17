@@ -1,7 +1,8 @@
 # CLAUDE.md — Contexto do Bicos (NivoTech)
 
 > Contexto fixo para qualquer IA trabalhar neste repositório. Leia inteiro antes de mudar qualquer coisa.
-> Estado conferido em 15/10/2026 (commit `dd8d0ad` no `master` + banco de produção inspecionado ao vivo).
+> Estado conferido em 17/10/2026 (branch `claude/front-novo-supabase` em `1b07bb6`, `master` em `dd8d0ad`, produção e
+> staging inspecionados ao vivo). Rodada atual: **R01–R12** (lançamento); a anterior foi L00–L13.
 
 ## 1. O produto
 
@@ -77,11 +78,17 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 ## 4. Banco (Supabase)
 
 - Produção: projeto **`ppnxdajiihsjaojxokzh`** ("Nivo Tech Construção Civil", `sa-east-1`, Postgres 17).
-  Organização no **plano Free**. **Não existe staging.** (O projeto `whfaujtppifeqnxoqfxb` é antigo/inativo — ignore.)
-- Migrations do app: `web/supabase/migrations/` (41 arquivos, 09/10 → 14/10). Todas aplicadas em produção em 12/10,
-  mas **o histórico do banco tem outros números de versão** (aplicadas pelo conector, em partes) — ver
-  `web/supabase/APLICAR.md` › "Histórico de migrations" antes de qualquer `supabase db push` (precisa de `repair`).
-  Há **uma migration só na produção**: `20261012033541_habilitar_pg_net` (não está no repo).
+  Organização no **plano Free**. (O projeto `whfaujtppifeqnxoqfxb` é antigo/inativo — ignore.)
+- **Staging**: `bicos-staging`, ref **`setyxomsbfrkneqqfoam`** (`sa-east-1`, criado em 16/10, US$ 0). Tem `pg_cron`,
+  `pg_net`, PostGIS e a chave do Vault, mas **o banco do app ainda não foi montado** (0 migrations no histórico) —
+  o conector pede aprovação a cada `drop`; montar com `scripts/staging/aplicar-banco.sh` (senha do banco) ou pelo
+  workflow `.github/workflows/staging.yml`. Ver `web/docs/STAGING.md`. Nunca usar dados reais de pessoas lá.
+- Migrations do app: `web/supabase/migrations/` (48 arquivos, 09/10 → 16/10). Na produção estão aplicadas as de até
+  14/10 (APLICAR.md #1–#38); **pendentes na produção**: `lanc06`, `lanc07`, `lanc09`, `lanc10`, `lanc12`, `lanc13`
+  (#39–#44) e as `r*` desta rodada — só com "pode". O histórico da produção tem outros números de versão (54 linhas,
+  aplicadas pelo conector, em partes) — ver `web/supabase/APLICAR.md` › "Histórico de migrations" antes de qualquer
+  `supabase db push` (precisa de `repair`). `20261012033541_habilitar_pg_net` agora também está no repo (L09).
+  Conferência: `scripts/staging/conferir-migrations.sh`.
 - `web/supabase/APLICAR-TUDO.sql` é **gerado** (`node scripts/aplicar-tudo.mjs`); o CI falha se estiver desatualizado.
 - `web/src/types/database.generated.ts` é **gerado** (`npm run gen:types` com `DATABASE_URL`); o CI falha se divergir.
 - Tabelas do app: `accounts` (1:1 com `auth.users`; documento cifrado em `document_cipher` com a chave do Vault
@@ -99,7 +106,8 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
   `public_job_card` (link público da vaga).
 - Funções só da equipe (service_role, hoje usadas pelo SQL Editor): `set_company_verification(empresa, status)`,
   `set_identity_status(trabalhador, status, motivo)`, `funnel_daily(de, até)`. Denúncias ficam em `reports`.
-  **Não existe área de admin no app** — é isso que o L06 constrói, reaproveitando essas funções.
+  Área da equipe no app: `/admin` (L06; `staff_members`, `add_staff_member(email, papel)` pelo SQL Editor) — **ainda
+  não aplicada na produção**.
 - Cron (`pg_cron`): `bicos-concluir-diarias` (`7 * * * *`), `bicos-vencer-pix` (`*/10`), `bicos-lembrar-presenca`
   (`0 21 * * *`), `bicos-limpar-cadastros` (`23 3 * * *`), `bicos-limpar-tentativas` (`17 4 * * *`),
   `bicos-limpar-arquivos` (`40 4 * * *`), `bicos-vigiar-cron` (`12 * * * *`, L12: alerta no Sentry após 2 falhas
@@ -107,11 +115,11 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 - Storage: `avatars`, `portfolio`, `vagas` (públicos por URL, sem listagem; cada conta só escreve na própria pasta
   `<uid>/…`) e `identidade` (privado — selfie + documento).
 - Vault: `nivotech_documento_key`, `bicos_cleanup_url`, `bicos_cleanup_secret`. **Faltam** `bicos_push_url`,
-  `bicos_push_secret`.
+  `bicos_push_secret` (push desligado no lançamento, L12), `bicos_sentry_dsn` e `bicos_heartbeat_url` (L12).
 - Dados reais hoje: 4 contas (3 construtoras, 1 trabalhador, criadas até 21/09), **0 vagas, 0 candidaturas,
   0 denúncias, 0 identidades enviadas**. Provedores de Auth usados: email, google.
-- Advisors hoje: sem ERROR. WARN: `pg_net` no schema `public`, leaked password protection desligada (exige Pro),
-  RPCs security definer (esperado).
+- Advisors hoje (produção): sem ERROR. WARN: `pg_net` no schema `public` (sai com a `lanc09`), leaked password
+  protection desligada (exige Pro), RPCs security definer (esperado).
 
 ### Edge Functions (Deno, `web/supabase/functions/`, todas publicadas)
 | Função | Papel | JWT | Segredos |
@@ -125,7 +133,9 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 | `enviar-push` | Web Push a cada notificação (chamada pelo banco via pg_net) | **não** | `VAPID_*`, `PUSH_WEBHOOK_SECRET` |
 | `limpar-arquivos` | apaga órfãos e identidades 30 dias após decisão | **não** | `CLEANUP_SECRET` |
 
-Todas: `APP_ORIGIN` (CORS — **hoje cai para `*` se faltar**), `SENTRY_DSN`, `RELEASE`. Helpers em `_shared/`
+Todas: `SENTRY_DSN`, `RELEASE`. `APP_ORIGIN` (CORS): **obrigatório** desde o L05 — sem ele a função não sobe (não
+cai mais para `*`; o R02 restringe a exigência às funções chamadas pelo navegador). **Na produção as funções ainda
+estão na versão anterior ao L05** (republicar só com "pode", depois dos segredos). Helpers em `_shared/`
 (`http.ts`: `adminClient`, `requestUser`, `json`, `rpcError`). As "sem JWT" conferem segredo em tempo constante.
 Publicar: `supabase functions deploy <nome>` (as sem JWT com `--no-verify-jwt`).
 
@@ -140,7 +150,7 @@ Sentry, SMTP próprio (Brevo), `CLEANUP_SECRET`, leaked password protection, URL
 cd web
 npm ci
 npm run dev            # http://localhost:5173 (demo se não houver .env.local)
-npm run typecheck && npm run lint && npm run format:check && npm test   # 167 testes Vitest
+npm run typecheck && npm run lint && npm run format:check && npm test   # 207 testes Vitest
 npm run build          # produção: FALHA se faltar variável obrigatória (L01)
 npm run build:demo     # demonstração (dados falsos)
 npm run build:standalone
@@ -201,6 +211,8 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase
 
 | Arquivo | Para quê |
 |---|---|
+| `web/docs/CHECKLIST-LANCAMENTO.md` | lista viva do lançamento: o que a IA fez (com commit) e as **ações do responsável** |
+| `web/docs/STAGING.md`, `web/docs/E2E.md`, `web/docs/VOLUME.md` | staging, testes de ponta a ponta (Playwright, `npm run e2e`) e teste de volume |
 | `web/docs/SUPABASE.md` | banco, funções, segredos, serviços externos, hospedagem — **a referência operacional** |
 | `web/supabase/APLICAR.md` | ordem das migrations, conferências, `repair` do histórico |
 | `web/docs/CONTRATO-BACKEND.md` | contrato de cada serviço/RPC e das transições |
