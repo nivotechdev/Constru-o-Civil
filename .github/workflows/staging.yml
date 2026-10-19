@@ -1,13 +1,13 @@
 # L09: o staging (projeto bicos-staging) recebe as migrations do repo ANTES da produção, e o histórico dele
 # (supabase_migrations.schema_migrations) tem de ser igual aos arquivos de web/supabase/migrations.
-# - push no master que mexe em migration: aplica no staging e confere;
+# - push no master (ou na branch de trabalho claude/front-novo-supabase) que mexe em migration: aplica no staging e confere;
 # - Actions › staging › Run workflow: o mesmo à mão, em qualquer branch (para ensaiar antes do merge).
 # Sem os segredos STAGING_DB_URL e STAGING_URL o job só avisa e passa (web/docs/STAGING.md).
 name: staging
 
 on:
   push:
-    branches: [master]
+    branches: [master, claude/front-novo-supabase]
     paths: ["web/supabase/migrations/**", "web/supabase/legado/**", "web/scripts/staging/**", ".github/workflows/staging.yml"]
   workflow_dispatch:
     inputs:
