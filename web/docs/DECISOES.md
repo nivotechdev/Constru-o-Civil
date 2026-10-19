@@ -1564,3 +1564,13 @@ caminhos, então o `404.html` é o próprio app (com `<base>` para os ícones): 
 certa, só que com status 404 (irrelevante para o teste). Os `_headers` (CSP) não valem no Pages — por isso ele é só
 o site de **teste**; a produção continua no Cloudflare Pages. No workflow `staging`, `APP_ORIGIN` passou a ser só o
 domínio do site (as funções recusam origem com caminho).
+
+## R08 — "Sua conta não pode fazer isso" sem login era mensagem errada
+
+No site de teste, uma conta confirmada pelo link do Gmail num iPhone (navegador interno do app do Google, `GSA` no
+`user_agent` da sessão) chegou ao "Completar perfil", mas as chamadas seguintes ao banco saíram como visitante
+(`permission denied for function finish_sign_up`, `my_unread_count`, tabela `notifications`: o `authenticated` tem
+permissão, o `anon` não). O app traduzia o `42501` como "Sua conta não pode fazer isso", o que não ajuda ninguém.
+Agora, se o banco nega por permissão **e** o cliente não tem sessão, o app trata como sessão terminada ("Sua sessão
+terminou. Entre de novo para continuar.") e leva ao login. Com sessão, a recusa continua com a mensagem genérica.
+Causa do navegador interno perder a sessão: não confirmada; no roteiro de teste, abrir o link do e-mail no Safari/Chrome.

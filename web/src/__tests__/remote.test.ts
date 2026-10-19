@@ -188,6 +188,22 @@ describe('remote: errors', () => {
     // The raw server text never reaches the screen for unexpected errors.
     expect(m.client.toServiceError({ code: 'XX000', message: 'boom' }).message).not.toContain('boom');
   });
+
+  it('R08: "permission denied" without a session says the session ended, not "your account cannot"', async () => {
+    const denied = { data: null, error: { code: '42501', message: 'permission denied for function finish_sign_up' } };
+    // No session (the request went out as a visitor).
+    const lost = await load(fakeSupabase({ rpc: { finish_sign_up: () => denied } }));
+    await expect(lost.client.request(async () => denied)).rejects.toMatchObject({
+      code: 'nao_autorizado',
+      message: lost.client.SESSION_ENDED
+    });
+    // With a session it is a real refusal and keeps the generic message.
+    const real = await load(server('ana'));
+    await expect(real.client.request(async () => denied)).rejects.toMatchObject({
+      code: 'nao_autorizado',
+      message: 'Sua conta não pode fazer isso.'
+    });
+  });
 });
 
 describe('remote: sign-in and sign-up', () => {

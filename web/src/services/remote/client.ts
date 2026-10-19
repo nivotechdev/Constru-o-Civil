@@ -94,8 +94,26 @@ export async function request<R extends { data: unknown; error: unknown }>(
   } catch (e) {
     throw toServiceError(e);
   }
-  if (result.error) throw toServiceError(result.error);
+  if (result.error) {
+    // R08: "permission denied" for a request that went out without a login (some in-app browsers, like the one
+    // the Google app opens from a Gmail link, lose the session) is a session problem, not a refusal.
+    if ((result.error as ErrorLike).code === '42501' && !(await hasSession())) {
+      onSessionEnded?.();
+      throw serviceError('nao_autorizado', SESSION_ENDED);
+    }
+    throw toServiceError(result.error);
+  }
   return result.data as OkData<R>;
+}
+
+async function hasSession(): Promise<boolean> {
+  try {
+    const client = await db();
+    const { data } = await client.auth.getSession();
+    return Boolean(data.session);
+  } catch {
+    return true;
+  }
 }
 
 /** The id of the logged-in Supabase user (the account id), or a "sign in again" error. */
