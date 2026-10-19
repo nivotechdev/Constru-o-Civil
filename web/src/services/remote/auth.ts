@@ -109,14 +109,21 @@ export async function signOut(): Promise<void> {
   await leaveSession();
 }
 
-/** Re-authenticates the logged-in account (before deleting it). */
-export async function checkPassword(password: string): Promise<boolean> {
+/**
+ * Re-authenticates the logged-in account (before deleting it, changing the password or the e-mail). R08:
+ * it is a sign-in like any other, so with the captcha on it needs a token too.
+ */
+export async function checkPassword(password: string, captcha: CaptchaSource): Promise<boolean> {
   const email = getSession()?.email;
   if (!email) return false;
   const client = await db();
   let result;
   try {
-    result = await client.auth.signInWithPassword({ email, password });
+    result = await client.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken: await captchaToken(captcha) }
+    });
   } catch (e) {
     throw toServiceError(e);
   }
@@ -313,15 +320,15 @@ function passwordProblem(error: unknown): never {
   throw toServiceError(error);
 }
 
-export async function changePassword(current: string, next: string): Promise<void> {
-  if (!(await checkPassword(current))) throw serviceError('validacao', 'Senha atual incorreta.');
+export async function changePassword(current: string, next: string, captcha: CaptchaSource): Promise<void> {
+  if (!(await checkPassword(current, captcha))) throw serviceError('validacao', 'Senha atual incorreta.');
   const client = await db();
   const { error } = await client.auth.updateUser({ password: next });
   if (error) passwordProblem(error);
 }
 
-export async function changeEmail(email: string, password: string): Promise<void> {
-  if (!(await checkPassword(password))) throw serviceError('validacao', 'Senha incorreta.');
+export async function changeEmail(email: string, password: string, captcha: CaptchaSource): Promise<void> {
+  if (!(await checkPassword(password, captcha))) throw serviceError('validacao', 'Senha incorreta.');
   const client = await db();
   const { error } = await client.auth.updateUser({ email }, { emailRedirectTo: authRedirectUrl() });
   if (error) {

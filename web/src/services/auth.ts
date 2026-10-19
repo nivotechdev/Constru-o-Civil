@@ -52,8 +52,8 @@ function findAccount(identifier: string): Account | undefined {
  * Whether `password` is the logged-in account's (before a sensitive action, e.g. deleting the account).
  * Backend: re-authenticate with Supabase Auth (signInWithPassword on the same e-mail).
  */
-export async function checkPassword(password: string): Promise<boolean> {
-  if (!IS_DEMO) return remote.checkPassword(password);
+export async function checkPassword(password: string, captcha: CaptchaSource = noCaptcha): Promise<boolean> {
+  if (!IS_DEMO) return remote.checkPassword(password, captcha);
   await mockLatency(500);
   const session = getSession();
   return Boolean(session && passwords.get(session.accountId) === password);
@@ -347,10 +347,10 @@ export async function completeOAuthSignUp(data: OAuthSignUpData): Promise<void> 
  * L15: "Trocar senha" in Configurações: the current password, then the new one. Backend: re-checks the
  * current password and Supabase Auth `updateUser({ password })`.
  */
-export async function changePassword(current: string, next: string): Promise<void> {
+export async function changePassword(current: string, next: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
   const problem = passwordProblem(next);
   if (problem) throw serviceError('validacao', problem);
-  if (!IS_DEMO) return remote.changePassword(current, next);
+  if (!IS_DEMO) return remote.changePassword(current, next, captcha);
   await mockLatency(600);
   const session = getSession();
   if (!session || passwords.get(session.accountId) !== current)
@@ -364,12 +364,12 @@ export async function changePassword(current: string, next: string): Promise<voi
  * re-checks the password and Supabase Auth `updateUser({ email })`; a trigger copies the confirmed
  * address to accounts.email. Demo: changes at once (there is no inbox).
  */
-export async function changeEmail(email: string, password: string): Promise<void> {
+export async function changeEmail(email: string, password: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
   const clean = email.trim().toLowerCase();
   if (!isValidEmail(clean)) throw serviceError('validacao', 'E-mail inválido. Confira se tem @ e o domínio.');
   const session = getSession();
   if (session && clean === session.email.toLowerCase()) throw serviceError('validacao', 'Esse já é o seu e-mail.');
-  if (!IS_DEMO) return remote.changeEmail(clean, password);
+  if (!IS_DEMO) return remote.changeEmail(clean, password, captcha);
   await mockLatency(600);
   if (!session || passwords.get(session.accountId) !== password) throw serviceError('validacao', 'Senha incorreta.');
   if (Object.values(getDb().accounts).some((a) => a.email.toLowerCase() === clean))

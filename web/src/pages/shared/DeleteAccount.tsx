@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
+import { useCaptcha } from '../../components/Captcha';
 import { Card } from '../../components/Card';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
@@ -27,6 +28,7 @@ export default function DeleteAccount() {
   const [agreed, setAgreed] = useState(false);
   const [asking, setAsking] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const captcha = useCaptcha();
   const query = useQuery('deletion-impact', loadDeletionImpact);
   const remove = useAction(deleteAccount, () => navigate('/conta-excluida', { replace: true }));
   const back = () => goBack('/configuracoes/privacidade');
@@ -132,6 +134,7 @@ export default function DeleteAccount() {
         {impact.commitments.length && !agreed && password ? (
           <FieldError message="Confirme o que acontece com os bicos em andamento." />
         ) : null}
+        {captcha.widget}
         <Button label="Excluir minha conta" variant="danger" size="lg" fullWidth onClick={start} />
       </div>
       <Dialog
@@ -142,7 +145,7 @@ export default function DeleteAccount() {
         confirmLabel="Sim, excluir conta"
         loading={remove.loading}
         error={remove.error}
-        onConfirm={() => void remove.run(password, agreed)}
+        onConfirm={() => void remove.run(password, agreed, captcha.getToken)}
         cancelLabel="Cancelar"
         onCancel={() => setAsking(false)}
       />

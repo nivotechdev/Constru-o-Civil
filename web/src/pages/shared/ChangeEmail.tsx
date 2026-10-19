@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
+import { useCaptcha } from '../../components/Captcha';
 import { Card } from '../../components/Card';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
@@ -21,9 +22,10 @@ export default function ChangeEmail() {
   const [password, setPassword] = useState('');
   const [visible, setVisible] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const captcha = useCaptcha();
   const back = () => goBack('/configuracoes');
   const save = useAction(
-    () => changeEmail(email, password),
+    () => changeEmail(email, password, captcha.getToken),
     () => {
       if (IS_DEMO) {
         showToast('E-mail trocado');
@@ -91,6 +93,7 @@ export default function ChangeEmail() {
           />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+          {captcha.widget}
           {save.error ? <FieldError message={save.error} /> : null}
           <Button label="Trocar e-mail" type="submit" size="lg" fullWidth loading={save.loading} />
         </div>

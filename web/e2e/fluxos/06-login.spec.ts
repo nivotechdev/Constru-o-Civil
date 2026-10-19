@@ -1,6 +1,6 @@
 // Fluxo 6: login por CPF e por CNPJ; limite de tentativas (6ª → 429); recuperação de senha.
 import { expect, test } from '@playwright/test';
-import { admin, contaPorApi, ENV, estado, linkDeRecuperacao, prepararPagina, print } from '../apoio';
+import { admin, CAPTCHA_TESTE, contaPorApi, ENV, estado, linkDeRecuperacao, prepararPagina, print } from '../apoio';
 
 async function entrarComDocumento(page: import('@playwright/test').Page, documento: string, destino: RegExp) {
   await page.goto('/login');
@@ -37,7 +37,7 @@ test('a 6ª tentativa errada no mesmo documento é barrada (429)', async () => {
       body: JSON.stringify({
         documento: conta.documento,
         senha: 'senha-errada-123',
-        captchaToken: 'XXXX.DUMMY.TOKEN.XXXX'
+        captchaToken: CAPTCHA_TESTE
       })
     });
   const respostas: number[] = [];
@@ -47,7 +47,7 @@ test('a 6ª tentativa errada no mesmo documento é barrada (429)', async () => {
   const certa = await fetch(`${ENV.functionsUrl}/functions/v1/entrar-com-documento`, {
     method: 'POST',
     headers: { apikey: ENV.anonKey(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ documento: conta.documento, senha: ENV.password, captchaToken: 'XXXX.DUMMY.TOKEN.XXXX' })
+    body: JSON.stringify({ documento: conta.documento, senha: ENV.password, captchaToken: CAPTCHA_TESTE })
   });
   expect(certa.status).toBe(429);
 });
@@ -80,7 +80,9 @@ test('recuperar a senha pelo link do e-mail', async ({ page }) => {
     await import('@supabase/supabase-js')
   )
     .createClient(ENV.supabaseUrl, ENV.anonKey(), { auth: { persistSession: false } })
-    .auth.signInWithPassword({ email: conta.email, password: ENV.password });
+    .auth.signInWithPassword({ email: conta.email, password: ENV.password, options: { captchaToken: CAPTCHA_TESTE } });
+  // Recusada pela senha, não pelo captcha.
+  expect(antiga.error?.message).not.toMatch(/captcha/i);
   expect(antiga.error).not.toBeNull();
   // Volta a senha padrão do E2E, para a limpeza sair pelo caminho do app.
   await admin().auth.admin.updateUserById(conta.id, { password: ENV.password });

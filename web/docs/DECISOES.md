@@ -1539,3 +1539,12 @@ datas, telefone) em relação ao app que as pessoas já usaram, e custa nada no 
   consultas do advisor num Postgres igual ao do Supabase — para o R08 e o R10 compararem com o real. A lista das 55
   funções `security definer` executáveis por `authenticated` foi conferida uma a uma: nenhuma interna exposta
   (as de limpeza, alerta e anonimização são só do dono do banco).
+
+## R08 — Conferir a senha também manda o captcha
+
+O E2E no staging (o primeiro ambiente com o captcha do Auth ligado) mostrou que **excluir a conta, trocar a senha e
+trocar o e-mail** conferiam a senha com um `signInWithPassword` sem `captchaToken`. Com o Turnstile ligado no Auth, o
+Supabase recusa esse login ("no captcha_token found") e o app dizia "senha incorreta" para a senha certa — as três
+telas quebrariam na produção assim que o captcha fosse ligado. Agora `checkPassword` recebe o captcha como os outros
+formulários públicos (`useCaptcha` nas três telas, widget acima do botão), e os logins feitos pelo Node no E2E mandam
+o token de teste (`CAPTCHA_TESTE`). O teste do `fakeSupabase` confere que o token chega ao Auth.

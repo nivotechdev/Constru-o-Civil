@@ -436,7 +436,10 @@ describe('remote: data and actions', () => {
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
     await expect(account.deleteAccount('segredo123', false)).rejects.toMatchObject({ code: 'conflito' });
     expect(m.store.getSession()).not.toBeNull();
-    await account.deleteAccount('segredo123', true);
+    await account.deleteAccount('segredo123', true, async () => 'tok-excluir');
+    expect(fake.calls.filter((c) => c.name === 'signInWithPassword').at(-1)?.args).toMatchObject({
+      options: { captchaToken: 'tok-excluir' }
+    });
     expect(fake.calls.filter((c) => c.kind === 'function').map((c) => c.args)).toEqual([
       { confirmCommitments: false },
       { confirmCommitments: true }
@@ -512,10 +515,15 @@ describe('remote: data and actions', () => {
     });
     const m = await load(fake);
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
-    await m.auth.changePassword('segredo123', 'novasenha1');
-    await m.auth.changeEmail('Ana.Nova@exemplo.com', 'segredo123');
+    await m.auth.changePassword('segredo123', 'novasenha1', async () => 'tok-senha');
+    await m.auth.changeEmail('Ana.Nova@exemplo.com', 'segredo123', async () => 'tok-email');
     expect(updates).toEqual([{ password: 'novasenha1' }, { email: 'ana.nova@exemplo.com' }]);
-    expect(fake.calls.filter((c) => c.name === 'signInWithPassword')).toHaveLength(3);
+    // R08: the re-check is a sign-in, so with the captcha on the Auth refuses it without a token.
+    expect(
+      fake.calls
+        .filter((c) => c.name === 'signInWithPassword')
+        .map((c) => (c.args as { options?: { captchaToken?: string } }).options?.captchaToken)
+    ).toEqual([undefined, 'tok-senha', 'tok-email']);
   });
 
   it('the professional profile is saved and the company sees no-shows and give-ups (F10)', async () => {

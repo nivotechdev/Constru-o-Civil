@@ -11,6 +11,12 @@ function need(name: string): string {
   return v;
 }
 
+/**
+ * Token aceito pela secret de teste do Turnstile (1x000…AA), a que o staging e o E2E local usam. R08: com o
+ * captcha ligado, todo login feito pelo Node (fora do navegador) também precisa mandar um.
+ */
+export const CAPTCHA_TESTE = 'XXXX.DUMMY.TOKEN.XXXX';
+
 export const ENV = {
   /** Supabase direto (Auth Admin, consultas de conferência). */
   supabaseUrl: process.env.E2E_SUPABASE_URL ?? 'http://127.0.0.1:55321',
@@ -125,7 +131,11 @@ export function admin(): SupabaseClient {
 /** Um cliente "como a pessoa", com a senha dela (para conferir o que ela vê pelas regras do banco). */
 export async function comoConta(email: string, senha = ENV.password): Promise<SupabaseClient> {
   const c = createClient(ENV.supabaseUrl, ENV.anonKey(), { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error } = await c.auth.signInWithPassword({ email, password: senha });
+  const { error } = await c.auth.signInWithPassword({
+    email,
+    password: senha,
+    options: { captchaToken: CAPTCHA_TESTE }
+  });
   if (error) throw new Error(`login de ${email}: ${error.message}`);
   return c;
 }
