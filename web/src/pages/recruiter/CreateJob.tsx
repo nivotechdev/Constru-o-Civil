@@ -38,6 +38,11 @@ import {
 
 type CepStatus = 'idle' | 'loading' | 'found' | 'notfound' | 'error';
 
+const VALOR_OPCOES = [
+  { label: 'Definir valor', combinar: false },
+  { label: 'A combinar', combinar: true }
+];
+
 const STEPS: { n: 1 | 2; label: string }[] = [
   { n: 1, label: 'Serviço e local' },
   { n: 2, label: 'Valor e pessoas' }
@@ -141,6 +146,18 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       cepSeq.current++;
       setUi({ cepStatus: 'idle', cepError: null });
     }
+  }
+
+  // Step 2 opens only with step 1 complete (the same check as "Continuar"); a mistake is shown on step 1.
+  function goToStep(step: 1 | 2) {
+    if (step === 2) {
+      const errors = validateStep1(f, new Date(), limits, job);
+      if (hasErrors(errors)) {
+        setUi({ step: 1, errors });
+        return;
+      }
+    }
+    setUi({ step, errors: {} });
   }
 
   function advance() {
@@ -288,14 +305,36 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
 
   const step2 = (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-start gap-2">
-        {f.negociavel ? null : (
+      {/* U02: the value is either a fixed amount or "a combinar" — one choice, then the amount field. */}
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-concrete-100 rounded-full">
+          {VALOR_OPCOES.map((op) => {
+            const selected = f.negociavel === op.combinar;
+            return (
+              <button
+                key={op.label}
+                type="button"
+                aria-pressed={selected}
+                className={cx(
+                  'h-10 rounded-full text-sm font-bold transition-colors',
+                  selected ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'
+                )}
+                onClick={() => set({ negociavel: op.combinar, valor: '' }, 'valor')}
+              >
+                {op.label}
+              </button>
+            );
+          })}
+        </div>
+        {f.negociavel ? (
+          <p className="text-sm text-concrete-500">O trabalhador vê "A combinar" e negocia direto com você.</p>
+        ) : (
           <div className="w-full max-w-[15rem]">
             <Input
               id="create-job-valor"
-              label="Valor da diária"
+              label="Quanto por diária"
+              prefix="R$"
               placeholder="220"
-              suffix="reais"
               inputMode="numeric"
               value={f.valor}
               error={ui.errors.valor}
@@ -304,25 +343,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
             />
           </div>
         )}
-        {f.negociavel ? null : (
-          <Button
-            label="Deixar valor a combinar"
-            variant="ghost"
-            size="sm"
-            iconLeft="handshake"
-            onClick={() => set({ negociavel: true, valor: '' }, 'valor')}
-          />
-        )}
-        {f.negociavel ? <span className="text-sm font-semibold text-concrete-900">Valor da diária</span> : null}
-        {f.negociavel ? (
-          <div className="w-full flex items-center gap-2 p-3 rounded-control bg-brand-50 border border-brand-200">
-            <Icon name="handshake" size={18} color="var(--text-brand)" />
-            <span className="flex-1 text-sm text-brand-600">
-              O trabalhador vê "A combinar" no lugar do valor, e negocia direto com você.
-            </span>
-            <Button label="Definir um valor" variant="ghost" size="sm" onClick={() => set({ negociavel: false })} />
-          </div>
-        ) : null}
       </div>
       {/* U01: the date is always arranged with the worker; older jobs with dates keep them as they are. */}
       {f.dateToArrange ? (
@@ -446,7 +466,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
                   'flex-1 min-w-0 h-10 flex items-center justify-center gap-2 px-2 rounded-full text-sm font-bold transition-colors',
                   selected ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'
                 )}
-                onClick={() => setUi({ step: step.n })}
+                onClick={() => goToStep(step.n)}
               >
                 <span
                   className={cx(

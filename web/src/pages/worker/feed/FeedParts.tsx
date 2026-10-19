@@ -28,7 +28,6 @@ const FeedTile = memo(function FeedTile({ job, company, role, saved }: FeedTileP
       job={job}
       company={company}
       onClick={() => navigate(mine ? '/vaga-gerenciar/' + job.id : '/vaga/' + job.id)}
-      mine={mine}
       saved={saved}
       onToggleSave={role === 'trabalhador' ? () => toggleSaved(job.id) : null}
     />

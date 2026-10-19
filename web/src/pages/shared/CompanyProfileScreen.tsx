@@ -22,17 +22,12 @@ import { goBack, navigate } from '../../services/router';
 import {
   activeJobs,
   applicationsForJob,
-  candidateCount,
-  approvedCount,
   currentCompany,
   getCompany,
   isJobSaved,
   jobState,
-  pendingCount,
   successfulJobsForCompany
 } from '../../services/selectors';
-import type { Database, Job } from '../../types/models';
-import type { StatusBadge } from '../../types/ui';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { CompanyAvatar } from '../../components/Avatar';
 import { holdsSlot } from '../../services/applicationMachine';
@@ -212,7 +207,6 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                     job={job}
                     company={company}
                     onClick={() => navigate('/vaga-gerenciar/' + job.id)}
-                    badge={statusBadge(db, job)}
                     corner={
                       // Y08: with a team (picked/hired), closing the job is the way — in Gerenciar vaga.
                       teamOn(job.id) ? null : (
@@ -275,18 +269,6 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
       />
     </div>
   );
-}
-
-function statusBadge(db: Database, job: Job): StatusBadge {
-  const pending = pendingCount(db, job.id);
-  const approved = approvedCount(db, job.id);
-  // Short labels: they sit in a pill on the tile's photo.
-  if (jobState(db, job) === 'cheia')
-    return { label: `Preenchida · ${approved} de ${job.slots || 1}`, tone: 'success', icon: 'circle-check' };
-  if (pending) return { label: `${pending} em análise`, tone: 'warning', icon: 'clock' };
-  const total = candidateCount(db, job.id);
-  if (total) return { label: total === 1 ? '1 candidato' : `${total} candidatos`, tone: 'brand', icon: 'users' };
-  return { label: 'Sem candidatos', tone: 'neutral', icon: 'search-x' };
 }
 
 // Y24: where the Bicos team's check of the company stands — never a "Verificada" that didn't happen.
