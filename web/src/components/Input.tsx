@@ -16,6 +16,8 @@ interface InputProps {
   type?: string;
   inputMode?: HTMLAttributes<HTMLInputElement>['inputMode'];
   mono?: boolean;
+  /** Text before the value, e.g. "R$". */
+  prefix?: string;
   suffix?: string;
   autoFocus?: boolean;
   /** Red border only, for fields that share one message with a neighbour. */
@@ -57,6 +59,7 @@ export function Input({
   type = 'text',
   inputMode,
   mono = false,
+  prefix,
   suffix,
   autoFocus = false,
   invalid = false,
@@ -88,6 +91,7 @@ export function Input({
         )}
       >
         {icon ? <Icon name={icon} size={20} color="var(--text-subtle)" /> : null}
+        {prefix ? <span className="text-sm text-concrete-500 font-semibold shrink-0">{prefix}</span> : null}
         <input
           ref={fieldRef}
           id={fieldId}

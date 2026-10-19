@@ -1613,3 +1613,15 @@ para a tela 2 ("Valor e pessoas"), junto com a validação (`validateStep2`). **
 `JobTile` das outras listas (foto, avisos sobre a foto, linhas de bairro, data e valor); o que falta fazer virou avisos
 na foto, e os trabalhadores aparecem como fotos redondas ao lado do valor. Vagas encerradas mantêm "Publicar de novo"
 no canto. **Lixeira do perfil:** botão menor e avisos com espaço para ele não encostar.
+
+## U04 — Cards sem pílulas; "Minhas vagas" com candidatos; valor da diária
+
+Pedido do responsável: tirar as "bandeiras" (pílulas com status, Urgente, Impulsionada, "Sua vaga") de cima das fotos
+em toda a plataforma. O ícone de salvar do mural continua (é uma função, não um aviso). Em "Minhas vagas": abas
+**Todas · Abertas · Cheias** (as encerradas aparecem em Todas, com "Publicar de novo" no canto); o card mostra só o
+título da vaga e, embaixo, até 3 fotos sobrepostas dos candidatos em aberto (aguardando ou contratados), com os
+primeiros nomes e "e mais N candidatos" quando houver mais. Consequências a confirmar: o status da candidatura, que
+ficava na pílula, agora aparece como texto embaixo do título em "Minhas candidaturas"; "Urgente" e "Impulsionada"
+deixaram de aparecer na foto (a ordenação do mural não muda). **Passo 2:** "Valor da diária" virou um seletor
+("Definir valor" / "A combinar") e um campo com "R$". **Passo 2 só abre com o passo 1 completo** (pílula ou "Continuar"),
+e o erro aparece no passo 1.

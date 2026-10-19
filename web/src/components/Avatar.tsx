@@ -5,6 +5,7 @@ import { cx } from '../utils/cx';
 import { Icon } from './icons/Icon';
 
 const SIZES = {
+  xs: { box: 'w-8 h-8 text-xs', icon: 16 },
   sm: { box: 'w-10 h-10 text-sm', icon: 20 },
   md: { box: 'w-12 h-12 text-sm', icon: 22 },
   lg: { box: 'w-24 h-24 text-2xl', icon: 26 }

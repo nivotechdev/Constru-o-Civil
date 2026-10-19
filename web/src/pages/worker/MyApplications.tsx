@@ -4,6 +4,7 @@ import { usePaging } from '../../hooks/usePaging';
 import { LoadMore } from '../../components/LoadMore';
 import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/icons/Icon';
+import { cx } from '../../utils/cx';
 import { JobTile, TileGrid } from '../../components/JobTile';
 import { QueryView } from '../../components/QueryView';
 import { TileGridSkeleton } from '../../components/Skeleton';
@@ -40,7 +41,18 @@ export default function MyApplications() {
         company={company}
         muted={muted}
         onClick={() => navigate(info.to)}
-        badge={{ label: info.label, icon: info.icon, tone: muted ? 'neutral' : info.tone }}
+        // The status is text under the title, not a label on the photo.
+        footer={
+          <span
+            className={cx(
+              'flex items-center gap-1.5 truncate text-sm font-semibold',
+              muted ? 'text-concrete-500' : 'text-concrete-700'
+            )}
+          >
+            <Icon name={info.icon} size={14} color="currentColor" />
+            <span className="truncate">{info.label}</span>
+          </span>
+        }
         // Picked for the job: the WhatsApp chat with the company is open.
         corner={contactOpen(app.status) ? <ContactButton applicationId={app.id} round /> : null}
       />

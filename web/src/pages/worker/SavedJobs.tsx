@@ -42,7 +42,7 @@ export default function SavedJobs() {
                       company={getCompany(db, job.companyId)}
                       onClick={() => navigate('/vaga/' + job.id)}
                       muted={closed}
-                      badge={closed ? { label: 'Vaga encerrada', icon: 'circle-x', tone: 'neutral' } : null}
+                      footer={closed ? <span className="truncate text-concrete-500">Vaga encerrada</span> : null}
                       saved
                       onToggleSave={() => toggleSaved(job.id)}
                     />
