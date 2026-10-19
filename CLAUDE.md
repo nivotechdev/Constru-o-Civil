@@ -32,10 +32,12 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 
 - Três sócios + a IA fazendo a parte técnica. Quem fala com você é sócio, não desenvolvedor sênior: explique
   decisões em linguagem simples e peça aprovação nos pontos marcados como "ação do responsável".
-- **Toda alteração no projeto vai para o `master`** (pedido do responsável em 19/10/2026): trabalhar na branch
-  `claude/front-novo-supabase`, conferir (CI `web` e `staging` verdes) e levar ao `master` por PR com merge, sem
-  pedir de novo. O `master` publica o site de teste (GitHub Pages) e reaplica o staging; **não** mexe na produção —
-  produção continua só com "pode" a cada passo (§9).
+- **Toda alteração no projeto vai direto para o `master`** (pedido do responsável em 19/10/2026, reforçado no mesmo
+  dia: "faça na branch principal, suba na branch principal e sempre faça isso"): commitar e enviar ao `master`
+  (`git push origin master`), sem PR e sem pedir de novo. Antes de enviar, rodar as checagens locais (§5); depois,
+  conferir o CI `web` e `staging` no `master` e corrigir na hora se ficar vermelho. O `master` publica o site de
+  teste (GitHub Pages) e reaplica o staging; **não** mexe na produção — produção continua só com "pode" a cada
+  passo (§9).
 - Lançamento: **web app (PWA)** primeiro; lojas (React Native/Expo) só depois que o app tracionar.
 - Domínio previsto: `https://bicos.nivotech.com.br` (ainda não confirmado no ar).
 - Cidade do piloto: **Caxias do Sul (RS)**, confirmado pelo responsável em 19/10/2026. Usar nos testes (cidade do
