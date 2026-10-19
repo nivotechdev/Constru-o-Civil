@@ -1653,3 +1653,13 @@ padronizada. Havia três espessuras: 4 px nos cabeçalhos dos perfis, 2 px no lo
 (`components/Avatar.tsx`: `AVATAR_BORDER` para a borda desenhada na foto e `AVATAR_FRAME` para a moldura em volta dela).
 O tamanho de cada foto não mudou (o círculo do cabeçalho continua com 96 px, e a foto ganha o espaço que a borda
 grossa ocupava). Fotos em listas, que não têm borda, continuam sem borda.
+
+## U08 — "Valor da diária" refeito
+
+Pedido do responsável: a pílula "Definir valor / A combinar" (U04) ficou feia e sem título. Agora o passo 2 abre com
+um campo só, com título **Valor da diária**: o valor em letra grande entre "R$" e "por diária" (é o número que o
+trabalhador mais olha) e "Mínimo de R$ 80" embaixo. "A combinar" virou um interruptor logo abaixo, **Combinar o valor
+com o trabalhador**: ligado, o campo fica no lugar, apagado e escrito "A combinar" (nada pula na tela), com "No mural
+aparece "A combinar"" embaixo; desligado, volta a pedir o valor. O erro de campo vazio passou a citar a escolha que
+existe na tela ("ou escolha combinar com o trabalhador"). Regras, mínimo, máximo e o que vai para o banco não mudaram;
+o campo mantém o id `create-job-valor` (usado pelo E2E).

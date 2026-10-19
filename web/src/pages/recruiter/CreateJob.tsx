@@ -7,8 +7,10 @@ import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { JobTile } from '../../components/JobTile';
 import { PhotoManager } from '../../components/PhotoManager';
+import { Switch } from '../../components/Switch';
 import { TextArea } from '../../components/TextArea';
 import { useDb, useScreenUI } from '../../hooks/useStore';
+import { useTextField } from '../../hooks/useTextField';
 import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
 import { IS_DEMO } from '../../services/mode';
 import { errorMessage } from '../../services/errors';
@@ -37,11 +39,6 @@ import {
 } from './jobForm';
 
 type CepStatus = 'idle' | 'loading' | 'found' | 'notfound' | 'error';
-
-const VALOR_OPCOES = [
-  { label: 'Definir valor', combinar: false },
-  { label: 'A combinar', combinar: true }
-];
 
 const STEPS: { n: 1 | 2; label: string }[] = [
   { n: 1, label: 'Serviço e local' },
@@ -305,44 +302,19 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
 
   const step2 = (
     <div className="flex flex-col gap-6">
-      {/* U02: the value is either a fixed amount or "a combinar" — one choice, then the amount field. */}
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-1 p-1 bg-concrete-100 rounded-full">
-          {VALOR_OPCOES.map((op) => {
-            const selected = f.negociavel === op.combinar;
-            return (
-              <button
-                key={op.label}
-                type="button"
-                aria-pressed={selected}
-                className={cx(
-                  'h-10 rounded-full text-sm font-bold transition-colors',
-                  selected ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'
-                )}
-                onClick={() => set({ negociavel: op.combinar, valor: '' }, 'valor')}
-              >
-                {op.label}
-              </button>
-            );
-          })}
-        </div>
-        {f.negociavel ? (
-          <p className="text-sm text-concrete-500">O trabalhador vê "A combinar" e negocia direto com você.</p>
-        ) : (
-          <div className="w-full max-w-[15rem]">
-            <Input
-              id="create-job-valor"
-              label="Quanto por diária"
-              prefix="R$"
-              placeholder="220"
-              inputMode="numeric"
-              value={f.valor}
-              error={ui.errors.valor}
-              hint={ui.errors.valor ? null : `Mínimo de R$ ${MIN_PAY}.`}
-              onInput={(v) => set({ valor: digits(v, 5) }, 'valor')}
-            />
-          </div>
-        )}
+      {/* U08: one amount field; "a combinar" is a switch under it that turns the field off. */}
+      <div className="flex flex-col gap-2 max-w-[27rem]">
+        <PayField
+          value={f.valor}
+          disabled={f.negociavel}
+          error={ui.errors.valor}
+          onInput={(v) => set({ valor: digits(v, 5) }, 'valor')}
+        />
+        <Switch
+          label="Combinar o valor com o trabalhador"
+          checked={f.negociavel}
+          onChange={(on) => set({ negociavel: on, valor: '' }, 'valor')}
+        />
       </div>
       {/* U01: the date is always arranged with the worker; older jobs with dates keep them as they are. */}
       {f.dateToArrange ? (
@@ -546,5 +518,64 @@ function DiasOption({ id, checked, onSelect }: { id: DiasKey; checked: boolean; 
       </span>
       <span className="text-xs text-concrete-500">{d.pickSub}</span>
     </button>
+  );
+}
+
+/**
+ * U08: the day's pay — a large amount with "R$" and "por diária" around it, the minimum under it. When the
+ * value is "a combinar" the field stays in place, switched off and reading "A combinar", so nothing jumps.
+ */
+function PayField({
+  value,
+  disabled,
+  error,
+  onInput
+}: {
+  value: string;
+  disabled: boolean;
+  error?: string | null;
+  onInput: (value: string) => void;
+}) {
+  const [ref, handleChange] = useTextField<HTMLInputElement>(onInput);
+  const messageId = 'create-job-valor-msg';
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="create-job-valor" className="text-sm font-semibold text-concrete-900">
+        Valor da diária
+      </label>
+      <div
+        className={cx(
+          'flex items-center gap-2 h-16 px-4 rounded-control border transition-colors duration-150',
+          disabled
+            ? 'bg-concrete-50 border-concrete-200'
+            : error
+              ? 'bg-white border-danger-500'
+              : 'bg-white border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'
+        )}
+      >
+        {disabled ? null : <span className="font-display font-semibold text-xl text-concrete-500">R$</span>}
+        <input
+          ref={ref}
+          id="create-job-valor"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder={disabled ? 'A combinar' : '0'}
+          disabled={disabled}
+          value={disabled ? '' : value}
+          aria-invalid={error && !disabled ? 'true' : undefined}
+          aria-describedby={messageId}
+          className="flex-1 min-w-0 h-full bg-transparent outline-none font-display font-bold text-[1.75rem] tabular-nums text-concrete-900 placeholder:text-concrete-300 disabled:cursor-not-allowed disabled:placeholder:text-concrete-500 disabled:placeholder:font-semibold disabled:placeholder:text-xl"
+          onChange={handleChange}
+        />
+        {disabled ? null : <span className="text-sm font-semibold text-concrete-500">por diária</span>}
+      </div>
+      {error && !disabled ? (
+        <FieldError id={messageId} message={error} />
+      ) : (
+        <span id={messageId} className="text-sm text-concrete-500">
+          {disabled ? 'No mural aparece "A combinar".' : `Mínimo de R$ ${MIN_PAY}.`}
+        </span>
+      )}
+    </div>
   );
 }

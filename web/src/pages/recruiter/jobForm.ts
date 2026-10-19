@@ -202,7 +202,7 @@ export function validateStep2(f: JobForm, limits: EditLimits = {}): FormErrors {
 
   if (!f.negociavel) {
     const n = parseInt(f.valor, 10);
-    if (!f.valor.trim()) e.valor = 'Informe o valor da diária, ou marque como a combinar.';
+    if (!f.valor.trim()) e.valor = 'Informe o valor da diária ou escolha combinar com o trabalhador.';
     else if (!n || n < MIN_PAY) e.valor = `Informe um valor de R$ ${MIN_PAY} ou mais.`;
     else if (n > MAX_PAY) e.valor = `Confira o valor: a diária vai até R$ ${MAX_PAY.toLocaleString('pt-BR')}.`;
   }
