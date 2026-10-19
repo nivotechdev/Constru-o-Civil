@@ -105,7 +105,7 @@ jobs:
         env:
           PROJECT_REF: setyxomsbfrkneqqfoam
           TURNSTILE_SECRET: 1x0000000000000000000000000000000AA
-          EXTRA_REDIRECTS: http://localhost:4173/**
+          EXTRA_REDIRECTS: http://localhost:4173,http://localhost:4173/**
           # E-mail próprio (Brevo): opcional no staging. Sem ele, só membros da equipe do projeto recebem e-mail
           # (no máximo 2 por hora) e os e-mails ficam no texto padrão em inglês.
           BREVO_SMTP_USER: ${{ secrets.BREVO_SMTP_USER }}
