@@ -101,3 +101,12 @@ jobs:
           PROJECT_REF: setyxomsbfrkneqqfoam
           TURNSTILE_SECRET: 1x0000000000000000000000000000000AA
           EXTRA_REDIRECTS: http://localhost:4173/**
+      - name: Conferir as funções e o login (uma chamada cada)
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          ANON_KEY="$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$STAGING_REF/api-keys" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).find(k=>k.name==="anon").api_key))')"
+          echo "::add-mask::$ANON_KEY"
+          FUNCTIONS_URL="https://$STAGING_REF.supabase.co" ANON_KEY="$ANON_KEY" ALLOWED_ORIGIN=http://localhost:4173 \
+            ./scripts/staging/conferir-funcoes.sh
