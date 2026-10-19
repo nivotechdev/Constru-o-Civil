@@ -1554,3 +1554,13 @@ aparecia: a tela mostra primeiro o "carregando" e só depois o formulário, e o 
 widget no primeiro instante. Agora o widget é montado quando a caixa aparece (ref por estado). (2) O teste do limite
 de 5 tentativas chamava a função só com `apikey`; no Supabase de verdade a porta das funções com JWT responde 401
 antes da função rodar, então o limite nunca era contado. O teste agora manda o `Authorization`, como o app.
+
+## R08 — Site de teste no GitHub Pages
+
+O responsável publicou pelo GitHub Pages (`nivotechdev.github.io/Constru-o-Civil`), que mostrava só o README: o
+Pages servia os arquivos do repositório, não o app. O workflow `site` faz o build do staging com
+`VITE_BASE=/Constru-o-Civil/` (o roteador já sabia viver numa pasta) e publica o `dist/`. O Pages não reescreve
+caminhos, então o `404.html` é o próprio app (com `<base>` para os ícones): `/Constru-o-Civil/vaga/BC-1` abre a tela
+certa, só que com status 404 (irrelevante para o teste). Os `_headers` (CSP) não valem no Pages — por isso ele é só
+o site de **teste**; a produção continua no Cloudflare Pages. No workflow `staging`, `APP_ORIGIN` passou a ser só o
+domínio do site (as funções recusam origem com caminho).
