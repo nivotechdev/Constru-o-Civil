@@ -44,12 +44,6 @@ export async function updateJobPhotos(jobId: string, photos: string[]): Promise<
   store.updateJob(jobId, { photos: uploaded });
 }
 
-export async function closeJob(jobId: string): Promise<void> {
-  const client = await db();
-  await request(() => client.rpc('close_job', { p_job_id: jobId }));
-  await loadJob(jobId);
-}
-
 export async function deleteJob(jobId: string): Promise<void> {
   const client = await db();
   await request(() => client.rpc('delete_job', { p_job_id: jobId }));

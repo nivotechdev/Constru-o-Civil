@@ -1632,3 +1632,15 @@ Pedido do responsável. No card, embaixo do título, ficam até 3 fotos dos cand
 3, "e mais N" (N = os que não aparecem). Os nomes saíram (o leitor de tela ouve "N candidatos"). A borda branca das
 fotos sobrepostas ficava num elemento por fora da foto e parecia maior que ela; agora é desenhada na própria foto
 (`ring` em `components/Avatar.tsx`, padrão `AVATAR_BORDER`) e é mais fina (1,5 px).
+
+## U06 — Sem "Encerrar vaga": só editar e excluir
+
+Pedido do responsável: a construtora não quer mais encerrar a vaga à mão. Em "Sua vaga", uma vaga aberta ou cheia
+mostra só **Editar vaga** e **Excluir vaga**. Saíram o botão, a confirmação "Encerrar essa vaga?", `closeJob` (demo e
+real) e a RPC `close_job` (migration `u06_sem_encerrar_vaga`); a mensagem de "não dá para excluir" deixou de mandar
+encerrar. **O que não saiu, de propósito:** a vaga **fechada** continua existindo, porque ela fecha sozinha quando a
+equipe termina (Y01), quando o prazo passa (Y04) ou quando a conta da construtora é excluída. Por isso ficam o estado
+"encerrada", a tela de resumo do bico (`/fechado/:id`, com "Ver resumo do bico" e as avaliações) e "Publicar de novo".
+A regra da Y08 também fica: com gente escolhida ou contratada, a vaga não é excluída (o botão Excluir não aparece);
+ela segue até fechar sozinha. Os testes que usavam o encerramento para chegar a uma vaga fechada passaram a fechá-la
+pelo prazo ou direto no store (o teste "fechar torna as recusas definitivas" agora usa o prazo); continuam 217.

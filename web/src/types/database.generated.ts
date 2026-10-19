@@ -1573,7 +1573,6 @@ export type Database = {
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       check_cron_failures: { Args: Record<PropertyKey, never>; Returns: number };
       claim_document_for: { Args: { p_user_id: string; p_digits: string }; Returns: undefined };
-      close_job: { Args: { p_job_id: string }; Returns: undefined };
       cnpj_valid: { Args: { p_document: string }; Returns: boolean };
       company_cnpj_for_check: { Args: { p_company: string }; Returns: string };
       conclude_finished_jobs: { Args: { p_worker?: string; p_company?: string }; Returns: number };

@@ -28,7 +28,7 @@ dessas funções, mantendo **assinatura, retorno e erros**. Nenhuma tela precisa
 - **Leituras** (`load*`) hoje só esperam e resolvem; no real, buscam as linhas e as colocam no store com
   `databaseFromRows` (`services/supabaseMappers.ts`). As telas leem o store e mostram esqueleto/erro pelo
   cache de leituras (`services/queries.ts`).
-- **Mudanças que afetam mais de um registro** (status + notificações, encerrar vaga + candidaturas,
+- **Mudanças que afetam mais de um registro** (status + notificações, vaga que fecha + candidaturas,
   pagar + impulsionar) são **uma transação** (RPC `security definer` ou função no banco).
 - **Datas**: timestamps em ISO (UTC); datas de vaga em `YYYY-MM-DD` (dia local); horários `HH:MM`.
 - **Tipos**: `src/types/models.ts` (domínio) e `src/types/supabase.ts` (linhas das tabelas, com os tipos do
@@ -89,8 +89,8 @@ Fonte única: `services/applicationMachine.ts` (`TRANSITIONS`). O banco deve apl
   `company_reviewed`).
 - Ao `aprovar` a última vaga, as candidaturas pendentes da vaga vão para `nao_selecionado` com
   `by = sistema`, `reason = 'vaga_preenchida'` e `auto_rejected = true`. `desfazer_aprovacao` devolve essas
-  para `em_analise` (se a vaga não foi encerrada). Encerrar a vaga torna a recusa definitiva
-  (`auto_rejected = false`).
+  para `em_analise` (se a vaga não foi encerrada). Quando a vaga fecha sozinha (equipe concluída, prazo, conta
+  excluída) ou é excluída, a recusa vira definitiva (`auto_rejected = false`). U06: não existe mais encerrar à mão.
 - `aprovar` falha com `conflito` se a vaga já estiver cheia.
 - **Rotina diária**: candidaturas `contratado` cuja vaga tem `end_date < hoje` vão para `concluida`
   (`by = sistema`) e geram os pedidos de avaliação (mock: `concludeFinishedJobs`, chamado nas leituras).
@@ -131,7 +131,6 @@ conta de …". O back-end só precisa garantir que `accounts` reflita esses esta
 | `publishJob(draft)`           | `JobDraft` → id     | `offline`, `validacao`                                                      | insere em `jobs` com `company_id` da sessão; valida datas/horários/endereço como `jobForm.ts`                |
 | `updateJob(id, draft)`        | → void              | `nao_autorizado`, `conflito` (encerrada), `validacao` (pessoas < aprovados) | atualiza a vaga; se mudou valor, data/horário ou endereço (`significantChanges`), notifica candidatos ativos |
 | `updateJobPhotos(id, photos)` | → void              | `nao_autorizado`                                                            | sobe para o Storage; atualiza `jobs.photos`                                                                  |
-| `closeJob(id)`                | → void              | `nao_autorizado`, `nao_encontrado`                                          | encerra, define `sem_contratacao`, recusa pendentes (com aviso), torna definitivas as recusas automáticas    |
 | `deleteJob(id)`               | → void              | `nao_autorizado`                                                            | `deleted_at = now()` (L02 completa as regras)                                                                |
 | `toggleSavedJob(id)`          | → `saved` (boolean) | `offline`                                                                   | insere/apaga em `saved_jobs` (a tela é otimista e desfaz se falhar)                                          |
 

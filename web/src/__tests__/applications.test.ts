@@ -91,6 +91,12 @@ describe('status machine in the services', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  /** U06: a job is not closed by hand; it closes by itself once its last day has passed. */
+  const expire = (jobId: string) => {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    m.store.updateJob(jobId, { dateToArrange: false, startDate: yesterday, endDate: yesterday });
+    m.apps.concludeFinishedJobs(new Date());
+  };
   const run = async <T>(p: Promise<T>) => {
     const settled = p.then(
       (v) => ({ ok: true as const, v }),
@@ -183,7 +189,7 @@ describe('status machine in the services', () => {
     const db = m.store.getDb();
     expect(m.sel.jobOutcome(db, db.jobs['BC-4960'])).toBe('Concluída');
     expect(m.sel.jobOutcome(db, db.jobs['BC-4998'])).toBeNull();
-    await run(m.jobs.closeJob('BC-4998'));
+    expire('BC-4998');
     expect(m.sel.jobOutcome(m.store.getDb(), m.store.getDb().jobs['BC-4998'])).toBe('Encerrada sem contratação');
   });
 
@@ -213,14 +219,14 @@ describe('status machine in the services', () => {
   it('Y05: undoing an approval on a closed job is refused', async () => {
     await asCompany();
     await run(m.apps.approve('BC-4998', 'bruno'));
-    await run(m.jobs.closeJob('BC-4998'));
+    m.store.updateJob('BC-4998', { closed: true });
     await expect(run(m.apps.undoApproval('BC-4998', 'bruno'))).rejects.toThrow(/encerrada/);
   });
 
   it('Y08: a job with a team is not deleted; without one, who waited is told it was removed', async () => {
     await asCompany();
     await run(m.apps.approve('BC-4998', 'bruno'));
-    await expect(run(m.jobs.deleteJob('BC-4998'))).rejects.toThrow(/Encerre a vaga/);
+    await expect(run(m.jobs.deleteJob('BC-4998'))).rejects.toThrow(/não pode ser excluída/);
     await run(m.jobs.deleteJob('BC-4995'));
     expect(status('BC-4995', 'nelson')).toBe('nao_selecionado');
     expect(noticesFor('nelson').map((n) => n.title)).toContain('Vaga removida');
@@ -256,7 +262,7 @@ describe('status machine in the services', () => {
 
   it('Y07: no candidacy on a job that is full, closed, past or removed (same checks as the server)', async () => {
     await asCompany();
-    await run(m.jobs.closeJob('BC-4995'));
+    m.store.updateJob('BC-4995', { closed: true });
     await asWorker();
     await expect(run(m.apps.submitApplication('BC-4995'))).rejects.toThrow(/encerrada/);
     expect(status('BC-4995', 'jorge')).toBeNull();
@@ -277,14 +283,14 @@ describe('status machine in the services', () => {
     expect(m.store.getDb().applications.filter((a) => a.jobId === open.id && a.workerId === 'jorge')).toHaveLength(1);
   });
 
-  it('closing the job makes the refusals final and turns the pending candidates down', async () => {
+  it('a job that closes by itself makes the refusals final and turns the pending candidates down', async () => {
     await asCompany();
     await run(m.apps.approve('BC-4998', 'bruno'));
     await run(m.apps.approve('BC-4998', 'joel'));
-    await run(m.jobs.closeJob('BC-4998'));
+    expire('BC-4998');
     const rafael = m.sel.applicationFor(m.store.getDb(), 'BC-4998', 'rafael');
     expect(rafael?.autoRejected).toBe(false);
-    await run(m.jobs.closeJob('BC-4995'));
+    expire('BC-4995');
     expect(status('BC-4995', 'nelson')).toBe('nao_selecionado');
     expect(m.store.getDb().jobs['BC-4995'].semContratacao).toBe(true);
   });

@@ -76,7 +76,7 @@ describe('editing a job', () => {
     expect(one.ok).toBe(false); // the job is full with 1 slot
     const other = m.store.getDb().jobs['BC-4822'];
     expect((await settle(m.jobs.updateJob(other.id, draftFromForm(formFromJob(other))))).ok).toBe(false);
-    await settle(m.jobs.closeJob('BC-4995'));
+    m.store.updateJob('BC-4995', { closed: true }); // closed by itself (team done, date passed)
     const closed = m.store.getDb().jobs['BC-4995'];
     const r = await settle(m.jobs.updateJob(closed.id, draftFromForm(formFromJob(closed))));
     expect(!r.ok && r.e.message).toMatch(/encerrada/);

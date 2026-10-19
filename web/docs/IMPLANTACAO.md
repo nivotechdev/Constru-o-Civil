@@ -25,7 +25,7 @@ Legenda: 🔁 tem volta · ⛔ **não tem volta** (só restaurando o backup do p
 `supabase_migrations.schema_migrations`, nunca no esquema.
 
 **Conferir**: `DB_URL=<conexão da produção> ./scripts/staging/conferir-migrations.sh` → falta exatamente o que vai
-entrar no passo 4 (`lanc06` … `u01`) e não sobra nada.
+entrar no passo 4 (`lanc06` … `u06`) e não sobra nada.
 **Desfazer**: `repair` ao contrário com as mesmas versões (ou restaurar só a tabela de histórico do backup).
 
 ## 3. Segredos das funções 🔁 (antes de republicar qualquer função)
@@ -44,8 +44,8 @@ Edge Functions › Secrets (ou `npx supabase secrets set --project-ref ppnxdajii
 
 ## 4. Migrations novas, uma por vez 🔁/⛔
 
-Na ordem de `supabase/APLICAR.md`, **#39 a #47** (`lanc06`, `lanc07`, `habilitar_pg_net` (já está lá — só confere),
-`lanc09`, `lanc10`, `lanc12`, `lanc13`, `r03`, `r04`, `u01`), cada uma com a consulta de conferência dela logo depois.
+Na ordem de `supabase/APLICAR.md`, **#39 a #48** (`lanc06`, `lanc07`, `habilitar_pg_net` (já está lá — só confere),
+`lanc09`, `lanc10`, `lanc12`, `lanc13`, `r03`, `r04`, `u01`, `u06`), cada uma com a consulta de conferência dela logo depois.
 **`lanc10_link_publico` só junto com o passo 7** (o front antigo chama a RPC com outro parâmetro).
 
 | Migration | Desfazer                                                                                                                                                                                                                           |
@@ -59,6 +59,7 @@ Na ordem de `supabase/APLICAR.md`, **#39 a #47** (`lanc06`, `lanc07`, `habilitar
 | `r03`     | ⛔ o valor de enum `cancelado_pela_equipe` não sai (inofensivo); funções: recriar as versões anteriores (L06/Z01/rules)                                                                                                            |
 | `r04`     | 🔁 `drop trigger on_auth_user_deleted on auth.users;` e recriar `delete_my_account` da Z01                                                                                                                                         |
 | `u01`     | 🔁 só com o front novo (passo 7); desfazer: recriar `job_from_draft` (W08), `job_extras_from_draft` (L18), `notify_job_alerts` (Y28), `report_target_info` (lanc06); `oficio_id` só volta a `not null` se nenhuma vaga estiver sem |
+| `u06`     | 🔁 só com o front novo (passo 7); desfazer: recriar `close_job` (rules) e o `delete_job` da Z01                                                                                                                                    |
 
 **Conferir no fim**: `conferir-migrations.sh` contra a produção = igual aos arquivos; `get_advisors` (security e
 performance) igual ao "Esperado" de `docs/ADVISORS.md`; `select * from public.cron_health();` sem falha.

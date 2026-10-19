@@ -72,10 +72,13 @@ select pg_temp.ok(exists (select 1 from public.notifications where company_id = 
                            and kind = 'desistencia' and body like '%voltou a ficar aberta no mural%'),
   'construtora avisada de que a vaga voltou ao mural');
 
--- Aprovar Bruno, encerrar a vaga e tentar desfazer a aprovação (Y05).
+-- Aprovar Bruno, a vaga fechar e tentar desfazer a aprovação (Y05). U06: ninguém fecha a vaga à mão; ela
+-- fecha sozinha (equipe concluída, prazo, conta excluída) — aqui, direto na tabela.
 select pg_temp.login('10000000-0000-0000-0000-0000000000c1');
 select public.transition_application((select v from t_ids where k = 'futura'), '10000000-0000-0000-0000-0000000000a2', 'aprovar');
-select public.close_job((select v from t_ids where k = 'futura'));
+select pg_temp.logout();
+update public.jobs set closed = true where id = (select v from t_ids where k = 'futura');
+select pg_temp.login('10000000-0000-0000-0000-0000000000c1');
 select pg_temp.fails(format('select public.transition_application(%L, %L, ''desfazer_aprovacao'')',
   (select v from t_ids where k = 'futura'), '10000000-0000-0000-0000-0000000000a2'), 'BC409');
 -- Cancelar numa vaga encerrada funciona, mas ninguém volta (a vaga não está aberta).

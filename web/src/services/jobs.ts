@@ -1,7 +1,7 @@
 // Jobs: reading the mural and a job, publishing, saving, closing and deleting. Each function says what
 // the real backend does there (docs/CONTRATO-BACKEND.md); the mock applies the change to the store.
 import type { Company, Database, Job } from '../types/models';
-import { closeJobApplications, reopenAutoRejected } from './applications';
+import { reopenAutoRejected } from './applications';
 import { holdsSlot, isPending, occupiesSlot, transition } from './applicationMachine';
 import { jobTitle } from './catalog';
 import { withNotification } from './notifications';
@@ -194,24 +194,8 @@ export async function updateJobPhotos(jobId: string, photos: string[]): Promise<
 }
 
 /**
- * Closes the job: it leaves the mural and pending candidates are turned down. Backend: update jobs +
- * applications in one transaction, notify the candidates.
- */
-export async function closeJob(jobId: string): Promise<void> {
-  if (!IS_DEMO) return remote.closeJob(jobId);
-  await mockLatency(500);
-  const job = ownJob(jobId);
-  const at = new Date().toISOString();
-  store.transact((db) => {
-    const hired = db.applications.some((a) => a.jobId === jobId && (holdsSlot(a.status) || a.status === 'concluida'));
-    const closed: Job = { ...job, closed: true, ...(hired ? {} : { semContratacao: true }) };
-    return closeJobApplications({ ...db, jobs: { ...db.jobs, [jobId]: closed } }, closed, at);
-  });
-}
-
-/**
- * Deletes the job post (Y08). Only without a team: with someone picked or hired, closing the job is the
- * way (the team stays). Candidates still waiting become "não selecionado" and are told the job was
+ * Deletes the job post (Y08). Only without a team: with someone picked or hired, the job stays until it
+ * closes by itself (U06). Candidates still waiting become "não selecionado" and are told the job was
  * removed. Backend: delete_job (closes and sets deleted_at, in one transaction).
  */
 export async function deleteJob(jobId: string): Promise<void> {
@@ -221,7 +205,7 @@ export async function deleteJob(jobId: string): Promise<void> {
   const db = store.getDb();
   if (db.deletedJobIds.includes(jobId)) return;
   if (db.applications.some((a) => a.jobId === jobId && holdsSlot(a.status)))
-    throw serviceError('conflito', 'Essa vaga tem gente escolhida ou contratada. Encerre a vaga em vez de excluir.');
+    throw serviceError('conflito', 'Essa vaga tem gente escolhida ou contratada. Ela não pode ser excluída.');
   const at = new Date().toISOString();
   store.transact((d) => {
     const company = d.companies[job.companyId];

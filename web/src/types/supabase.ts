@@ -496,7 +496,6 @@ export interface SupabaseDatabase {
       publish_job: { Args: { p: Json }; Returns: string };
       update_job: { Args: { p_job_id: string; p: Json }; Returns: undefined };
       set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
-      close_job: { Args: { p_job_id: string }; Returns: undefined };
       delete_job: { Args: { p_job_id: string }; Returns: undefined };
       submit_review: {
         Args: {

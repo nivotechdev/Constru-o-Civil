@@ -75,8 +75,8 @@ describe('failing like a request', () => {
     expect(m.sel.isJobSaved(m.store.getDb(), 'BC-4821')).toBe(before);
   });
 
-  it("refuses to close another company's job", async () => {
-    const r = await outcome(m.jobs.closeJob('BC-4822')); // Construtora Alvorada's
+  it("refuses to delete another company's job", async () => {
+    const r = await outcome(m.jobs.deleteJob('BC-4822')); // Construtora Alvorada's
     expect(r.ok).toBe(false);
     if (!r.ok) expect((r.error as InstanceType<typeof m.errors.ServiceError>).code).toBe('nao_autorizado');
   });

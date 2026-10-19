@@ -561,6 +561,16 @@ Vagas antigas não mudam. **Junto com o front novo** (o front antigo manda o of�
 select is_nullable from information_schema.columns where table_name = 'jobs' and column_name = 'oficio_id';  -- YES
 ```
 
+### 48. `20261019000200_u06_sem_encerrar_vaga.sql` (U06)
+
+A construtora não encerra mais a vaga à mão: sai a RPC `close_job` (só o botão "Encerrar vaga" a chamava) e a
+mensagem do `delete_job` para vaga com equipe deixa de mandar encerrar. A vaga continua fechando sozinha (equipe
+concluída, prazo, conta excluída). **Junto com o front novo** (o front antigo ainda tem o botão, que passaria a falhar).
+
+```sql
+select to_regprocedure('public.close_job(text)');   -- null
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar
