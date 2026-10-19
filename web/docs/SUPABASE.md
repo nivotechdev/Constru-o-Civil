@@ -54,13 +54,17 @@ Advisors depois de aplicar (Database › Advisors): segurança sem nenhum ERROR;
   `conflito`, `validacao`) e mensagem pronta.
 - **Rotinas (pg_cron)**: concluir diárias (`7 * * * *`), vencer PIX (`*/10`), lembrete de presença (`0 21 * * *`),
   limpar cadastros nunca confirmados (`23 3 * * *`), limpar registro de tentativas (`17 4 * * *`) e limpar arquivos
-  órfãos (`40 4 * * *`, só com a Edge Function configurada).
+  órfãos (`40 4 * * *`, só com a Edge Function configurada). **Vigia (L12)**: `bicos-vigiar-cron` (`12 * * * *`)
+  alerta no Sentry quando uma rotina falha 2 vezes seguidas e manda o sinal de vida ao monitor de fora; estado de
+  todas: `select * from public.cron_health();` (seção 5.1).
 - **Storage**: `avatars`, `portfolio`, `vagas` (públicos para abrir pelo endereço, sem listagem; cada conta só envia
   na própria pasta) e `identidade` (privado; só a equipe lê).
 - **Vault**: `nivotech_documento_key` (cifra CPF/CNPJ; já existe) e, quando configurados, `bicos_push_url`,
-  `bicos_push_secret`, `bicos_cleanup_url`, `bicos_cleanup_secret`.
-- **Equipe** (painel/SQL Editor, com service_role): `set_company_verification(empresa, status)`,
-  `set_identity_status(trabalhador, status, motivo)`, `funnel_daily(de, até)`; denúncias em `reports`.
+  `bicos_push_secret`, `bicos_cleanup_url`, `bicos_cleanup_secret`, `bicos_sentry_dsn` e `bicos_heartbeat_url` (L12).
+- **Equipe** (L06): a área `/admin` do app (filas de identidade, construtoras e denúncias; registro de auditoria).
+  Quem é da equipe está em `staff_members` e só entra pelo SQL Editor:
+  `select public.add_staff_member('email@da.conta', 'admin');` (sair: `remove_staff_member`). Continuam
+  existindo, para o SQL Editor: `set_company_verification`, `set_identity_status`, `funnel_daily(de, até)`.
 
 ## 3. Painel › Authentication
 
@@ -86,7 +90,7 @@ segredos da tabela, cada função recusa o pedido (401 ou 503) — nada acontece
 
 | Função                 | Para quê                                                   | Segredos (Edge Functions › Secrets)                                                                        | Sem JWT |
 | ---------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------- |
-| `entrar-com-documento` | entrar com CPF/CNPJ sem expor o e-mail                     | `TURNSTILE_SECRET` (opcional)                                                                              |         |
+| `entrar-com-documento` | entrar com CPF/CNPJ sem expor o e-mail                     | `TURNSTILE_SECRET` (obrigatório)                                                                           |         |
 | `excluir-conta`        | exclusão completa, com os arquivos do Storage (Y15)        | —                                                                                                          |         |
 | `codigo-whatsapp`      | código de confirmação do WhatsApp (Twilio Verify, Y25)     | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `TWILIO_VERIFY_CHANNEL` (`whatsapp`/`sms`) |         |
 | `verificar-cnpj`       | consulta do CNPJ na Receita (BrasilAPI, L10)               | `BRASILAPI_URL` (opcional)                                                                                 |         |
@@ -95,7 +99,11 @@ segredos da tabela, cada função recusa o pedido (401 ou 503) — nada acontece
 | `enviar-push`          | notificação no celular a cada aviso novo (X03)             | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_WEBHOOK_SECRET`                            | sim     |
 | `limpar-arquivos`      | apagar arquivos órfãos e fotos de identidade antigas (X09) | `CLEANUP_SECRET`                                                                                           | sim     |
 
-Todas: `APP_ORIGIN` (o endereço publicado, para o CORS), `SENTRY_DSN` e `RELEASE` (opcionais, X21). `SUPABASE_URL`,
+As chamadas pelo navegador (`entrar-com-documento`, `excluir-conta`, `codigo-whatsapp`, `verificar-cnpj`,
+`criar-cobranca`): `APP_ORIGIN` (**obrigatório** — sem ele a função não sobe, L05; o endereço publicado, ou uma
+lista separada por vírgula, com `https://*.dominio` para prévias). As servidor-a-servidor (`webhook-pagamento`,
+`enviar-push`, `limpar-arquivos`) **não usam** `APP_ORIGIN` nem mandam cabeçalho CORS (R02): um segredo esquecido não
+derruba o webhook nem o cron. Todas: `SENTRY_DSN` e `RELEASE` (opcionais, X21). `SUPABASE_URL`,
 `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` o Supabase já põe sozinho.
 
 ## 5. Recursos que dependem de serviço externo
@@ -103,26 +111,68 @@ Todas: `APP_ORIGIN` (o endereço publicado, para o CORS), `SENTRY_DSN` e `RELEAS
 Cada um existe por inteiro no código, mas **fica escondido no modo real até ser configurado** (`services/features.ts`);
 na demonstração tudo é simulado.
 
-| Recurso                                | Sem configurar (modo real)                                                                                        | Para ligar                                                                                                                                                                                                                                                                                                                                                                       |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Impulsionar (Mercado Pago)**         | botão escondido; a vaga aparece no mural de graça                                                                 | conta Mercado Pago (CNPJ quando tiver); `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET` nos Secrets; webhook do MP apontando para `.../functions/v1/webhook-pagamento` (`criar-cobranca` e `webhook-pagamento` já estão no ar); no build `VITE_PAGAMENTOS=mercadopago` e `VITE_MP_PUBLIC_KEY`. Testar em sandbox: PIX e cartão.                                                          |
-| **Captcha (Cloudflare Turnstile)**     | sem captcha (os limites por número/IP continuam)                                                                  | Cloudflare › Turnstile → criar site com o domínio; `TURNSTILE_SECRET` nos Secrets; `VITE_TURNSTILE_SITE_KEY` no build                                                                                                                                                                                                                                                            |
-| **Código do WhatsApp (Twilio Verify)** | o número fica guardado sem confirmação                                                                            | Twilio › Verify → serviço (canal WhatsApp ou SMS); segredos acima (`codigo-whatsapp` já está no ar); `VITE_CODIGO_WHATSAPP=1`                                                                                                                                                                                                                                                    |
-| **Entrar com Google**                  | botão escondido                                                                                                   | seção 3, item 5                                                                                                                                                                                                                                                                                                                                                                  |
-| **Notificações no celular (push)**     | só o sino do app                                                                                                  | `npx web-push generate-vapid-keys`; segredos `VAPID_*` e `PUSH_WEBHOOK_SECRET`; `enviar-push` e o **pg_net** já estão no ar; no SQL Editor: `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');` e `select vault.create_secret('<PUSH_WEBHOOK_SECRET>', 'bicos_push_secret');`; `VITE_VAPID_PUBLIC_KEY` no build |
-| **Limpeza de arquivos órfãos**         | os arquivos ficam                                                                                                 | falta só um passo: em Edge Functions › Secrets, crie `CLEANUP_SECRET` com o mesmo valor de `bicos_cleanup_secret` (Integrations › Vault, já criado com um valor aleatório, junto com `bicos_cleanup_url`). `limpar-arquivos`, o pg_net e o cron das 4h40 já estão no ar; até lá a chamada diária é recusada (401) e nada é apagado                                               |
-| **Consulta do CNPJ (BrasilAPI)**       | **ligada**: CNPJ ativo na Receita → "Verificada"; CPF ou consulta sem resposta → "pendente" até a equipe conferir | nada: `verificar-cnpj` já está publicada (a BrasilAPI é gratuita, sem chave)                                                                                                                                                                                                                                                                                                     |
-| **E-mail próprio (Brevo SMTP)**        | e-mails do Auth pelo serviço padrão (cota baixa)                                                                  | seção 3, item 2                                                                                                                                                                                                                                                                                                                                                                  |
-| **Erros (Sentry)**                     | erros só no console/log                                                                                           | projeto no Sentry; `VITE_SENTRY_DSN` no build e `SENTRY_DSN` nos Secrets                                                                                                                                                                                                                                                                                                         |
-| **Verificação de identidade (F07)**    | funciona: a equipe aprova/recusa por `set_identity_status`                                                        | (opcional, futuro) verificação automática por um provedor pago                                                                                                                                                                                                                                                                                                                   |
+| Recurso                                | Sem configurar (modo real)                                                                                                            | Para ligar                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Impulsionar (Mercado Pago)**         | botão escondido; a vaga aparece no mural de graça                                                                                     | conta Mercado Pago (CNPJ quando tiver); `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET` nos Secrets; webhook do MP apontando para `.../functions/v1/webhook-pagamento` (`criar-cobranca` e `webhook-pagamento` já estão no ar); no build `VITE_PAGAMENTOS=mercadopago` e `VITE_MP_PUBLIC_KEY`. Testar em sandbox: PIX e cartão.                                                          |
+| **Captcha (Cloudflare Turnstile)**     | **obrigatório na produção (L05)**: o build não sai sem `VITE_TURNSTILE_SITE_KEY` e as funções recusam o pedido sem `TURNSTILE_SECRET` | Cloudflare › Turnstile → criar site com o domínio; `TURNSTILE_SECRET` nos Secrets; `VITE_TURNSTILE_SITE_KEY` no build; Authentication › Attack Protection › **Enable Captcha protection** (Turnstile, mesma secret) — vale para cadastro, login e "esqueci a senha"                                                                                                              |
+| **Código do WhatsApp (Twilio Verify)** | o número fica guardado sem confirmação                                                                                                | Twilio › Verify → serviço (canal WhatsApp ou SMS); segredos acima (`codigo-whatsapp` já está no ar); `VITE_CODIGO_WHATSAPP=1`                                                                                                                                                                                                                                                    |
+| **Entrar com Google**                  | botão escondido                                                                                                                       | seção 3, item 5                                                                                                                                                                                                                                                                                                                                                                  |
+| **Notificações no celular (push)**     | só o sino do app                                                                                                                      | `npx web-push generate-vapid-keys`; segredos `VAPID_*` e `PUSH_WEBHOOK_SECRET`; `enviar-push` e o **pg_net** já estão no ar; no SQL Editor: `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');` e `select vault.create_secret('<PUSH_WEBHOOK_SECRET>', 'bicos_push_secret');`; `VITE_VAPID_PUBLIC_KEY` no build |
+| **Limpeza de arquivos órfãos**         | os arquivos ficam                                                                                                                     | falta só um passo: em Edge Functions › Secrets, crie `CLEANUP_SECRET` com o mesmo valor de `bicos_cleanup_secret` (Integrations › Vault, já criado com um valor aleatório, junto com `bicos_cleanup_url`). `limpar-arquivos`, o pg_net e o cron das 4h40 já estão no ar; até lá a chamada diária é recusada (401) e nada é apagado                                               |
+| **Consulta do CNPJ (BrasilAPI)**       | **ligada**: CNPJ ativo na Receita → "Verificada"; CPF ou consulta sem resposta → "pendente" até a equipe conferir                     | nada: `verificar-cnpj` já está publicada (a BrasilAPI é gratuita, sem chave)                                                                                                                                                                                                                                                                                                     |
+| **E-mail próprio (Brevo SMTP)**        | e-mails do Auth pelo serviço padrão (cota baixa)                                                                                      | seção 3, item 2                                                                                                                                                                                                                                                                                                                                                                  |
+| **Erros (Sentry)**                     | **obrigatório na produção (L05)**: o build não sai sem `VITE_SENTRY_DSN`; nada pessoal sai (`beforeSend`)                             | projeto no Sentry; `VITE_SENTRY_DSN` no build e `SENTRY_DSN` nos Secrets; para os source maps, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` e `SENTRY_PROJECT` no ambiente do deploy (`scripts/sentry-sourcemaps.mjs`)                                                                                                                                                                      |
+| **WhatsApp do suporte**                | **obrigatório na produção (L11)**: o build não sai sem um celular com DDD válido                                                      | `VITE_SUPORTE_WHATSAPP` no build (ex.: `11987654321`); na demonstração a Ajuda mostra só o e-mail                                                                                                                                                                                                                                                                                |
+| **Verificação de identidade (F07)**    | funciona: a equipe aprova/recusa por `set_identity_status`                                                                            | (opcional, futuro) verificação automática por um provedor pago                                                                                                                                                                                                                                                                                                                   |
+
+### 5.1 Rotinas vigiadas (L12) — **ação do responsável** para ligar o aviso
+
+O vigia já roda de hora em hora; sem os dois itens abaixo ele só registra o alerta em `cron_alerts` (ninguém é
+avisado). Para ligar:
+
+1. **Sentry** (o mesmo projeto do L05): no SQL Editor da produção,
+   `select vault.create_secret('<o DSN do Sentry>', 'bicos_sentry_dsn');`. Depois, no Sentry › Alerts › Create
+   Alert › Issues: "A new issue is created" com o filtro `origem` = `pg_cron` → ação "Send a notification to"
+   os e-mails dos sócios.
+2. **Sinal de vida** (cobre o banco pausado ou o pg_cron parado): conta grátis em https://healthchecks.io → Add
+   Check → Period **1 hour**, Grace **1 hour** → copiar a "ping URL" → no SQL Editor:
+   `select vault.create_secret('<ping URL>', 'bicos_heartbeat_url');` → em Integrations, e-mail dos sócios.
+3. Conferir: `select * from public.cron_health();` (todas com `last_status = succeeded`) e, uma hora depois, o
+   check do healthchecks.io verde.
+
+### 5.2 Notificações no celular (push) — **desligadas no lançamento** (L12)
+
+O código está pronto (Edge Function `enviar-push` publicada, gatilho no banco, tela de permissão), mas o push fica
+**escondido** enquanto `VITE_VAPID_PUBLIC_KEY` estiver vazio no build: ninguém vê o convite para ativar, e o gatilho
+do banco não chama nada enquanto faltar `bicos_push_secret` no Vault. O sino dentro do app funciona normalmente.
+Para ligar depois (tudo **ação do responsável**, nessa ordem):
+
+1. Gerar o par de chaves (no computador, uma vez): `npx web-push@3.6.7 generate-vapid-keys` → anotar a pública e
+   a privada (cofre de senhas).
+2. Gerar o segredo do webhook: `openssl rand -hex 32` (ou um gerador de senha com 64 caracteres).
+3. Edge Functions › Secrets (https://supabase.com/dashboard/project/ppnxdajiihsjaojxokzh/functions/secrets):
+   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:nivotech.dev@gmail.com` e
+   `PUSH_WEBHOOK_SECRET` = o segredo do passo 2.
+4. SQL Editor (com o mesmo segredo do passo 2):
+   `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');`
+   `select vault.create_secret('<segredo do passo 2>', 'bicos_push_secret');`
+5. `VITE_VAPID_PUBLIC_KEY` = a chave pública nas variáveis do deploy → publicar o front de novo.
+6. Conferir: com uma conta de teste, ativar as notificações no celular e mandar uma candidatura — o aviso chega
+   com o app fechado. Logs em Edge Functions › `enviar-push` › Logs.
+
+Fazer primeiro no staging (mesmos passos, com a URL do staging).
 
 ## 6. Hospedagem
 
-- Build: `npm run build` → `dist/` (com as variáveis do `.env.example`). As rotas são caminhos de verdade
+- Build: `npm run build` → `dist/` (com as variáveis do `.env.example`; **falha** se faltar alguma obrigatória —
+  L01; a demonstração é `npm run build:demo`). As rotas são caminhos de verdade
   (`/vaga/BC-1`): o servidor responde `index.html` para todo caminho que não for arquivo. **Cloudflare Pages** faz isso
   sozinho (sem `404.html`); Netlify: `/* /index.html 200` em `_redirects`; nginx: `try_files $uri /index.html`.
 - `VITE_SITE_URL` (prévia do link no WhatsApp) e `APP_ORIGIN` (CORS das funções) = o domínio publicado.
-- Staging separado: recomendado um segundo projeto Supabase (gratuito) com as mesmas migrations; ver DECISOES (X16).
+- **Deploy (L08)**: `npm run deploy:staging` / `npm run deploy:producao` (`scripts/deploy.sh`): build que falha sem
+  variável, recusa publicar a demonstração, envia os source maps ao Sentry e publica no Cloudflare Pages. Os
+  cabeçalhos de segurança (CSP, HSTS…) estão em `public/_headers`.
+- Staging: `docs/STAGING.md` (L02).
 
 ## 7. Onde está cada coisa no código
 

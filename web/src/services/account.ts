@@ -4,6 +4,7 @@ import type { Application, Database, Job } from '../types/models';
 import { holdsSlot, isPending, transition } from './applicationMachine';
 import { closeJobApplications, concludeFinishedJobs } from './applications';
 import { checkPassword, forgetPassword, signOut } from './auth';
+import type { CaptchaSource } from './auth';
 import { jobTitle } from './catalog';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
@@ -67,8 +68,12 @@ export function deletionImpact(db: Database = getDb()): DeletionImpact {
  * the name) and the session ends.
  * Backend: re-authenticate, then an RPC does the same in one transaction and deletes the Auth user.
  */
-export async function deleteAccount(password: string, confirmCommitments: boolean): Promise<void> {
-  if (!IS_DEMO) return remote.deleteAccount(password, confirmCommitments);
+export async function deleteAccount(
+  password: string,
+  confirmCommitments: boolean,
+  captcha: CaptchaSource = async () => undefined
+): Promise<void> {
+  if (!IS_DEMO) return remote.deleteAccount(password, confirmCommitments, captcha);
   if (!(await checkPassword(password))) throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
   const session = getSession();
   if (!session) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');

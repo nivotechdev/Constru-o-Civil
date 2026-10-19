@@ -7,9 +7,12 @@
 //
 // Respostas: 200 { pagamento } · 401/404/409/422 { erro, mensagem } · 503 { erro: 'pagamento-desligado' }.
 // Sem MP_ACCESS_TOKEN configurado, responde 503 e o app esconde o Impulsionar (VITE_PAGAMENTOS).
-import { adminClient, CORS, json, requestUser, rpcError } from '../_shared/http.ts';
+import { adminClient, json, preflight, requestUser, requireAppOrigin, rpcError } from '../_shared/http.ts';
 import { createPayment, mercadoPagoConfigured, type MpPayment } from '../_shared/mercadopago.ts';
 import { monitored } from '../_shared/monitoring.ts';
+
+// R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
+requireAppOrigin();
 
 interface CardData {
   token?: string;
@@ -21,7 +24,7 @@ interface CardData {
 
 Deno.serve(
   monitored('criar-cobranca', async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    if (req.method === 'OPTIONS') return preflight(req);
     if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
     if (!mercadoPagoConfigured())
       return json({ erro: 'pagamento-desligado', mensagem: 'O pagamento ainda não está disponível.' }, 503);

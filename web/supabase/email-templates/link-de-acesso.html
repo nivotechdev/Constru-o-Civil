@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Seu link para entrar</title>
+  </head>
+  <body style="margin: 0; padding: 0; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2430">
+    <!-- Magic link (Link de acesso). Variáveis do Supabase Auth: {{ .ConfirmationURL }} (link pronto), {{ .Email }}, {{ .SiteURL }}. -->
+    <div style="display: none; max-height: 0; overflow: hidden">Use o link para entrar na Bicos sem senha.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f4f5f7">
+      <tr>
+        <td align="center" style="padding: 24px 12px">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            style="max-width: 520px; background: #ffffff; border-radius: 16px; overflow: hidden"
+          >
+            <tr>
+              <td style="background: #1d4bed; padding: 20px 24px">
+                <span style="font-size: 26px; font-weight: bold; color: #ffffff; letter-spacing: -0.5px">Bicos</span>
+                <span style="font-size: 13px; color: #c9d4ff; padding-left: 8px">diárias de obra</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 28px 24px 8px 24px">
+                <h1 style="margin: 0 0 12px 0; font-size: 22px; line-height: 28px; color: #1f2430">
+                  Seu link para entrar
+                </h1>
+                <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 24px">
+                  Toque no botão para entrar na sua conta da Bicos.
+                </p>
+                <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 24px">
+                  O link vale por 1 hora e só funciona uma vez. Se vencer, peça outro no app.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 16px 24px 8px 24px">
+                <a
+                  href="{{ .ConfirmationURL }}"
+                  style="
+                    display: inline-block;
+                    background: #1d4bed;
+                    color: #ffffff;
+                    text-decoration: none;
+                    font-size: 17px;
+                    font-weight: bold;
+                    padding: 15px 28px;
+                    border-radius: 12px;
+                  "
+                  >Entrar na Bicos</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 16px 24px 8px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
+                Se o botão não abrir, copie este endereço no navegador:<br />
+                <a href="{{ .ConfirmationURL }}" style="color: #1d4bed; word-break: break-all"
+                  >{{ .ConfirmationURL }}</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 16px 24px 24px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
+                Não pediu? Ignore este e-mail: ninguém entra sem tocar no link.
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f4f5f7; padding: 16px 24px; font-size: 12px; line-height: 17px; color: #8a90a0">
+                Bicos, da NivoTech · Este e-mail foi enviado para {{ .Email }} porque alguém usou este endereço na
+                Bicos. Não responda: esta caixa não é lida. Dúvidas? Abra a Bicos › Ajuda.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

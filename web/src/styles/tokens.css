@@ -1,6 +1,6 @@
 /* Bicos design tokens — ported from the Claude Design bundle (_ds/bicos-design-system.../tokens/*.css).
    Only the tokens the app references are kept; the complete set (all hues, semantic aliases, status,
-   elevation) is in the legacy app, ../app/css/tokens.css.
+   elevation) is in the legacy app, archive/app/css/tokens.css.
    Spacing itself is NOT tokenized here: screens use Tailwind's rem-based spacing scale directly. */
 :root {
   /* Azul Nivo (brand / recruiter accent) */

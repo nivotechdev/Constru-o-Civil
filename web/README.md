@@ -1,93 +1,90 @@
-# Bicos — front-end em React + TypeScript
+# Bicos — o app (React + TypeScript + Supabase)
 
-Migração 1:1 do app legado (`../app`, HTML + JavaScript ES modules + Tailwind) para **React 19 +
-TypeScript + Vite**. Mesma aparência, mesmos textos, mesmas regras de negócio — a comparação
-automatizada com o app original está em `scripts/parity/` (ver `docs/VALIDACAO.md`).
+Web app instalável (PWA) do Bicos. O que o produto é e para quem: `../README.md`. Contexto completo para quem
+mexe no código: `../CLAUDE.md`.
 
-> O app legado continua intacto em `../app` e é a referência da validação.
+## Dois modos, uma porta
 
-## Rodando
+Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` o app roda em **demonstração**: dados falsos em memória
+(`src/data/seed.ts`). Com elas, fala com o **Supabase** (`src/services/remote/`). Cada serviço de `src/services/`
+tem os dois corpos; telas, componentes e hooks nunca importam `src/data/` (regra do ESLint).
 
-```bash
-npm install
-npm run dev          # servidor de desenvolvimento (http://localhost:5173)
-npm run build        # build de produção em dist/ (code splitting por tela)
-npm run preview      # serve o dist/
-npm run build:standalone  # dist-standalone/index.html com tudo embutido — abre direto do disco (file://), como o legado
-```
-
-Qualidade:
+## Rodar
 
 ```bash
-npm run typecheck    # tsc (strict)
-npm run lint         # ESLint (typescript-eslint + react-hooks)
-npm run format       # Prettier
-npm test             # Vitest — inclui testes de paridade de lógica contra os módulos JS do legado
-npm run build && npm run parity   # paridade visual/comportamental contra o app legado (Playwright)
+npm ci
+npm run dev                 # http://localhost:5173 (demonstração sem .env.local)
+cp .env.example .env.local  # para falar com um Supabase (staging, nunca a produção)
 ```
+
+Builds:
+
+```bash
+npm run build               # produção — FALHA se faltar variável obrigatória (L01, L11) ou se os textos
+                            # legais tiverem {{…}} ou não estiverem revisados (R01)
+npm run build:staging       # mesmo build, variáveis do staging (textos legais só avisam)
+npm run build:demo          # demonstração (dados falsos)
+npm run build:standalone    # dist-standalone/index.html que abre direto do disco
+npm run deploy:staging      # Cloudflare Pages, prévia "staging" (scripts/deploy.sh)
+npm run deploy:producao
+```
+
+## Qualidade
+
+```bash
+npm run typecheck && npm run lint && npm run format:check && npm test   # Vitest, nos dois modos
+npm run e2e                 # Playwright de ponta a ponta num Supabase de verdade (e2e/LEIA.md)
+npm run gen:types           # src/types/database.generated.ts a partir do banco (DATABASE_URL)
+npm run parity              # paridade visual com o app legado (../archive/app), à mão
+```
+
+Testes SQL (Docker):
+
+```bash
+./supabase/tests/local/setup.sh
+DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase/tests/run.mjs supabase/tests/[a-z]*.sql
+```
+
+O CI (`../.github/workflows/web.yml`) roda tudo isso, os três builds, Lighthouse e axe (WCAG 2.1 AA), e confere
+que `supabase/APLICAR-TUDO.sql` e os tipos gerados estão em dia.
 
 ## Estrutura
 
 ```
 src/
-  main.tsx              bootstrap (roteador + React root + CSS)
-  App.tsx               rota atual → tela (com ou sem shell), 404, scroll ao topo, prefetch de telas
-  routes.ts             tabela de rotas; cada tela é um chunk carregado sob demanda
-  layouts/              AppShell (nav + <main>) e AppNav (pílula no celular, barra "ilha" ≥ 770px, menu da conta)
-  pages/
-    shared/             splash, login, cadastro, verificação, completar perfil, senha, perfis, avaliações, configurações
-    worker/             mural (feed/), vaga, candidatura, minhas candidaturas, salvas, selecionado, avaliar
-    recruiter/          publicar vaga, publicada, gerenciar, fechado, impulsionar, histórico
-  components/           biblioteca de UI (Button, Input, Card, Modal/Sheet, JobTile, PhotoCarousel, …)
-    icons/              ícones Lucide como mask-image (data URIs, nomes tipados em IconName) + "G" do Google
-  hooks/                useStore (useDb/useRole/useUI), useTextField (cursor/autofoco dos campos)
-  services/             única porta de acesso a dados (ver abaixo)
-  data/                 seed (dados de demonstração), cidades (IBGE) — lidos só por services/
-  types/                models (domínio), ui (tons e badges), supabase (tabelas do banco futuro)
-  utils/                formatação/máscaras, textos de agenda, WhatsApp, status de candidatura
-  styles/               tokens.css, base.css (os do legado, só com os tokens e regras que o app usa) e tailwind.css
-public/img/jobs/        fotos de exemplo das vagas
-scripts/parity/         harness de paridade legado × React
-supabase/migrations/    esquema SQL sugerido para o Supabase (não aplicado)
-docs/                   MAPEAMENTO.md, VALIDACAO.md, RELATORIO_PARIDADE.md e SUPABASE.md
+  main.tsx · App.tsx · routes.ts   bootstrap, troca de tela, tabela de rotas (cada tela é um chunk sob demanda)
+  pages/{shared,worker,recruiter,admin}   telas (admin = área da equipe, /admin)
+  layouts/                         AppShell e AppNav
+  components/                      biblioteca de UI (Button, Input, Modal/Sheet, EmptyState, QueryView…)
+  hooks/                           useStore e afins
+  services/                        a única porta para os dados (demo e real); remote/ = corpo real (Supabase)
+  data/                            seed da demonstração e cidades do IBGE — só services/ lê
+  types/                           models (domínio), database.generated (gerado do banco), supabase, ui
+  utils/                           formatação, datas, WhatsApp, status de candidatura, compartilhar
+  styles/                          tokens.css, base.css, tailwind.css
+build/env.ts                       o que o build de produção exige (variáveis e textos legais)
+e2e/                               Playwright (fluxos 01–07)
+scripts/                           deploy, staging/, volume/, gerar tipos, APLICAR-TUDO, Lighthouse, axe, paridade
+supabase/
+  migrations/                      migrations do app (aplicar em ordem: APLICAR.md)
+  legado/                          migrations 000–012 do app antigo (ainda necessárias para montar do zero)
+  functions/                       Edge Functions (Deno)
+  tests/                           testes SQL (cada um numa transação desfeita)
+  email-templates/                 e-mails do Auth em português
+  pendentes/                       migrations que só entram com autorização (apagar o app antigo)
+docs/                              ver a tabela abaixo
 ```
 
-`services/`:
+## Documentos
 
-| Módulo                               | Responsabilidade                                                                       |
-| ------------------------------------ | -------------------------------------------------------------------------------------- |
-| `store.ts` · `selectors.ts`          | estado em memória (dados, lado logado, estado de tela) e as consultas puras sobre ele  |
-| `auth.ts` · `account.ts`             | login, cadastro, senha e privacidade — simulados, com os mesmos atrasos do legado      |
-| `marketplace.ts`                     | publicar vaga e enviar candidatura (as duas ações que "vão ao servidor")               |
-| `catalog.ts` · `cities.ts`           | listas de opções, planos de impulsionamento e busca de cidades                         |
-| `notifications.ts` · `media.ts`      | notificações e contador do sino · URL das fotos/vídeos escolhidos                      |
-| `router.ts` · `sharedUI.ts`          | hash router · estados de tela lidos por mais de uma tela                               |
-| `supabase.ts` · `supabaseMappers.ts` | cliente Supabase (desligado sem `.env`) e conversão tabela ↔ modelo — ainda não usados |
-
-Telas, componentes e hooks não importam `src/data/` (regra do ESLint): trocar o mock por um backend
-real mexe só em `services/`.
-
-## Decisões
-
-- **Estilo**: Tailwind CSS 3.4.19 com o _mesmo_ `tailwind.config` do legado, `tokens.css` e `base.css`
-  copiados do legado (sem os tokens e regras que nenhum elemento usa — o conjunto completo de tokens
-  continua em `../app/css/tokens.css`), e as mesmas classes em cada elemento. O CSS gerado tem as
-  mesmas regras do legado (o autoprefixer é o mesmo que o CLI do Tailwind usava). Isso garante
-  identidade visual sem reescrever valores em CSS Modules/styled-components.
-- **Estado**: `services/store.ts` reproduz o store em memória do legado — dados (`db`), papel logado
-  (`role`) e o "saco" de estado de UI por tela (`ui`), que sobrevive à navegação como antes. As
-  atualizações são imutáveis e os componentes assinam só a fatia que leem (`useSyncExternalStore`),
-  evitando re-renderizações desnecessárias.
-- **Roteamento**: o hash router do legado portado como está (`#/rota`, pilha própria de "voltar",
-  `goBack(fallback)`), com as telas em chunks separados e pré-carregados quando o navegador fica ocioso.
-  Uma tela já carregada renderiza de forma síncrona — nunca aparece um quadro vazio entre telas.
-- **Micro-interações do legado**: o app antigo recriava todo o DOM a cada mudança de estado, o que
-  tinha efeitos visíveis (foco, transições, animações, rolagem). `components/LegacyRerender.tsx`
-  reproduz esses efeitos depois de cada atualização; removê-lo de `App.tsx` dá o comportamento mais
-  suave do React. Detalhes em `docs/VALIDACAO.md` → Observações.
-- **Firebase**: o repositório **não usa Firebase** (nem Auth, nem Realtime Database). Login,
-  cadastro e verificação de e-mail são simulados, como no legado. Detalhes em `docs/MAPEAMENTO.md`.
-- **Supabase (preparado, não conectado)**: `services/supabase.ts` cria o cliente a partir de
-  `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (ver `.env.example`; copie para `.env.local`, nunca
-  versionado). Sem essas variáveis — o caso atual — o app roda no modo mock e a biblioteca nem entra no
-  bundle. Tabelas sugeridas, pontos de troca e passo a passo em `docs/SUPABASE.md`.
+| Arquivo                                                       | Para quê                                                    |
+| ------------------------------------------------------------- | ----------------------------------------------------------- |
+| `docs/CHECKLIST-LANCAMENTO.md`                                | o que está feito e o que depende dos responsáveis           |
+| `docs/SUPABASE.md`                                            | banco, funções, segredos, serviços externos, hospedagem     |
+| `supabase/APLICAR.md`                                         | ordem das migrations, conferências, histórico               |
+| `docs/STAGING.md`                                             | o ambiente de ensaio                                        |
+| `docs/CONTRATO-BACKEND.md`                                    | contrato de cada serviço/RPC e da máquina de status         |
+| `docs/DECISOES.md`                                            | por que cada coisa é como é (por ID)                        |
+| `docs/E2E.md`, `docs/VOLUME.md`                               | resultados dos testes de ponta a ponta e de volume          |
+| `docs/ADVISORS.md`, `docs/LGPD.md`                            | avisos do Supabase; dados pessoais e bases legais           |
+| `docs/MAPEAMENTO.md`, `VALIDACAO.md`, `RELATORIO_PARIDADE.md` | histórico da migração do app legado (raramente necessários) |

@@ -1,6 +1,6 @@
 // Pure helpers: every legacy function and its TypeScript port must return the same thing.
 import { describe, expect, it } from 'vitest';
-import * as legacyFormat from '../../../app/js/utils/format.js';
+import * as legacyFormat from '../../../archive/app/js/utils/format.js';
 import { nearestCity, popularCities, searchCities } from '../services/cities';
 import { formatBRL, formatPostDate, isValidEmail, maskCNPJ, maskCPF, passwordStrength } from '../utils/format';
 import { whatsappUrl } from '../utils/whatsapp';
@@ -62,6 +62,8 @@ describe('whatsapp links', () => {
     expect(whatsappUrl('', 'oi')).toBeNull();
     expect(whatsappUrl('(11) 98842-3310', 'oi')).toBe('https://wa.me/5511988423310?text=oi');
     expect(whatsappUrl('5511988423310')).toBe('https://wa.me/5511988423310');
+    // L11: DDD 55 (RS) without the country code still gets it.
+    expect(whatsappUrl('(55) 99123-4567')).toBe('https://wa.me/5555991234567');
   });
 });
 
@@ -143,10 +145,13 @@ describe('profile edit checks (L11)', () => {
 
 describe('sharing a job (F09)', () => {
   it('links to the public page and says what and where', async () => {
-    const { jobShareUrl, jobShareText } = await import('../utils/share');
-    expect(jobShareUrl('BC-1', { origin: 'https://bicos.app', pathname: '/', protocol: 'https:' })).toBe(
-      'https://bicos.app/v/BC-1'
-    );
+    const { jobShareUrl, jobShareText, isLegacyJobLink } = await import('../utils/share');
+    const loc = { origin: 'https://bicos.app', pathname: '/', protocol: 'https:' };
+    // L10: the random slug, never the sequential id; demo jobs (no slug) keep the id.
+    expect(jobShareUrl({ id: 'BC-1', publicSlug: 'k7m2q9x4tbn3' }, loc)).toBe('https://bicos.app/v/k7m2q9x4tbn3');
+    expect(jobShareUrl({ id: 'BC-1' }, loc)).toBe('https://bicos.app/v/BC-1');
+    expect(isLegacyJobLink('BC-12')).toBe(true);
+    expect(isLegacyJobLink('k7m2q9x4tbn3')).toBe(false);
     expect(
       jobShareText({
         oficioId: 'pintor',

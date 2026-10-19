@@ -6,3 +6,5 @@ scripts/parity/output
 src/data/cidades.ts
 package-lock.json
 preview
+# Gerado pelo E2E (e2e/relatorio.ts)
+docs/E2E.md

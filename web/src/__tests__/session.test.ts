@@ -1,6 +1,7 @@
 // B09 — session and route guards: who opens what, and the account's way from sign-up to the mural.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { guardRoute, homeFor } from '../services/guards';
+import { TERMS_VERSION } from '../services/legal';
 import type { Session } from '../types/models';
 
 const worker: Session = {
@@ -10,7 +11,8 @@ const worker: Session = {
   workerId: 'jorge',
   companyId: null,
   emailConfirmed: true,
-  profileComplete: true
+  profileComplete: true,
+  termsCurrent: true
 };
 const company: Session = {
   ...worker,
@@ -21,6 +23,15 @@ const company: Session = {
 };
 
 describe('route guards', () => {
+  it('L07: a new version of the terms is accepted before the app opens', () => {
+    const outdated = { ...worker, termsCurrent: false };
+    expect(homeFor(outdated)).toBe('/aceitar-termos');
+    expect(guardRoute('app', '/mural', outdated)).toEqual({ kind: 'redirect', to: '/aceitar-termos' });
+    expect(guardRoute('onboarding', '/aceitar-termos', outdated)).toEqual({ kind: 'ok' });
+    expect(guardRoute('public', '/termos', outdated)).toEqual({ kind: 'ok' });
+    expect(guardRoute('onboarding', '/aceitar-termos', worker)).toEqual({ kind: 'redirect', to: '/mural' });
+  });
+
   it('without a session only public and guest screens open; the rest goes to login', () => {
     expect(guardRoute('guest', '/login', null)).toEqual({ kind: 'ok' });
     expect(guardRoute('public', '/esqueci-senha', null)).toEqual({ kind: 'ok' });
@@ -95,7 +106,7 @@ describe('accounts (mock auth)', () => {
         email: 'ana@exemplo.com',
         whatsapp: '(11) 91234-5678',
         password: 'abcdefgh1',
-        acceptedTermsVersion: '1.0',
+        acceptedTermsVersion: TERMS_VERSION,
         adult: true
       })
     );
@@ -103,7 +114,7 @@ describe('accounts (mock auth)', () => {
     const session = store.getSession();
     expect(session).toMatchObject({ role: 'trabalhador', emailConfirmed: false, profileComplete: false });
     // The accepted version of the terms is stored with the account (B11).
-    expect(store.getDb().accounts[session!.accountId]).toMatchObject({ termsVersion: '1.0' });
+    expect(store.getDb().accounts[session!.accountId]).toMatchObject({ termsVersion: TERMS_VERSION });
     expect(homeFor(session!)).toBe('/verificar-email');
     expect(sel.currentWorker(store.getDb())).toMatchObject({ name: 'Ana Souza', initials: 'AS' });
 
@@ -129,7 +140,7 @@ describe('accounts (mock auth)', () => {
         email: 'ANA@exemplo.com',
         whatsapp: '(11) 91234-5678',
         password: 'abcdefgh1',
-        acceptedTermsVersion: '1.0',
+        acceptedTermsVersion: TERMS_VERSION,
         adult: true
       })
     );

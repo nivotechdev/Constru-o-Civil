@@ -9,6 +9,7 @@ import * as store from '../store';
 import { boostPaymentFromRow } from '../supabaseMappers';
 import { companyToWorkerUrl, workerToCompanyUrl } from '../../utils/whatsapp';
 import type { ProviderCardToken } from '../payments';
+import type { CaptchaSource } from '../auth';
 import { db, invokeFunction, request } from './client';
 import { loadJob } from './data';
 import { apply, putPayments } from './merge';
@@ -150,8 +151,13 @@ export async function exportMyData(): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-export async function deleteAccount(password: string, confirmCommitments: boolean): Promise<void> {
-  if (!(await checkPassword(password))) throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
+export async function deleteAccount(
+  password: string,
+  confirmCommitments: boolean,
+  captcha: CaptchaSource
+): Promise<void> {
+  if (!(await checkPassword(password, captcha)))
+    throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
   // Y15: the Edge Function runs delete_my_account as this user (recent sign-in, anonymized reviews) and
   // then removes the user's files from Storage.
   await invokeFunction('excluir-conta', { confirmCommitments });

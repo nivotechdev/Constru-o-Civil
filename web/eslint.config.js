@@ -6,8 +6,19 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  // supabase/functions: Edge Functions (Deno), outside the app's build and lint.
-  { ignores: ['dist', 'dist-standalone', 'scripts/parity/output', 'scripts/parity/.font-cache', 'supabase/functions'] },
+  // supabase/functions and e2e/local/serve-fn.ts: Deno code, outside the app's build and lint.
+  {
+    ignores: [
+      'dist',
+      'dist-standalone',
+      'dist-e2e',
+      'e2e/resultados',
+      'e2e/local/serve-fn.ts',
+      'scripts/parity/output',
+      'scripts/parity/.font-cache',
+      'supabase/functions'
+    ]
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

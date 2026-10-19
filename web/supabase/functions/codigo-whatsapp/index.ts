@@ -12,8 +12,11 @@
 // Respostas: 200 { ok: true } · 200 { ok: false } (código errado) · 400 { erro: 'captcha' | 'telefone' } ·
 // 429 { erro: 'muitas-tentativas' } · 503 { erro: 'codigo-desligado' } · 502 { erro: 'falha' }.
 import { captchaOk } from '../_shared/captcha.ts';
-import { adminClient, clientIp, CORS, json, requestUser } from '../_shared/http.ts';
+import { adminClient, clientIp, json, preflight, requestUser, requireAppOrigin } from '../_shared/http.ts';
 import { monitored } from '../_shared/monitoring.ts';
+
+// R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
+requireAppOrigin();
 
 const SID = Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
 const TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') ?? '';
@@ -37,7 +40,7 @@ async function twilio(path: string, form: Record<string, string>): Promise<{ sta
 
 Deno.serve(
   monitored('codigo-whatsapp', async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    if (req.method === 'OPTIONS') return preflight(req);
     if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
     if (!SID || !TOKEN || !SERVICE)
       return json({ erro: 'codigo-desligado', mensagem: 'A confirmação por código ainda não está disponível.' }, 503);

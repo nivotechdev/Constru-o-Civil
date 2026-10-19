@@ -1,3 +1,4 @@
+import { TERMS_VERSION } from '../services/legal';
 import type {
   Account,
   Actor,
@@ -37,7 +38,7 @@ export const ACCOUNTS: Record<string, Account> = {
     whatsappVerifiedAt: '2025-03-02T13:10:00.000Z',
     emailConfirmedAt: '2025-03-02T13:20:00.000Z',
     profileCompletedAt: '2025-03-02T13:30:00.000Z',
-    termsVersion: '1.0',
+    termsVersion: TERMS_VERSION,
     termsAcceptedAt: '2025-03-02T13:30:00.000Z',
     workerId: CURRENT_WORKER_ID,
     companyId: null,
@@ -52,7 +53,7 @@ export const ACCOUNTS: Record<string, Account> = {
     whatsappVerifiedAt: '2025-03-01T12:10:00.000Z',
     emailConfirmedAt: '2025-03-01T12:20:00.000Z',
     profileCompletedAt: '2025-03-01T12:30:00.000Z',
-    termsVersion: '1.0',
+    termsVersion: TERMS_VERSION,
     termsAcceptedAt: '2025-03-01T12:30:00.000Z',
     workerId: null,
     companyId: CURRENT_COMPANY_ID,
@@ -1208,7 +1209,8 @@ const PATH: Record<ApplicationStatus, ApplicationStatus[]> = {
   desistiu: ['enviada', 'em_analise', 'pre_selecionado', 'desistiu'],
   cancelado_pela_construtora: ['enviada', 'em_analise', 'pre_selecionado', 'cancelado_pela_construtora'],
   nao_compareceu: ['enviada', 'em_analise', 'pre_selecionado', 'contratado', 'nao_compareceu'],
-  expirada: ['enviada', 'em_analise', 'pre_selecionado', 'expirada']
+  expirada: ['enviada', 'em_analise', 'pre_selecionado', 'expirada'],
+  cancelado_pela_equipe: ['enviada', 'em_analise', 'pre_selecionado', 'cancelado_pela_equipe']
 };
 const BY: Record<ApplicationStatus, Actor> = {
   enviada: 'trabalhador',
@@ -1220,7 +1222,8 @@ const BY: Record<ApplicationStatus, Actor> = {
   desistiu: 'trabalhador',
   cancelado_pela_construtora: 'construtora',
   nao_compareceu: 'construtora',
-  expirada: 'sistema'
+  expirada: 'sistema',
+  cancelado_pela_equipe: 'sistema'
 };
 
 /** A candidacy sent `sentHoursAgo` hours ago that reached `status` (one step every `stepHours`). */

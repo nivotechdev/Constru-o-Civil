@@ -23,8 +23,10 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_DSN?: string;
   /** Support WhatsApp number (digits), for "Falar com o suporte". */
   readonly VITE_SUPORTE_WHATSAPP?: string;
-  /** The version name in error reports (set by the deploy). */
+  /** The version name in error reports: the commit, set by vite.config.ts (L05). */
   readonly VITE_RELEASE?: string;
+  /** Sentry environment ("production" by default; "staging" on the staging build). */
+  readonly VITE_SENTRY_ENVIRONMENT?: string;
 }
 
 interface ImportMeta {

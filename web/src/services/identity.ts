@@ -33,15 +33,26 @@ export async function loadMyIdentity(): Promise<void> {
     });
 }
 
-/** Sends the two photos (local URLs) for the team to check. */
-export async function submitIdentity(selfieUrl: string, documentUrl: string): Promise<void> {
+/**
+ * Sends the two photos (local URLs) for the team to check, with the version of the consent the worker
+ * ticked (L07: LGPD art. 11 — specific and highlighted; stored with the submission).
+ */
+export async function submitIdentity(
+  selfieUrl: string,
+  documentUrl: string,
+  consentVersion: string | null
+): Promise<void> {
   const id = workerId();
   if (!selfieUrl || !documentUrl) throw serviceError('validacao', 'Tire a selfie e a foto do documento.');
+  if (!consentVersion)
+    throw serviceError('validacao', 'Marque que você concorda com o uso das fotos para a verificação.');
   if (!IS_DEMO) {
     const { uploadPrivatePhoto } = await import('./remote/storage');
     const [selfie, doc] = await Promise.all([uploadPrivatePhoto(selfieUrl), uploadPrivatePhoto(documentUrl)]);
     const client = await db();
-    await request(() => client.rpc('submit_identity', { p_selfie_path: selfie, p_document_path: doc }));
+    await request(() =>
+      client.rpc('submit_identity', { p_selfie_path: selfie, p_document_path: doc, p_consent_version: consentVersion })
+    );
   } else await mockLatency(900);
   store.updateWorker(id, { identity: 'em_analise', identityReason: undefined });
 }

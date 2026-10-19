@@ -10,8 +10,11 @@
 // 429 { erro: 'muitas-tentativas' } · 405/502 { erro }.
 // Publicar: supabase functions deploy entrar-com-documento (ver web/docs/SUPABASE.md).
 import { captchaOk } from '../_shared/captcha.ts';
-import { adminClient, clientIp, CORS, json } from '../_shared/http.ts';
+import { adminClient, clientIp, json, preflight, requireAppOrigin } from '../_shared/http.ts';
 import { monitored } from '../_shared/monitoring.ts';
+
+// R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
+requireAppOrigin();
 
 async function sha256Hex(text: string): Promise<string> {
   const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
@@ -20,7 +23,7 @@ async function sha256Hex(text: string): Promise<string> {
 
 Deno.serve(
   monitored('entrar-com-documento', async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    if (req.method === 'OPTIONS') return preflight(req);
     if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
 
     let body: { documento?: unknown; senha?: unknown; captchaToken?: unknown };

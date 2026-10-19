@@ -15,7 +15,8 @@ export type ApplicationAction =
   | 'cancelar_contratacao'
   | 'concluir'
   | 'marcar_falta'
-  | 'expirar';
+  | 'expirar'
+  | 'cancelar_por_suspensao';
 
 interface Transition {
   from: ApplicationStatus[];
@@ -97,6 +98,12 @@ export const TRANSITIONS: Record<ApplicationAction, Transition> = {
     to: 'expirada',
     by: ['sistema'],
     where: 'Automático: a vaga venceu sem a contratação ser confirmada'
+  },
+  cancelar_por_suspensao: {
+    from: ['pre_selecionado', 'contratado'],
+    to: 'cancelado_pela_equipe',
+    by: ['sistema'],
+    where: 'Automático: a equipe suspendeu a conta do trabalhador ou da construtora (R03)'
   }
 };
 

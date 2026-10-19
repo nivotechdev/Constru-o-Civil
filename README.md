@@ -1,25 +1,64 @@
-# CODING AGENTS: READ THIS FIRST
+# Bicos
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+Marketplace de **diárias de obra** da [NivoTech](https://nivotech.com.br): construtoras publicam vagas de trabalho
+temporário na construção civil e encontram profissionais verificados; pedreiros, eletricistas, pintores e outros
+ofícios têm um canal único de oportunidades perto de casa.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+## Para quem
 
-## What you should do — IMPORTANT
+- **Trabalhador** (pessoa física, CPF, 18+): vê o mural de bicos da cidade ou do raio escolhido, se candidata e,
+  quando a construtora aprova, fala com ela pelo WhatsApp. Depois da diária, os dois lados se avaliam.
+- **Construtora / empreiteiro** (CNPJ, ou CPF): publica a vaga (ofício, valor da diária, datas, bairro, fotos),
+  escolhe os candidatos pelo perfil e pelas notas, e pode impulsionar a vaga no mural.
 
-**Read the chat transcripts first.** There are 8 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+O público usa celular simples e internet ruim: o app é um **web app instalável (PWA)**, leve, em português direto.
 
-**Read `project/Bicos - Fluxo do Trabalhador.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+## Stack
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+- `web/` — **o app**: React 19 + TypeScript + Vite 7 + Tailwind, PWA. Sem as variáveis do Supabase roda em modo de
+  demonstração (dados falsos em memória).
+- **Supabase** (Postgres 17, Auth, Storage, Edge Functions em Deno, `pg_cron`): regras de negócio no banco (RLS e
+  RPCs), migrations em `web/supabase/migrations/`, testes SQL em `web/supabase/tests/`.
+- Hospedagem prevista: **Cloudflare Pages** (`bicos.nivotech.com.br`). Erros: Sentry. Captcha: Cloudflare
+  Turnstile. E-mail: Brevo. Pagamento do impulso: Mercado Pago.
 
-## About the design files
+## Rodar
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+```bash
+cd web
+npm ci
+npm run dev            # http://localhost:5173 — demonstração, se não houver web/.env.local
+npm run typecheck && npm run lint && npm run format:check && npm test
+```
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+Com um Supabase: copie `web/.env.example` para `web/.env.local` e preencha. Testes SQL (precisam de Docker):
+`./supabase/tests/local/setup.sh` e depois `node supabase/tests/run.mjs supabase/tests/[a-z]*.sql` (ver
+`web/README.md`). Testes de ponta a ponta: `web/e2e/LEIA.md`.
 
-## Bundle contents
+## Publicar
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Formulário de requisitos de candidatos` project files (HTML prototypes, assets, components)
+- Banco: `web/supabase/APLICAR.md` (ordem das migrations e conferências) — **staging primeiro**
+  (`web/docs/STAGING.md`), produção só com aprovação.
+- Funções: `supabase functions deploy <nome>` (ver `web/docs/SUPABASE.md` › 4).
+- Front: `npm run deploy:staging` / `npm run deploy:producao` (`web/scripts/deploy.sh`). O build de produção falha
+  se faltar variável obrigatória ou se os textos legais estiverem incompletos.
+
+## Documentos
+
+| Arquivo                            | Para quê                                                             |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| `CLAUDE.md`                        | contexto completo do projeto (para pessoas e para IA)                |
+| `web/docs/CHECKLIST-LANCAMENTO.md` | o que está feito e o que depende dos responsáveis                    |
+| `web/docs/SUPABASE.md`             | banco, funções, segredos, serviços externos, hospedagem              |
+| `web/supabase/APLICAR.md`          | migrations: ordem, conferências, histórico                           |
+| `web/docs/CONTRATO-BACKEND.md`     | o contrato de cada serviço e da máquina de status da candidatura     |
+| `web/docs/DECISOES.md`             | por que cada coisa é como é                                          |
+| `web/docs/E2E.md`, `VOLUME.md`     | resultado dos testes de ponta a ponta e de volume                    |
+| `legal/`                           | termos de uso e política de privacidade (gerados de `web/src/services/legal.ts`) |
+
+## Status do lançamento
+
+Código da rodada de lançamento pronto na branch `claude/front-novo-supabase` (testes unitários, SQL e de ponta a
+ponta verdes). Falta montar o staging, aplicar as migrations novas na produção, publicar o site e os itens que
+dependem dos responsáveis (plano, domínio, provedores, revisão jurídica) — a lista viva está em
+`web/docs/CHECKLIST-LANCAMENTO.md`.

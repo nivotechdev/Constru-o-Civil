@@ -1,110 +1,88 @@
-> **MINUTA — NÃO PUBLICAR SEM REVISÃO JURÍDICA.** Este é um rascunho técnico,
-> escrito para refletir com precisão o que o sistema da NivoTech realmente
-> faz com os dados. Ele não substitui a revisão de um advogado, especialmente
-> quanto a: (a) prazos de retenção de documentos por obrigação fiscal ou
-> trabalhista, que dependem do enquadramento jurídico específico da empresa;
-> (b) a razão social e o CNPJ corretos da controladora; (c) qualquer
-> particularidade de contrato com trabalhadores autônomos/diaristas que a
-> operação da NivoTech venha a ter. Campos entre colchetes `[assim]` precisam
-> ser preenchidos antes de publicar.
+# Política de privacidade
 
-# Política de Privacidade da NivoTech
+**Versão 2.0 · atualizada em 15/10/2026**
 
-**Última atualização: [DATA]** · **Versão: 2026-09-06**
+> **Rascunho para revisão jurídica.** Gerado de `web/src/services/legal.ts` — edite lá, não aqui. Os
+> campos `{{...}}` são preenchidos pela empresa (ver `web/docs/CHECKLIST-LANCAMENTO.md`).
 
-## 1. Quem somos
+## 1. Quem cuida dos seus dados
 
-A NivoTech ([razão social completa], CNPJ [número]) é a controladora dos
-dados pessoais tratados através da plataforma NivoTech (nivotech.com.br),
-que conecta profissionais da construção civil ("trabalhadores") a empresas
-que oferecem oportunidades de trabalho ("construtoras").
+O controlador dos dados é a {{RAZAO_SOCIAL}} ("NivoTech"), CNPJ {{CNPJ}}, {{ENDERECO}}.
 
-**Encarregado de Proteção de Dados (DPO):** [nome] · [e-mail de contato] —
-canal responsável por receber e responder pedidos relacionados aos seus
-dados pessoais e dúvidas sobre esta política.
+Encarregado pelo tratamento de dados (DPO): {{DPO_NOME}}. Canal só para assuntos de dados pessoais: {{DPO_EMAIL}}. Respondemos em até 15 dias.
 
-## 2. Quais dados coletamos
+## 2. Dados que coletamos
 
-| Dado | De quem | Para quê |
-|---|---|---|
-| Nome completo / razão social | Todos os usuários | Identificação na plataforma |
-| CPF ou CNPJ | Todos os usuários | Verificar identidade e evitar contas duplicadas ou fraudulentas |
-| E-mail | Todos os usuários | Login, verificação de conta, comunicação sobre o serviço |
-| Senha (nunca em texto puro — sempre em formato irreversível) | Usuários cadastrados por e-mail | Autenticação |
-| Dados de login do Google (nome, e-mail, foto de perfil) | Usuários que entram com Google | Autenticação alternativa |
-| Título, valor, local, data e horário da vaga | Construtoras | Publicação de oportunidades de trabalho |
-| Registro de candidatura a uma vaga | Trabalhadores | Conectar o trabalhador à construtora interessada |
+Cadastro: nome ou razão social, CPF ou CNPJ (guardado cifrado), e-mail, WhatsApp, senha (guardada de forma irreversível), data e versão do aceite destes textos. Se entrar com o Google: nome, e-mail e foto da conta Google.
 
-Nós **não** coletamos dados sensíveis no sentido da LGPD (origem racial,
-convicção religiosa, opinião política, dado de saúde, biometria, orientação
-sexual) como parte do funcionamento normal da plataforma.
+Perfil: ofício, cidade, especialidades, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Construtora: nome, logo, tipo de obra, cidade, CNPJ e o que a Receita Federal informa sobre ele.
 
-## 3. Por que tratamos cada dado (base legal)
+Vagas: endereço da obra, datas, horário, valor, fotos e requisitos.
 
-- **Execução de contrato / procedimentos preliminares (Art. 7º, V):** dados
-  de cadastro (nome, documento, e-mail) são necessários para criar sua conta
-  e permitir o uso da plataforma — sem eles, o serviço não funciona.
-- **Legítimo interesse (Art. 7º, IX):** prevenção a fraude e contas
-  duplicadas (verificação de CPF/CNPJ único), segurança da plataforma.
-- **Consentimento (Art. 7º, I):** comunicações de marketing, caso venham a
-  existir — sempre com opção clara de recusa, separada do aceite dos termos.
-- **Cumprimento de obrigação legal (Art. 7º, II):** retenção de determinados
-  registros pelo prazo exigido por legislação fiscal ou trabalhista aplicável
-  — **[a definir com o jurídico: prazo exato e quais registros]**.
+Uso: candidaturas e o histórico de cada uma, presença confirmada, diárias concluídas, avaliações, vagas salvas, convites, alertas de vaga, notificações, denúncias e bloqueios.
 
-## 4. Com quem compartilhamos dados
+Pagamentos do impulso: valor, plano e situação do pagamento. Os dados do cartão vão direto para o Mercado Pago; não ficam com a gente.
 
-Usamos os seguintes prestadores de serviço (operadores, no sentido da LGPD),
-que processam dados em nosso nome sob contrato:
+Localização: só se você permitir, para achar a cidade mais perto. Guardamos a cidade e um ponto aproximado, não o seu caminho.
 
-- **Supabase** (banco de dados e autenticação) — dados hospedados na região
-  São Paulo (Brasil).
-- **Google** (login social "Entrar com Google", quando o usuário escolhe
-  essa opção) — sujeito também à política de privacidade do Google.
+Dados técnicos: endereço IP nas tentativas de login (para barrar robôs), registro do aparelho para notificações (se você ligar) e relatórios de erro sem nome, e-mail, documento ou telefone.
 
-Não vendemos dados pessoais a terceiros. Uma construtora só recebe o nome e
-o e-mail que o trabalhador enviou ao se candidatar a uma vaga específica —
-nunca o CPF, e nunca dados de outras candidaturas.
+## 3. Selfie e foto do documento (dado sensível)
 
-## 5. Por quanto tempo guardamos os dados
+São pedidas só a quem quer o selo "Verificado", com consentimento próprio e destacado na tela de verificação (LGPD, art. 11, I). A foto do rosto é dado biométrico, um dado pessoal sensível.
 
-- Enquanto sua conta estiver ativa, mantemos os dados necessários ao
-  funcionamento do serviço.
-- Após a exclusão da conta, os dados de identificação (nome, e-mail, CPF/CNPJ)
-  são anonimizados imediatamente; vagas e candidaturas já existentes são
-  preservadas de forma desidentificada, para não afetar o histórico de
-  terceiros que também usaram a plataforma.
-- **[A definir com o jurídico]:** se houver obrigação legal de retenção por
-  prazo determinado antes da anonimização, esse prazo será aplicado e
-  descrito aqui.
+Finalidade: conferir que você é quem diz ser e evitar fraude. Não usamos para mais nada.
 
-## 6. Seus direitos
+Quem vê: só as pessoas da equipe de verificação da Bicos, e cada decisão fica registrada com quem decidiu e quando. As fotos ficam em área privada, sem endereço público.
 
-Conforme o Art. 18 da LGPD, você pode a qualquer momento, diretamente pela
-plataforma ou pelo contato do Encarregado:
+Prazo: apagadas 30 dias depois da decisão (aprovada ou recusada). Você pode retirar o consentimento a qualquer momento pelo {{DPO_EMAIL}}; o selo sai junto.
 
-- **Confirmar e acessar** quais dados temos sobre você (botão "Baixar meus
-  dados" na sua conta).
-- **Corrigir** dados incompletos, inexatos ou desatualizados.
-- **Excluir/anonimizar** sua conta (botão "Excluir minha conta").
-- **Revogar consentimento**, quando o tratamento for baseado nele.
-- **Solicitar informação** sobre com quem compartilhamos seus dados.
+## 4. Para que usamos e com qual base legal
 
-## 7. Segurança
+Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar construtoras e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço da obra a quem foi escolhido, avaliações e avisos.
 
-CPF e CNPJ são armazenados de forma cifrada no banco de dados — nunca em
-texto legível, mesmo internamente. O acesso aos dados é controlado por
-regras de segurança aplicadas diretamente no banco de dados (não apenas na
-tela do site), o que impede o acesso de um usuário aos dados de outro.
+Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da construtora pelo CNPJ (dado público).
 
-## 8. Alterações nesta política
+Para cumprir a lei (art. 7º, II): registros de pagamento e de acesso pelo tempo que a lei exigir.
 
-Mudanças relevantes serão comunicadas por e-mail e/ou aviso na plataforma, e
-o aceite de uma nova versão será registrado com data e versão, da mesma
-forma como o aceite original.
+Com o seu consentimento (art. 7º, I e art. 11, I): selfie e documento, notificações no celular e localização do aparelho.
 
-## 9. Contato
+Para entender o uso sem identificar ninguém: contamos cadastros, vagas e contratações por dia, só em números totais. Não vendemos seus dados e não usamos para publicidade.
 
-Dúvidas, solicitações ou reclamações sobre o tratamento dos seus dados:
-[e-mail de contato do DPO]. Você também pode contatar a Autoridade Nacional
-de Proteção de Dados (ANPD) — [gov.br/anpd](https://www.gov.br/anpd/).
+## 5. Com quem compartilhamos
+
+Com a outra parte da diária, só o necessário: o perfil e, depois da aprovação, o WhatsApp; o endereço exato só para quem foi escolhido.
+
+Com empresas que operam o serviço para nós (operadores), sob contrato e só para isso: Supabase (banco de dados, arquivos e login; servidores em São Paulo, empresa nos EUA), Cloudflare (hospedagem do site e captcha; rede mundial), Mercado Pago (pagamentos; Brasil), Twilio (código por WhatsApp ou SMS; EUA), Sentry (relatórios de erro sem dados pessoais; EUA), Brevo (envio de e-mails; França) e Google (login, se você escolher; EUA). A consulta do CNPJ usa a BrasilAPI (dados públicos da Receita).
+
+Alguns desses operadores ficam fora do Brasil. A transferência segue o art. 33 da LGPD ({{BASE_TRANSFERENCIA_INTERNACIONAL}}).
+
+Com autoridades, quando a lei ou uma ordem judicial exigir.
+
+## 6. Por quanto tempo guardamos
+
+Conta, perfil, vagas, candidaturas e avaliações: enquanto a conta existir. Ao excluir a conta, apagamos seus dados e arquivos na hora; o que precisa ficar para o histórico do outro lado (uma avaliação já feita, por exemplo) fica sem o seu nome.
+
+Cadastro que nunca confirmou o e-mail: 7 dias. Tentativas de login com IP e códigos do WhatsApp: 1 dia. Selfie e documento: 30 dias depois da decisão.
+
+Pagamentos: {{PRAZO_PAGAMENTOS}}, por obrigação fiscal. Registros de acesso: {{PRAZO_REGISTROS_ACESSO}} (Marco Civil da Internet, art. 15). Registro das decisões da equipe (moderação e verificação): {{PRAZO_AUDITORIA}}. Relatórios de erro: 30 dias.
+
+## 7. Seus direitos
+
+Você pode, a qualquer momento: saber se tratamos seus dados, ver e baixar uma cópia (Configurações › Privacidade e dados › Exportar), corrigir, pedir anonimização ou eliminação, saber com quem compartilhamos, retirar consentimentos e excluir a conta.
+
+Pelo app ou pelo {{DPO_EMAIL}}. Se não ficar satisfeito, pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).
+
+## 8. Segurança
+
+CPF e CNPJ ficam cifrados; ninguém vê o WhatsApp, o endereço ou o documento de outra pessoa sem a regra do serviço permitir; a equipe só acessa o necessário e cada decisão fica registrada.
+
+Se houver um incidente que possa causar risco a você, avisamos você e a ANPD.
+
+## 9. No seu aparelho
+
+O app guarda no navegador a sua sessão e preferências (cidade, filtros) para abrir rápido e funcionar com internet ruim. Não usamos cookies de publicidade nem rastreadores de terceiros.
+
+## 10. Mudanças nesta política
+
+Quando esta política mudar, avisamos no app e pedimos um novo aceite antes de continuar. A versão e a data ficam no topo.

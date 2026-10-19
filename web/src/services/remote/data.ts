@@ -298,7 +298,8 @@ const DONE_STATUSES = [
   'desistiu',
   'cancelado_pela_construtora',
   'nao_compareceu',
-  'expirada'
+  'expirada',
+  'cancelado_pela_equipe'
 ] as const;
 const PAGE = 30;
 
@@ -526,10 +527,10 @@ export async function loadDeletionImpact(): Promise<void> {
   else await loadHistory();
 }
 
-/** F09: RPC public_job_card (works without a session). */
-export async function loadPublicJob(jobId: string): Promise<import('../jobs').PublicJob | null> {
+/** F09/L10: RPC public_job_card by the link's slug (works without a session; limited per IP). */
+export async function loadPublicJob(slug: string): Promise<import('../jobs').PublicJob | null> {
   const client = await db();
-  const card = (await request(() => client.rpc('public_job_card', { p_job_id: jobId }))) as
+  const card = (await request(() => client.rpc('public_job_card', { p_slug: slug }))) as
     | (JobRowRead & {
         aberta: boolean;
         company: { name: string; logo_url: string | null; rating: number; review_count: number; verified: boolean };

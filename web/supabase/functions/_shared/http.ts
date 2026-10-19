@@ -1,14 +1,42 @@
 // Utilidades das Edge Functions: CORS, respostas JSON e os clientes do Supabase.
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { corsHeaders, originsProblem, parseOrigins } from './origin.ts';
 
-export const CORS = {
-  'Access-Control-Allow-Origin': Deno.env.get('APP_ORIGIN') ?? '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
+// R02: APP_ORIGIN (CORS) é exigido só pelas funções que o navegador chama — cada uma chama requireAppOrigin()
+// no topo do arquivo e, sem ele, não sobe (L05). As chamadas de servidor para servidor (webhook-pagamento,
+// enviar-push, limpar-arquivos) não dependem dele nem mandam cabeçalho CORS: um segredo esquecido não derruba
+// o webhook nem o cron.
+let ORIGINS: string[] | null = null;
+
+/** Para as funções do navegador: lê e confere APP_ORIGIN; sem ele (ou inválido), a função não sobe. */
+export function requireAppOrigin(): string[] {
+  if (!ORIGINS) {
+    const origins = parseOrigins(Deno.env.get('APP_ORIGIN'));
+    const problem = originsProblem(origins);
+    if (problem) throw new Error(problem);
+    ORIGINS = origins;
+  }
+  return ORIGINS;
+}
+
+/** Os cabeçalhos CORS para quem chamou (vazio nas funções servidor-a-servidor). */
+function corsFor(req: Request): Record<string, string> {
+  return ORIGINS ? corsHeaders(ORIGINS, req.headers.get('Origin')) : {};
+}
+
+/** Resposta ao "preflight" (OPTIONS) do navegador. */
+export function preflight(req: Request): Response {
+  return new Response('ok', { headers: corsFor(req) });
+}
+
+/** Põe na resposta a origem do pedido, quando ela está em APP_ORIGIN (prévias por PR, staging). */
+export function withCors(req: Request, res: Response): Response {
+  for (const [k, v] of Object.entries(corsFor(req))) res.headers.set(k, v);
+  return res;
+}
 
 export function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
 const opts = { auth: { persistSession: false, autoRefreshToken: false } };

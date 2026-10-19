@@ -44,7 +44,10 @@ describe('transition table', () => {
         'contratado -concluir/construtora-> concluida',
         'contratado -concluir/sistema-> concluida',
         'contratado -marcar_falta/construtora-> nao_compareceu',
-        'pre_selecionado -expirar/sistema-> expirada'
+        'pre_selecionado -expirar/sistema-> expirada',
+        // R03: the same list is checked against the database in supabase/tests/r03_suspensao_completa.sql.
+        'pre_selecionado -cancelar_por_suspensao/sistema-> cancelado_pela_equipe',
+        'contratado -cancelar_por_suspensao/sistema-> cancelado_pela_equipe'
       ].sort()
     );
   });

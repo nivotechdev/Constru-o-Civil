@@ -1,4 +1,5 @@
 import { Button } from '../../components/Button';
+import { useCaptcha } from '../../components/Captcha';
 import { IS_DEMO } from '../../services/mode';
 import { IconButton } from '../../components/IconButton';
 import { Input } from '../../components/Input';
@@ -23,6 +24,7 @@ export default function ForgotPassword() {
     sent: false,
     submitting: false
   });
+  const captcha = useCaptcha();
 
   const send = () => {
     if (!isValidEmail(ui.email)) {
@@ -31,7 +33,7 @@ export default function ForgotPassword() {
     }
     if (ui.submitting) return;
     setUi({ submitting: true, error: null });
-    requestPasswordReset(ui.email)
+    requestPasswordReset(ui.email, captcha.getToken)
       .then(() => setUi({ submitting: false, sent: true }))
       .catch((e: unknown) => setUi({ submitting: false, error: errorMessage(e) }));
   };
@@ -78,6 +80,7 @@ export default function ForgotPassword() {
             onInput={(v) => setUi({ email: v, error: null })}
             onEnter={send}
           />
+          {captcha.widget}
         </div>
       )}
       {!ui.sent ? (

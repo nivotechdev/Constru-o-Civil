@@ -27,6 +27,7 @@ import { isValidCnpj, isValidCpf } from '../utils/document';
 import { FEATURES } from './features';
 import { serviceError } from './errors';
 import { isValidEmail } from '../utils/format';
+import { TERMS_VERSION } from './legal';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -51,8 +52,8 @@ function findAccount(identifier: string): Account | undefined {
  * Whether `password` is the logged-in account's (before a sensitive action, e.g. deleting the account).
  * Backend: re-authenticate with Supabase Auth (signInWithPassword on the same e-mail).
  */
-export async function checkPassword(password: string): Promise<boolean> {
-  if (!IS_DEMO) return remote.checkPassword(password);
+export async function checkPassword(password: string, captcha: CaptchaSource = noCaptcha): Promise<boolean> {
+  if (!IS_DEMO) return remote.checkPassword(password, captcha);
   await mockLatency(500);
   const session = getSession();
   return Boolean(session && passwords.get(session.accountId) === password);
@@ -273,11 +274,25 @@ export async function finishSignUp(profile: ProfileData): Promise<void> {
   updateAccount(session.accountId, { profileCompletedAt: new Date().toISOString() });
 }
 
+// ---- terms (L07) ----
+
+/**
+ * Accepts the current terms and privacy policy (a new version since the last acceptance). Backend: RPC
+ * accept_terms (stores the version and the time in terms_acceptances).
+ */
+export async function acceptTerms(): Promise<void> {
+  const session = getSession();
+  if (!session) throw serviceError('nao_autorizado');
+  if (!IS_DEMO) await remote.acceptTerms(TERMS_VERSION);
+  else await mockLatency(400);
+  updateAccount(session.accountId, { termsVersion: TERMS_VERSION, termsAcceptedAt: new Date().toISOString() });
+}
+
 // ---- password ----
 
-/** Sends the "reset your password" link. Demo: nothing is sent. */
-export async function requestPasswordReset(_email: string): Promise<void> {
-  if (!IS_DEMO) return remote.requestPasswordReset(_email);
+/** Sends the "reset your password" link (captcha in production — L05). Demo: nothing is sent. */
+export async function requestPasswordReset(_email: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
+  if (!IS_DEMO) return remote.requestPasswordReset(_email, captcha);
   await mockLatency(600);
 }
 
@@ -332,10 +347,10 @@ export async function completeOAuthSignUp(data: OAuthSignUpData): Promise<void> 
  * L15: "Trocar senha" in Configurações: the current password, then the new one. Backend: re-checks the
  * current password and Supabase Auth `updateUser({ password })`.
  */
-export async function changePassword(current: string, next: string): Promise<void> {
+export async function changePassword(current: string, next: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
   const problem = passwordProblem(next);
   if (problem) throw serviceError('validacao', problem);
-  if (!IS_DEMO) return remote.changePassword(current, next);
+  if (!IS_DEMO) return remote.changePassword(current, next, captcha);
   await mockLatency(600);
   const session = getSession();
   if (!session || passwords.get(session.accountId) !== current)
@@ -349,12 +364,12 @@ export async function changePassword(current: string, next: string): Promise<voi
  * re-checks the password and Supabase Auth `updateUser({ email })`; a trigger copies the confirmed
  * address to accounts.email. Demo: changes at once (there is no inbox).
  */
-export async function changeEmail(email: string, password: string): Promise<void> {
+export async function changeEmail(email: string, password: string, captcha: CaptchaSource = noCaptcha): Promise<void> {
   const clean = email.trim().toLowerCase();
   if (!isValidEmail(clean)) throw serviceError('validacao', 'E-mail inválido. Confira se tem @ e o domínio.');
   const session = getSession();
   if (session && clean === session.email.toLowerCase()) throw serviceError('validacao', 'Esse já é o seu e-mail.');
-  if (!IS_DEMO) return remote.changeEmail(clean, password);
+  if (!IS_DEMO) return remote.changeEmail(clean, password, captcha);
   await mockLatency(600);
   if (!session || passwords.get(session.accountId) !== password) throw serviceError('validacao', 'Senha incorreta.');
   if (Object.values(getDb().accounts).some((a) => a.email.toLowerCase() === clean))

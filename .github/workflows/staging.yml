@@ -1,0 +1,189 @@
+# L09: o staging (projeto bicos-staging) recebe as migrations do repo ANTES da produção, e o histórico dele
+# (supabase_migrations.schema_migrations) tem de ser igual aos arquivos de web/supabase/migrations.
+# - push no master (ou na branch de trabalho claude/front-novo-supabase) que mexe em migration, função, app ou E2E:
+#   aplica no staging, confere e roda o E2E;
+# - Actions › staging › Run workflow: o mesmo à mão, em qualquer branch (para ensaiar antes do merge).
+# Sem os segredos STAGING_DB_URL e STAGING_URL o job só avisa e passa (web/docs/STAGING.md). E-mail: Brevo (BREVO_SMTP_*,
+# SMTP_SENDER) — sem ele o E2E é pulado.
+name: staging
+
+on:
+  push:
+    branches: [master, claude/front-novo-supabase]
+    paths: ["web/supabase/migrations/**", "web/supabase/legado/**", "web/supabase/functions/**", "web/supabase/email-templates/**", "web/scripts/staging/**", "web/scripts/configurar-auth.mjs", "web/src/**", "web/e2e/**", ".github/workflows/staging.yml"]
+  workflow_dispatch:
+    inputs:
+      aplicar:
+        description: "Aplicar as migrations que faltam antes de conferir"
+        type: boolean
+        default: true
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+      STAGING_URL: ${{ secrets.STAGING_URL }}
+    steps:
+      - name: Segredos do staging
+        id: cfg
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -z "$STAGING_DB_URL" ] || [ -z "$STAGING_URL" ]; then
+            echo "::warning::Staging não conferido: faltam os segredos STAGING_DB_URL e STAGING_URL (web/docs/STAGING.md)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ok == 'true'
+      - name: Aplicar no staging
+        if: steps.cfg.outputs.ok == 'true' && (github.event_name == 'push' || inputs.aplicar)
+        run: ./scripts/staging/aplicar-banco.sh
+      - name: Histórico do staging = arquivos do repo
+        if: steps.cfg.outputs.ok == 'true'
+        run: DB_URL="$STAGING_DB_URL" ./scripts/staging/conferir-migrations.sh
+
+  # R08: as 8 Edge Functions, os segredos delas e o Authentication do staging (login, e-mails em português, captcha de
+  # teste). Precisa do segredo SUPABASE_ACCESS_TOKEN. O endereço do site de teste vem da variável do repositório
+  # STAGING_SITE_URL (Settings › Secrets and variables › Actions › Variables); sem ela, só localhost (para o E2E).
+  funcoes:
+    needs: migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      STAGING_REF: setyxomsbfrkneqqfoam
+      SITE_URL: ${{ vars.STAGING_SITE_URL || 'http://localhost:4173' }}
+    steps:
+      - name: Token do Supabase
+        id: cfg
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::warning::Funções e login do staging não publicados: falta o segredo SUPABASE_ACCESS_TOKEN."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          node-version: 22
+      - name: Segredos das funções (APP_ORIGIN, captcha de teste)
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          # O E2E roda em http://localhost:4173; o site de teste (se houver) entra na mesma lista.
+          origins="http://localhost:4173"
+          [ "$SITE_URL" != "http://localhost:4173" ] && origins="$SITE_URL,$origins"
+          npx --yes supabase@2.48.3 secrets set --project-ref "$STAGING_REF" \
+            "APP_ORIGIN=$origins" \
+            "TURNSTILE_SECRET=1x0000000000000000000000000000000AA" \
+            "RELEASE=staging-${GITHUB_SHA::12}"
+      - name: Publicar as 8 funções
+        if: steps.cfg.outputs.ok == 'true'
+        run: ./scripts/staging/publicar-funcoes.sh
+        env:
+          SUPABASE_CLI: npx --yes supabase@2.48.3
+      - name: Authentication (login, e-mails, captcha de teste)
+        if: steps.cfg.outputs.ok == 'true'
+        run: node scripts/configurar-auth.mjs
+        env:
+          PROJECT_REF: setyxomsbfrkneqqfoam
+          TURNSTILE_SECRET: 1x0000000000000000000000000000000AA
+          EXTRA_REDIRECTS: http://localhost:4173/**
+          # E-mail próprio (Brevo): opcional no staging. Sem ele, só membros da equipe do projeto recebem e-mail
+          # (no máximo 2 por hora) e os e-mails ficam no texto padrão em inglês.
+          BREVO_SMTP_USER: ${{ secrets.BREVO_SMTP_USER }}
+          BREVO_SMTP_KEY: ${{ secrets.BREVO_SMTP_KEY }}
+          SMTP_SENDER: ${{ secrets.SMTP_SENDER }}
+      - name: Conferir as funções e o login (uma chamada cada)
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          ANON_KEY="$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$STAGING_REF/api-keys" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).find(k=>k.name==="anon").api_key))')"
+          echo "::add-mask::$ANON_KEY"
+          FUNCTIONS_URL="https://$STAGING_REF.supabase.co" ANON_KEY="$ANON_KEY" ALLOWED_ORIGIN=http://localhost:4173 \
+            ./scripts/staging/conferir-funcoes.sh
+
+  # R08: os 13 testes de ponta a ponta contra o staging. Só roda com e-mail próprio (Brevo): o cadastro de teste manda
+  # e-mail de confirmação de verdade e o e-mail padrão do Supabase só entrega para a equipe do projeto.
+  e2e:
+    needs: funcoes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      BREVO_SMTP_USER: ${{ secrets.BREVO_SMTP_USER }}
+      STAGING_REF: setyxomsbfrkneqqfoam
+    steps:
+      - name: Pré-requisitos
+        id: cfg
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$BREVO_SMTP_USER" ]; then
+            echo "::warning::E2E no staging pulado: faltam SUPABASE_ACCESS_TOKEN e/ou o e-mail próprio (BREVO_SMTP_USER, BREVO_SMTP_KEY, SMTP_SENDER)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - if: steps.cfg.outputs.ok == 'true'
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Chaves do staging (lidas na hora, nunca gravadas)
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          keys="$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$STAGING_REF/api-keys?reveal=true")"
+          anon="$(echo "$keys" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).find(k=>k.name==="anon").api_key))')"
+          svc="$(echo "$keys" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).find(k=>k.name==="service_role").api_key))')"
+          echo "::add-mask::$anon"; echo "::add-mask::$svc"
+          echo "E2E_ANON_KEY=$anon" >> "$GITHUB_ENV"
+          echo "E2E_SERVICE_ROLE_KEY=$svc" >> "$GITHUB_ENV"
+          echo "E2E_SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
+      - name: Build do app apontando para o staging
+        if: steps.cfg.outputs.ok == 'true'
+        run: npx vite build --mode e2e --outDir dist-e2e
+        env:
+          VITE_SUPABASE_URL: https://setyxomsbfrkneqqfoam.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ env.E2E_ANON_KEY }}
+          VITE_SITE_URL: http://localhost:4173
+          VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+          VITE_SENTRY_DSN: https://e2e@sentry.invalid/1
+          VITE_SUPORTE_WHATSAPP: "54994731661"
+      - name: E2E (Playwright)
+        if: steps.cfg.outputs.ok == 'true'
+        run: |
+          (npx vite preview --outDir dist-e2e --port 4173 --strictPort &) && sleep 3
+          npm run e2e
+        env:
+          E2E_EMAIL_BASE: ${{ secrets.E2E_EMAIL_BASE || 'nivotech.dev@gmail.com' }}
+          E2E_RELATORIO: "1"
+          E2E_AMBIENTE: staging (GitHub Actions)
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.cfg.outputs.ok == 'true'
+        with:
+          name: e2e-staging
+          path: |
+            web/e2e/resultados/relatorio
+            web/docs/E2E.md
+            web/docs/e2e-prints
+          if-no-files-found: ignore

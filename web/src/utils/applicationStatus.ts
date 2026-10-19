@@ -61,6 +61,14 @@ export function statusInfo(app: AppLike): StatusInfo {
       };
     case 'expirada':
       return { label: 'Não foi confirmado', tone: 'neutral', icon: 'clock', hint: 'Ver a vaga', to: '/vaga/' + jobId };
+    case 'cancelado_pela_equipe':
+      return {
+        label: 'Cancelado pela equipe',
+        tone: 'danger',
+        icon: 'circle-x',
+        hint: 'Ver a vaga',
+        to: '/vaga/' + jobId
+      };
   }
 }
 
@@ -82,7 +90,8 @@ export function candidateBadge(
     desistiu: { label: 'Desistiu', tone: 'neutral', icon: 'user-x' },
     cancelado_pela_construtora: { label: 'Cancelado', tone: 'danger', icon: 'circle-x' },
     nao_compareceu: { label: 'Não compareceu', tone: 'danger', icon: 'calendar-x' },
-    expirada: { label: 'Prazo vencido', tone: 'neutral', icon: 'clock' }
+    expirada: { label: 'Prazo vencido', tone: 'neutral', icon: 'clock' },
+    cancelado_pela_equipe: { label: 'Cancelado pela equipe', tone: 'danger', icon: 'circle-x' }
   };
   return BADGES[app.status];
 }

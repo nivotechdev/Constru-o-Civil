@@ -1,5 +1,31 @@
 # Advisors do Supabase (X13)
 
+## Esperado depois das migrations `lanc*` e `r*` (R07)
+
+Calculado em 17/10/2026 num Postgres igual ao do Supabase com as 50 migrations (as mesmas consultas que o advisor
+faz). É o que o staging (R08) e a produção (R10) devem mostrar; **qualquer coisa a mais é para investigar**.
+
+| Tipo       | Nível | Aviso                                                | Qtde | Por que fica                                                                                                                                                                                                                         |
+| ---------- | ----- | ---------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Segurança  | —     | nenhum ERROR                                         | 0    | toda tabela do `public` com RLS (o `aplicar-banco.sh` confere, R05)                                                                                                                                                                  |
+| Segurança  | —     | `extension_in_public`                                | 0    | o `pg_net` sai do `public` com a `lanc09`; PostGIS já tinha saído (X13)                                                                                                                                                              |
+| Segurança  | —     | `function_search_path_mutable`                       | 0    | toda função nova tem `search_path` fixo                                                                                                                                                                                              |
+| Segurança  | WARN  | `authenticated_security_definer_function_executable` | 55   | as 42 RPCs de antes + 11 `admin_*` da área da equipe (L06; todas recusam com BC401 quem não está em `staff_members`) + `is_staff` (o app decide se mostra "Área da equipe") + `accept_terms` (L07)                                   |
+| Segurança  | WARN  | `anon_security_definer_function_executable`          | 1    | `public_job_card`, agora pelo slug e com limite por IP (L10)                                                                                                                                                                         |
+| Segurança  | WARN  | `auth_leaked_password_protection`                    | 1    | até ligar no painel (exige Pro, L08)                                                                                                                                                                                                 |
+| Segurança  | INFO  | `rls_enabled_no_policy`                              | 19   | as 14 de antes + `staff_members`, `staff_actions` (L06), `terms_acceptances` (L07), `public_link_hits` (L10), `cron_alerts` (L12): uso interno, só pelas RPCs; sem política a API recusa tudo. Sai 7 quando o app antigo for apagado |
+| Desempenho | INFO  | `no_primary_key`                                     | 2    | `application_attempts` (de antes) e `public_link_hits` (L10): registros só de contagem, apagados em 1–2 dias                                                                                                                         |
+| Desempenho | —     | `unindexed_foreign_keys`                             | 0    | conferido                                                                                                                                                                                                                            |
+| Desempenho | INFO  | `unused_index`                                       | ?    | depende do uso real; reavaliar semanas depois do lançamento                                                                                                                                                                          |
+
+## Rodada de lançamento (L09)
+
+O `extension_in_public` do `pg_net` (ligado em 12/10 pelo conector, caiu no `public`) sai com a
+`20261016000100_lanc09_pg_net.sql`: a extensão é apagada e criada de novo no `extensions` (não é relocável).
+Conferido no Postgres local com o `pg_net` no `public`, como na produção: depois da migration ele fica no
+`extensions`, `net.http_post` continua no lugar e os testes do push (X03) e da limpeza (X09) passam. Na
+produção, só depois de passar no staging e com aprovação (`supabase/APLICAR.md` › 41).
+
 ## Depois de aplicar tudo (12/10/2026)
 
 Com as 38 migrations de `APLICAR.md` aplicadas em `ppnxdajiihsjaojxokzh`:

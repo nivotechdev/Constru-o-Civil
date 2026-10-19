@@ -1,5 +1,5 @@
 // Domain types for the Bicos marketplace. They mirror, field by field, the records the legacy
-// app kept in its in-memory mock database (app/js/data/seed.js + app/js/store.js).
+// app kept in its in-memory mock database (archive/app/js/data/seed.js + archive/app/js/store.js).
 
 /** Which side of the marketplace an account is on. One account = one side (see docs/DECISOES.md). */
 export type Role = 'trabalhador' | 'recrutador';
@@ -38,6 +38,8 @@ export interface Session {
   companyId: string | null;
   emailConfirmed: boolean;
   profileComplete: boolean;
+  /** L07: accepted the current version of the terms and the privacy policy (services/legal.ts). */
+  termsCurrent: boolean;
 }
 
 /** A trade from the one catalog (services/catalog.ts): what a job asks for and what a worker does. */
@@ -207,6 +209,8 @@ export interface Job {
   paymentNote?: string;
   /** When it was published (ISO); a job with the date to be arranged expires 30 days later (Y04). */
   createdAt?: string;
+  /** L10: the random code of the public link (/v/<slug>); the id (BC-n) is sequential, so it isn't used there. */
+  publicSlug?: string;
 }
 
 /**
@@ -225,7 +229,9 @@ export type ApplicationStatus =
   | 'cancelado_pela_construtora'
   | 'nao_compareceu'
   /** Picked, but the job's time ran out without the hire being confirmed (Y04). */
-  | 'expirada';
+  | 'expirada'
+  /** R03: picked or hired, cancelled by the system because the team suspended one of the two accounts. */
+  | 'cancelado_pela_equipe';
 
 /** Who made a change: the worker, the company, or the system (automatic rules). */
 export type Actor = 'trabalhador' | 'construtora' | 'sistema';

@@ -21,8 +21,9 @@ select pg_temp.logout();
 
 -- O app novo continua funcionando com os dados antigos (por dentro do banco).
 select pg_temp.ok(exists (select 1 from public.profiles where id = '40000000-0000-0000-0000-0000000000a1'),
-  'o gatilho do cadastro continua gravando o perfil antigo (consentimentos)');
-select pg_temp.ok(exists (select 1 from public.consentimentos where usuario_id = '40000000-0000-0000-0000-0000000000a1'),
+  'o gatilho do cadastro continua gravando o perfil antigo (até a remoção pendente do L07)');
+-- L07: o aceite vai para terms_acceptances (não mais para consentimentos, do app antigo).
+select pg_temp.ok(exists (select 1 from public.terms_acceptances where account_id = '40000000-0000-0000-0000-0000000000a1'),
   'aceite dos termos registrado');
 
 rollback;

@@ -2,6 +2,7 @@
 // sent to the server, how the answers land in the store, and how errors reach the screens.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authUser, fakeSupabase } from './fakeSupabase';
+import { TERMS_VERSION } from '../services/legal';
 
 const holder = vi.hoisted(() => ({ client: null as unknown }));
 
@@ -22,7 +23,7 @@ const workerAccount = {
   whatsapp_verified_at: null,
   email_confirmed_at: NOW,
   profile_completed_at: NOW,
-  terms_version: '1.0',
+  terms_version: TERMS_VERSION,
   terms_accepted_at: NOW,
   worker_id: 'u-ana',
   company_id: null,
@@ -110,7 +111,8 @@ const jobRow = (id: string, companyId: string, slots = 1) => ({
   updated_at: NOW,
   deleted_at: null,
   area_lat: -23.56,
-  area_lon: -46.65
+  area_lon: -46.65,
+  public_slug: 'slug' + id.replace(/\D/g, '').padStart(8, '2')
 });
 /** A row as feed_jobs returns it (X01): the job without its exact address, plus the order keys. */
 const feedRow = (id: string, companyId: string, slots: number, rank: number) => {
@@ -200,7 +202,8 @@ describe('remote: sign-in and sign-up', () => {
       accountId: 'u-ana',
       role: 'trabalhador',
       workerId: 'u-ana',
-      profileComplete: true
+      profileComplete: true,
+      termsCurrent: true
     });
     expect(m.store.getDb().workers['u-ana'].whatsapp).toBe('11988887777');
   });
@@ -357,6 +360,8 @@ describe('remote: data and actions', () => {
     // BC-5001 has its only slot taken: the mural reads it as full without seeing the candidacy.
     expect(m.selectors.isJobFull(db, db.jobs['BC-5001'])).toBe(true);
     expect(m.selectors.isJobFull(db, db.jobs['BC-5002'])).toBe(false);
+    // L10/L13: the mural brings the public link's slug, for the share button.
+    expect(db.jobs['BC-5001'].publicSlug).toBe('slug22225001');
   });
 
   it('the mural comes in pages from the server; a job gone meanwhile leaves the screen (X01, Y10)', async () => {
@@ -431,7 +436,10 @@ describe('remote: data and actions', () => {
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
     await expect(account.deleteAccount('segredo123', false)).rejects.toMatchObject({ code: 'conflito' });
     expect(m.store.getSession()).not.toBeNull();
-    await account.deleteAccount('segredo123', true);
+    await account.deleteAccount('segredo123', true, async () => 'tok-excluir');
+    expect(fake.calls.filter((c) => c.name === 'signInWithPassword').at(-1)?.args).toMatchObject({
+      options: { captchaToken: 'tok-excluir' }
+    });
     expect(fake.calls.filter((c) => c.kind === 'function').map((c) => c.args)).toEqual([
       { confirmCommitments: false },
       { confirmCommitments: true }
@@ -507,10 +515,15 @@ describe('remote: data and actions', () => {
     });
     const m = await load(fake);
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
-    await m.auth.changePassword('segredo123', 'novasenha1');
-    await m.auth.changeEmail('Ana.Nova@exemplo.com', 'segredo123');
+    await m.auth.changePassword('segredo123', 'novasenha1', async () => 'tok-senha');
+    await m.auth.changeEmail('Ana.Nova@exemplo.com', 'segredo123', async () => 'tok-email');
     expect(updates).toEqual([{ password: 'novasenha1' }, { email: 'ana.nova@exemplo.com' }]);
-    expect(fake.calls.filter((c) => c.name === 'signInWithPassword')).toHaveLength(3);
+    // R08: the re-check is a sign-in, so with the captcha on the Auth refuses it without a token.
+    expect(
+      fake.calls
+        .filter((c) => c.name === 'signInWithPassword')
+        .map((c) => (c.args as { options?: { captchaToken?: string } }).options?.captchaToken)
+    ).toEqual([undefined, 'tok-senha', 'tok-email']);
   });
 
   it('the professional profile is saved and the company sees no-shows and give-ups (F10)', async () => {
@@ -568,7 +581,7 @@ describe('remote: data and actions', () => {
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
     const identity = await import('../services/identity');
     vi.stubGlobal('fetch', async () => new Response(new Blob(['x'], { type: 'image/jpeg' })));
-    await identity.submitIdentity('blob:local/selfie', 'blob:local/doc');
+    await identity.submitIdentity('blob:local/selfie', 'blob:local/doc', '1.0');
     vi.unstubAllGlobals();
     const uploads = fake.calls.filter((c) => c.kind === 'storage');
     expect(uploads.map((u) => u.name)).toEqual(['identidade', 'identidade']);
@@ -576,6 +589,7 @@ describe('remote: data and actions', () => {
     const args = fake.calls.find((c) => c.name === 'submit_identity')?.args as Record<string, unknown>;
     expect(args.p_selfie_path).toBe(uploads[0].args);
     expect(args.p_document_path).toBe(uploads[1].args);
+    expect(args.p_consent_version).toBe('1.0'); // L07: the consent ticked on the screen goes with it
     expect(m.store.getDb().workers['u-ana'].identity).toBe('em_analise');
     await identity.loadMyIdentity();
     expect(m.store.getDb().workers['u-ana']).toMatchObject({ identity: 'recusado', identityReason: 'Foto borrada' });

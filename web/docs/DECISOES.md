@@ -1179,3 +1179,378 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   sem colisão (antes era um número aleatório).
 - O contato de WhatsApp é guardado **por candidatura e situação** (pré-selecionado → contratado muda a mensagem
   pronta) e por conta: o segundo toque não lê de novo. Vale nos dois modos; sair da conta limpa.
+
+---
+
+# Rodada de lançamento (L01–L14)
+
+> Os IDs desta rodada repetem números da Fase C (L01–L22 de antes). Aqui eles aparecem como "L01 (lançamento)";
+> as migrations e os testes novos usam o prefixo `lancNN_` (ex.: `lanc06_backoffice`) para não se confundir com `l10_cnpj.sql` e afins.
+
+## L01 (lançamento) — Build de produção nunca sai em modo demonstração
+
+**Problema**: `npm run build` sem `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` gerava, sem aviso, o app de
+demonstração (vagas inventadas). Um deploy com uma variável esquecida publicaria dados falsos.
+
+**O que foi feito**: o modo passou a ser explícito. `npm run build` é produção e, antes de empacotar, confere as
+variáveis obrigatórias (`build/env.ts`, plugin `bicos-production-env` no `vite.config.ts`); faltando alguma — ou
+com endereço sem `https://` — o build para com a lista do que falta. A demonstração é `npm run build:demo`
+(modo `demo`, que zera as variáveis do Supabase como a prévia `standalone`). O CI usa `build:demo` para
+Lighthouse/axe, prova que o build de produção sem variáveis falha e faz o build real com valores de exemplo.
+
+**Por quê**: a falha tem de acontecer na hora do build (barato, visível no deploy), não no navegador do usuário.
+Qualquer outro modo (`--mode staging`, por exemplo) também é tratado como produção — só os modos nomeados de
+demonstração escapam da conferência.
+
+## L02 (lançamento) — Staging
+
+**Problema**: não havia ambiente entre o falso Supabase dos testes e a produção.
+
+**O que foi feito**: scripts para montar um projeto novo igual à produção (`scripts/staging/aplicar-banco.sh`,
+`publicar-funcoes.sh`), modelos de variáveis (`.env.staging.example`, `supabase/functions/.env.staging.example`),
+`npm run build:staging` e o passo a passo em `docs/STAGING.md`. A criação do projeto espera o "pode".
+
+**Por quê assim**: (1) `APLICAR-TUDO.sql` sozinho não monta um banco vazio — as migrations do app novo ainda leem
+as tabelas do app antigo (`public.profiles` na `bicos_v2_rules`, por exemplo), então o script aplica primeiro
+`/supabase/migrations/0*.sql`, como o setup dos testes. (2) Cada migration do app entra no histórico com a versão
+do **arquivo** (não a hora), que é o que a produção terá depois do `repair`; assim `list_migrations` compara
+igual. (3) Os dois scripts recusam o ref/conexão da produção.
+
+## L05 (lançamento) — Anti-abuso e observabilidade ligados
+
+**Problema**: captcha e Sentry eram opcionais (sem configurar, sumiam em silêncio), as funções respondiam CORS `*`
+sem `APP_ORIGIN`, e o "esqueci a senha" nem pedia captcha.
+
+**O que foi feito**:
+
+- **Captcha**: o build de produção exige a site key (L01); cadastro, login (e-mail ou documento) e "esqueci a
+  senha" pedem o token e **não enviam sem ele** (`captchaToken` em `services/remote/auth.ts`, teste em
+  `captcha.test.ts`). No servidor, `_shared/captcha.ts` passou a **recusar** quando falta `TURNSTILE_SECRET`
+  (antes deixava passar); `CAPTCHA_OPCIONAL=1` só para desenvolvimento. Para o Auth (cadastro, login, recuperação)
+  quem confere é o próprio Supabase: Attack Protection › Captcha (ação do responsável).
+- **Sentry**: `services/monitoring.ts` ganhou `beforeSend` (tira e-mail, CPF, CNPJ, telefone, JWT/tokens, ids e
+  `BC-n` de mensagem, tags e extras), quadros da pilha de verdade (para o Sentry usar os source maps), `release` =
+  commit (`vite.config.ts` › `commitRelease`) e `environment`. O build de produção gera source maps **ocultos**
+  (`sourcemap: 'hidden'`, sem o comentário que aponta para eles); `scripts/sentry-sourcemaps.mjs` envia ao Sentry
+  e apaga os `.map` de `dist/` antes de publicar. Continua sem SDK (o bundle não cresce).
+- **APP_ORIGIN**: `_shared/http.ts` não sobe sem ele (erro no log da função). Aceita lista e `https://*.dominio`
+  para prévias por PR; `monitored()` devolve a origem do pedido quando ela está na lista (`_shared/origin.ts`,
+  testado no Vitest). O CI passou a rodar `deno check` nas funções.
+
+**Por quê**: falhar fechado. Esquecer um segredo agora quebra a função de forma visível no deploy/staging, em vez
+de deixar a porta aberta em produção sem ninguém perceber.
+
+**Pendente com o responsável**: código do WhatsApp (Twilio Verify) obrigatório antes da 1ª candidatura **ou**
+validação de formato + aviso — ver `CHECKLIST-LANCAMENTO.md`.
+
+## L06 (lançamento) — Back-office mínimo
+
+**Problema**: verificar identidade, aprovar construtora e tratar denúncia só era possível por SQL no painel.
+
+**O que foi feito** (migration `lanc06_backoffice`, tela `pages/admin/Admin.tsx`, serviço `services/admin.ts`):
+
+- **Equipe**: tabela `staff_members` (entra só pelo SQL Editor com `add_staff_member`), `is_staff()` e
+  `staff_guard()` no começo de cada RPC `admin_*` (BC401 para quem não é). Nenhuma chave `service_role` no
+  navegador: o app chama as RPCs com a sessão comum, e o banco decide.
+- **Filas**: identidades em análise (selfie e documento por **URL assinada de 5 min** — o bucket continua privado;
+  a única política de leitura nova é "Equipe lê as fotos de identidade"); construtoras pendentes com o CNPJ inteiro
+  e o que a Receita respondeu (`companies.cnpj_check`, gravado agora pela `verificar-cnpj`); denúncias com o
+  conteúdo, a conta responsável e o histórico dela (idade, nota, vagas/candidaturas, denúncias, ações da equipe).
+- **Ações**: aprovar/recusar (motivo obrigatório na recusa, avisa a pessoa), arquivar denúncia, ocultar vaga
+  (`jobs.hidden_at`: sai do mural, do link público e das candidaturas novas; a dona e quem já se candidatou
+  continuam vendo, como na vaga excluída), suspender conta e desfazer as duas últimas. Resolver uma denúncia
+  resolve as outras abertas sobre o mesmo conteúdo.
+- **Suspensão**: `accounts.suspended_at`; o Auth recusa o login (`banned_until` = agora + 100 anos; `infinity` quebra o GoTrue — achado pelo E2E) e as sessões abertas
+  são apagadas; gatilhos impedem publicar vaga e se candidatar mesmo com um token ainda válido; as vagas abertas
+  da construtora saem do mural e as candidaturas pendentes do trabalhador saem. O login mostra "Sua conta está
+  suspensa".
+- **Auditoria**: `staff_actions` (quem, ação, alvo, motivo, quando), sem acesso direto; a aba "Registro" lê por
+  `admin_actions()`.
+
+**Por quê**: tudo no banco, como o resto do app — a tela é só uma porta. Os testes SQL (`lanc06_backoffice.sql`)
+provam que conta comum e visitante não leem nem chamam nada do admin e que a suspensão vale no banco.
+
+**Demonstração**: não há equipe no modo demo; `/admin` explica que a área é só da equipe.
+
+## L07 (lançamento) — LGPD e jurídico prontos para revisão
+
+**Problema**: política genérica, marcada como rascunho; sem consentimento próprio para a selfie (dado biométrico);
+termos novos não pediam novo aceite; as tabelas do app antigo continuavam lá — e a varredura mostrou que **ainda
+recebiam dados** (gatilho `on_auth_user_created` copiando cada cadastro para `profiles`; aceites indo para
+`consentimentos`).
+
+**O que foi feito**:
+
+- Textos 2.0 em `services/legal.ts` (fonte única; `/legal/*.md` gerado e conferido por `legal.test.ts`):
+  controlador e DPO com campos `{{...}}`, selfie/documento como dado sensível (art. 11: finalidade, base, quem
+  acessa, 30 dias), operadores e transferência internacional, retenção por tipo de dado, direitos, segurança.
+  `LEGAL_REVIEWED = false` mantém o aviso de rascunho até a revisão do advogado.
+- Migration `lanc07_aceites`: `terms_acceptances` (cada aceite com versão e hora; cópia do que estava em
+  `consentimentos` e em `accounts`), `accept_terms`, `create_account_for` sem tocar no app antigo,
+  `submit_identity` exigindo a versão do consentimento (gravada em `identity_submissions`), e `export_my_data`
+  com aceites e verificações.
+- Tela de verificação com um quadro de consentimento destacado e caixa própria (`IDENTITY_CONSENT`); o envio só
+  sai com ela marcada (no app e no banco).
+- `Session.termsCurrent` + `homeFor` → `/aceitar-termos` quando `TERMS.version` muda.
+- **Pendente de "pode"**: `supabase/pendentes/…_lanc07_apagar_app_antigo.sql` (apaga as 7 tabelas, o gatilho e
+  as funções antigas; testado com todos os testes SQL) e `scripts/exportar-app-antigo.sh` para guardar os dados
+  antes. Não está em `migrations/` para não ser aplicado por engano.
+
+**Por quê não apagar a chave do Vault**: `nivotech_documento_key` cifra o CPF/CNPJ das contas **atuais**
+(`accounts.document_cipher`). Apagá-la, como o pedido sugeria, tornaria esses documentos ilegíveis.
+
+**Mapa completo**: `docs/LGPD.md` (dado → onde → finalidade → base legal → prazo, operadores, achados).
+
+## L04 (lançamento) — E-mail transacional que chega
+
+**Problema**: o SMTP padrão do Supabase só entrega para a equipe do projeto, com cota mínima; os e-mails eram os
+textos padrão em inglês.
+
+**O que foi feito**: os 4 e-mails do Auth em português (`supabase/email-templates/`), num layout único só com
+tabela e estilos na linha (sem imagem remota, sem script — o que mais derruba a entrega), botão grande e o mesmo
+link em texto para celular simples. `scripts/configurar-auth.mjs` aplica, pela Management API, SMTP da Brevo,
+templates, assuntos, Site URL/Redirect URLs, senha mínima e captcha — o mesmo comando para staging e produção
+(esta só com `CONFIRMO_PRODUCAO=sim`). Os registros de DNS e o teste de entrega estão no checklist.
+
+**Por quê**: configurar à mão no painel, duas vezes, é onde staging e produção começam a divergir. A validade dos
+links fica em 1 hora (padrão do Supabase, vale para todos os tipos); a tela "Confirme seu e-mail" já tem
+"Reenviar o link".
+
+**Não feito (depende do responsável)**: autenticar o domínio na Brevo e criar os registros no DNS; o aceite
+"chega na caixa de entrada do Gmail e do Outlook" só pode ser conferido depois disso.
+
+## L08 (lançamento) — Infraestrutura de produção
+
+**O que foi feito**: `public/_headers` (Cloudflare Pages) com CSP restrita ao que o app carrega (Supabase,
+Turnstile, Mercado Pago, Sentry, BrasilAPI/ViaCEP), HSTS de 1 ano, `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`, `Permissions-Policy` e cache longo para `/assets/*`. O build publicado não tem mais script
+inline (o aviso "abra pelo servidor" do `index.html` só existe no código-fonte — plugin `bicos-drop-dev-script`),
+então a CSP não precisa de `'unsafe-inline'` em scripts; estilos ainda precisam (o CSS crítico do `index.html`).
+`headers.test.ts` confere os cabeçalhos e que cada endereço externo do código está liberado. Deploy num comando:
+`scripts/deploy.sh` (`npm run deploy:staging|deploy:producao`), que se recusa a publicar a demonstração (armadilha 1).
+
+**Câmera**: o pedido falava em liberar a câmera só na tela da selfie. Como a selfie usa `<input capture>` (o app
+de câmera do próprio celular), a página não precisa da permissão `camera` em nenhuma tela; ela fica bloqueada em
+todas (`camera=()`). Além disso, num app de página única a política vale para o documento inteiro: uma regra por
+caminho não funcionaria ao navegar dentro do app.
+
+**Depende do responsável**: plano Pro, backups/PITR, leaked password protection, URL Configuration, limites do
+Auth, alerta de uso, projeto no Cloudflare Pages com domínio, e a nota A no securityheaders.com (checklist).
+
+## L03 (lançamento) — E2E num backend de verdade
+
+**Problema**: os critérios de aceite 1–6 só tinham rodado contra mocks e o falso Supabase.
+
+**O que foi feito**: Playwright em `web/e2e/` (7 arquivos, 13 testes): os 6 fluxos pedidos e o da área da equipe
+(L06). Tudo pela tela do app, como a pessoa faz; a Admin API (service_role, só no Node do teste) entra para o que
+o teste não consegue fazer pela tela — o link do e-mail de confirmação/recuperação, criar o "outro lado" de um
+fluxo, fazer o tempo passar (datas da vaga) e rodar a rotina do cron. Contas com e-mail `+e2e-<execução>`, apagadas
+no fim pela `excluir-conta`. Cada etapa vira um print em `docs/E2E.md`. Job `e2e` no CI contra o staging (segredos
+`E2E_*`); sem eles, avisa e não falha.
+
+**Onde rodou**: o staging ainda não existe (L02 espera o "pode"), então a suíte foi desenvolvida e rodada contra
+um **Supabase local completo** (`supabase start`: Postgres 17, GoTrue, PostgREST, Storage, Kong) com todas as
+migrations e as Edge Functions no Deno — 13/13 verdes. Sem Realtime (não sobe neste ambiente) e com o Turnstile
+falso (token de teste da Cloudflare). O modo de build `e2e` exige as variáveis da produção (L01), mas aceita
+`http://localhost`.
+
+**Achados**: (1) a Z12 fixa o endereço do Storage da produção em `app_config` — num projeto novo toda foto é
+recusada; o script do staging agora troca. (2) `banned_until = 'infinity'` quebra o GoTrue — corrigido no L06.
+(3) A rotina conclui a diária 2 dias depois do último dia (prazo para marcar falta) — o teste respeita isso.
+
+## L09 (lançamento) — `pg_net` fora do `public` e histórico de migrations conferido
+
+**Problema**: o `pg_net` foi ligado na produção pelo conector (migration `20261012033541_habilitar_pg_net`, que
+não estava no repo) e caiu no `public` (aviso `extension_in_public`). E nada impedia o histórico do banco de
+divergir dos arquivos de novo.
+
+**O que foi feito**: (1) o arquivo `20261012033541_habilitar_pg_net.sql` entrou no repo com a mesma versão e o
+mesmo comando gravado na produção — o histórico passa a bater sem `repair` para ele. (2) `lanc09_pg_net` apaga e
+recria o `pg_net` no `extensions` (não é relocável); sem `cascade`, para não levar nada junto. As funções ficam em
+`net.*` e as duas que chamam a rede (push e limpeza) usam `execute`, então não dependem do objeto e não mudam.
+Testado num Postgres com o `pg_net` no `public`, como a produção. (3) `conferir-migrations.sh` compara o
+histórico com os arquivos (falta e sobra) e o workflow `staging` aplica e confere a cada migration no `master`.
+
+**Por que pelo GitHub e não pelo conector**: o conector do Supabase pede aprovação manual a cada comando com
+`drop`, e as migrations recriam políticas e funções com `drop … if exists`; sem alguém aprovando na hora, a
+chamada expira. Montar o staging pelo workflow (com a senha do banco num segredo do GitHub) é repetível e não
+depende de uma sessão aberta. O script também passou a decidir pelo `accounts` (app novo) se roda as migrations
+antigas, para completar um banco que parou no meio delas.
+
+## L10 (lançamento) — link público pelo slug, com limite por IP
+
+**Problema**: os IDs das vagas são sequenciais (`BC-1`, `BC-2`…) e `public_job_card`, a única RPC para visitante,
+abria qualquer um: dava para baixar o mural inteiro sem conta, uma vaga atrás da outra.
+
+**O que foi feito**: cada vaga ganha `public_slug` (12 caracteres aleatórios de um alfabeto de 31 sem `0/o/1/l/i`,
+~59 bits; gerado pelo banco, único) e o link compartilhado é `/v/<slug>`. A RPC só abre pelo slug; o BC-n continua
+sendo o ID e aparece na página ("Vaga BC-12"). Limite de 60 consultas a cada 10 minutos por IP (BC409 com a mensagem
+pronta), contadas em `public_link_hits` só com o hash do IP com a data — apagadas no dia seguinte pela limpeza das
+4h17. Links antigos (`/v/BC-12`): logado vai direto para a vaga; visitante vê "Entre para ver a vaga BC-12" e o
+login devolve para ela.
+
+**Por que assim**: 59 bits tornam adivinhar um slug inviável mesmo sem o limite; o limite segura a raspagem de quem
+já tem links. O IP vem do `cf-connecting-ip` (posto pela Cloudflare na frente do Supabase, o cliente não forja); os
+outros cabeçalhos só de reserva. Não há links antigos de verdade (a produção tem 0 vagas), mas o caminho existe para
+não dar erro em quem guardou um link de teste. O front novo tem de ir junto com a migration (o parâmetro da RPC
+mudou de nome).
+
+## L11 (lançamento) — WhatsApp do suporte obrigatório e conferido
+
+**Problema**: o número do suporte tinha um padrão no código (`5494731661`, 10 dígitos — um a menos para celular) e
+o botão "Falar no WhatsApp" da Ajuda levaria a um número que não existe.
+
+**O que foi feito**: `VITE_SUPORTE_WHATSAPP` entrou nas variáveis obrigatórias do build de produção (L01), com
+conferência de formato: celular com DDD (DDD + 9 + 8 dígitos), com ou sem `55` e pontuação. O padrão saiu; na
+demonstração não há número e a Ajuda oferece só o e-mail. De quebra, `whatsappUrl` passou a decidir o `55` pelo
+tamanho do número: antes, um celular do DDD 55 (Santa Maria e região, RS) sem o código do país era tratado como se
+já tivesse o `55` e o link abria o número errado — valia para todos os botões de WhatsApp do app.
+
+## L12 (lançamento) — rotinas vigiadas e push desligado de propósito
+
+**Problema**: as rotinas do pg_cron (concluir diárias, vencer PIX, lembrete, limpezas) falhavam em silêncio — o erro
+ficava em `cron.job_run_details`, que ninguém olha, e o histórico crescia sem limite. E o push dependia de dois
+segredos no Vault que não estavam documentados passo a passo.
+
+**O que foi feito**: `check_cron_failures()` de hora em hora: rotina com as 2 últimas execuções falhadas vira um
+alerta em `cron_alerts` e um evento no Sentry pela API "store" (a mesma que o app usa, sem SDK), com a mensagem
+sem e-mail nem sequência longa de dígitos e cortada em 300 caracteres; no máximo um alerta por rotina a cada 24 h.
+`cron_health()` mostra o estado de todas no SQL Editor. O vigia também manda um "sinal de vida" a um monitor de fora
+(healthchecks.io, grátis), porque o caso mais provável no plano Free — projeto pausado — o banco não tem como
+avisar. Push: **fica desligado no lançamento** (escondido sem `VITE_VAPID_PUBLIC_KEY`; o gatilho não chama nada sem
+`bicos_push_secret`), com o passo a passo para ligar em `docs/SUPABASE.md` › 5.2.
+
+**Por que pelo banco e não por uma Edge Function**: tudo o que o vigia precisa já está no banco (pg_cron, pg_net,
+Vault); uma função a mais seria mais um segredo e mais um ponto para falhar. O e-mail sai pela regra de alerta do
+Sentry, que já é ação do responsável no L05.
+
+## L13 (lançamento) — teste de volume do mural
+
+**Problema**: o mural nunca tinha rodado com volume. Meta: 2.000 vagas e 20.000 candidaturas com p95 < 300 ms.
+
+**O que foi feito**: `scripts/volume/` popula dados sintéticos marcados (pelos mesmos gatilhos do app), mede 6
+cenários × 50 chamadas e apaga tudo no fim (conferindo que não sobrou nada). Medido no Postgres local igual ao do
+Supabase: antes, p95 de 37 a 275 ms (passava, com pouca folga para a instância do plano Free); o gargalo era
+`job_is_open` chamada por vaga (~50 µs cada, porque função com `search_path` fixo não é "aberta" pelo planejador).
+Depois da `lanc13_mural_volume` (coluna calculada `last_day` + índice parcial; o mural compara com o "hoje" uma vez;
+texto da busca normalizado uma vez): p95 de 14 a 133 ms. Resultados em `docs/VOLUME.md`.
+
+**Por que a regra "aberta" ficou escrita no mural em vez de chamar `job_is_open`**: é a única forma de o planejador
+usar o índice e não pagar a chamada por linha. Para não divergir, o teste `lanc13_mural_volume.sql` compara, vaga a
+vaga (datas, "a combinar" vencida, encerrada, excluída, oculta, cheia), o mural com `job_is_open`; e
+`last_day` com `job_last_day`.
+
+**Pendente**: rodar no staging (precisa do banco montado — segredos do L02). **Achado**: apagar conta pela tela do
+Auth deixa o perfil público para trás; a regra é usar a exclusão do app (registrado em `docs/VOLUME.md`).
+
+## R01 — Build de produção não publica texto jurídico incompleto
+
+**Problema**: `npm run build` passava com `{{RAZAO_SOCIAL}}`, `{{CNPJ}}`, `{{DPO_EMAIL}}`… em `legal.ts` e com
+`LEGAL_REVIEWED = false`: o público veria "CNPJ {{CNPJ}}" e o aviso de rascunho.
+
+**O que foi feito**: `build/env.ts › legalProblems` confere os textos (termos, política e consentimento da selfie)
+antes do build. Produção: campo `{{…}}` ou falta de revisão param o build. Staging e E2E: só avisam. Escape único,
+para piloto fechado e só por decisão registrada da empresa: `BICOS_PILOTO_SEM_REVISAO_JURIDICA=1` libera a falta de
+revisão (o aviso de rascunho continua na tela), nunca os campos em branco. O CI prova que o build de produção para e
+passou a fazer o build real em modo `staging`.
+
+**Por que o escape não cobre os `{{…}}`**: um piloto pode começar antes do advogado, mas nunca sem dizer quem é a
+empresa, o CNPJ e o canal do encarregado de dados — a LGPD exige isso de qualquer tratamento.
+
+## R02 — Funções servidor-a-servidor não dependem de `APP_ORIGIN`
+
+**Problema**: desde o L05, `_shared/http.ts` lia `APP_ORIGIN` ao carregar e derrubava **toda** função sem ele — também
+`webhook-pagamento` (Mercado Pago), `enviar-push` (banco) e `limpar-arquivos` (cron), que ninguém chama do navegador.
+Um segredo esquecido derrubaria o webhook e o cron juntos.
+
+**O que foi feito**: `requireAppOrigin()` lê e confere `APP_ORIGIN`; só as 5 funções do navegador o chamam no topo do
+arquivo (sem ele, não sobem, como no L05). O CORS (`preflight`, `withCors`) só aparece depois disso; nas outras 3,
+nenhuma resposta leva cabeçalho CORS. Teste (`edgeOrigin.test.ts`) confere a lista das 8 funções e quem chama o quê;
+`deno check` verde; conferido subindo as funções sem `APP_ORIGIN` (as 3 servidor-a-servidor sobem e respondem 401
+sem CORS; `excluir-conta` e `verificar-cnpj` não sobem).
+
+## R03 — Suspensão completa
+
+**Problema**: suspender (L06) apagava só as candidaturas pendentes e tirava as vagas do mural. Quem já estava
+pré-selecionado ou contratado ficava num bico que não ia acontecer: a posição continuava ocupada, ninguém era avisado
+e o WhatsApp do suspenso continuava abrindo.
+
+**O que foi feito**: status novo `cancelado_pela_equipe` e a transição do **sistema** `cancelar_por_suspensao`
+(de pré-selecionado ou contratado), nos dois lados (`applicationMachine.ts` e `application_next_status`); a tabela
+inteira é conferida igual nos dois (teste Vitest e teste SQL com a mesma lista). Trabalhador suspenso: cada bico é
+cancelado com motivo "conta suspensa", a construtora recebe "Bico cancelado pela equipe" e a posição libera (quem
+foi recusado automaticamente volta para análise, como na desistência). Construtora suspensa: cada trabalhador
+aprovado/contratado nas vagas dela recebe "Bico cancelado pela equipe… Não vá até a obra". `get_contact` recusa
+(BC404) quando qualquer um dos lados está suspenso. Telas: selo "Cancelado pela equipe" para os dois lados.
+
+**Por que um status novo e não `cancelado_pela_construtora`**: a construtora não cancelou; o histórico e a nota dela
+ficariam errados. Reativar a conta não desfaz os cancelamentos — o bico já foi avisado como cancelado aos dois lados.
+
+## R04 — Conta apagada pelo painel não deixa perfil órfão
+
+**Problema** (achado do L13): apagar o usuário em Authentication › Users removia `accounts` (cascata), mas `workers`
+e `companies` continuavam com nome, foto e nota à vista; as vagas da construtora seguiam abrindo pelo link; e a selfie
+da verificação ficava guardada.
+
+**O que foi feito**: a limpeza da exclusão pelo app virou `anonymize_account(conta, motivo)`, usada pelo
+`delete_my_account` (que continua exigindo login recente e a confirmação dos compromissos) e por um gatilho
+**BEFORE DELETE** em `auth.users` — antes da cascata, enquanto a `accounts` ainda existe. Nos dois caminhos agora
+também: vagas da construtora ocultas (fora do mural, da busca e do link público) e sem fotos, e os envios de
+verificação de identidade apagados (a selfie de uma verificação ainda não decidida ficava para sempre). Os arquivos
+ficam sem uso e `orphan_storage_objects` (limpeza diária) os pega — conferido no teste. Cadastro nunca concluído
+continua com a limpeza do Z01 (o perfil vazio sai). Conferido também com o `deleteUser` do Auth de verdade.
+
+**Por que limpeza completa e não só ocultar**: é o mesmo resultado que a pessoa teria pelo app, testado há várias
+rodadas; um segundo comportamento só para o painel seria mais um caminho para manter. A exclusão pelo app marca a
+transação (`bicos.conta_ja_limpa`) para o gatilho não repetir a limpeza.
+
+## R05 — Staging montável do zero sem tabela exposta
+
+**Problema**: o staging ficou com `public.profiles` **sem RLS** — sobra de uma montagem pelo conector que parou no meio
+(a tabela foi criada; o `enable row level security` da mesma migration não chegou a rodar). Sem RLS, a tabela inteira
+sai pela API.
+
+**O que foi feito**: `scripts/staging/aplicar-banco.sh` já completa as migrations antigas enquanto o app novo não
+existe (L09) — o que liga a RLS da `profiles` — e agora termina com duas conferências que fazem o script falhar: toda
+tabela do `public` com RLS (o equivalente em SQL do ERROR `rls_disabled_in_public` do advisor) e o histórico igual
+aos arquivos (`conferir-migrations.sh`). Rodado num Postgres vazio com a `profiles` desprotegida, como o staging:
+50 migrations, 37 tabelas, todas com RLS; com uma tabela sem RLS criada de propósito, o script para e diz qual.
+
+## R06 — Higiene do repositório
+
+**Problema**: a raiz ainda era o "handoff bundle" do Claude Design (README falando de protótipos), com o app legado,
+as conversas de design e as migrations antigas misturados com o app de verdade; `web/README.md` descrevia a migração
+de 2026-09 (hash router, Supabase "não conectado").
+
+**O que foi feito**, em quatro passos com os testes verdes entre eles: (1) README da raiz descreve o produto;
+(2) migrations 000–012 em `web/supabase/legado/` (setup dos testes SQL, `aplicar-banco.sh` e CI ajustados — elas
+continuam necessárias para montar um banco do zero); (3) `app/`, `chats/`, `project/` e `SETUP-SUPABASE.md` em
+`archive/` com um `LEIA.md`; (4) `web/README.md` reescrito a partir do que existe hoje.
+
+**Por que os testes de paridade ficaram**: `utils.parity.test.ts` ainda pega diferença de formatação (valores,
+datas, telefone) em relação ao app que as pessoas já usaram, e custa nada no CI; só passou a importar
+`archive/app`. O `npm run parity` (visual) continua manual.
+
+## R07 — Pequenos acertos
+
+- O comentário da `lanc10_link_publico` dizia alfabeto de 32 caracteres (~60 bits); são 31 (sem `0/o`, `1/l/i`),
+  ~59 bits. Só o comentário mudou (a função está certa); a migration ainda não foi aplicada em lugar nenhum.
+- `docs/ADVISORS.md` ganhou o estado **esperado** depois das migrations `lanc*` e `r*`, calculado com as mesmas
+  consultas do advisor num Postgres igual ao do Supabase — para o R08 e o R10 compararem com o real. A lista das 55
+  funções `security definer` executáveis por `authenticated` foi conferida uma a uma: nenhuma interna exposta
+  (as de limpeza, alerta e anonimização são só do dono do banco).
+
+## R08 — Conferir a senha também manda o captcha
+
+O E2E no staging (o primeiro ambiente com o captcha do Auth ligado) mostrou que **excluir a conta, trocar a senha e
+trocar o e-mail** conferiam a senha com um `signInWithPassword` sem `captchaToken`. Com o Turnstile ligado no Auth, o
+Supabase recusa esse login ("no captcha_token found") e o app dizia "senha incorreta" para a senha certa — as três
+telas quebrariam na produção assim que o captcha fosse ligado. Agora `checkPassword` recebe o captcha como os outros
+formulários públicos (`useCaptcha` nas três telas, widget acima do botão), e os logins feitos pelo Node no E2E mandam
+o token de teste (`CAPTCHA_TESTE`). O teste do `fakeSupabase` confere que o token chega ao Auth.
+
+Na segunda rodada no staging apareceram mais dois pontos. (1) Na tela "Excluir minha conta" o captcha nunca
+aparecia: a tela mostra primeiro o "carregando" e só depois o formulário, e o `useCaptcha` procurava a caixa do
+widget no primeiro instante. Agora o widget é montado quando a caixa aparece (ref por estado). (2) O teste do limite
+de 5 tentativas chamava a função só com `apikey`; no Supabase de verdade a porta das funções com JWT responde 401
+antes da função rodar, então o limite nunca era contado. O teste agora manda o `Authorization`, como o app.

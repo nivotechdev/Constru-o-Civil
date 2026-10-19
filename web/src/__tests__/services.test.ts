@@ -12,7 +12,7 @@ type Services = {
   applications: typeof import('../services/applications');
 };
 
-const SESSION = { accountId: 'x', email: 'x@x', emailConfirmed: true, profileComplete: true };
+const SESSION = { accountId: 'x', email: 'x@x', emailConfirmed: true, profileComplete: true, termsCurrent: true };
 
 async function fresh(): Promise<Services> {
   vi.resetModules();
@@ -413,8 +413,10 @@ describe('F07: identity check (demo)', () => {
     const id = store.getSession()!.workerId!;
     store.updateWorker(id, { identity: undefined, verified: false });
     expect(identity.identityOf(store.getDb().workers[id])).toBe('nao_enviado');
-    expect((await run(identity.submitIdentity('', 'blob:doc'))).ok).toBe(false);
-    expect((await run(identity.submitIdentity('blob:selfie', 'blob:doc'))).ok).toBe(true);
+    expect((await run(identity.submitIdentity('', 'blob:doc', '1.0'))).ok).toBe(false);
+    // L07: without the specific consent nothing is sent.
+    expect((await run(identity.submitIdentity('blob:selfie', 'blob:doc', null))).ok).toBe(false);
+    expect((await run(identity.submitIdentity('blob:selfie', 'blob:doc', '1.0'))).ok).toBe(true);
     expect(identity.identityOf(store.getDb().workers[id])).toBe('em_analise');
     expect(store.getDb().workers[id].verified).toBe(false);
     await run(identity.demoApproveIdentity());

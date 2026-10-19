@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
+import { useCaptcha } from '../../components/Captcha';
 import { FieldError } from '../../components/FieldError';
 import { PasswordInput } from '../../components/Input';
 import { PasswordStrength } from '../../components/PasswordStrength';
@@ -17,12 +18,13 @@ export default function ChangePassword() {
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [visible, setVisible] = useState(false);
+  const captcha = useCaptcha();
   const back = () => goBack('/configuracoes');
   const save = useAction(
     async () => {
       if (!current) throw serviceError('validacao', 'Digite sua senha atual.');
       if (next !== confirm) throw serviceError('validacao', 'As senhas novas não são iguais. Confira os dois campos.');
-      await changePassword(current, next);
+      await changePassword(current, next, captcha.getToken);
     },
     () => {
       showToast('Senha trocada');
@@ -79,6 +81,7 @@ export default function ChangePassword() {
           />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+          {captcha.widget}
           {save.error ? <FieldError message={save.error} /> : null}
           <Button label="Salvar senha nova" type="submit" size="lg" fullWidth loading={save.loading} />
         </div>

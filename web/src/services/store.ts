@@ -1,9 +1,10 @@
-// The app's single source of truth — a typed port of the legacy in-memory store (app/js/store.js).
+// The app's single source of truth — a typed port of the legacy in-memory store (archive/app/js/store.js).
 //
 // There is no backend: the "database" is seeded from data/seed.ts and lives only in memory, exactly
 // like the legacy app (a reload brings the seed back). Unlike the legacy store, every update here is
 // immutable, so React components subscribe to just the slice they read (see hooks/useStore.ts) and
 // re-render only when that slice changes.
+import { TERMS_VERSION } from './legal';
 import * as seed from '../data/seed';
 import type { Account, Database, Job, Role, Session, WorkerPost } from '../types/models';
 import { IS_DEMO } from './mode';
@@ -124,7 +125,8 @@ export function getSession(): Session | null {
             workerId: account.workerId,
             companyId: account.companyId,
             emailConfirmed: Boolean(account.emailConfirmedAt),
-            profileComplete: Boolean(account.profileCompletedAt)
+            profileComplete: Boolean(account.profileCompletedAt),
+            termsCurrent: account.termsVersion === TERMS_VERSION
           }
         : null
     };

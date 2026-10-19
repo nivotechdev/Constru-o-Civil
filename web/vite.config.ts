@@ -3,14 +3,75 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'node:child_process';
+import {
+  isDemoMode,
+  legalError,
+  legalProblems,
+  productionEnvError,
+  productionEnvProblems,
+  type LegalState
+} from './build/env';
+import { IDENTITY_CONSENT, LEGAL_REVIEWED, PRIVACY, TERMS } from './src/services/legal';
 
 // `npm run build` → dist/ (code-split, served over HTTP, installable: manifest + service worker, X02).
+// It is the PRODUCTION build and stops when a required variable is missing (L01, build/env.ts).
+// `npm run build:demo` → the same app on the in-memory demo data (CI, Lighthouse, axe).
 // `npm run build:standalone` → dist-standalone/index.html with everything inlined, which — like the
 // legacy app — also works when opened straight from disk (file://). No service worker there.
 //
-// The Supabase variables (.env.local) turn the real backend on (src/services/mode.ts). The standalone
-// preview and the tests always run on the demo data, so they ignore them.
+// The Supabase variables (.env.local) turn the real backend on (src/services/mode.ts). The demo builds
+// and the tests always run on the demo data, so they ignore them.
 const DEMO_ENV = { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' };
+
+/** L01: a production build without its variables fails before bundling, listing what is missing. */
+const LEGAL_TEXTS: LegalState = {
+  reviewed: LEGAL_REVIEWED,
+  texts: [TERMS, PRIVACY]
+    .flatMap((d) => [d.title, ...d.sections.flatMap((s) => [s.title, ...s.body])])
+    .concat(IDENTITY_CONSENT.title, IDENTITY_CONSENT.points, IDENTITY_CONSENT.checkbox)
+};
+
+function requireProductionEnv(env: Record<string, string>, mode: string): Plugin {
+  return {
+    name: 'bicos-production-env',
+    apply: 'build',
+    config() {
+      const problems = productionEnvProblems(env, mode);
+      if (problems.length) throw new Error(productionEnvError(problems));
+      // R01: no blank fields nor unreviewed legal texts in front of the public.
+      const legal = legalProblems(LEGAL_TEXTS, mode, { ...env, ...process.env });
+      for (const w of legal.warnings) console.warn(`Aviso (textos legais): ${w}`);
+      if (legal.errors.length) throw new Error(legalError(legal.errors));
+    }
+  };
+}
+
+/** L05: the release in error reports is the commit (the deploy may set VITE_RELEASE itself). */
+function commitRelease(env: Record<string, string>): string {
+  const fromCi = env.VITE_RELEASE || process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA;
+  if (fromCi) return fromCi.slice(0, 12);
+  try {
+    return execSync('git rev-parse --short=12 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'dev';
+  }
+}
+
+/**
+ * L08: the "open from disk" hint in index.html is for the development source only. The published build drops it,
+ * so the page has no inline script and the CSP (public/_headers) needs no 'unsafe-inline' for scripts.
+ */
+function dropDevOnlyScript(): Plugin {
+  return {
+    name: 'bicos-drop-dev-script',
+    apply: 'build',
+    transformIndexHtml: (html) =>
+      html.replace(/\s*<script>(?:(?!<\/script>)[\s\S])*location\.protocol === 'file:'[\s\S]*?<\/script>/, '')
+  };
+}
 
 /** X02: the link preview (`og:`) needs absolute URLs — `VITE_SITE_URL` is the published address. */
 function siteUrl(url: string): Plugin {
@@ -22,14 +83,17 @@ function siteUrl(url: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   const standalone = mode === 'standalone';
+  const demo = isDemoMode(mode);
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
     // X17: routes are real paths (`/vaga/BC-1`), so the files are referenced from the site's root (or
     // VITE_BASE when it is served under a folder). The standalone preview keeps relative paths.
     base: standalone ? './' : (env.VITE_BASE ?? '/'),
     plugins: [
+      ...(demo ? [] : [requireProductionEnv(env, mode)]),
       react(),
       siteUrl(env.VITE_SITE_URL ?? ''),
+      ...(standalone ? [] : [dropDevOnlyScript()]),
       ...(standalone
         ? [viteSingleFile()]
         : [
@@ -83,12 +147,15 @@ export default defineConfig(({ mode }) => {
           ])
     ],
     resolve: standalone ? { alias: { 'virtual:pwa-register': '/src/services/pwaStub.ts' } } : undefined,
-    define: standalone
+    define: demo
       ? Object.fromEntries(Object.entries(DEMO_ENV).map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)]))
-      : undefined,
+      : { 'import.meta.env.VITE_RELEASE': JSON.stringify(commitRelease(env)) },
     build: {
       outDir: standalone ? 'dist-standalone' : 'dist',
       target: 'es2020',
+      // L05: source maps for Sentry, without the comment that points browsers to them. The deploy uploads
+      // them to Sentry and deletes them from dist/ before publishing (scripts/sentry-sourcemaps.mjs).
+      sourcemap: demo ? false : 'hidden',
       // Shared helpers smaller than 1 kB (a field error, a formatter…) ride along in a chunk that loads
       // under the same conditions instead of becoming requests of their own. Rollup only merges chunks
       // without side effects, so the order code runs in doesn't change.

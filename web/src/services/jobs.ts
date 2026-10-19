@@ -52,14 +52,16 @@ export interface PublicJob {
 
 /**
  * F09: the job behind a shared link, for someone who may not be signed in. `null` when it doesn't exist
- * or was deleted. Backend: RPC public_job_card (anon may call it).
+ * or was deleted. L10: the link carries the job's random `publicSlug`, never the sequential id (BC-n).
+ * Backend: RPC public_job_card (anon may call it; limited per IP).
  */
-export async function loadPublicJob(jobId: string): Promise<PublicJob | null> {
-  if (!IS_DEMO) return remoteData.loadPublicJob(jobId);
+export async function loadPublicJob(slug: string): Promise<PublicJob | null> {
+  if (!IS_DEMO) return remoteData.loadPublicJob(slug);
   await mockLatency(300);
   const db = store.getDb();
-  const job = db.jobs[jobId];
-  if (!job || db.deletedJobIds.includes(jobId)) return null;
+  // The demo's jobs have no slug: their link carries the id.
+  const job = Object.values(db.jobs).find((j) => (j.publicSlug ?? j.id) === slug);
+  if (!job || db.deletedJobIds.includes(job.id)) return null;
   const company = db.companies[job.companyId];
   const area = { ...job.address, street: '', number: '', complement: null, cep: '', exact: false };
   return {

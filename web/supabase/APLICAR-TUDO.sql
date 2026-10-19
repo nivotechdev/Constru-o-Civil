@@ -1,5 +1,5 @@
 -- GERADO por scripts/aplicar-tudo.mjs — não edite à mão. Ordem e conferências em APLICAR.md.
--- 38 migrations (20261010000100_z01_rpcs_candidatura.sql … 20261014000800_x23_indices_fk.sql).
+-- 47 migrations (20261010000100_z01_rpcs_candidatura.sql … 20261017000200_r04_exclusao_pelo_painel.sql).
 -- Cole tudo no SQL Editor do Supabase e rode. Cada migration é idempotente: rodar de novo não estraga nada.
 
 -- Parte 1: valores novos de enum (precisam estar gravados antes do resto).
@@ -11,6 +11,7 @@ alter type public.notification_kind add value if not exists 'verificacao';
 alter type public.notification_kind add value if not exists 'bico_novo';
 alter type public.notification_kind add value if not exists 'confirmar_presenca';
 alter type public.notification_kind add value if not exists 'convite';
+alter type public.application_status add value if not exists 'cancelado_pela_equipe';
 commit;
 
 -- Parte 2: as migrations, numa transação só.
@@ -2624,6 +2625,11 @@ create trigger accounts_company_owner after insert on public.accounts
   for each row execute function public.company_owner_member();
 revoke all on function public.company_owner_member() from public, anon, authenticated;
 
+-- ===== 20261012033541_habilitar_pg_net.sql =====
+-- Trazida da produção (L09): aplicada lá em 12/10 pelo conector do Supabase e nunca versionada. Mesmo comando
+-- que ficou no histórico da produção; o L09 (20261016000100_lanc09_pg_net) tira a extensão do `public` depois.
+create extension if not exists pg_net;
+
 -- ===== 20261013000100_f09_vaga_publica.sql =====
 -- F09: a página pública da vaga (link compartilhado), que abre sem login. Só o que o mural já mostra para
 -- quem está logado: área (bairro/cidade), datas, valor, descrição, requisitos, pagamento e a construtora (nome,
@@ -3733,5 +3739,1446 @@ create index if not exists company_members_user_idx on public.company_members (u
 create index if not exists identity_submissions_worker_idx on public.identity_submissions (worker_id);
 create index if not exists job_alerts_oficio_idx on public.job_alerts (oficio_id);
 create index if not exists job_invites_company_idx on public.job_invites (company_id, created_at);
+
+-- ===== 20261015000100_lanc06_backoffice.sql =====
+-- L06 (lançamento): back-office mínimo — a equipe modera e verifica pelo app (/admin), sem SQL Editor e sem
+-- chave service_role no navegador.
+--
+-- - staff_members: quem é da equipe (só entra por SQL/service_role: add_staff_member). is_staff() responde
+--   pela sessão; toda RPC admin_* começa por staff_guard() e recusa (BC401) quem não é da equipe.
+-- - staff_actions: registro de auditoria (quem, o quê, em quem, quando, motivo). Ninguém lê direto; a equipe
+--   lê por admin_actions().
+-- - Conta suspensa (accounts.suspended_at): não entra (banned_until no Auth e sessões encerradas), não publica
+--   vaga e não se candidata (gatilhos — valem mesmo com um token ainda válido).
+-- - Vaga oculta pela equipe (jobs.hidden_at): some do mural, da busca e do link público; a dona e quem já se
+--   candidatou continuam vendo (como a vaga excluída).
+-- - companies.cnpj_check: o que a Receita respondeu na verificação automática (verificar-cnpj), para a fila.
+-- - Fotos de identidade: a equipe lê o bucket privado `identidade` (URL assinada de 5 min gerada no app).
+
+-- ---------------------------------------------------------------------------------------------------
+-- Equipe e auditoria
+-- ---------------------------------------------------------------------------------------------------
+
+create table if not exists public.staff_members (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  role text not null default 'moderador' check (role in ('admin', 'moderador')),
+  created_at timestamptz not null default now()
+);
+alter table public.staff_members enable row level security;
+revoke all on public.staff_members from anon, authenticated;
+
+create table if not exists public.staff_actions (
+  id bigint generated always as identity primary key,
+  staff_id uuid references auth.users (id) on delete set null,
+  action text not null,
+  target_type text not null,
+  target_id text not null,
+  reason text,
+  created_at timestamptz not null default now()
+);
+alter table public.staff_actions enable row level security;
+revoke all on public.staff_actions from anon, authenticated;
+create index if not exists staff_actions_staff_idx on public.staff_actions (staff_id);
+create index if not exists staff_actions_target_idx on public.staff_actions (target_type, target_id);
+create index if not exists staff_actions_created_idx on public.staff_actions (created_at desc);
+
+create or replace function public.is_staff()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.staff_members where user_id = (select auth.uid()))
+$$;
+
+-- A primeira linha de toda RPC da equipe: a conta da sessão, ou BC401.
+create or replace function public.staff_guard()
+returns uuid language plpgsql stable security definer set search_path = public as $$
+begin
+  if auth.uid() is null or not public.is_staff() then
+    raise exception using errcode = 'BC401', message = 'Área só da equipe da Bicos.';
+  end if;
+  return auth.uid();
+end;
+$$;
+
+create or replace function public.staff_log(p_action text, p_target_type text, p_target_id text, p_reason text)
+returns void language sql security definer set search_path = public as $$
+  insert into public.staff_actions (staff_id, action, target_type, target_id, reason)
+  values (auth.uid(), p_action, p_target_type, p_target_id, nullif(btrim(coalesce(p_reason, '')), ''))
+$$;
+
+-- Só pelo SQL Editor (service_role): põe alguém na equipe pelo e-mail da conta.
+create or replace function public.add_staff_member(p_email text, p_role text default 'moderador')
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  v_id uuid;
+begin
+  select id into v_id from public.accounts where email = lower(btrim(p_email));
+  if v_id is null then
+    raise exception using errcode = 'BC404', message = 'Nenhuma conta com esse e-mail.';
+  end if;
+  insert into public.staff_members (user_id, role) values (v_id, p_role)
+  on conflict (user_id) do update set role = excluded.role;
+  return v_id;
+end;
+$$;
+
+create or replace function public.remove_staff_member(p_email text)
+returns void language sql security definer set search_path = public as $$
+  delete from public.staff_members where user_id = (select id from public.accounts where email = lower(btrim(p_email)))
+$$;
+
+-- ---------------------------------------------------------------------------------------------------
+-- Conta suspensa e vaga oculta
+-- ---------------------------------------------------------------------------------------------------
+
+alter table public.accounts
+  add column if not exists suspended_at timestamptz,
+  add column if not exists suspended_reason text;
+-- A própria conta sabe que está suspensa (o app mostra o aviso e sai); o motivo fica só com a equipe.
+grant select (suspended_at) on public.accounts to authenticated;
+
+alter table public.jobs
+  add column if not exists hidden_at timestamptz,
+  add column if not exists hidden_reason text;
+
+alter table public.companies add column if not exists cnpj_check jsonb;
+
+-- Vaga oculta não está aberta: sai do mural (feed_jobs), das candidaturas novas e do link público.
+create or replace function public.job_is_open(p_job public.jobs)
+returns boolean language sql stable set search_path = public as $$
+  select not p_job.closed and p_job.deleted_at is null and p_job.hidden_at is null
+     and public.job_last_day(p_job) >= public.bicos_today()
+$$;
+
+do $$
+declare
+  p record;
+begin
+  for p in select policyname from pg_policies where schemaname = 'public' and tablename = 'jobs' and policyname like 'Vagas visíveis%'
+  loop
+    execute format('drop policy %I on public.jobs', p.policyname);
+  end loop;
+end $$;
+create policy "Vagas visíveis (excluídas e ocultas só para a dona e candidatos)" on public.jobs
+  for select to authenticated
+  using (
+    (deleted_at is null and hidden_at is null)
+    or company_id = (select public.my_company_id())
+    or exists (
+      select 1 from public.applications a
+       where a.job_id = jobs.id and a.worker_id = (select public.my_worker_id())
+    )
+  );
+
+create or replace function public.public_job_card(p_job_id text)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'id', j.id, 'oficio_id', j.oficio_id, 'title', j.title, 'pay', j.pay,
+    'neighborhood', j.neighborhood, 'city', j.city, 'uf', j.uf,
+    'date_to_arrange', j.date_to_arrange, 'start_date', j.start_date, 'end_date', j.end_date,
+    'start_time', j.start_time, 'end_time', j.end_time, 'diarias', j.diarias, 'dias', j.dias,
+    'slots', j.slots, 'urgent', j.urgent, 'photos', j.photos, 'description', j.description,
+    'requirements', j.requirements, 'payment_method', j.payment_method, 'payment_note', j.payment_note,
+    'created_at', j.created_at,
+    'aberta', public.job_is_open(j) and public.job_holding(j.id) < j.slots,
+    'company', jsonb_build_object('name', c.name, 'logo_url', c.logo_url, 'rating', c.rating,
+                                  'review_count', c.review_count, 'verified', c.verified)
+  )
+  from public.jobs j join public.companies c on c.id = j.company_id
+  where j.id = p_job_id and j.deleted_at is null and j.hidden_at is null
+$$;
+
+-- Conta suspensa não publica nem se candidata — mesmo com um token emitido antes da suspensão.
+create or replace function public.refuse_suspended_job()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from public.accounts where company_id = new.company_id and suspended_at is not null) then
+    raise exception using errcode = 'BC401', message = 'Sua conta está suspensa. Fale com o suporte pela Ajuda.';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists jobs_refuse_suspended on public.jobs;
+create trigger jobs_refuse_suspended before insert on public.jobs
+  for each row execute function public.refuse_suspended_job();
+
+create or replace function public.refuse_suspended_application()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from public.accounts where worker_id = new.worker_id and suspended_at is not null) then
+    raise exception using errcode = 'BC401', message = 'Sua conta está suspensa. Fale com o suporte pela Ajuda.';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists applications_refuse_suspended on public.applications;
+create trigger applications_refuse_suspended before insert on public.applications
+  for each row execute function public.refuse_suspended_application();
+
+-- ---------------------------------------------------------------------------------------------------
+-- Denúncias: resolução
+-- ---------------------------------------------------------------------------------------------------
+
+alter table public.reports
+  add column if not exists resolution text check (resolution is null or resolution in ('arquivar', 'ocultar_vaga', 'suspender_conta')),
+  add column if not exists resolved_by uuid references auth.users (id) on delete set null,
+  add column if not exists resolved_at timestamptz;
+create index if not exists reports_resolved_by_idx on public.reports (resolved_by);
+create index if not exists reports_open_idx on public.reports (created_at) where status = 'aberta';
+create index if not exists reports_target_idx on public.reports (target_type, target_id);
+
+-- O que foi denunciado, para a fila: título/texto, a conta responsável e se já está oculto/suspenso.
+create or replace function public.report_target_info(p_type public.report_target, p_id text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  v jsonb;
+begin
+  if p_type = 'vaga' then
+    select jsonb_build_object(
+      'title', coalesce(j.title, o.nome), 'text', left(j.description, 600), 'job_id', j.id,
+      'hidden', j.hidden_at is not null, 'deleted', j.deleted_at is not null,
+      'account_id', a.id, 'account_name', c.name)
+      into v
+      from public.jobs j join public.companies c on c.id = j.company_id
+      join public.oficios o on o.id = j.oficio_id
+      left join public.accounts a on a.company_id = j.company_id
+     where j.id = p_id;
+  elsif p_type = 'perfil' then
+    select jsonb_build_object(
+      'title', coalesce(w.name, c.name), 'text', null, 'account_id', a.id,
+      'account_name', coalesce(w.name, c.name))
+      into v
+      from public.accounts a
+      left join public.workers w on w.id = a.worker_id
+      left join public.companies c on c.id = a.company_id
+     where a.id::text = p_id;
+  elsif p_type = 'avaliacao' then
+    select jsonb_build_object(
+      'title', 'Avaliação ' || r.value || '★', 'text', r.comment,
+      'account_id', a.id, 'account_name', coalesce(w.name, c.name))
+      into v
+      from public.reviews r
+      left join public.applications ap on ap.id = r.application_id
+      left join public.jobs j on j.id = ap.job_id
+      left join public.accounts a on a.id = (
+        case when r.direction = 'para_construtora'
+             then (select x.id from public.accounts x where x.worker_id = ap.worker_id)
+             else (select x.id from public.accounts x where x.company_id = j.company_id) end)
+      left join public.workers w on w.id = a.worker_id
+      left join public.companies c on c.id = a.company_id
+     where r.id::text = p_id;
+  elsif p_type = 'post' then
+    select jsonb_build_object(
+      'title', 'Publicação no portfólio', 'text', p.caption, 'media_url', p.media_url,
+      'account_id', a.id, 'account_name', w.name)
+      into v
+      from public.worker_posts p join public.workers w on w.id = p.worker_id
+      left join public.accounts a on a.worker_id = p.worker_id
+     where p.id::text = p_id;
+  end if;
+  return coalesce(v, jsonb_build_object('title', 'Conteúdo que não existe mais', 'text', null, 'account_id', null));
+end;
+$$;
+
+-- O histórico da conta denunciada, para decidir: idade da conta, lado, denúncias, vagas, candidaturas.
+create or replace function public.account_history(p_account uuid)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'account_id', a.id, 'role', a.role, 'name', coalesce(w.name, c.name), 'created_at', a.created_at,
+    'suspended_at', a.suspended_at, 'suspended_reason', a.suspended_reason,
+    'rating', coalesce(w.rating, c.rating), 'review_count', coalesce(w.review_count, c.review_count),
+    'verified', coalesce(w.verified, c.verified),
+    'reports_against', (
+      select count(*) from public.reports r
+       where (r.target_type = 'perfil' and r.target_id = a.id::text)
+          or (r.target_type = 'vaga' and r.target_id in (select id from public.jobs where company_id = a.company_id))
+          or (r.target_type = 'post' and r.target_id in (select id::text from public.worker_posts where worker_id = a.worker_id))),
+    'jobs', (select count(*) from public.jobs where company_id = a.company_id),
+    'applications', (select count(*) from public.applications where worker_id = a.worker_id),
+    'staff_actions', (select count(*) from public.staff_actions where target_type = 'conta' and target_id = a.id::text)
+  )
+  from public.accounts a
+  left join public.workers w on w.id = a.worker_id
+  left join public.companies c on c.id = a.company_id
+  where a.id = p_account
+$$;
+
+-- ---------------------------------------------------------------------------------------------------
+-- RPCs da equipe (todas começam por staff_guard)
+-- ---------------------------------------------------------------------------------------------------
+
+-- Fila de identidades: trabalhadores "em análise", o envio mais antigo primeiro.
+create or replace function public.admin_identity_queue()
+returns table (
+  worker_id uuid, name text, oficio text, city text, photo_url text, document text, created_at timestamptz,
+  submitted_at timestamptz, selfie_path text, document_path text, submissions bigint
+) language plpgsql stable security definer set search_path = public as $$
+#variable_conflict use_column
+begin
+  perform public.staff_guard();
+  return query
+    select w.id, w.name, o.nome, w.city, w.photo_url, a.document, a.created_at, w.identity_submitted_at,
+           s.selfie_path, s.document_path,
+           (select count(*) from public.identity_submissions x where x.worker_id = w.id)
+      from public.workers w
+      join public.accounts a on a.worker_id = w.id
+      left join public.oficios o on o.id = w.oficio_id
+      left join lateral (
+        select selfie_path, document_path from public.identity_submissions
+         where identity_submissions.worker_id = w.id order by identity_submissions.created_at desc limit 1
+      ) s on true
+     where w.identity_status = 'em_analise'
+     order by w.identity_submitted_at nulls last
+     limit 200;
+end;
+$$;
+
+create or replace function public.admin_decide_identity(p_worker uuid, p_status text, p_reason text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform public.staff_guard();
+  if not exists (select 1 from public.workers where id = p_worker and identity_status = 'em_analise') then
+    raise exception using errcode = 'BC409', message = 'Essa identidade já foi decidida.';
+  end if;
+  perform public.set_identity_status(p_worker, p_status, p_reason);
+  perform public.staff_log(case when p_status = 'verificado' then 'aprovar_identidade' else 'recusar_identidade' end,
+                           'trabalhador', p_worker::text, p_reason);
+end;
+$$;
+
+-- Fila de construtoras: "pendente" com o perfil completo. CNPJ inteiro para a equipe conferir; CPF mascarado.
+create or replace function public.admin_company_queue()
+returns table (
+  company_id uuid, name text, location text, tipo_obra text, email text, document text, document_kind text,
+  created_at timestamptz, cnpj_check jsonb
+) language plpgsql stable security definer set search_path = public as $$
+#variable_conflict use_column
+begin
+  perform public.staff_guard();
+  return query
+    select c.id, c.name, c.location, c.tipo_obra, a.email,
+           coalesce(public.company_cnpj_for_check(c.id), a.document),
+           case when public.company_cnpj_for_check(c.id) is not null then 'cnpj' else 'cpf' end,
+           a.created_at, c.cnpj_check
+      from public.companies c
+      join public.accounts a on a.company_id = c.id
+     where c.verification_status = 'pendente' and a.profile_completed_at is not null and a.suspended_at is null
+     order by a.created_at
+     limit 200;
+end;
+$$;
+
+create or replace function public.admin_decide_company(p_company uuid, p_status public.company_verification, p_reason text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform public.staff_guard();
+  if p_status not in ('verificada', 'reprovada') then
+    raise exception using errcode = 'BC422', message = 'Escolha aprovar ou recusar.';
+  end if;
+  if p_status = 'reprovada' and nullif(btrim(coalesce(p_reason, '')), '') is null then
+    raise exception using errcode = 'BC422', message = 'Diga o motivo da recusa.';
+  end if;
+  perform public.set_company_verification(p_company, p_status);
+  perform public.staff_log(case when p_status = 'verificada' then 'aprovar_construtora' else 'recusar_construtora' end,
+                           'construtora', p_company::text, p_reason);
+end;
+$$;
+
+-- Fila de denúncias ('aberta' por padrão; 'analisada' para o histórico).
+create or replace function public.admin_report_queue(p_status text default 'aberta')
+returns table (
+  id uuid, target_type public.report_target, target_id text, reason text, details text, status text,
+  resolution text, created_at timestamptz, resolved_at timestamptz, reports_on_target bigint, target jsonb,
+  account jsonb
+) language plpgsql stable security definer set search_path = public as $$
+#variable_conflict use_column
+begin
+  perform public.staff_guard();
+  return query
+    select r.id, r.target_type, r.target_id, r.reason, r.details, r.status, r.resolution, r.created_at,
+           r.resolved_at,
+           (select count(*) from public.reports x where x.target_type = r.target_type and x.target_id = r.target_id),
+           t.info,
+           case when t.info ->> 'account_id' is not null
+                then public.account_history((t.info ->> 'account_id')::uuid) end
+      from public.reports r
+      cross join lateral (select public.report_target_info(r.target_type, r.target_id) as info) t
+     where r.status = coalesce(p_status, 'aberta')
+     order by case when r.status = 'aberta' then r.created_at end asc, r.resolved_at desc nulls last
+     limit 200;
+end;
+$$;
+
+create or replace function public.admin_hide_job(p_job text, p_reason text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_company uuid;
+begin
+  perform public.staff_guard();
+  if nullif(btrim(coalesce(p_reason, '')), '') is null then
+    raise exception using errcode = 'BC422', message = 'Diga o motivo.';
+  end if;
+  update public.jobs set hidden_at = now(), hidden_reason = btrim(p_reason)
+   where id = p_job and hidden_at is null returning company_id into v_company;
+  if v_company is null then
+    if not exists (select 1 from public.jobs where id = p_job) then
+      raise exception using errcode = 'BC404', message = 'Vaga não encontrada.';
+    end if;
+    return; -- já estava oculta
+  end if;
+  perform public.notify(null, v_company, 'verificacao', 'Vaga retirada do mural',
+    'A vaga ' || p_job || ' foi retirada do mural pela equipe da Bicos. Motivo: ' || btrim(p_reason)
+    || '. Fale com a gente pela Ajuda se achar que foi engano.', '/minhas-vagas');
+  perform public.staff_log('ocultar_vaga', 'vaga', p_job, p_reason);
+end;
+$$;
+
+create or replace function public.admin_unhide_job(p_job text, p_reason text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform public.staff_guard();
+  update public.jobs set hidden_at = null, hidden_reason = null where id = p_job and hidden_at is not null;
+  if not found then
+    raise exception using errcode = 'BC404', message = 'Essa vaga não está oculta.';
+  end if;
+  perform public.staff_log('mostrar_vaga', 'vaga', p_job, p_reason);
+end;
+$$;
+
+create or replace function public.admin_suspend_account(p_account uuid, p_reason text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_staff uuid := public.staff_guard();
+  v_account public.accounts;
+begin
+  if nullif(btrim(coalesce(p_reason, '')), '') is null then
+    raise exception using errcode = 'BC422', message = 'Diga o motivo da suspensão.';
+  end if;
+  if p_account = v_staff then
+    raise exception using errcode = 'BC409', message = 'Você não pode suspender a própria conta.';
+  end if;
+  if exists (select 1 from public.staff_members where user_id = p_account) then
+    raise exception using errcode = 'BC409', message = 'Tire a conta da equipe antes de suspender.';
+  end if;
+  update public.accounts set suspended_at = now(), suspended_reason = btrim(p_reason)
+   where id = p_account and suspended_at is null returning * into v_account;
+  if v_account.id is null then
+    if not exists (select 1 from public.accounts where id = p_account) then
+      raise exception using errcode = 'BC404', message = 'Conta não encontrada.';
+    end if;
+    return; -- já estava suspensa
+  end if;
+  -- Não entra mais: o Auth recusa login e renovação de sessão; as sessões abertas acabam.
+  -- Data distante, não 'infinity': o Auth (GoTrue, em Go) não lê 'infinity' e o login quebraria com erro 500
+  -- em vez de responder "user_banned" (achado pelo E2E, L03). É o que o painel faz ao banir.
+  update auth.users set banned_until = now() + interval '100 years' where id = p_account;
+  if to_regclass('auth.sessions') is not null then
+    execute 'delete from auth.sessions where user_id = $1' using p_account;
+  end if;
+  -- Construtora: as vagas abertas saem do mural. Trabalhador: as candidaturas pendentes saem.
+  update public.jobs set hidden_at = now(), hidden_reason = 'conta suspensa'
+   where company_id = v_account.company_id and hidden_at is null and deleted_at is null and not closed;
+  delete from public.applications
+   where worker_id = v_account.worker_id and status in ('enviada', 'em_analise');
+  perform public.staff_log('suspender_conta', 'conta', p_account::text, p_reason);
+end;
+$$;
+
+create or replace function public.admin_unsuspend_account(p_account uuid, p_reason text default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_company uuid;
+begin
+  perform public.staff_guard();
+  update public.accounts set suspended_at = null, suspended_reason = null
+   where id = p_account and suspended_at is not null returning company_id into v_company;
+  if not found then
+    raise exception using errcode = 'BC404', message = 'Essa conta não está suspensa.';
+  end if;
+  update auth.users set banned_until = null where id = p_account;
+  update public.jobs set hidden_at = null, hidden_reason = null
+   where company_id = v_company and hidden_reason = 'conta suspensa';
+  perform public.staff_log('reativar_conta', 'conta', p_account::text, p_reason);
+end;
+$$;
+
+-- Resolve uma denúncia (e as outras abertas sobre o mesmo conteúdo): arquivar, ocultar a vaga ou suspender
+-- a conta responsável.
+create or replace function public.admin_resolve_report(p_report uuid, p_action text, p_reason text default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_staff uuid := public.staff_guard();
+  r public.reports;
+  v_info jsonb;
+begin
+  select * into r from public.reports where id = p_report;
+  if r.id is null then
+    raise exception using errcode = 'BC404', message = 'Denúncia não encontrada.';
+  end if;
+  if r.status <> 'aberta' then
+    raise exception using errcode = 'BC409', message = 'Essa denúncia já foi resolvida.';
+  end if;
+  v_info := public.report_target_info(r.target_type, r.target_id);
+  if p_action = 'arquivar' then
+    perform public.staff_log('arquivar_denuncia', 'denuncia', r.id::text, p_reason);
+  elsif p_action = 'ocultar_vaga' then
+    if r.target_type <> 'vaga' then
+      raise exception using errcode = 'BC422', message = 'Só dá para ocultar quando a denúncia é de uma vaga.';
+    end if;
+    perform public.admin_hide_job(r.target_id, coalesce(nullif(btrim(coalesce(p_reason, '')), ''), 'denúncia de ' || r.reason));
+  elsif p_action = 'suspender_conta' then
+    if v_info ->> 'account_id' is null then
+      raise exception using errcode = 'BC404', message = 'A conta responsável não existe mais.';
+    end if;
+    perform public.admin_suspend_account((v_info ->> 'account_id')::uuid,
+      coalesce(nullif(btrim(coalesce(p_reason, '')), ''), 'denúncia de ' || r.reason));
+  else
+    raise exception using errcode = 'BC422', message = 'Ação inválida.';
+  end if;
+  update public.reports set status = 'analisada', resolution = p_action, resolved_by = v_staff, resolved_at = now()
+   where status = 'aberta' and target_type = r.target_type and target_id = r.target_id;
+end;
+$$;
+
+-- O registro de auditoria, mais recente primeiro.
+create or replace function public.admin_actions(p_limit integer default 100)
+returns table (id bigint, staff_email text, action text, target_type text, target_id text, reason text, created_at timestamptz)
+language plpgsql stable security definer set search_path = public as $$
+#variable_conflict use_column
+begin
+  perform public.staff_guard();
+  return query
+    select s.id, a.email, s.action, s.target_type, s.target_id, s.reason, s.created_at
+      from public.staff_actions s left join public.accounts a on a.id = s.staff_id
+     order by s.created_at desc, s.id desc
+     limit least(greatest(coalesce(p_limit, 100), 1), 500);
+end;
+$$;
+
+-- ---------------------------------------------------------------------------------------------------
+-- Fotos de identidade: a equipe lê (para gerar a URL assinada); ninguém mais.
+-- ---------------------------------------------------------------------------------------------------
+
+drop policy if exists "Equipe lê as fotos de identidade" on storage.objects;
+create policy "Equipe lê as fotos de identidade" on storage.objects for select to authenticated
+  using (bucket_id = 'identidade' and (select public.is_staff()));
+
+-- ---------------------------------------------------------------------------------------------------
+-- Permissões
+-- ---------------------------------------------------------------------------------------------------
+
+revoke all on function public.is_staff(), public.staff_guard(), public.staff_log(text, text, text, text),
+  public.add_staff_member(text, text), public.remove_staff_member(text), public.refuse_suspended_job(),
+  public.refuse_suspended_application(), public.report_target_info(public.report_target, text),
+  public.account_history(uuid), public.admin_identity_queue(), public.admin_decide_identity(uuid, text, text),
+  public.admin_company_queue(), public.admin_decide_company(uuid, public.company_verification, text),
+  public.admin_report_queue(text), public.admin_hide_job(text, text), public.admin_unhide_job(text, text),
+  public.admin_suspend_account(uuid, text), public.admin_unsuspend_account(uuid, text),
+  public.admin_resolve_report(uuid, text, text), public.admin_actions(integer)
+  from public, anon, authenticated;
+grant execute on function public.is_staff(), public.admin_identity_queue(), public.admin_decide_identity(uuid, text, text),
+  public.admin_company_queue(), public.admin_decide_company(uuid, public.company_verification, text),
+  public.admin_report_queue(text), public.admin_hide_job(text, text), public.admin_unhide_job(text, text),
+  public.admin_suspend_account(uuid, text), public.admin_unsuspend_account(uuid, text),
+  public.admin_resolve_report(uuid, text, text), public.admin_actions(integer)
+  to authenticated;
+grant execute on function public.add_staff_member(text, text), public.remove_staff_member(text) to service_role;
+
+-- ===== 20261015000200_lanc07_aceites.sql =====
+-- L07 (lançamento): LGPD — aceites registrados com versão e data, novo aceite quando os termos mudam, e
+-- consentimento específico e destacado para a selfie e a foto do documento (dado biométrico: art. 11).
+--
+-- - terms_acceptances: cada aceite (termos de uso, política de privacidade, uso de imagem na verificação) com a
+--   versão e a hora. Substitui `consentimentos` (tabela do app antigo, que o cadastro novo ainda alimentava);
+--   o que já estava lá é copiado para cá.
+-- - accept_terms(versão): o app pede o novo aceite no próximo login quando a versão dos termos muda.
+-- - submit_identity passa a exigir a versão do consentimento mostrado na tela (identity_submissions.consent_*).
+-- - export_my_data devolve os aceites e as verificações de identidade (sem as fotos).
+
+create table if not exists public.terms_acceptances (
+  id bigint generated always as identity primary key,
+  account_id uuid not null references public.accounts (id) on delete cascade,
+  document text not null check (document in ('termos_de_uso', 'politica_privacidade', 'uso_de_imagem_identidade')),
+  version text not null check (char_length(version) between 1 and 20),
+  accepted_at timestamptz not null default now(),
+  unique (account_id, document, version)
+);
+alter table public.terms_acceptances enable row level security;
+revoke all on public.terms_acceptances from anon, authenticated;
+
+-- O que o app antigo registrou (só das contas que existem no app novo).
+do $$
+begin
+  if to_regclass('public.consentimentos') is not null then
+    insert into public.terms_acceptances (account_id, document, version, accepted_at)
+    select c.usuario_id, c.documento, left(c.versao, 20), c.aceito_em
+      from public.consentimentos c join public.accounts a on a.id = c.usuario_id
+     where c.documento in ('termos_de_uso', 'politica_privacidade')
+    on conflict do nothing;
+  end if;
+end $$;
+-- E o aceite que cada conta já tem gravado em accounts.
+insert into public.terms_acceptances (account_id, document, version, accepted_at)
+select a.id, d, a.terms_version, a.terms_accepted_at
+  from public.accounts a cross join unnest(array['termos_de_uso', 'politica_privacidade']) d
+ where nullif(a.terms_version, '') is not null
+on conflict do nothing;
+
+create or replace function public.create_account_for(
+  p_user_id uuid, p_email text, p_role public.app_role, p_name text, p_document text, p_whatsapp text,
+  p_terms_version text, p_email_confirmed_at timestamptz
+) returns void language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_digits text := regexp_replace(coalesce(p_document, ''), '[^0-9]', '', 'g');
+  v_phone text := regexp_replace(coalesce(p_whatsapp, ''), '[^0-9]', '', 'g');
+  v_key text;
+  v_name text := coalesce(nullif(btrim(p_name), ''), split_part(p_email, '@', 1));
+begin
+  if exists (select 1 from public.accounts where id = p_user_id) then return; end if;
+  -- Y17: documento informado tem de ser válido para o lado da conta. (Sem documento só as contas do app
+  -- antigo, migradas por account_from_old_profile, que copiam o documento cifrado depois.)
+  if length(v_digits) > 0 and not public.document_valid_for(p_role, v_digits) then
+    raise exception using errcode = 'BC422', message = 'Documento inválido.';
+  end if;
+  if length(v_digits) > 0 then
+    perform public.claim_document_for(p_user_id, v_digits);
+  end if;
+
+  if p_role = 'trabalhador' then
+    insert into public.workers (id, name, initials, whatsapp, city, lat, lon)
+    values (p_user_id, v_name, public.initials_of(v_name), v_phone, 'São Paulo, SP', -23.5505, -46.6333)
+    on conflict (id) do nothing;
+  else
+    -- Y16: o campo público "CNPJ" da empresa só recebe CNPJ (14 dígitos), nunca o CPF de quem recruta.
+    insert into public.companies (id, name, cnpj, whatsapp, location)
+    values (p_user_id, v_name, case when length(v_digits) = 14 then public.mask_document(v_digits) end,
+            v_phone, 'São Paulo, SP')
+    on conflict (id) do nothing;
+  end if;
+
+  if length(v_digits) > 0 then
+    select decrypted_secret into v_key from vault.decrypted_secrets where name = 'nivotech_documento_key';
+  end if;
+
+  insert into public.accounts (
+    id, email, role, document, document_hash, document_cipher, whatsapp, email_confirmed_at,
+    terms_version, worker_id, company_id
+  ) values (
+    p_user_id, p_email, p_role, public.mask_document(v_digits),
+    case when length(v_digits) > 0 then public.document_hash(v_digits) end,
+    case when length(v_digits) > 0 and v_key is not null then extensions.pgp_sym_encrypt(v_digits, v_key) end,
+    v_phone, p_email_confirmed_at, coalesce(p_terms_version, ''),
+    case when p_role = 'trabalhador' then p_user_id end,
+    case when p_role = 'recrutador' then p_user_id end
+  );
+
+  -- L07: o aceite fica registrado (com a versão e a hora) na tabela própria, não mais na do app antigo.
+  if nullif(p_terms_version, '') is not null then
+    insert into public.terms_acceptances (account_id, document, version)
+    select p_user_id, d, p_terms_version from unnest(array['termos_de_uso', 'politica_privacidade']) d
+    on conflict do nothing;
+  end if;
+end;
+$$;
+
+-- Novo aceite (versão nova dos termos e da política, aceitos juntos).
+create or replace function public.accept_terms(p_version text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null or not exists (select 1 from public.accounts where id = auth.uid()) then
+    raise exception using errcode = 'BC401', message = 'Entre na sua conta de novo para continuar.';
+  end if;
+  if nullif(btrim(coalesce(p_version, '')), '') is null or char_length(p_version) > 20 then
+    raise exception using errcode = 'BC422', message = 'Versão dos termos inválida.';
+  end if;
+  update public.accounts set terms_version = btrim(p_version), terms_accepted_at = now() where id = auth.uid();
+  insert into public.terms_acceptances (account_id, document, version)
+  select auth.uid(), d, btrim(p_version) from unnest(array['termos_de_uso', 'politica_privacidade']) d
+  on conflict do nothing;
+end;
+$$;
+
+-- Verificação de identidade com consentimento específico.
+alter table public.identity_submissions
+  add column if not exists consent_version text,
+  add column if not exists consent_at timestamptz;
+
+drop function if exists public.submit_identity(text, text);
+create or replace function public.submit_identity(p_selfie_path text, p_document_path text, p_consent_version text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_worker uuid := public.my_worker_id();
+  v_prefix text := auth.uid()::text || '/';
+begin
+  if v_worker is null then
+    raise exception using errcode = 'BC401', message = 'Só a conta de trabalhador verifica a identidade.';
+  end if;
+  if nullif(btrim(coalesce(p_consent_version, '')), '') is null or char_length(p_consent_version) > 20 then
+    raise exception using errcode = 'BC422', message = 'Marque que você concorda com o uso das fotos para a verificação.';
+  end if;
+  if left(coalesce(p_selfie_path, ''), length(v_prefix)) <> v_prefix
+     or left(coalesce(p_document_path, ''), length(v_prefix)) <> v_prefix then
+    raise exception using errcode = 'BC422', message = 'Envie a selfie e a foto do documento de novo.';
+  end if;
+  if exists (select 1 from public.workers where id = v_worker and identity_status in ('em_analise', 'verificado')) then
+    raise exception using errcode = 'BC409', message = 'Sua identidade já está em análise ou verificada.';
+  end if;
+  insert into public.identity_submissions (worker_id, selfie_path, document_path, consent_version, consent_at)
+  values (v_worker, p_selfie_path, p_document_path, btrim(p_consent_version), now());
+  insert into public.terms_acceptances (account_id, document, version)
+  values (auth.uid(), 'uso_de_imagem_identidade', btrim(p_consent_version))
+  on conflict do nothing;
+  update public.workers set identity_status = 'em_analise', identity_reason = null, identity_submitted_at = now()
+   where id = v_worker;
+end;
+$$;
+
+create or replace function public.export_my_data()
+returns jsonb language plpgsql stable security definer set search_path = public, extensions as $$
+declare
+  v_account public.accounts;
+  v_key text;
+  v_doc text;
+begin
+  select * into v_account from public.accounts where id = auth.uid();
+  if not found then
+    raise exception using errcode = 'BC401', message = 'Entre na sua conta de novo para continuar.';
+  end if;
+  select decrypted_secret into v_key from vault.decrypted_secrets where name = 'nivotech_documento_key';
+  if v_key is not null and v_account.document_cipher is not null then
+    v_doc := extensions.pgp_sym_decrypt(v_account.document_cipher, v_key);
+  end if;
+  return jsonb_build_object(
+    'gerado_em', now(),
+    'conta', jsonb_build_object(
+      'email', v_account.email, 'lado', v_account.role, 'documento', v_doc, 'whatsapp', v_account.whatsapp,
+      'email_confirmado_em', v_account.email_confirmed_at, 'perfil_completo_em', v_account.profile_completed_at,
+      'termos_versao', v_account.terms_version, 'termos_aceitos_em', v_account.terms_accepted_at,
+      'criada_em', v_account.created_at),
+    'perfil', coalesce(
+      (select to_jsonb(w) from public.workers w where w.id = v_account.worker_id),
+      (select to_jsonb(c) from public.companies c where c.id = v_account.company_id)),
+    'vagas', coalesce((select jsonb_agg(to_jsonb(j)) from public.jobs j where j.company_id = v_account.company_id), '[]'),
+    'candidaturas', coalesce((
+      select jsonb_agg(to_jsonb(a) || jsonb_build_object('historico', (
+        select jsonb_agg(to_jsonb(e) order by e.at) from public.application_events e where e.application_id = a.id)))
+        from public.applications a
+       where a.worker_id = v_account.worker_id
+          or a.job_id in (select id from public.jobs where company_id = v_account.company_id)), '[]'),
+    'avaliacoes_recebidas', coalesce((
+      select jsonb_agg(to_jsonb(r)) from public.reviews r
+       where r.worker_id = v_account.worker_id or r.company_id = v_account.company_id), '[]'),
+    'vagas_salvas', coalesce((select jsonb_agg(to_jsonb(s)) from public.saved_jobs s where s.worker_id = v_account.worker_id), '[]'),
+    'portfolio', coalesce((select jsonb_agg(to_jsonb(p)) from public.worker_posts p where p.worker_id = v_account.worker_id), '[]'),
+    'notificacoes', coalesce((
+      select jsonb_agg(to_jsonb(n)) from public.notifications n
+       where n.worker_id = v_account.worker_id or n.company_id = v_account.company_id), '[]'),
+    'pagamentos', coalesce((select jsonb_agg(to_jsonb(b) - 'pix_code') from public.boost_payments b where b.company_id = v_account.company_id), '[]'),
+    'aceites', coalesce((
+      select jsonb_agg(jsonb_build_object('documento', t.document, 'versao', t.version, 'aceito_em', t.accepted_at)
+                       order by t.accepted_at)
+        from public.terms_acceptances t where t.account_id = v_account.id), '[]'),
+    'verificacao_identidade', coalesce((
+      select jsonb_agg(jsonb_build_object('enviada_em', s.created_at, 'consentimento_versao', s.consent_version,
+                                          'consentimento_em', s.consent_at, 'decidida_em', s.decided_at)
+                       order by s.created_at)
+        from public.identity_submissions s where s.worker_id = v_account.worker_id), '[]')
+  );
+end;
+$$;
+
+revoke all on function public.create_account_for(uuid, text, public.app_role, text, text, text, text, timestamptz),
+  public.accept_terms(text), public.submit_identity(text, text, text), public.export_my_data()
+  from public, anon, authenticated;
+grant execute on function public.accept_terms(text), public.submit_identity(text, text, text), public.export_my_data()
+  to authenticated;
+
+-- ===== 20261016000100_lanc09_pg_net.sql =====
+-- L09 (lançamento): pg_net sai do schema `public` (aviso `extension_in_public` do advisor).
+--
+-- Na produção o pg_net foi ligado em 12/10 pelo conector (migration 20261012033541_habilitar_pg_net, que só
+-- existe lá) e caiu no `public`. A extensão não é relocável (`alter extension … set schema` não funciona):
+-- o caminho é apagar e criar de novo no `extensions`. As funções dela continuam em `net.*` — o schema `net`
+-- é dela, não do `public` —, então push_new_notification e call_storage_cleanup (que chamam
+-- `net.http_post` por `execute`, sem depender do objeto) não mudam.
+--
+-- O que se perde: a fila de chamadas ainda não enviadas e as respostas guardadas (net.http_request_queue e
+-- net._http_response), que são passageiras. Rodar fora do horário dos crons que usam a rede (4h40, 21h).
+-- Sem `cascade`: se algo novo depender do pg_net, a migration para em vez de apagar junto.
+-- Banco sem pg_net instalado (testes locais): liga no `extensions`, como no staging e na produção.
+
+do $$
+declare
+  v_schema text;
+begin
+  select n.nspname into v_schema
+    from pg_extension e join pg_namespace n on n.oid = e.extnamespace
+   where e.extname = 'pg_net';
+  if v_schema = 'extensions' then
+    return;
+  end if;
+  if v_schema is not null then
+    execute 'drop extension pg_net';
+  end if;
+  if exists (select 1 from pg_available_extensions where name = 'pg_net') then
+    execute 'create extension pg_net with schema extensions';
+  end if;
+end $$;
+
+-- ===== 20261016000200_lanc10_link_publico.sql =====
+-- L10 (lançamento): o link público da vaga deixa de ser enumerável.
+--
+-- Antes: /v/BC-1, /v/BC-2… — os IDs são sequenciais e `public_job_card` (a única RPC para visitante) abria
+-- qualquer um, então dava para baixar o mural inteiro sem conta, uma vaga atrás da outra.
+-- Agora:
+--   * cada vaga ganha um `public_slug` aleatório (12 caracteres de um alfabeto de 31 — sem 0/o, 1/l/i —, ~59 bits) e o link
+--     compartilhado é /v/<slug>. O código BC-n continua sendo o ID e aparecendo na tela;
+--   * `public_job_card(p_slug)` só abre pelo slug — um BC-n devolve nada (o app manda para o login e de lá para
+--     a vaga, o que serve aos links antigos);
+--   * limite por IP: 60 consultas a cada 10 minutos (BC409 depois disso). O IP vem dos cabeçalhos que a API
+--     repassa e é guardado só como hash do dia, apagado no dia seguinte pela limpeza das 4h17.
+-- Idempotente.
+
+create or replace function public.new_public_slug()
+returns text language sql volatile set search_path = public as $$
+  -- Sem 0/o, 1/l/i: dá para ditar o link por telefone sem confusão.
+  select string_agg(substr('abcdefghjkmnpqrstuvwxyz23456789', (get_byte(b, i) % 31) + 1, 1), '' order by i)
+    from (select extensions.gen_random_bytes(12) as b) r, generate_series(0, 11) as i
+$$;
+revoke all on function public.new_public_slug() from public, anon, authenticated;
+
+alter table public.jobs add column if not exists public_slug text;
+update public.jobs set public_slug = public.new_public_slug() where public_slug is null;
+alter table public.jobs alter column public_slug set default public.new_public_slug();
+alter table public.jobs alter column public_slug set not null;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'jobs_public_slug_format') then
+    alter table public.jobs add constraint jobs_public_slug_format check (public_slug ~ '^[a-z2-9]{10,32}$');
+  end if;
+end $$;
+create unique index if not exists jobs_public_slug_key on public.jobs (public_slug);
+-- Quem vê a vaga logado pode compartilhar o link dela.
+grant select (public_slug) on public.jobs to authenticated;
+
+-- Consultas ao link público por IP (hash do IP + dia; nada que identifique a pessoa depois de 1 dia).
+create table if not exists public.public_link_hits (
+  ip_hash text not null,
+  at timestamptz not null default now()
+);
+create index if not exists public_link_hits_ip_at_idx on public.public_link_hits (ip_hash, at desc);
+alter table public.public_link_hits enable row level security;
+revoke all on table public.public_link_hits from anon, authenticated;
+
+-- O parâmetro mudou de nome (p_job_id → p_slug): `create or replace` não troca nome de parâmetro.
+drop function if exists public.public_job_card(text);
+create function public.public_job_card(p_slug text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_headers jsonb := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::jsonb;
+  v_ip text;
+  v_hash text;
+  v_card jsonb;
+begin
+  -- cf-connecting-ip é posto pela Cloudflare na frente do Supabase (o cliente não consegue forjar); os outros
+  -- ficam de reserva. Sem cabeçalho (SQL Editor, cron) não há limite.
+  v_ip := coalesce(nullif(v_headers ->> 'cf-connecting-ip', ''), nullif(v_headers ->> 'x-real-ip', ''),
+                   nullif(trim(split_part(v_headers ->> 'x-forwarded-for', ',', 1)), ''));
+  if v_ip is not null then
+    v_hash := encode(extensions.digest(v_ip || '|' || current_date::text, 'sha256'), 'hex');
+    if (select count(*) from public.public_link_hits
+         where ip_hash = v_hash and at > now() - interval '10 minutes') >= 60 then
+      raise exception using errcode = 'BC409',
+        message = 'Muitas vagas abertas em pouco tempo. Espere alguns minutos e tente de novo.';
+    end if;
+    insert into public.public_link_hits (ip_hash) values (v_hash);
+  end if;
+
+  if p_slug is null or p_slug !~ '^[a-z2-9]{10,32}$' then
+    return null;
+  end if;
+  select jsonb_build_object(
+    'id', j.id, 'oficio_id', j.oficio_id, 'title', j.title, 'pay', j.pay,
+    'neighborhood', j.neighborhood, 'city', j.city, 'uf', j.uf,
+    'date_to_arrange', j.date_to_arrange, 'start_date', j.start_date, 'end_date', j.end_date,
+    'start_time', j.start_time, 'end_time', j.end_time, 'diarias', j.diarias, 'dias', j.dias,
+    'slots', j.slots, 'urgent', j.urgent, 'photos', j.photos, 'description', j.description,
+    'requirements', j.requirements, 'payment_method', j.payment_method, 'payment_note', j.payment_note,
+    'created_at', j.created_at, 'public_slug', j.public_slug,
+    'aberta', public.job_is_open(j) and public.job_holding(j.id) < j.slots,
+    'company', jsonb_build_object('name', c.name, 'logo_url', c.logo_url, 'rating', c.rating,
+                                  'review_count', c.review_count, 'verified', c.verified)
+  ) into v_card
+  from public.jobs j join public.companies c on c.id = j.company_id
+  where j.public_slug = p_slug and j.deleted_at is null and j.hidden_at is null;
+  return v_card;
+end;
+$$;
+revoke all on function public.public_job_card(text) from public;
+grant execute on function public.public_job_card(text) to anon, authenticated;
+
+-- A limpeza diária (X22) também apaga as consultas de ontem.
+create or replace function public.purge_auth_attempts()
+returns integer language plpgsql security definer set search_path = public as $$
+declare
+  n integer;
+begin
+  with x as (delete from public.auth_attempts where at < now() - interval '1 day' returning 1)
+  select count(*)::int into n from x;
+  delete from public.whatsapp_verifications where verified_at < now() - interval '1 day';
+  delete from public.application_attempts where created_at < now() - interval '2 days';
+  delete from public.public_link_hits where at < now() - interval '1 day';
+  return n;
+end;
+$$;
+revoke all on function public.purge_auth_attempts() from public, anon, authenticated;
+
+-- ===== 20261016000300_lanc12_vigia_cron.sql =====
+-- L12 (lançamento): as rotinas do pg_cron (concluir diárias, vencer PIX, lembretes, limpezas) falhavam em
+-- silêncio — o erro só ficava em cron.job_run_details, que ninguém olha. Agora:
+--   * cron_health(): o estado de cada rotina (última execução, resultado, falhas seguidas), para o SQL Editor;
+--   * check_cron_failures(), de hora em hora (`bicos-vigiar-cron`): rotina com 2 falhas seguidas vira um alerta
+--     em `cron_alerts` e um evento no Sentry (DSN no Vault: `bicos_sentry_dsn`; o Sentry manda o e-mail pela
+--     regra de alerta do projeto). No máximo um alerta por rotina a cada 24 h enquanto ela continuar falhando;
+--   * a mensagem de erro vai sem dado pessoal (e-mails e sequências longas de dígitos — CPF, CNPJ, telefone —
+--     trocados por marcadores) e cortada em 300 caracteres;
+--   * o histórico do pg_cron (cron.job_run_details) passa a guardar só 14 dias.
+--   * sinal de vida: a cada execução o vigia chama a URL do Vault `bicos_heartbeat_url` (um monitor de fora, como
+--     o healthchecks.io), que manda e-mail quando o sinal para — cobre o pg_cron parado e o projeto pausado
+--     (plano Free), que o próprio banco não consegue avisar.
+-- Idempotente.
+
+create table if not exists public.cron_alerts (
+  id bigint generated always as identity primary key,
+  jobname text not null,
+  runid bigint not null,
+  message text not null,
+  sent boolean not null default false,
+  alerted_at timestamptz not null default now()
+);
+create index if not exists cron_alerts_job_at_idx on public.cron_alerts (jobname, alerted_at desc);
+alter table public.cron_alerts enable row level security;
+revoke all on table public.cron_alerts from anon, authenticated;
+
+-- Tira dado pessoal de um texto de erro antes de ele sair do banco.
+create or replace function public.scrub_error_text(p_text text)
+returns text language sql immutable set search_path = public as $$
+  select left(
+    regexp_replace(
+      regexp_replace(coalesce(p_text, ''), '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', '[email]', 'g'),
+      '\d[\d .()/-]{6,}\d', '[número]', 'g'),
+    300)
+$$;
+revoke all on function public.scrub_error_text(text) from public, anon, authenticated;
+
+-- O estado de cada rotina (só a equipe, pelo SQL Editor): select * from public.cron_health();
+create or replace function public.cron_health()
+returns table (jobname text, schedule text, active boolean, last_run timestamptz, last_status text,
+               failures_in_a_row integer, last_error text)
+language plpgsql security definer set search_path = public as $$
+begin
+  if to_regclass('cron.job_run_details') is null then
+    return;
+  end if;
+  return query execute $q$
+    select j.jobname::text, j.schedule::text, j.active, last.end_time, last.status::text,
+           coalesce((select count(*)::int
+                       from cron.job_run_details f
+                      where f.jobid = j.jobid and f.status = 'failed'
+                        and f.runid > coalesce((select max(s.runid) from cron.job_run_details s
+                                                 where s.jobid = j.jobid and s.status = 'succeeded'), 0)), 0),
+           public.scrub_error_text(case when last.status = 'failed' then last.return_message end)
+      from cron.job j
+      left join lateral (select d.end_time, d.status, d.return_message
+                           from cron.job_run_details d
+                          where d.jobid = j.jobid and d.status in ('succeeded', 'failed')
+                          order by d.runid desc limit 1) last on true
+     where j.jobname like 'bicos-%'
+     order by j.jobname
+  $q$;
+end;
+$$;
+revoke all on function public.cron_health() from public, anon, authenticated;
+grant execute on function public.cron_health() to service_role;
+
+-- Um evento no Sentry pela API "store" (a mesma do app, sem SDK). Sem DSN no Vault ou sem pg_net: false.
+create or replace function public.send_sentry_event(p_message text, p_tags jsonb)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare
+  v_dsn text;
+  v_parts text[];
+begin
+  if to_regnamespace('net') is null or to_regnamespace('vault') is null then
+    return false;
+  end if;
+  execute 'select decrypted_secret from vault.decrypted_secrets where name = $1' into v_dsn using 'bicos_sentry_dsn';
+  -- https://<chave>@<host>/<caminho/><projeto>
+  v_parts := regexp_match(coalesce(v_dsn, ''), '^(https://)([^@/]+)@([^/]+)/(.*/)?([0-9]+)$');
+  if v_parts is null then
+    return false;
+  end if;
+  execute 'select net.http_post(url := $1, body := $2, headers := $3)'
+    using v_parts[1] || v_parts[3] || '/' || coalesce(v_parts[4], '') || 'api/' || v_parts[5] || '/store/',
+          jsonb_build_object(
+            'event_id', replace(gen_random_uuid()::text, '-', ''),
+            'timestamp', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+            'level', 'error', 'platform', 'other', 'logger', 'pg_cron', 'server_name', 'supabase-db',
+            'message', public.scrub_error_text(p_message), 'tags', p_tags),
+          jsonb_build_object('Content-Type', 'application/json',
+            'X-Sentry-Auth', 'Sentry sentry_version=7, sentry_client=bicos-db/1.0, sentry_key=' || v_parts[2]);
+  return true;
+exception when others then
+  return false;
+end;
+$$;
+revoke all on function public.send_sentry_event(text, jsonb) from public, anon, authenticated;
+
+-- De hora em hora: rotina com as 2 últimas execuções falhadas vira alerta (no máximo 1 a cada 24 h por rotina).
+create or replace function public.check_cron_failures()
+returns integer language plpgsql security definer set search_path = public as $$
+declare
+  r record;
+  n integer := 0;
+  v_message text;
+begin
+  if to_regclass('cron.job_run_details') is null then
+    return 0;
+  end if;
+  for r in execute $q$
+    select j.jobname::text as jobname, last2.runids[1] as runid, last2.messages[1] as message
+      from cron.job j
+      cross join lateral (
+        select array_agg(d.runid order by d.runid desc) as runids,
+               array_agg(d.status::text order by d.runid desc) as statuses,
+               array_agg(d.return_message order by d.runid desc) as messages
+          from (select runid, status, return_message from cron.job_run_details
+                 where jobid = j.jobid and status in ('succeeded', 'failed')
+                 order by runid desc limit 2) d
+      ) last2
+     where j.jobname like 'bicos-%' and last2.statuses = array['failed', 'failed']
+  $q$ loop
+    if exists (select 1 from public.cron_alerts a
+                where a.jobname = r.jobname and a.alerted_at > now() - interval '24 hours') then
+      continue;
+    end if;
+    v_message := 'Rotina ' || r.jobname || ' falhou 2 vezes seguidas: ' || public.scrub_error_text(r.message);
+    insert into public.cron_alerts (jobname, runid, message, sent)
+    values (r.jobname, r.runid, v_message,
+            public.send_sentry_event(v_message, jsonb_build_object('job', r.jobname, 'origem', 'pg_cron')));
+    n := n + 1;
+  end loop;
+  -- Sinal de vida para o monitor de fora (sem URL no Vault, nada).
+  if to_regnamespace('net') is not null then
+    begin
+      execute 'select decrypted_secret from vault.decrypted_secrets where name = $1' into v_message using 'bicos_heartbeat_url';
+      if v_message like 'https://%' then
+        execute 'select net.http_get(url := $1)' using v_message;
+      end if;
+    exception when others then
+      null;
+    end;
+  end if;
+  -- Guarda 90 dias de alertas e 14 de histórico do pg_cron (que cresce sem parar: a cada 10 min só o PIX).
+  delete from public.cron_alerts where alerted_at < now() - interval '90 days';
+  begin
+    execute $d$delete from cron.job_run_details where end_time < now() - interval '14 days'$d$;
+  exception when others then
+    null;
+  end;
+  return n;
+end;
+$$;
+revoke all on function public.check_cron_failures() from public, anon, authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'bicos-vigiar-cron';
+    perform cron.schedule('bicos-vigiar-cron', '12 * * * *', 'select public.check_cron_failures()');
+  end if;
+end $$;
+
+-- ===== 20261016000400_lanc13_mural_volume.sql =====
+-- L13 (lançamento): o mural (feed_jobs) com volume — 2.000 vagas e 20.000 candidaturas (scripts/volume/).
+--
+-- A medição mostrou o gargalo: `job_is_open(j)` chamada para cada vaga da cidade (~50 µs por linha). Ela chama
+-- `job_last_day` e `bicos_today`, e as três têm `search_path` fixo (X13) — o Postgres não "abre" função com SET
+-- dentro da consulta, então são três chamadas com troca de configuração por vaga. Agora:
+--   * `jobs.last_day`: o último dia da vaga, coluna calculada pelo banco com a mesma regra de `job_last_day`
+--     (vaga "a combinar" vale 30 dias da publicação; as outras, até a data de fim). Índice parcial das vagas
+--     abertas por cidade e último dia;
+--   * feed_jobs compara `last_day` com o "hoje" calculado uma vez, em vez de `job_is_open` por linha (as duas
+--     regras ficam iguais — o teste lanc13 confere vaga a vaga);
+--   * o texto da busca é normalizado uma vez, não uma por vaga;
+--   * cada linha do mural traz também o `public_slug` (L10), para o botão de compartilhar.
+-- Idempotente.
+
+alter table public.jobs
+  add column if not exists last_day date
+  generated always as (
+    case when date_to_arrange then (created_at at time zone 'America/Sao_Paulo')::date + 30 else end_date end
+  ) stored;
+
+create index if not exists jobs_feed_city_idx on public.jobs (uf, city, last_day)
+  where not closed and deleted_at is null and hidden_at is null;
+
+create or replace function public.feed_jobs(
+  p_city text, p_uf text, p_lat double precision, p_lon double precision, p_radius_km integer default null,
+  p_oficio text default null, p_quando text default null, p_search text default null,
+  p_all_cities boolean default false, p_sort text default 'perto', p_limit integer default 30,
+  p_cursor jsonb default null
+) returns setof jsonb language sql stable security definer set search_path = public, extensions as $$
+  with origin as (
+    select st_setsrid(st_makepoint(p_lon, p_lat), 4326)::geography as g, public.bicos_today() as today,
+           nullif(public.fold_text(btrim(coalesce(p_search, ''))), '') as needle
+  ),
+  open_jobs as (
+    select j.*, o.g as o_g, o.today
+      from public.jobs j, origin o
+     -- O mesmo que job_is_open(j), sem a chamada por linha (L13).
+     where not j.closed and j.deleted_at is null and j.hidden_at is null and j.last_day >= o.today
+       and public.job_holding(j.id) < j.slots
+       and (p_oficio is null or j.oficio_id = p_oficio)
+       and (
+         case
+           when o.needle is not null and p_all_cities then true
+           when p_radius_km is not null then st_dwithin(j.area_geog, o.g, p_radius_km * 1000)
+           else j.city = p_city and j.uf = p_uf
+         end
+       )
+       and (
+         p_quando is null
+         or (p_quando = 'Hoje' and public.job_runs_on(j, o.today))
+         or (p_quando = 'Amanhã' and public.job_runs_on(j, o.today + 1))
+         or (p_quando = 'Durante a semana' and coalesce(j.dias::text, 'qualquer') in ('semana', 'qualquer'))
+         or (p_quando = 'Fim de semana' and coalesce(j.dias::text, 'qualquer') in ('fimdesemana', 'qualquer'))
+       )
+       and (
+         o.needle is null
+         or public.fold_text(concat_ws(' ', j.title, j.neighborhood, j.city,
+              (select f.nome || ' ' || array_to_string(f.sinonimos, ' ') from public.oficios f where f.id = j.oficio_id),
+              (select c.name from public.companies c where c.id = j.company_id)))
+            like '%' || o.needle || '%'
+       )
+  ),
+  ranked as (
+    select oj.*,
+           case when oj.boost_ends_at > now() then 0 when oj.urgent then 1 else 2 end as rank,
+           case p_sort
+             when 'valor' then coalesce(-oj.pay::double precision, 1e12)
+             when 'cedo' then coalesce(extract(epoch from oj.start_date::timestamp), 1e12)
+             else st_distance(oj.area_geog, oj.o_g)
+           end as sort_key,
+           st_distance(oj.area_geog, oj.o_g) / 1000.0 as km
+      from open_jobs oj
+  )
+  select jsonb_build_object(
+           'id', r.id, 'company_id', r.company_id, 'oficio_id', r.oficio_id, 'title', r.title, 'pay', r.pay,
+           'neighborhood', r.neighborhood, 'city', r.city, 'uf', r.uf, 'area_lat', r.area_lat, 'area_lon', r.area_lon,
+           'date_to_arrange', r.date_to_arrange, 'start_date', r.start_date, 'end_date', r.end_date,
+           'start_time', r.start_time, 'end_time', r.end_time, 'diarias', r.diarias, 'dias', r.dias,
+           'urgent', r.urgent, 'boost_ends_at', r.boost_ends_at, 'photos', r.photos, 'slots', r.slots,
+           'closed', r.closed, 'sem_contratacao', r.sem_contratacao, 'description', r.description,
+           'requirements', r.requirements, 'created_at', r.created_at, 'updated_at', r.updated_at,
+           'deleted_at', r.deleted_at, 'public_slug', r.public_slug,
+           '_rank', r.rank, '_key', r.sort_key, '_km', round(r.km::numeric, 1))
+    from ranked r
+   where p_cursor is null
+      or (r.rank, r.sort_key, r.id) > ((p_cursor->>'r')::int, (p_cursor->>'k')::double precision, p_cursor->>'id')
+   order by r.rank, r.sort_key, r.id
+   limit least(greatest(coalesce(p_limit, 30), 1), 60)
+$$;
+
+revoke all on function public.feed_jobs(text, text, double precision, double precision, integer, text, text, text, boolean, text, integer, jsonb)
+  from public, anon, authenticated;
+grant execute on function public.feed_jobs(text, text, double precision, double precision, integer, text, text, text, boolean, text, integer, jsonb)
+  to authenticated;
+
+-- ===== 20261017000100_r03_suspensao_completa.sql =====
+-- R03: suspensão completa. Antes (L06), suspender só apagava as candidaturas pendentes e tirava as vagas do mural;
+-- quem já estava aprovado ou contratado ficava num bico que não ia acontecer, com o WhatsApp do outro lado aberto.
+-- Agora:
+--   * status novo `cancelado_pela_equipe` e a transição do sistema `cancelar_por_suspensao` (de pré-selecionado ou
+--     contratado), igual em services/applicationMachine.ts;
+--   * trabalhador suspenso: cada bico aprovado/contratado é cancelado com motivo "conta suspensa", a construtora é
+--     avisada e a posição libera (quem tinha sido recusado automaticamente volta para análise, como na desistência);
+--   * construtora suspensa: cada trabalhador aprovado/contratado nas vagas dela é avisado de que o bico foi
+--     cancelado pela equipe;
+--   * get_contact não devolve o WhatsApp quando um dos lados está suspenso.
+-- Reativar a conta não desfaz os cancelamentos. Idempotente.
+
+alter type public.application_status add value if not exists 'cancelado_pela_equipe';
+
+create or replace function public.application_next_status(
+  p_action text, p_from public.application_status, p_actor public.application_actor
+) returns public.application_status language sql immutable set search_path = public as $$
+  select (case
+    when p_action = 'analisar' and p_from = 'enviada' and p_actor in ('construtora', 'sistema') then 'em_analise'
+    when p_action = 'aprovar' and p_from in ('enviada', 'em_analise') and p_actor = 'construtora' then 'pre_selecionado'
+    when p_action = 'recusar' and p_from in ('enviada', 'em_analise') and p_actor in ('construtora', 'sistema') then 'nao_selecionado'
+    when p_action = 'desfazer_recusa' and p_from = 'nao_selecionado' and p_actor = 'construtora' then 'em_analise'
+    when p_action = 'desfazer_aprovacao' and p_from = 'pre_selecionado' and p_actor = 'construtora' then 'em_analise'
+    when p_action = 'contratar' and p_from = 'pre_selecionado' and p_actor = 'construtora' then 'contratado'
+    when p_action = 'desistir' and p_from in ('pre_selecionado', 'contratado') and p_actor = 'trabalhador' then 'desistiu'
+    when p_action = 'cancelar_contratacao' and p_from in ('pre_selecionado', 'contratado') and p_actor = 'construtora' then 'cancelado_pela_construtora'
+    when p_action = 'concluir' and p_from = 'contratado' and p_actor in ('construtora', 'sistema') then 'concluida'
+    when p_action = 'marcar_falta' and p_from = 'contratado' and p_actor = 'construtora' then 'nao_compareceu'
+    when p_action = 'expirar' and p_from = 'pre_selecionado' and p_actor = 'sistema' then 'expirada'
+    when p_action = 'cancelar_por_suspensao' and p_from in ('pre_selecionado', 'contratado') and p_actor = 'sistema'
+      then 'cancelado_pela_equipe'
+  end)::public.application_status
+$$;
+
+create or replace function public.admin_suspend_account(p_account uuid, p_reason text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_staff uuid := public.staff_guard();
+  v_account public.accounts;
+  v_job public.jobs;
+  r record;
+begin
+  if nullif(btrim(coalesce(p_reason, '')), '') is null then
+    raise exception using errcode = 'BC422', message = 'Diga o motivo da suspensão.';
+  end if;
+  if p_account = v_staff then
+    raise exception using errcode = 'BC409', message = 'Você não pode suspender a própria conta.';
+  end if;
+  if exists (select 1 from public.staff_members where user_id = p_account) then
+    raise exception using errcode = 'BC409', message = 'Tire a conta da equipe antes de suspender.';
+  end if;
+  update public.accounts set suspended_at = now(), suspended_reason = btrim(p_reason)
+   where id = p_account and suspended_at is null returning * into v_account;
+  if v_account.id is null then
+    if not exists (select 1 from public.accounts where id = p_account) then
+      raise exception using errcode = 'BC404', message = 'Conta não encontrada.';
+    end if;
+    return; -- já estava suspensa
+  end if;
+  -- Não entra mais: o Auth recusa login e renovação de sessão; as sessões abertas acabam.
+  -- Data distante, não 'infinity': o Auth (GoTrue, em Go) não lê 'infinity' e o login quebraria com erro 500
+  -- em vez de responder "user_banned" (achado pelo E2E, L03). É o que o painel faz ao banir.
+  update auth.users set banned_until = now() + interval '100 years' where id = p_account;
+  if to_regclass('auth.sessions') is not null then
+    execute 'delete from auth.sessions where user_id = $1' using p_account;
+  end if;
+  -- Construtora: as vagas abertas saem do mural. Trabalhador: as candidaturas pendentes saem.
+  update public.jobs set hidden_at = now(), hidden_reason = 'conta suspensa'
+   where company_id = v_account.company_id and hidden_at is null and deleted_at is null and not closed;
+  delete from public.applications
+   where worker_id = v_account.worker_id and status in ('enviada', 'em_analise');
+  -- R03: o que já tinha sido aprovado ou contratado é cancelado pelo sistema ("conta suspensa"): o outro lado é
+  -- avisado e a posição libera (job_holding só conta pré-selecionado, contratado e concluída).
+  for r in
+    select a.id, a.job_id, a.worker_id from public.applications a
+     where a.worker_id = v_account.worker_id and a.status in ('pre_selecionado', 'contratado')
+  loop
+    perform public.application_step(r.id, 'cancelar_por_suspensao', 'sistema', 'conta suspensa');
+    perform public.job_reopen_auto_rejected(r.job_id, 'vaga_reaberta');
+    select * into v_job from public.jobs where id = r.job_id;
+    perform public.notify(null, v_job.company_id, 'desistencia', 'Bico cancelado pela equipe',
+      coalesce(nullif(public.first_name((select name from public.workers where id = r.worker_id)), ''), 'O trabalhador') ||
+      ' não vai mais em ' || public.job_title(v_job) || ': a equipe da Bicos suspendeu a conta dele.' ||
+      case when public.job_is_open(v_job) and public.job_holding(v_job.id) < v_job.slots
+           then ' A vaga voltou para o mural.' else '' end,
+      '/vaga-gerenciar/' || r.job_id);
+  end loop;
+  for r in
+    select a.id, a.job_id, a.worker_id from public.applications a join public.jobs j on j.id = a.job_id
+     where j.company_id = v_account.company_id and a.status in ('pre_selecionado', 'contratado')
+  loop
+    perform public.application_step(r.id, 'cancelar_por_suspensao', 'sistema', 'conta suspensa');
+    select * into v_job from public.jobs where id = r.job_id;
+    perform public.notify(r.worker_id, null, 'contratacao_cancelada', 'Bico cancelado pela equipe',
+      public.job_title(v_job) || ' na ' || coalesce((select name from public.companies where id = v_job.company_id), 'construtora') ||
+      ' foi cancelado pela equipe da Bicos. Não vá até a obra. Veja outros bicos no mural.',
+      '/vaga/' || r.job_id);
+  end loop;
+  perform public.staff_log('suspender_conta', 'conta', p_account::text, p_reason);
+end;
+$$;
+
+create or replace function public.get_contact(p_application_id uuid)
+returns table (name text, phone text) language plpgsql stable security definer set search_path = public as $$
+declare
+  v_app public.applications;
+  v_job public.jobs;
+begin
+  select * into v_app from public.applications where id = p_application_id;
+  if found then select * into v_job from public.jobs where id = v_app.job_id; end if;
+  if v_app.id is null or v_job.id is null then
+    raise exception using errcode = 'BC404', message = 'Essa candidatura não existe mais.';
+  end if;
+  if v_app.status not in ('pre_selecionado', 'contratado') then
+    raise exception using errcode = 'BC401', message = 'O contato abre quando a construtora aprova o candidato.';
+  end if;
+  -- R03: conta suspensa pela equipe não passa contato (nem o próprio, nem o do outro lado).
+  if exists (select 1 from public.accounts
+              where suspended_at is not null
+                and (worker_id = v_app.worker_id or company_id = v_job.company_id)) then
+    raise exception using errcode = 'BC404', message = 'Esse contato não está disponível: a conta foi suspensa pela equipe da Bicos.';
+  end if;
+  if v_app.worker_id = public.my_worker_id() then
+    return query select c.name, c.whatsapp from public.companies c where c.id = v_job.company_id and c.whatsapp <> '';
+    if not found then
+      raise exception using errcode = 'BC404', message = 'A construtora ainda não cadastrou um WhatsApp.';
+    end if;
+  elsif v_job.company_id = public.my_company_id() then
+    return query select w.name, w.whatsapp from public.workers w where w.id = v_app.worker_id and w.whatsapp <> '';
+    if not found then
+      raise exception using errcode = 'BC404', message = 'Esse trabalhador ainda não cadastrou um WhatsApp.';
+    end if;
+  else
+    raise exception using errcode = 'BC401', message = 'Esse contato é só de quem está no bico de ' ||
+      coalesce((select nome from public.oficios where id = v_job.oficio_id), 'obra') || '.';
+  end if;
+end;
+$$;
+
+-- ===== 20261017000200_r04_exclusao_pelo_painel.sql =====
+-- R04: apagar a conta direto no painel (Authentication › Users › Delete) não deixa mais o perfil para trás.
+-- Antes, só `accounts` saía (cascata de auth.users); `workers`/`companies` continuavam com nome, foto e nota à vista,
+-- as vagas da construtora seguiam abrindo pelo link e a selfie da verificação ficava guardada.
+--   * anonymize_account(conta, motivo): a limpeza que a exclusão pelo app (delete_my_account, Y15) já fazia —
+--     desistir/cancelar os bicos em andamento avisando o outro lado, anonimizar perfil e avaliações, encerrar as
+--     vagas — e, a partir de agora, também: vagas da construtora ocultas (fora do link público) e sem fotos, e os
+--     envios de verificação de identidade apagados. Os arquivos ficam sem uso e a limpeza diária
+--     (orphan_storage_objects) os apaga.
+--   * delete_my_account continua igual para quem usa (login recente, confirmação dos compromissos) e chama a função.
+--   * gatilho BEFORE DELETE em auth.users: qualquer outro caminho (painel, Admin API) roda a mesma limpeza antes da
+--     cascata. Cadastro nunca concluído (sem e-mail confirmado e sem perfil) segue a limpeza do Z01.
+-- Idempotente.
+
+create or replace function public.anonymize_account(p_account public.accounts, p_reason text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_job public.jobs;
+  r record;
+begin
+  if p_account.role = 'trabalhador' then
+    perform public.conclude_finished_jobs(p_account.worker_id, null);
+    for r in
+      select a.id as app_id, j.id as job_id, j.company_id, public.job_title(j) as title
+        from public.applications a join public.jobs j on j.id = a.job_id
+       where a.worker_id = p_account.worker_id and a.status in ('pre_selecionado', 'contratado')
+    loop
+      perform public.application_step(r.app_id, 'desistir', 'trabalhador', p_reason);
+      perform public.job_reopen_auto_rejected(r.job_id, 'vaga_reaberta');
+      perform public.notify(null, r.company_id, 'desistencia', 'Um trabalhador saiu da Bicos',
+        'Ele não vai mais em ' || r.title || '. Confira a vaga.', '/vaga-gerenciar/' || r.job_id);
+    end loop;
+    delete from public.applications where worker_id = p_account.worker_id and status in ('enviada', 'em_analise');
+    delete from public.worker_posts where worker_id = p_account.worker_id;
+    delete from public.notifications where worker_id = p_account.worker_id;
+    delete from public.saved_jobs where worker_id = p_account.worker_id;
+    -- R04: a selfie e o documento saem junto (a limpeza diária apaga os arquivos que ficaram sem envio).
+    delete from public.identity_submissions where worker_id = p_account.worker_id;
+    update public.reviews set author_label = 'Conta excluída'
+     where direction = 'para_construtora'
+       and application_id in (select id from public.applications where worker_id = p_account.worker_id);
+    update public.workers
+       set name = 'Conta excluída', initials = '–', whatsapp = '', specialties = '{}', facts = '{}',
+           neighborhood = null, photo_url = null, cover_url = null
+     where id = p_account.worker_id;
+  else
+    perform public.conclude_finished_jobs(null, p_account.company_id);
+    for r in
+      select a.id as app_id, a.worker_id, public.job_title(j) as title
+        from public.applications a join public.jobs j on j.id = a.job_id
+       where j.company_id = p_account.company_id and a.status in ('pre_selecionado', 'contratado')
+    loop
+      perform public.application_step(r.app_id, 'cancelar_contratacao', 'construtora', p_reason);
+      perform public.notify(r.worker_id, null, 'contratacao_cancelada', 'Contratação cancelada',
+        'A construtora de ' || r.title || ' saiu da Bicos e o bico foi cancelado.', '/minhas-candidaturas');
+    end loop;
+    for v_job in
+      select * from public.jobs where company_id = p_account.company_id and not closed and deleted_at is null
+    loop
+      update public.jobs set closed = true, sem_contratacao = true where id = v_job.id;
+      perform public.job_close_applications(v_job);
+    end loop;
+    -- R04: as vagas da construtora que saiu não abrem mais pelo link público nem aparecem para quem não esteve
+    -- nelas; as fotos ficam sem uso e a limpeza diária apaga os arquivos.
+    update public.jobs set hidden_at = coalesce(hidden_at, now()), hidden_reason = coalesce(hidden_reason, 'conta excluída'),
+           photos = null
+     where company_id = p_account.company_id and deleted_at is null;
+    delete from public.notifications where company_id = p_account.company_id;
+    update public.reviews set author_label = 'Construtora (conta excluída)'
+     where direction = 'para_trabalhador'
+       and application_id in (
+         select a.id from public.applications a join public.jobs j on j.id = a.job_id
+          where j.company_id = p_account.company_id);
+    update public.companies
+       set name = 'Construtora (conta excluída)', whatsapp = '', cnpj = null, logo_url = null, cover_url = null
+     where id = p_account.company_id;
+  end if;
+
+end;
+$$;
+revoke all on function public.anonymize_account(public.accounts, text) from public, anon, authenticated;
+
+create or replace function public.delete_my_account(p_confirm_commitments boolean)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_account public.accounts;
+  v_reason text := 'Conta excluída';
+  v_job public.jobs;
+  v_auth_at timestamptz := public.session_authenticated_at();
+  r record;
+begin
+  select * into v_account from public.accounts where id = auth.uid() for update;
+  if not found then
+    raise exception using errcode = 'BC401', message = 'Entre na sua conta de novo para continuar.';
+  end if;
+  if v_auth_at is null or v_auth_at < now() - interval '5 minutes' then
+    raise exception using errcode = 'BC401', message = 'Por segurança, confirme sua senha de novo para excluir a conta.';
+  end if;
+
+  if v_account.role = 'trabalhador' then
+    perform public.conclude_finished_jobs(v_account.worker_id, null);
+    if not p_confirm_commitments and exists (
+      select 1 from public.applications
+       where worker_id = v_account.worker_id and status in ('pre_selecionado', 'contratado')) then
+      raise exception using errcode = 'BC409', message = 'Confirme o que acontece com os bicos em andamento antes de excluir.';
+    end if;
+  else
+    perform public.conclude_finished_jobs(null, v_account.company_id);
+    if not p_confirm_commitments and exists (
+      select 1 from public.applications a join public.jobs j on j.id = a.job_id
+       where j.company_id = v_account.company_id and not j.closed and j.deleted_at is null
+         and a.status in ('pre_selecionado', 'contratado')) then
+      raise exception using errcode = 'BC409', message = 'Confirme o que acontece com os bicos em andamento antes de excluir.';
+    end if;
+  end if;
+  perform public.anonymize_account(v_account, v_reason);
+
+  -- A conta de acesso por último, na mesma transação: se algo acima falhar, nada fica pela metade.
+  -- Marcar o perfil como completo impede o gatilho de limpeza de cadastro abandonado de apagar o perfil
+  -- anonimizado, que o histórico do outro lado ainda usa. O gatilho do R04 em auth.users não repete a limpeza.
+  update public.accounts set profile_completed_at = coalesce(profile_completed_at, now()) where id = v_account.id;
+  perform set_config('bicos.conta_ja_limpa', v_account.id::text, true);
+  delete from auth.users where id = v_account.id;
+end;
+$$;
+
+create or replace function public.on_auth_user_deleted()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_account public.accounts;
+begin
+  select * into v_account from public.accounts where id = old.id for update;
+  if not found or current_setting('bicos.conta_ja_limpa', true) = old.id::text then
+    return old;  -- sem perfil, ou a exclusão pelo app já limpou
+  end if;
+  if v_account.email_confirmed_at is null and v_account.profile_completed_at is null then
+    return old;  -- cadastro abandonado: cleanup_unconfirmed_profile_v2 (Z01) apaga o perfil vazio
+  end if;
+  perform public.anonymize_account(v_account, 'Conta excluída');
+  update public.accounts set profile_completed_at = coalesce(profile_completed_at, now()) where id = old.id;
+  return old;
+end;
+$$;
+revoke all on function public.on_auth_user_deleted() from public, anon, authenticated;
+
+drop trigger if exists on_auth_user_deleted on auth.users;
+create trigger on_auth_user_deleted before delete on auth.users
+  for each row execute function public.on_auth_user_deleted();
 
 commit;

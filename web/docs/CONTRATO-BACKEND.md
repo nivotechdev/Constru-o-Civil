@@ -68,21 +68,22 @@ contra ele (X14). Tabelas da rodada 2: `application_attempts` (spam, X15), `what
 Fonte única: `services/applicationMachine.ts` (`TRANSITIONS`). O banco deve aplicar a mesma tabela
 (função `transition_application(app_id, action, reason)` que confere status atual e quem chama).
 
-| ação                   | de                             | para                         | quem                 | onde                                                 |
-| ---------------------- | ------------------------------ | ---------------------------- | -------------------- | ---------------------------------------------------- |
-| (criar)                | —                              | `enviada`                    | trabalhador          | Confirmar candidatura                                |
-| (apagar)               | `enviada`, `em_analise`        | — (removida)                 | trabalhador          | Detalhe da vaga › Cancelar candidatura               |
-| `analisar`             | `enviada`                      | `em_analise`                 | construtora, sistema | ao abrir o perfil do candidato (automático)          |
-| `aprovar`              | `enviada`, `em_analise`        | `pre_selecionado`            | construtora          | Gerenciar vaga / Perfil do candidato                 |
-| `recusar`              | `enviada`, `em_analise`        | `nao_selecionado`            | construtora, sistema | Recusar; automático ao lotar a vaga ou encerrá-la    |
-| `desfazer_aprovacao`   | `pre_selecionado`              | `em_analise`                 | construtora          | Perfil do candidato › Desfazer aprovação             |
-| `contratar`            | `pre_selecionado`              | `contratado`                 | construtora          | Confirmar contratação                                |
-| `desistir`             | `pre_selecionado`,`contratado` | `desistiu`                   | trabalhador          | Você avançou › Não vou poder ir (com motivo)         |
-| `cancelar_contratacao` | `pre_selecionado`,`contratado` | `cancelado_pela_construtora` | construtora          | Perfil do candidato › Cancelar (com motivo)          |
-| `concluir`             | `contratado`                   | `concluida`                  | construtora, sistema | Marcar diária como concluída; automático após a data |
-| `marcar_falta`         | `contratado`                   | `nao_compareceu`             | construtora          | Perfil do candidato › Não compareceu                 |
-| `desfazer_recusa`      | `nao_selecionado`              | `em_analise`                 | construtora          | "Desfazer" no aviso de recusa (L22)                  |
-| `expirar`              | `pre_selecionado`              | `expirada`                   | sistema              | a vaga venceu sem confirmar a contratação (Y04)      |
+| ação                     | de                              | para                         | quem                 | onde                                                                                              |
+| ------------------------ | ------------------------------- | ---------------------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
+| (criar)                  | —                               | `enviada`                    | trabalhador          | Confirmar candidatura                                                                             |
+| (apagar)                 | `enviada`, `em_analise`         | — (removida)                 | trabalhador          | Detalhe da vaga › Cancelar candidatura                                                            |
+| `analisar`               | `enviada`                       | `em_analise`                 | construtora, sistema | ao abrir o perfil do candidato (automático)                                                       |
+| `aprovar`                | `enviada`, `em_analise`         | `pre_selecionado`            | construtora          | Gerenciar vaga / Perfil do candidato                                                              |
+| `recusar`                | `enviada`, `em_analise`         | `nao_selecionado`            | construtora, sistema | Recusar; automático ao lotar a vaga ou encerrá-la                                                 |
+| `desfazer_aprovacao`     | `pre_selecionado`               | `em_analise`                 | construtora          | Perfil do candidato › Desfazer aprovação                                                          |
+| `contratar`              | `pre_selecionado`               | `contratado`                 | construtora          | Confirmar contratação                                                                             |
+| `desistir`               | `pre_selecionado`,`contratado`  | `desistiu`                   | trabalhador          | Você avançou › Não vou poder ir (com motivo)                                                      |
+| `cancelar_contratacao`   | `pre_selecionado`,`contratado`  | `cancelado_pela_construtora` | construtora          | Perfil do candidato › Cancelar (com motivo)                                                       |
+| `concluir`               | `contratado`                    | `concluida`                  | construtora, sistema | Marcar diária como concluída; automático após a data                                              |
+| `marcar_falta`           | `contratado`                    | `nao_compareceu`             | construtora          | Perfil do candidato › Não compareceu                                                              |
+| `desfazer_recusa`        | `nao_selecionado`               | `em_analise`                 | construtora          | "Desfazer" no aviso de recusa (L22)                                                               |
+| `expirar`                | `pre_selecionado`               | `expirada`                   | sistema              | a vaga venceu sem confirmar a contratação (Y04)                                                   |
+| `cancelar_por_suspensao` | `pre_selecionado`, `contratado` | `cancelado_pela_equipe`      | sistema              | a equipe suspendeu o trabalhador ou a construtora (R03): o outro lado é avisado; a posição libera |
 
 - Avaliar **não** muda o status: em `concluida`, cada lado avalia uma vez (`worker_reviewed`,
   `company_reviewed`).
@@ -225,7 +226,7 @@ Mesma regra: cada função tem o corpo de demonstração e o real, com as mesmas
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `auth.ts`          | `changePassword`, `changeEmail`, `sendWhatsAppCode`/`verifyWhatsAppCode`, `signInWithGoogle`, `completeOAuthSignUp`, `abandonPasswordReset` | Auth; `create_my_account`; Edge Function `codigo-whatsapp`                        |
 | `applications.ts`  | `undoReject`, `confirmPresence`, `loadMoreMyApplications`, `loadMoreHistory`; `submitApplication` diz `enviada`/`ja_enviada`                | `transition_application`, `undo_reject`, `confirm_presence`                       |
-| `jobs.ts`          | `loadPublicJob` (vaga aberta sem login), `loadMoreFeed`                                                                                     | `public_job_card`, `feed_jobs`                                                    |
+| `jobs.ts`          | `loadPublicJob` (vaga aberta sem login, pelo `public_slug` — L10; 60 consultas/10 min por IP, depois BC409), `loadMoreFeed`                 | `public_job_card`, `feed_jobs`                                                    |
 | `profiles.ts`      | `changeWhatsApp`, `checkMyCompany`, `updatePostCaption`, `saveMyProfileImages`                                                              | `change_whatsapp`, Edge Function `verificar-cnpj`, grants por coluna              |
 | `notifications.ts` | `loadMoreNotifications`, `myPrefs`/`loadNotificationPrefs`/`saveNotificationPrefs`; `unreadCount` usa o número do servidor                  | `my_unread_count`, `save_notification_prefs`, `notify()` respeita o silenciado    |
 | `payments.ts`      | `myPayments`, `loadMyPayments`, `receiptText`                                                                                               | `boost_payments` (leitura da própria construtora)                                 |

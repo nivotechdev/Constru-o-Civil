@@ -14,7 +14,7 @@ update public.workers set photo_url = (select url from t_base) || 'avatars/7d000
  where id = '7d000000-0000-0000-0000-0000000000a9';
 
 select pg_temp.login('7d000000-0000-0000-0000-0000000000a9');
-select public.submit_identity('7d000000-0000-0000-0000-0000000000a9/selfie.jpg', '7d000000-0000-0000-0000-0000000000a9/doc.jpg');
+select public.submit_identity('7d000000-0000-0000-0000-0000000000a9/selfie.jpg', '7d000000-0000-0000-0000-0000000000a9/doc.jpg', '1.0');
 select pg_temp.fails($$select * from public.orphan_storage_objects(10)$$, '42501');
 reset role;
 

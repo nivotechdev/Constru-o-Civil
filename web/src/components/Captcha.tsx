@@ -3,7 +3,7 @@
 // the browser in the background and only asks for a tap when in doubt. Each submit gets a fresh token
 // (a token works once), so a screen that sends two requests (document login: our check, then the Auth)
 // just asks twice.
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FEATURES, TURNSTILE_SITE_KEY } from '../services/features';
 import type { CaptchaSource } from '../services/auth';
 
@@ -44,17 +44,19 @@ function loadApi(): Promise<TurnstileApi> {
  * token is `undefined`, which the services and the server accept.
  */
 export function useCaptcha(): { widget: React.ReactNode; getToken: CaptchaSource } {
-  const box = useRef<HTMLDivElement>(null);
+  // A state ref, not useRef: a screen may show a loading state first and mount the form (and this box)
+  // later; the widget is rendered when the box appears.
+  const [box, setBox] = useState<HTMLDivElement | null>(null);
   const widgetId = useRef<string | null>(null);
   const waiting = useRef<((token: string | undefined) => void)[]>([]);
 
   useEffect(() => {
-    if (!FEATURES.captcha) return;
+    if (!FEATURES.captcha || !box) return;
     let cancelled = false;
     loadApi()
       .then((t) => {
-        if (cancelled || !box.current) return;
-        widgetId.current = t.render(box.current, {
+        if (cancelled) return;
+        widgetId.current = t.render(box, {
           sitekey: TURNSTILE_SITE_KEY,
           language: 'pt-br',
           appearance: 'interaction-only',
@@ -67,13 +69,15 @@ export function useCaptcha(): { widget: React.ReactNode; getToken: CaptchaSource
       .catch(() => undefined);
     return () => {
       cancelled = true;
-      if (widgetId.current)
+      const id = widgetId.current;
+      widgetId.current = null;
+      if (id)
         loadApi().then(
-          (t) => t.remove(widgetId.current as string),
+          (t) => t.remove(id),
           () => undefined
         );
     };
-  }, []);
+  }, [box]);
 
   const getToken = useCallback<CaptchaSource>(async () => {
     if (!FEATURES.captcha) return undefined;
@@ -86,5 +90,5 @@ export function useCaptcha(): { widget: React.ReactNode; getToken: CaptchaSource
     });
   }, []);
 
-  return { widget: FEATURES.captcha ? <div ref={box} className="flex justify-center" /> : null, getToken };
+  return { widget: FEATURES.captcha ? <div ref={setBox} className="flex justify-center" /> : null, getToken };
 }
