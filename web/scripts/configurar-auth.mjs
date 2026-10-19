@@ -46,7 +46,7 @@ const config = {
         smtp_port: '587',
         smtp_user: need('BREVO_SMTP_USER'),
         smtp_pass: need('BREVO_SMTP_KEY'),
-        smtp_admin_email: env.SMTP_SENDER ?? 'nao-responda@nivotech.com.br',
+        smtp_admin_email: env.SMTP_SENDER || 'nao-responda@nivotech.com.br',
         smtp_sender_name: 'Bicos',
         smtp_max_frequency: 60,
         rate_limit_email_sent: Number(env.RATE_LIMIT_EMAIL ?? 100)
