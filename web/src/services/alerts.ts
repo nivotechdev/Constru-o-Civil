@@ -35,7 +35,8 @@ export function alertSummary(alert: JobAlertInput): string {
 
 /** Does a new job match the alert? (Same rule as the trigger notify_job_alerts.) */
 export function alertMatches(alert: JobAlertInput, job: Job): boolean {
-  if (alert.oficioId && alert.oficioId !== job.oficioId) return false;
+  // U01: a job without a trade reaches every alert of the area.
+  if (alert.oficioId && job.oficioId && alert.oficioId !== job.oficioId) return false;
   if (alert.radiusKm == null) {
     const [city, uf = ''] = alert.city.split(',').map((x) => x.trim());
     return fold(city) === fold(job.address.city) && uf === job.address.uf;

@@ -39,7 +39,7 @@ test('presença, diária concluída e avaliação dos dois lados', async ({ brow
     (
       await admin()
         .from('jobs')
-        .update({ start_date: dia(-4), end_date: dia(-2) })
+        .update({ date_to_arrange: false, start_date: dia(-4), end_date: dia(-2) })
         .eq('id', vaga!)
     ).error
   ).toBeNull();

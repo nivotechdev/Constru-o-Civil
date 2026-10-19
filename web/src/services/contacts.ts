@@ -1,7 +1,7 @@
 // WhatsApp contact between a company and a worker. The number is private on both sides: it is handed
 // out only here, and only while the company has picked or hired the worker (then it opens for both).
 import { contactOpen } from './applicationMachine';
-import { oficioNome } from './catalog';
+import { jobTitle } from './catalog';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { getDb, getSession } from './store';
@@ -70,5 +70,5 @@ async function readContact(applicationId: string): Promise<Contact> {
     if (!url) throw serviceError('nao_encontrado', 'Esse trabalhador ainda não cadastrou um WhatsApp.');
     return { name: worker.name, phone: worker.whatsapp, url };
   }
-  throw serviceError('nao_autorizado', `Esse contato é só de quem está no bico de ${oficioNome(job.oficioId)}.`);
+  throw serviceError('nao_autorizado', `Esse contato é só de quem está no bico "${jobTitle(job)}".`);
 }

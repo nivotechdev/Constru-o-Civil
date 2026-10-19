@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { CityPicker, LocationButton } from '../../components/CityPicker';
@@ -7,14 +7,10 @@ import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { JobTile } from '../../components/JobTile';
 import { PhotoManager } from '../../components/PhotoManager';
-import { Select } from '../../components/Select';
-import { Switch } from '../../components/Switch';
-import { Tag } from '../../components/Tag';
 import { TextArea } from '../../components/TextArea';
 import { useDb, useScreenUI } from '../../hooks/useStore';
 import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
 import { IS_DEMO } from '../../services/mode';
-import { OFICIO_OPTIONS, REQUISITOS_OPCOES } from '../../services/catalog';
 import { errorMessage } from '../../services/errors';
 import { publishJob, significantChanges, updateJob } from '../../services/jobs';
 import { holdsSlot, isPending } from '../../services/applicationMachine';
@@ -24,17 +20,14 @@ import { applicationsForJob, approvedCount, currentCompanyId, getCompany } from 
 import { resetUI } from '../../services/store';
 import type { DiasKey, Job } from '../../types/models';
 import { cx } from '../../utils/cx';
-import { todayISO } from '../../utils/dates';
-import { DIAS, DIAS_ORDEM, durationText, WAGE_PAYMENTS } from '../../utils/jobInfo';
-import { toggleItem } from '../../utils/list';
+import { DIAS, DIAS_ORDEM } from '../../utils/jobInfo';
 import { FEATURES } from '../../services/features';
 import {
-  addRequirement,
   draftFromForm,
   emptyForm,
-  formDiarias,
   formFromJob,
   MAX_DESCRIPTION,
+  MAX_TITLE,
   MIN_PAY,
   validateStep1,
   validateStep2,
@@ -91,7 +84,11 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
     publishError: null
   }));
   const f = ui.form;
-  const today = todayISO();
+
+  // U01: each step opens from the top (the "Continuar" button is at the bottom of a long page).
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [ui.step]);
 
   /** Changes form values and clears the messages of the fields they belong to. */
   const set = (patch: Partial<JobForm>, ...clear: FieldKey[]) =>
@@ -172,7 +169,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
     saving.catch((e: unknown) => setUi({ publishing: false, publishError: errorMessage(e) }));
   }
 
-  const diarias = formDiarias(f);
   // Editing a job people applied to: a new pay, date or address is told to them.
   const warnChanges =
     job && candidates.length && !hasErrors(validateStep1(f, new Date(), limits, job))
@@ -182,7 +178,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
     ui.cepStatus === 'loading'
       ? 'Buscando o endereço…'
       : ui.cepStatus === 'found'
-        ? 'Endereço encontrado. Confira e complete com o número.'
+        ? 'Endereço encontrado. Confira a rua e o bairro.'
         : ui.cepStatus === 'notfound'
           ? 'Não achamos esse CEP. Preencha o endereço abaixo.'
           : IS_DEMO
@@ -198,23 +194,16 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           Até 6 fotos do canteiro. A primeira vira a capa do bico no mural.
         </span>
       </div>
-      <Select
-        label="Ofício"
-        placeholder="Escolha o ofício da vaga"
-        options={OFICIO_OPTIONS}
-        value={f.oficioId}
-        error={ui.errors.oficio}
-        onChange={(v) => set({ oficioId: v }, 'oficio')}
-      />
       <Input
         id="create-job-titulo"
-        label="Título (opcional)"
+        label="Título da vaga"
         placeholder="Ex.: Pedreiro para reboco de fachada"
         icon="pencil"
-        hint="Sem título, a vaga aparece com o nome do ofício."
+        hint="É o que o trabalhador lê primeiro no mural."
         value={f.titulo}
-        maxLength={60}
-        onInput={(v) => set({ titulo: v })}
+        error={ui.errors.titulo}
+        maxLength={MAX_TITLE}
+        onInput={(v) => set({ titulo: v }, 'titulo')}
       />
 
       <fieldset className="flex flex-col gap-4">
@@ -259,25 +248,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           error={ui.errors.street}
           onInput={(v) => set({ street: v }, 'street')}
         />
-        <div className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] gap-3">
-          <Input
-            id="create-job-numero"
-            label="Número"
-            placeholder="1240"
-            value={f.number}
-            error={ui.errors.number}
-            maxLength={10}
-            onInput={(v) => set({ number: v }, 'number')}
-          />
-          <Input
-            id="create-job-complemento"
-            label="Complemento (opcional)"
-            placeholder="Ex.: fundos, bloco B"
-            value={f.complement}
-            maxLength={40}
-            onInput={(v) => set({ complement: v })}
-          />
-        </div>
         <Input
           id="create-job-bairro"
           label="Bairro"
@@ -311,16 +281,10 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
         {ui.errors.dias ? <FieldError message={ui.errors.dias} /> : null}
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="rounded-card border border-concrete-200 bg-white px-4">
-          <Switch
-            label="Data a combinar"
-            description="Ligue se o dia ainda vai ser combinado com o trabalhador."
-            checked={f.dateToArrange}
-            onChange={(on) => set({ dateToArrange: on }, 'startDate', 'endDate', 'diarias')}
-          />
-        </div>
-        {f.dateToArrange ? (
+      {/* U01: the date is always arranged with the worker; older jobs with dates keep them as they are. */}
+      {f.dateToArrange ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm text-concrete-500">Data a combinar com o trabalhador.</span>
           <div className="w-[12.5rem]">
             <Input
               id="create-job-diarias"
@@ -333,38 +297,8 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
               onInput={(v) => set({ diarias: digits(v, 2) }, 'diarias')}
             />
           </div>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            <div className="grid grid-cols-2 gap-3 max-w-[27rem]">
-              <Input
-                id="create-job-inicio"
-                label="Começa em"
-                type="date"
-                min={today}
-                value={f.startDate}
-                error={ui.errors.startDate}
-                onInput={(v) =>
-                  set({ startDate: v, endDate: f.endDate && f.endDate >= v ? f.endDate : v }, 'startDate', 'endDate')
-                }
-              />
-              <Input
-                id="create-job-fim"
-                label="Termina em"
-                type="date"
-                min={f.startDate || today}
-                value={f.endDate}
-                error={ui.errors.endDate}
-                onInput={(v) => set({ endDate: v }, 'endDate')}
-              />
-            </div>
-            {diarias > 0 && !ui.errors.startDate && !ui.errors.endDate ? (
-              <span className="text-sm text-concrete-500">
-                {`${durationText({ diarias })} no período${f.dias && f.dias !== 'qualquer' ? `, só ${DIAS[f.dias].short.toLowerCase()}` : ''}.`}
-              </span>
-            ) : null}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-semibold text-concrete-900">Horário (opcional)</span>
@@ -400,21 +334,13 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
         <Input
           id="create-job-vagas"
           label="Pessoas"
-          placeholder="1"
+          placeholder="Ex.: 2"
           suffix="pessoa(s)"
           inputMode="numeric"
           value={f.vagas}
           error={ui.errors.vagas}
           hint="Quantos trabalhadores você precisa."
           onInput={(v) => set({ vagas: digits(v, 2) }, 'vagas')}
-        />
-      </div>
-      <div className="rounded-card border border-concrete-200 bg-white px-4">
-        <Switch
-          label="Vaga urgente"
-          description="De graça. A vaga ganha o selo Urgente e aparece antes das outras no mural, depois das impulsionadas."
-          checked={f.urgente}
-          onChange={(on) => set({ urgente: on })}
         />
       </div>
     </div>
@@ -458,47 +384,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           </div>
         ) : null}
       </div>
-      <div className="flex flex-col gap-2.5">
-        <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Como você paga a diária</div>
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Como você paga a diária">
-          {WAGE_PAYMENTS.map((p) => (
-            <Tag
-              key={p.id}
-              label={p.label}
-              selected={f.pagamento === p.id}
-              onClick={() => set({ pagamento: p.id }, 'pagamento')}
-            />
-          ))}
-        </div>
-        {f.pagamento === 'outro' ? (
-          <Input
-            id="create-job-pagamento"
-            label="Como vai ser"
-            placeholder="Ex.: metade no início, metade no fim"
-            value={f.pagamentoObs}
-            error={ui.errors.pagamento}
-            onInput={(v) => set({ pagamentoObs: v.slice(0, 80) }, 'pagamento')}
-          />
-        ) : ui.errors.pagamento ? (
-          <FieldError message={ui.errors.pagamento} />
-        ) : null}
-      </div>
-      <div className="flex flex-col gap-2.5">
-        <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">
-          O que o trabalhador precisa levar
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {[...REQUISITOS_OPCOES, ...f.requisitos.filter((r) => !REQUISITOS_OPCOES.includes(r))].map((r) => (
-            <Tag
-              key={r}
-              label={r}
-              selected={f.requisitos.includes(r)}
-              onClick={() => set({ requisitos: toggleItem(f.requisitos, r) })}
-            />
-          ))}
-        </div>
-        <ExtraRequirement onAdd={(r) => set({ requisitos: addRequirement(f.requisitos, r) })} />
-      </div>
       <div className="flex flex-col gap-1.5 w-full">
         <label htmlFor="create-job-detalhe" className="text-sm font-semibold text-concrete-900">
           Descrição do bico
@@ -531,7 +416,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           <JobTile
             job={{
               id: 'previa',
-              oficioId: f.oficioId,
+              oficioId: f.oficioId || null,
               title: f.titulo.trim() || null,
               address: { neighborhood: f.neighborhood.trim() || 'Bairro' },
               dias: f.dias,
@@ -558,7 +443,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       />
       <div className="flex items-center gap-2 px-4 sm:px-0 pt-3">
         <StepDot n={1} active={ui.step >= 1} />
-        <span className="text-sm text-concrete-500">Serviço, local e datas</span>
+        <span className="text-sm text-concrete-500">Serviço, local e data</span>
         <span className="flex-1 h-px bg-concrete-200" />
         <StepDot n={2} active={ui.step >= 2} />
         <span className="text-sm text-concrete-500">Valor e requisitos</span>
@@ -637,32 +522,5 @@ function StepDot({ n, active }: { n: number; active: boolean }) {
     >
       {String(n)}
     </span>
-  );
-}
-
-/** P06: a requirement written by the company, besides the ready-made ones. */
-function ExtraRequirement({ onAdd }: { onAdd: (text: string) => void }) {
-  const [text, setText] = useState('');
-  const add = () => {
-    if (!text.trim()) return;
-    onAdd(text);
-    setText('');
-  };
-  return (
-    <div className="flex items-end gap-2">
-      <div className="flex-1 min-w-0">
-        <Input
-          id="create-job-requisito"
-          label="Outro item"
-          placeholder="Ex.: trena própria"
-          value={text}
-          onInput={setText}
-          onEnter={add}
-        />
-      </div>
-      <div className="shrink-0">
-        <Button label="Adicionar" variant="secondary" iconLeft="plus" onClick={add} />
-      </div>
-    </div>
   );
 }

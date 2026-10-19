@@ -4,7 +4,6 @@ import { LocationButton } from '../../../components/CityPicker';
 import { Sheet } from '../../../components/Modal';
 import { Switch } from '../../../components/Switch';
 import { Tag } from '../../../components/Tag';
-import { OFICIO_OPTIONS } from '../../../services/catalog';
 import { noFilters, radiusOf, setFeed, SORTS, type FeedUI } from './feedUI';
 import type { GeoPoint, Role } from '../../../types/models';
 import { FieldError } from '../../../components/FieldError';
@@ -77,12 +76,7 @@ export function FiltersSheet({
           ))}
         </div>
       </div>
-      <FilterGroup
-        title="Ofício"
-        options={OFICIO_OPTIONS}
-        active={ui.oficio}
-        onSelect={(v) => setFeed({ oficio: ui.oficio === v ? null : v })}
-      />
+      {/* U01: no trade filter — the company no longer picks one, the title says what the job is. */}
       <FilterGroup
         title={ui.origin ? 'Distância de onde você está' : 'Distância'}
         options={['5', '10', '20', 'Toda a cidade'].map((d) => (d === 'Toda a cidade' ? d : `Até ${d} km`))}

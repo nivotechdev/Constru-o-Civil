@@ -1,4 +1,4 @@
-import { oficioNome } from '../services/catalog';
+import { jobTitle } from '../services/catalog';
 import type { Job } from '../types/models';
 
 // Opens a WhatsApp chat with a Brazilian number, optionally with a message typed in.
@@ -10,7 +10,7 @@ export function whatsappUrl(phone: string | null | undefined, text?: string): st
   return `https://wa.me/${number}` + (text ? `?text=${encodeURIComponent(text)}` : '');
 }
 
-type JobRef = Pick<Job, 'id' | 'oficioId'> & Partial<Pick<Job, 'startDate' | 'endDate' | 'dateToArrange'>>;
+type JobRef = Pick<Job, 'id' | 'oficioId' | 'title'> & Partial<Pick<Job, 'startDate' | 'endDate' | 'dateToArrange'>>;
 
 const dm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
@@ -36,13 +36,13 @@ export function workerToCompanyMessage({ workerName, companyName, job, hired, co
   const first = workerName.split(' ')[0];
   const greet = contactName ? contactName.split(' ')[0] : companyName;
   const to = greet ? `, ${greet}` : '';
-  return `Olá${to}! Aqui é ${first}, da Bicos. Fui ${hired ? 'contratado' : 'aprovado'} para a vaga de ${oficioNome(job.oficioId)} (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
+  return `Olá${to}! Aqui é ${first}, da Bicos. Fui ${hired ? 'contratado' : 'aprovado'} para a vaga "${jobTitle(job)}" (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
 }
 
 /** The company's first message to the worker it picked. */
 export function companyToWorkerMessage({ workerName, companyName, job, hired }: MessageParts): string {
   const first = workerName.split(' ')[0];
-  return `Olá, ${first}! Aqui é da ${companyName}, pela Bicos. Você foi ${hired ? 'contratado' : 'aprovado'} para a vaga de ${oficioNome(job.oficioId)} (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
+  return `Olá, ${first}! Aqui é da ${companyName}, pela Bicos. Você foi ${hired ? 'contratado' : 'aprovado'} para a vaga "${jobTitle(job)}" (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
 }
 
 export function workerToCompanyUrl(companyPhone: string, parts: MessageParts): string | null {

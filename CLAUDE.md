@@ -15,8 +15,10 @@ Dois lados (enum `app_role`):
 - **recrutador** = construtora/empreiteiro (CNPJ, ou CPF em alguns casos; ver Y16/Y17).
 
 Fluxo central (não mudar sem pedir):
-1. Construtora publica a vaga (ofício, valor da diária, datas/horário, bairro/cidade, fotos, requisitos, vagas).
-2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros; impulsionadas → urgentes → recentes).
+1. Construtora publica a vaga (título, valor da diária, dias/diárias/horário com data a combinar, endereço sem número,
+   fotos, pessoas). U01: sem ofício, datas, urgente, pagamento e requisitos na tela — vagas antigas mantêm os seus.
+2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros — sem filtro de ofício desde o U01;
+   impulsionadas → urgentes → recentes).
 3. Trabalhador se candidata; a construtora vê os candidatos e os perfis (os dois lados veem o perfil do outro).
 4. Construtora aprova → **o WhatsApp é liberado para os dois lados** (`get_contact`). O endereço exato da obra
    só aparece para quem está no bico (`get_job_addresses`).
