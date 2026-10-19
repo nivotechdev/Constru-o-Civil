@@ -70,6 +70,7 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       id: r.id ?? ''
     })),
     jobs: inserts.jobs.map((r): TableRow<'jobs'> => ({
+      oficio_id: null,
       payment_method: null,
       payment_note: null,
       title: null,

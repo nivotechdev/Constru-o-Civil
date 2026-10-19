@@ -60,7 +60,6 @@ export default function MyJobs({ params }: ScreenProps) {
     <div className="flex flex-col">
       <div className="sticky top-0 z-20 flex items-center justify-between min-h-14 px-4 sm:px-0 bg-white border-b border-concrete-200 lg:static lg:bg-transparent lg:border-0 lg:pb-2">
         <h1 className="font-display font-semibold text-xl lg:text-[1.75rem] text-concrete-900">Minhas vagas</h1>
-        <Button label="Publicar" size="sm" iconLeft="plus" onClick={() => navigate('/criar-vaga')} />
       </div>
       <div className="flex flex-col gap-4 px-4 sm:px-0 py-4">
         <div className="flex bg-concrete-100 rounded-full p-1 gap-1" role="tablist" aria-label="Situação das vagas">

@@ -15,8 +15,10 @@ Dois lados (enum `app_role`):
 - **recrutador** = construtora/empreiteiro (CNPJ, ou CPF em alguns casos; ver Y16/Y17).
 
 Fluxo central (não mudar sem pedir):
-1. Construtora publica a vaga (ofício, valor da diária, datas/horário, bairro/cidade, fotos, requisitos, vagas).
-2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros; impulsionadas → urgentes → recentes).
+1. Construtora publica a vaga (título, valor da diária, dias/diárias/horário com data a combinar, endereço sem número,
+   fotos, pessoas). U01: sem ofício, datas, urgente, pagamento e requisitos na tela — vagas antigas mantêm os seus.
+2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros — sem filtro de ofício desde o U01;
+   impulsionadas → urgentes → recentes).
 3. Trabalhador se candidata; a construtora vê os candidatos e os perfis (os dois lados veem o perfil do outro).
 4. Construtora aprova → **o WhatsApp é liberado para os dois lados** (`get_contact`). O endereço exato da obra
    só aparece para quem está no bico (`get_job_addresses`).
@@ -30,6 +32,10 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 
 - Três sócios + a IA fazendo a parte técnica. Quem fala com você é sócio, não desenvolvedor sênior: explique
   decisões em linguagem simples e peça aprovação nos pontos marcados como "ação do responsável".
+- **Toda alteração no projeto vai para o `master`** (pedido do responsável em 19/10/2026): trabalhar na branch
+  `claude/front-novo-supabase`, conferir (CI `web` e `staging` verdes) e levar ao `master` por PR com merge, sem
+  pedir de novo. O `master` publica o site de teste (GitHub Pages) e reaplica o staging; **não** mexe na produção —
+  produção continua só com "pode" a cada passo (§9).
 - Lançamento: **web app (PWA)** primeiro; lojas (React Native/Expo) só depois que o app tracionar.
 - Domínio previsto: `https://bicos.nivotech.com.br` (ainda não confirmado no ar).
 - Cidade do piloto: **Caxias do Sul (RS)**, confirmado pelo responsável em 19/10/2026. Usar nos testes (cidade do

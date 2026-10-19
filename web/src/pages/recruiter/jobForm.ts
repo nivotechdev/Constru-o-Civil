@@ -1,5 +1,8 @@
 // The publish/edit job form: its values, the rules each step checks and the draft it sends. Pure
 // functions (no React), so the rules are tested on their own (src/__tests__/jobForm.test.ts).
+// U01: the screen no longer asks for the trade, the street number and complement, the dates (always "a
+// combinar"), urgency, how the diária is paid or what to bring. The fields stay in the form so that editing
+// a job published before keeps what it had.
 import { cepCity, locate, maskCEP, onlyDigits } from '../../services/address';
 import { getOficio } from '../../services/catalog';
 import { DEFAULT_CITY } from '../../services/defaults';
@@ -10,6 +13,7 @@ import { countDiarias, DIAS } from '../../utils/jobInfo';
 
 export interface JobForm {
   fotos: string[];
+  /** U01: kept from older jobs only ('' on new ones). */
   oficioId: string;
   titulo: string;
   cep: string;
@@ -36,13 +40,13 @@ export interface JobForm {
   detalhe: string;
   /** Free: the company needs people fast (the mural shows "Urgente" and puts it before the others). */
   urgente: boolean;
-  /** L18: how the diária is paid, and (for "outro") how in words. */
-  pagamento: WagePayment;
+  /** L18: how the diária is paid, and (for "outro") how in words. U01: null on new jobs. */
+  pagamento: WagePayment | null;
   pagamentoObs: string;
 }
 
 export type FieldKey =
-  | 'oficio'
+  | 'titulo'
   | 'cep'
   | 'street'
   | 'number'
@@ -65,6 +69,7 @@ export const MIN_PAY = 80;
 /** W08: above this a diária is almost surely a typo (the database refuses it too). */
 export const MAX_PAY = 5000;
 export const MIN_DESCRIPTION = 20;
+export const MAX_TITLE = 60;
 export const MAX_DESCRIPTION = 1000;
 
 export function emptyForm(): JobForm {
@@ -79,19 +84,19 @@ export function emptyForm(): JobForm {
     neighborhood: '',
     city: DEFAULT_CITY,
     dias: null,
-    dateToArrange: false,
+    dateToArrange: true,
     startDate: '',
     endDate: '',
     startTime: '',
     endTime: '',
     diarias: '1',
-    vagas: '1',
+    vagas: '',
     valor: '',
     negociavel: false,
-    requisitos: ['Botina e capacete próprios'],
+    requisitos: [],
     detalhe: '',
     urgente: false,
-    pagamento: 'pix_dia',
+    pagamento: null,
     pagamentoObs: ''
   };
 }
@@ -100,7 +105,7 @@ export function emptyForm(): JobForm {
 export function formFromJob(job: Job): JobForm {
   return {
     fotos: job.photos ? [...job.photos] : [],
-    oficioId: job.oficioId,
+    oficioId: job.oficioId ?? '',
     titulo: job.title ?? '',
     cep: job.address.cep,
     street: job.address.street,
@@ -121,7 +126,7 @@ export function formFromJob(job: Job): JobForm {
     requisitos: [...job.requirements],
     detalhe: job.description,
     urgente: Boolean(job.urgent),
-    pagamento: job.payment ?? 'pix_dia',
+    pagamento: job.payment ?? null,
     pagamentoObs: job.paymentNote ?? ''
   };
 }
@@ -144,10 +149,11 @@ export interface EditLimits {
 // Step 1: what, where, when and how many.
 export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLimits = {}, original?: Job): FormErrors {
   const e: FormErrors = {};
-  if (!getOficio(f.oficioId)) e.oficio = 'Escolha o ofício que a vaga precisa.';
+  const titulo = f.titulo.trim();
+  if (!titulo) e.titulo = 'Dê um título para a vaga. Ex.: Pedreiro para reboco.';
+  else if (titulo.length > MAX_TITLE) e.titulo = `Use até ${MAX_TITLE} letras no título.`;
   if (onlyDigits(f.cep).length !== 8) e.cep = 'Digite o CEP da obra (8 números).';
   if (!f.street.trim()) e.street = 'Informe a rua da obra.';
-  if (!f.number.trim()) e.number = 'Informe o número (ou "s/n").';
   if (!f.neighborhood.trim()) e.neighborhood = 'Informe o bairro.';
   if (!f.city.trim()) e.city = 'Escolha a cidade da obra.';
   // W08: the CEP and the city must be the same place.
@@ -230,8 +236,8 @@ export function draftFromForm(f: JobForm, original?: Job): JobDraft {
   // X10: never (0, 0) — validateStep1 refuses an address the map can't place.
   const point = formPoint(f, original) ?? { lat: original?.address.lat ?? 0, lon: original?.address.lon ?? 0 };
   return {
-    oficioId: f.oficioId,
-    title: f.titulo.trim() || null,
+    oficioId: getOficio(f.oficioId) ? f.oficioId : null,
+    title: f.titulo.trim(),
     pay: f.negociavel ? null : parseInt(f.valor, 10),
     address: {
       cep: maskCEP(f.cep),
@@ -255,7 +261,7 @@ export function draftFromForm(f: JobForm, original?: Job): JobDraft {
     description: f.detalhe.trim(),
     photos: f.fotos,
     urgent: f.urgente,
-    payment: f.pagamento,
+    ...(f.pagamento ? { payment: f.pagamento } : {}),
     ...(f.pagamento === 'outro' ? { paymentNote: f.pagamentoObs.trim() } : {})
   };
 }

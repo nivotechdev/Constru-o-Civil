@@ -37,7 +37,7 @@ describe('getContact', () => {
     expect(r.ok && r.v.name).toBe('Construtora Meridiano');
     expect(r.ok && r.v.url).toContain('https://wa.me/5511988423310?text=');
     expect(r.ok && decodeURIComponent(r.v.url)).toContain(
-      'Aqui é Jorge, da Bicos. Fui aprovado para a vaga de Pedreiro de acabamento (BC-4821)'
+      'Aqui é Jorge, da Bicos. Fui aprovado para a vaga "Pedreiro de acabamento" (BC-4821)'
     );
   });
 
@@ -60,17 +60,27 @@ describe('getContact', () => {
 });
 
 describe('ready-made messages', () => {
-  const job = { id: 'BC-4821', oficioId: 'pedreiro-acabamento', startDate: '2026-10-12', endDate: '2026-10-12' };
+  const job = {
+    id: 'BC-4821',
+    oficioId: 'pedreiro-acabamento',
+    title: null,
+    startDate: '2026-10-12',
+    endDate: '2026-10-12'
+  };
   const parts = { workerName: 'Jorge Mendes', companyName: 'Construtora Meridiano', job, hired: false };
-  it('say who writes, which trade, which job and which day (P07)', () => {
+  it('say who writes, which job (title, or the trade of an older job) and which day (P07, U01)', () => {
     expect(workerToCompanyMessage(parts)).toBe(
-      'Olá, Construtora Meridiano! Aqui é Jorge, da Bicos. Fui aprovado para a vaga de Pedreiro de acabamento (BC-4821) do dia 12/10. Podemos combinar os detalhes?'
+      'Olá, Construtora Meridiano! Aqui é Jorge, da Bicos. Fui aprovado para a vaga "Pedreiro de acabamento" (BC-4821) do dia 12/10. Podemos combinar os detalhes?'
     );
     expect(companyToWorkerMessage({ ...parts, hired: true, job: { ...job, endDate: '2026-10-15' } })).toBe(
-      'Olá, Jorge! Aqui é da Construtora Meridiano, pela Bicos. Você foi contratado para a vaga de Pedreiro de acabamento (BC-4821) de 12/10 a 15/10. Podemos combinar os detalhes?'
+      'Olá, Jorge! Aqui é da Construtora Meridiano, pela Bicos. Você foi contratado para a vaga "Pedreiro de acabamento" (BC-4821) de 12/10 a 15/10. Podemos combinar os detalhes?'
     );
     expect(workerToCompanyMessage({ ...parts, hired: true, job: { ...job, dateToArrange: true } })).toContain(
-      'Fui contratado para a vaga de Pedreiro de acabamento (BC-4821) com data a combinar.'
+      'Fui contratado para a vaga "Pedreiro de acabamento" (BC-4821) com data a combinar.'
+    );
+    // U01: a job without a trade is called by its title.
+    expect(workerToCompanyMessage({ ...parts, job: { ...job, oficioId: null, title: 'Reboco da fachada' } })).toContain(
+      'Fui aprovado para a vaga "Reboco da fachada" (BC-4821)'
     );
     expect(whatsappUrl('', 'oi')).toBeNull();
   });
@@ -78,7 +88,7 @@ describe('ready-made messages', () => {
 
 describe('F15: the company contact person', () => {
   it('the worker greets them by first name', () => {
-    const job = { id: 'BC-1', oficioId: 'pintor', startDate: '2026-10-12', endDate: '2026-10-12' };
+    const job = { id: 'BC-1', oficioId: 'pintor', title: null, startDate: '2026-10-12', endDate: '2026-10-12' };
     expect(
       workerToCompanyMessage({ workerName: 'Jorge', companyName: 'Obra', job, hired: false, contactName: 'Ana Souza' })
     ).toMatch(/^Olá, Ana! Aqui é Jorge/);

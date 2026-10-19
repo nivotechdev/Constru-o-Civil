@@ -135,16 +135,64 @@ describe('mural filters and order with real data', () => {
 });
 
 describe('publish form', () => {
+  // An older job being edited: with a trade, a street number and dates (U01 keeps them when editing).
   const valid = (): JobForm => ({
     ...emptyForm(),
     oficioId: 'pedreiro',
+    titulo: 'Pedreiro para reboco',
     cep: '03307-000',
     street: 'Rua Serra de Bragança',
     number: '1240',
     neighborhood: 'Tatuapé',
     dias: 'semana',
+    dateToArrange: false,
     startDate: '2026-10-08',
-    endDate: '2026-10-13'
+    endDate: '2026-10-13',
+    vagas: '1'
+  });
+
+  it('U01: a new job asks only the title, the address without number, the days, the diárias and the people', () => {
+    const fresh: JobForm = {
+      ...emptyForm(),
+      cep: '03307-000',
+      street: 'Rua Serra de Bragança',
+      neighborhood: 'Tatuapé',
+      dias: 'semana'
+    };
+    // Starts "a combinar", with no people, no requirement, no payment and no urgency.
+    expect([fresh.dateToArrange, fresh.vagas, fresh.requisitos, fresh.pagamento, fresh.urgente]).toEqual([
+      true,
+      '',
+      [],
+      null,
+      false
+    ]);
+    const missing = validateStep1(fresh, NOW);
+    expect(missing.titulo).toMatch(/título/);
+    expect(missing.vagas).toMatch(/quantas pessoas/);
+    expect(missing.number).toBeUndefined();
+    const ok = { ...fresh, titulo: '  Reboco da fachada ', vagas: '2' };
+    expect(Object.values(validateStep1(ok, NOW)).filter(Boolean)).toEqual([]);
+    expect(validateStep1({ ...ok, titulo: 'x'.repeat(61) }, NOW).titulo).toMatch(/até 60/);
+    const draft = draftFromForm(ok);
+    expect(draft).toMatchObject({
+      oficioId: null,
+      title: 'Reboco da fachada',
+      dateToArrange: true,
+      startDate: null,
+      endDate: null,
+      diarias: 1,
+      slots: 2,
+      requirements: [],
+      urgent: false
+    });
+    expect(draft.address.number).toBe('');
+    expect(draft.payment).toBeUndefined();
+    // Editing an older job keeps its trade and payment.
+    expect(draftFromForm({ ...valid(), pagamento: 'dinheiro' })).toMatchObject({
+      oficioId: 'pedreiro',
+      payment: 'dinheiro'
+    });
   });
 
   it('accepts a complete form and refuses past dates, end before start and bad hours', () => {

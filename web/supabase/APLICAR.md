@@ -550,6 +550,17 @@ Admin API limpa igual à exclusão pelo app. Os arquivos saem na limpeza diária
 select tgname from pg_trigger where tgname = 'on_auth_user_deleted';   -- 1 linha
 ```
 
+### 47. `20261019000100_u01_vaga_simples.sql` (U01)
+
+Cadastro de vaga simplificado: `jobs.oficio_id` aceita null, o título passa a ser obrigatório (até 60 letras), o
+número do endereço é opcional e sem forma de pagamento a vaga fica sem (`payment_method` null). O alerta de bico novo
+chega a todos da região quando a vaga não tem ofício; a denúncia de vaga sem ofício aparece na fila da equipe.
+Vagas antigas não mudam. **Junto com o front novo** (o front antigo manda o ofício e não manda título).
+
+```sql
+select is_nullable from information_schema.columns where table_name = 'jobs' and column_name = 'oficio_id';  -- YES
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

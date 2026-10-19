@@ -1574,3 +1574,21 @@ permissão, o `anon` não). O app traduzia o `42501` como "Sua conta não pode f
 Agora, se o banco nega por permissão **e** o cliente não tem sessão, o app trata como sessão terminada ("Sua sessão
 terminou. Entre de novo para continuar.") e leva ao login. Com sessão, a recusa continua com a mensagem genérica.
 Causa do navegador interno perder a sessão: não confirmada; no roteiro de teste, abrir o link do e-mail no Safari/Chrome.
+
+## U01 — Cadastro de vaga simplificado (teste com os amigos)
+
+Pedido dos sócios depois de testar o site: menos campos para a construtora. **Passo 1** ("Serviço, local e data"):
+sem ofício, sem número e complemento, sem data de início e fim (toda vaga nova é "data a combinar", com os dias da
+semana, as diárias e o horário opcional), sem "vaga urgente"; o **título passa a ser obrigatório** e o campo
+"Pessoas" começa vazio e é obrigatório. **Passo 2** ("Valor e requisitos"): sem "como você paga a diária" e sem "o
+que o trabalhador precisa levar" (com o "outro item"); cada passo abre no topo da tela. **Minhas vagas** não tem mais
+o botão "Publicar" no topo (continua na barra de baixo e no aviso de lista vazia).
+
+Consequências decididas com o responsável: sem ofício na vaga, **o filtro de ofício sai do mural** e todo trabalhador
+vê todas as vagas; o alerta de bico novo chega a todos da região; a capa de vaga sem foto vem do título; a mensagem
+pronta do WhatsApp cita o título ("para a vaga \"Reboco da fachada\""). No banco (`u01_vaga_simples`): `oficio_id`
+aceita null, título obrigatório (até 60), número opcional, sem pagamento = null ("Pagamento combinado direto" na
+tela, em vez de prometer PIX no dia). Vagas antigas não mudam, e editar uma delas mantém o que ela tinha (ofício,
+datas, pagamento, requisitos) — os campos continuam no formulário, só não aparecem. Com "data a combinar", o último
+dia da vaga é 30 dias depois de publicada (Y01): a diária contratada é concluída sozinha 2 dias depois disso, ou antes,
+quando a construtora marca "concluída" — a avaliação dos dois lados continua acontecendo.

@@ -2,7 +2,7 @@
 begin;
 select pg_temp.new_user('7d000000-0000-0000-0000-0000000000c8', 'recrutador', 'Obra Limites', '11.222.333/0001-81');
 create temp table t_draft as select jsonb_build_object(
-  'oficio_id', (select id from public.oficios limit 1), 'pay', 200, 'cep', '01310-100', 'street', 'Avenida Paulista',
+  'oficio_id', (select id from public.oficios limit 1), 'title', 'Reboco de parede', 'pay', 200, 'cep', '01310-100', 'street', 'Avenida Paulista',
   'number', '1000', 'neighborhood', 'Bela Vista', 'city', 'São Paulo', 'uf', 'SP', 'lat', -23.56, 'lon', -46.65,
   'date_to_arrange', false, 'start_date', public.bicos_today() + 2, 'end_date', public.bicos_today() + 3,
   'slots', 1, 'description', 'Reboco de duas paredes internas', 'start_time', '22:00', 'end_time', '06:00') as d;

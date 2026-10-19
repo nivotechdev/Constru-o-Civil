@@ -39,7 +39,7 @@ test('presença, diária concluída e avaliação dos dois lados', async ({ brow
     (
       await admin()
         .from('jobs')
-        .update({ start_date: dia(-4), end_date: dia(-2) })
+        .update({ date_to_arrange: false, start_date: dia(-4), end_date: dia(-2) })
         .eq('id', vaga!)
     ).error
   ).toBeNull();
@@ -56,14 +56,15 @@ test('presença, diária concluída e avaliação dos dois lados', async ({ brow
   await w.goto('/avaliar/' + vaga);
   await w.getByRole('radio', { name: /^5 estrelas/ }).click();
   await w.getByRole('button', { name: 'Enviar avaliação' }).click();
-  await expect(w.getByRole('button', { name: 'Enviar avaliação' })).toBeHidden();
+  // Só depois de salvar o app sai da tela (enquanto envia, o botão fica "carregando" e já some com esse nome).
+  await expect(w).toHaveURL(/\/minhas-candidaturas/);
   await print(w, 'f4', 'trabalhador avaliou a construtora');
 
   // Construtora avalia o trabalhador.
   await c.goto(`/avaliar-trabalhador/${vaga}/${contas.trabalhador.id}`);
   await c.getByRole('radio', { name: /^4 estrelas/ }).click();
   await c.getByRole('button', { name: 'Enviar avaliação' }).click();
-  await expect(c.getByRole('button', { name: 'Enviar avaliação' })).toBeHidden();
+  await expect(c).toHaveURL(/\/historico/);
   await print(c, 'f4', 'construtora avaliou o trabalhador');
 
   const { data: wk } = await admin()

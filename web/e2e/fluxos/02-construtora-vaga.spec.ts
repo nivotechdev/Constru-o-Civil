@@ -20,10 +20,6 @@ import {
 } from '../apoio';
 
 const FOTO = fileURLToPath(new URL('../fixtures/foto.png', import.meta.url));
-const dia = (n: number) => {
-  const d = new Date(Date.now() + n * 86_400_000);
-  return d.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
-};
 
 test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => {
   await prepararPagina(page);
@@ -62,24 +58,24 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).not.toHaveURL(/completar-perfil/);
 
-  // Publicar a vaga (passo 1: foto, ofício, endereço, datas; passo 2: valor, pagamento, descrição).
+  // Publicar a vaga (U01 — passo 1: foto, título, endereço sem número, dias, diárias, pessoas; passo 2: valor e
+  // descrição). Sem ofício, sem datas (sempre a combinar), sem urgente, sem pagamento e sem requisitos.
   await page.goto('/criar-vaga');
   await page.locator('input[type=file]').first().setInputFiles(FOTO);
-  await page.getByLabel('Ofício').selectOption('pedreiro');
+  // O título é obrigatório: sem ele, não passa do passo 1.
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByText('Dê um título para a vaga')).toBeVisible();
   await page.fill('#create-job-titulo', 'Reboco de parede E2E');
   await page.fill('#create-job-cep', '03307000');
   await expect(page.getByText('Endereço encontrado')).toBeVisible();
-  await page.fill('#create-job-numero', '100');
   await page.getByRole('radio', { name: /Qualquer dia/ }).click();
-  await page.fill('#create-job-inicio', dia(2));
-  await page.fill('#create-job-fim', dia(3));
+  await page.fill('#create-job-diarias', '2');
   await page.fill('#create-job-hora-inicio', '07:00');
   await page.fill('#create-job-hora-fim', '17:00');
   await page.fill('#create-job-vagas', '2');
   await print(page, 'f2', 'publicar vaga passo 1');
   await page.getByRole('button', { name: 'Continuar' }).click();
   await page.fill('#create-job-valor', '250');
-  await page.getByText('PIX no fim de cada diária').click();
   await page.fill('#create-job-detalhe', 'Reboco de duas paredes internas. Material no local.');
   await print(page, 'f2', 'publicar vaga passo 2');
   await page.getByRole('button', { name: 'Publicar vaga' }).click();
@@ -88,8 +84,20 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   const vaga = /BC-\d+/.exec(page.url())![0];
   atualizar((e) => (e.vaga = vaga));
 
-  const { data: job } = await admin().from('jobs').select('city, uf, photos').eq('id', vaga).single();
-  expect(job).toMatchObject({ city: 'São Paulo', uf: 'SP' });
+  const { data: job } = await admin()
+    .from('jobs')
+    .select('city, uf, photos, oficio_id, date_to_arrange, diarias, slots, payment_method')
+    .eq('id', vaga)
+    .single();
+  expect(job).toMatchObject({
+    city: 'São Paulo',
+    uf: 'SP',
+    oficio_id: null,
+    date_to_arrange: true,
+    diarias: 2,
+    slots: 2,
+    payment_method: null
+  });
   expect(job!.photos?.length).toBe(1);
 });
 

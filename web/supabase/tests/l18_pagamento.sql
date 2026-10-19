@@ -6,7 +6,7 @@ select pg_temp.new_user('74000000-0000-0000-0000-0000000000a1', 'trabalhador', '
 create temp table t_draft (p jsonb);
 grant all on t_draft to authenticated;
 insert into t_draft select jsonb_build_object(
-  'oficio_id', 'pedreiro', 'pay', 200, 'cep', '03307-000', 'street', 'Rua Teste', 'number', '10',
+  'oficio_id', 'pedreiro', 'title', 'Reboco de parede', 'pay', 200, 'cep', '03307-000', 'street', 'Rua Teste', 'number', '10',
   'neighborhood', 'Tatuapé', 'city', 'São Paulo', 'uf', 'SP', 'lat', -23.54, 'lon', -46.57,
   'start_date', public.bicos_today() + 2, 'end_date', public.bicos_today() + 3, 'slots', 1,
   'description', 'Reboco de duas paredes internas', 'payment_method', 'pix_fim', 'requirements', jsonb_build_array('EPI', 'trena própria'));
@@ -21,9 +21,10 @@ select pg_temp.fails($$select public.publish_job((select p || '{"payment_method"
 select pg_temp.fails($$select public.publish_job((select p || '{"payment_method": "cheque"}' from t_draft))$$, 'BC422');
 select pg_temp.fails($$select public.publish_job((select p || jsonb_build_object('requirements',
   (select jsonb_agg('item ' || i) from generate_series(1, 13) i)) from t_draft))$$, 'BC422');
--- Sem o campo (app antigo): PIX no fim da diária.
-insert into t_ids values ('antigo', public.publish_job((select p - 'payment_method' from t_draft)));
-select pg_temp.ok((select payment_method = 'pix_dia' from public.jobs where id = (select v from t_ids where k = 'antigo')), 'padrão PIX no dia');
+-- U01: sem o campo (a tela não pergunta mais), a vaga fica sem forma de pagamento — nada de prometer PIX no dia.
+insert into t_ids values ('sem', public.publish_job((select p - 'payment_method' from t_draft)));
+select pg_temp.ok((select payment_method is null and payment_note is null from public.jobs where id = (select v from t_ids where k = 'sem')),
+  'sem forma de pagamento escolhida');
 select pg_temp.logout();
 
 -- Um candidato; a construtora muda para dinheiro: ele é avisado.

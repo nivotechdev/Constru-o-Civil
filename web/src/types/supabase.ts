@@ -123,7 +123,7 @@ type WorkerRow = {
 type JobRow = {
   id: string;
   company_id: string;
-  oficio_id: string;
+  oficio_id: string | null;
   title: string | null;
   pay: number | null;
   cep: string;

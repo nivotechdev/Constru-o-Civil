@@ -174,9 +174,9 @@ export interface JobAddress extends GeoPoint {
 export interface Job {
   id: string;
   companyId: string;
-  /** The trade the job asks for (catalog id). */
-  oficioId: string;
-  /** Optional heading ("Pedreiro para reboco de fachada"); without it the trade's name is shown. */
+  /** U01: the trade, only on jobs published before the form stopped asking for it (catalog id). */
+  oficioId: string | null;
+  /** The heading ("Pedreiro para reboco de fachada"); required since U01, older jobs fall back to the trade. */
   title: string | null;
   /** Fixed R$ per diária; `null` means "A combinar". */
   pay: number | null;
