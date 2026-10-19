@@ -28,7 +28,9 @@ export const ENV = {
   emailBase: process.env.E2E_EMAIL_BASE ?? 'nivotech.dev@gmail.com',
   /** Local: o Turnstile de verdade não carrega sem internet — usa um falso com o token de teste da Cloudflare. */
   fakeTurnstile: process.env.E2E_FAKE_TURNSTILE === '1',
-  password: 'Bicos-e2e-2026'
+  password: 'Bicos-e2e-2026',
+  /** O app sob teste — o mesmo baseURL do playwright.config.ts. */
+  appUrl: process.env.E2E_BASE_URL ?? 'http://localhost:4173'
 };
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -142,13 +144,22 @@ export async function comoConta(email: string, senha = ENV.password): Promise<Su
 
 /** O link que confirma o e-mail (o mesmo efeito do link do e-mail), pela Admin API. */
 export async function linkDeConfirmacao(email: string): Promise<string> {
-  const { data, error } = await admin().auth.admin.generateLink({ type: 'magiclink', email });
+  const { data, error } = await admin().auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+    // Sem redirectTo o link volta para o Site URL do projeto — no staging, o site de teste, não este app.
+    options: { redirectTo: ENV.appUrl + '/' }
+  });
   if (error || !data.properties?.action_link) throw new Error(`generateLink: ${error?.message}`);
   return data.properties.action_link;
 }
 
 export async function linkDeRecuperacao(email: string): Promise<string> {
-  const { data, error } = await admin().auth.admin.generateLink({ type: 'recovery', email });
+  const { data, error } = await admin().auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: { redirectTo: ENV.appUrl + '/' }
+  });
   if (error || !data.properties?.action_link) throw new Error(`generateLink: ${error?.message}`);
   return data.properties.action_link;
 }
