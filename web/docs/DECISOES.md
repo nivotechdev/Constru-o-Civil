@@ -1625,3 +1625,10 @@ ficava na pílula, agora aparece como texto embaixo do título em "Minhas candid
 deixaram de aparecer na foto (a ordenação do mural não muda). **Passo 2:** "Valor da diária" virou um seletor
 ("Definir valor" / "A combinar") e um campo com "R$". **Passo 2 só abre com o passo 1 completo** (pílula ou "Continuar"),
 e o erro aparece no passo 1.
+
+## U05 — "Minhas vagas": fotos dos candidatos sem nomes, "e mais N"; borda que abraça a foto
+
+Pedido do responsável. No card, embaixo do título, ficam até 3 fotos dos candidatos em aberto e, só quando há mais de
+3, "e mais N" (N = os que não aparecem). Os nomes saíram (o leitor de tela ouve "N candidatos"). A borda branca das
+fotos sobrepostas ficava num elemento por fora da foto e parecia maior que ela; agora é desenhada na própria foto
+(`ring` em `components/Avatar.tsx`, padrão `AVATAR_BORDER`) e é mais fina (1,5 px).

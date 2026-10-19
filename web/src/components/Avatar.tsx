@@ -13,13 +13,22 @@ const SIZES = {
 
 type Size = keyof typeof SIZES;
 
+/**
+ * The one white border around a profile photo, wherever it sits on top of something (stacked photos,
+ * the photo over a cover): thin and the same everywhere. Drawn on the photo itself, so it hugs it.
+ */
+export const AVATAR_BORDER = 'ring-[1.5px] ring-white';
+
 export function WorkerAvatar({
   worker,
   size = 'md',
+  ring = false,
   className
 }: {
   worker: Pick<Worker, 'initials' | 'photoUrl'>;
   size?: Size;
+  /** The white border, for a photo over other photos or over a cover. */
+  ring?: boolean;
   className?: string;
 }) {
   const s = SIZES[size];
@@ -28,6 +37,7 @@ export function WorkerAvatar({
       className={cx(
         'inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 bg-accent-50 text-accent-600 font-bold',
         s.box,
+        ring && AVATAR_BORDER,
         className
       )}
     >
@@ -43,10 +53,13 @@ export function WorkerAvatar({
 export function CompanyAvatar({
   company,
   size = 'md',
+  ring = false,
   className
 }: {
   company: Pick<Company, 'logoUrl'>;
   size?: Size;
+  /** The white border, for a photo over other photos or over a cover. */
+  ring?: boolean;
   className?: string;
 }) {
   const s = SIZES[size];
@@ -55,6 +68,7 @@ export function CompanyAvatar({
       className={cx(
         'inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 bg-brand-50',
         s.box,
+        ring && AVATAR_BORDER,
         className
       )}
     >

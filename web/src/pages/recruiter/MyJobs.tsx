@@ -117,30 +117,29 @@ export default function MyJobs({ params }: ScreenProps) {
   );
 }
 
-/** The candidates still in the running (waiting for an answer, or picked): up to three first names and photos. */
+/**
+ * The candidates still in the running (waiting for an answer, or picked): up to three photos, and
+ * "e mais N" when there are more than three.
+ */
 function Candidates({ people }: { people: Worker[] }) {
-  // Two lines at most, and always the same height, so every card in the grid is the same size.
+  // Always the same height, so every card in the grid is the same size.
   if (!people.length)
     return <span className="flex min-h-10 items-center text-sm text-concrete-500">Nenhum candidato ainda</span>;
   const shown = people.slice(0, 3);
   const rest = people.length - shown.length;
-  const names = shown.map((w) => w.name.split(' ')[0]);
-  const text =
-    rest > 0
-      ? `${names.join(', ')} e mais ${rest} ${rest === 1 ? 'candidato' : 'candidatos'}`
-      : names.length === 1
-        ? names[0]
-        : `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]}`;
   return (
-    <div className="flex min-h-10 items-center gap-2.5 min-w-0">
-      <div className="flex shrink-0 items-center">
+    <div className="flex min-h-10 items-center gap-2 min-w-0">
+      <span className="sr-only">{`${people.length} ${people.length === 1 ? 'candidato' : 'candidatos'}`}</span>
+      <div className="flex shrink-0 items-center" aria-hidden="true">
         {shown.map((w, i) => (
-          <span key={w.id} className={cx('rounded-full ring-2 ring-white', i > 0 && '-ml-2.5')}>
-            <WorkerAvatar worker={w} size="xs" />
-          </span>
+          <WorkerAvatar key={w.id} worker={w} size="xs" ring className={cx(i > 0 && '-ml-2')} />
         ))}
       </div>
-      <span className="line-clamp-2 text-sm leading-snug text-concrete-700">{text}</span>
+      {rest > 0 ? (
+        <span className="text-sm font-medium text-concrete-500 whitespace-nowrap" aria-hidden="true">
+          {`e mais ${rest}`}
+        </span>
+      ) : null}
     </div>
   );
 }
