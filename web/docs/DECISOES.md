@@ -1592,3 +1592,14 @@ tela, em vez de prometer PIX no dia). Vagas antigas não mudam, e editar uma del
 datas, pagamento, requisitos) — os campos continuam no formulário, só não aparecem. Com "data a combinar", o último
 dia da vaga é 30 dias depois de publicada (Y01): a diária contratada é concluída sozinha 2 dias depois disso, ou antes,
 quando a construtora marca "concluída" — a avaliação dos dois lados continua acontecendo.
+
+## U02 — Textos de ajuda do cadastro de vaga enxutos
+
+Pedido do responsável ao ver a tela no celular: interface limpa. Saíram as frases que só repetiam o campo ou
+explicavam o que não precisa ser explicado: "É o que o trabalhador lê primeiro no mural" (título), "Quantos
+trabalhadores você precisa" (pessoas), "Data a combinar com o trabalhador" e "Em branco: horário a combinar", "Antes
+de aprovar alguém, os candidatos veem só o bairro e a cidade…" (endereço), "Quanto mais claro…" (descrição), a dica do
+CEP antes de digitar e "O trabalhador vê esse valor no mural" (valor). Ficam as mensagens que pedem uma ação ou
+confirmam algo: erros, "Endereço encontrado" / "Não achamos esse CEP", "Mínimo de R$ 80", o aviso de "a combinar" e o
+contador da descrição. A regra de privacidade (candidato vê só bairro e cidade até a aprovação) não mudou: está no
+produto, não precisava estar na tela.
