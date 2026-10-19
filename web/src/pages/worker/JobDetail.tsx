@@ -43,7 +43,8 @@ import {
   totalText,
   whenText
 } from '../../utils/jobInfo';
-import { CompanyAvatar } from '../../components/Avatar';
+import { AVATAR_FRAME, CompanyAvatar } from '../../components/Avatar';
+import { cx } from '../../utils/cx';
 import { shareJob } from '../../utils/share';
 import { IconButton } from '../../components/IconButton';
 import { answerInvite, inviteFor, loadInvites } from '../../services/invites';
@@ -184,7 +185,7 @@ export default function JobDetail({ params }: ScreenProps) {
           <Card padding="none">
             <div className="relative">
               <PhotoCarousel job={job} className="h-72 sm:h-80 lg:h-[26rem] rounded-t-card" />
-              <div className="absolute z-10 left-4 -bottom-6 w-[3.75rem] h-[3.75rem] rounded-full bg-white p-0.5 shadow-raised">
+              <div className={cx('absolute z-10 left-4 -bottom-6 w-[3.75rem] h-[3.75rem] shadow-raised', AVATAR_FRAME)}>
                 <CompanyAvatar company={company} className="w-full h-full" />
               </div>
             </div>

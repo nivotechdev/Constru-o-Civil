@@ -1644,3 +1644,12 @@ equipe termina (Y01), quando o prazo passa (Y04) ou quando a conta da construtor
 A regra da Y08 também fica: com gente escolhida ou contratada, a vaga não é excluída (o botão Excluir não aparece);
 ela segue até fechar sozinha. Os testes que usavam o encerramento para chegar a uma vaga fechada passaram a fechá-la
 pelo prazo ou direto no store (o teste "fechar torna as recusas definitivas" agora usa o prazo); continuam 217.
+
+## U07 — Borda das fotos de perfil mais fina e igual no app todo
+
+Pedido do responsável: a borda branca das fotos de perfil (candidato, trabalhador, construtora) levemente mais fina e
+padronizada. Havia três espessuras: 4 px nos cabeçalhos dos perfis, 2 px no logo da construtora sobre a capa da vaga e
+2 px nas fotos sobrepostas de "Minhas vagas". Agora todas têm **1,5 px**, definidos num lugar só
+(`components/Avatar.tsx`: `AVATAR_BORDER` para a borda desenhada na foto e `AVATAR_FRAME` para a moldura em volta dela).
+O tamanho de cada foto não mudou (o círculo do cabeçalho continua com 96 px, e a foto ganha o espaço que a borda
+grossa ocupava). Fotos em listas, que não têm borda, continuam sem borda.

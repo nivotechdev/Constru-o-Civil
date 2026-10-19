@@ -27,7 +27,8 @@ import { oficioNome } from '../../services/catalog';
 import { workerFacts, workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
-import { WorkerAvatar } from '../../components/Avatar';
+import { AVATAR_FRAME, WorkerAvatar } from '../../components/Avatar';
+import { cx } from '../../utils/cx';
 import { InviteSheet } from '../recruiter/InviteSheet';
 import { SafetyMenu } from '../../components/SafetyMenu';
 import { identityOf } from '../../services/identity';
@@ -107,7 +108,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
             <AccountMenuButton role="trabalhador" />
           </div>
         )}
-        <div className="absolute left-4 sm:left-6 -bottom-10 w-24 h-24 rounded-full bg-white p-1 shadow-raised">
+        <div className={cx('absolute left-4 sm:left-6 -bottom-10 w-24 h-24 shadow-raised', AVATAR_FRAME)}>
           <div className="relative w-full h-full">
             <WorkerAvatar worker={worker} size="lg" className="w-full h-full" />
             {worker.verified ? (
