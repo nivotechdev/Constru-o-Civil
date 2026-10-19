@@ -183,23 +183,20 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           ? 'Não achamos esse CEP. Preencha o endereço abaixo.'
           : IS_DEMO
             ? `Demonstração: ${EXAMPLE_CEPS.slice(0, 3).join(', ')} são encontrados.`
-            : 'Digite o CEP e a gente preenche o endereço.';
+            : '';
 
   const step1 = (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2.5 text-center">
         <span className="text-sm font-semibold text-concrete-900">Fotos da vaga (opcional)</span>
         <PhotoManager photos={f.fotos} onChange={(fotos) => set({ fotos })} />
-        <span className="max-w-[22rem] text-sm text-concrete-500">
-          Até 6 fotos do canteiro. A primeira vira a capa do bico no mural.
-        </span>
+        <span className="max-w-[22rem] text-sm text-concrete-500">Até 6 fotos. A primeira é a capa.</span>
       </div>
       <Input
         id="create-job-titulo"
         label="Título da vaga"
         placeholder="Ex.: Pedreiro para reboco de fachada"
         icon="pencil"
-        hint="É o que o trabalhador lê primeiro no mural."
         value={f.titulo}
         error={ui.errors.titulo}
         maxLength={MAX_TITLE}
@@ -234,11 +231,11 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           </div>
           {ui.errors.cep ? null : ui.cepStatus === 'error' ? (
             <FieldError message={ui.cepError || 'Não deu para buscar o CEP.'} />
-          ) : (
+          ) : cepHint ? (
             <span className={cx('text-sm', ui.cepStatus === 'found' ? 'text-success-500' : 'text-concrete-500')}>
               {cepHint}
             </span>
-          )}
+          ) : null}
         </div>
         <Input
           id="create-job-rua"
@@ -258,10 +255,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
         />
         <LocationButton title="Cidade da obra" location={f.city} onClick={() => setUi({ pickerOpen: true })} />
         {ui.errors.city ? <FieldError message={ui.errors.city} /> : null}
-        <span className="text-sm text-concrete-500">
-          Antes de aprovar alguém, os candidatos veem só o bairro e a cidade. O endereço completo aparece para quem você
-          aprovar.
-        </span>
       </fieldset>
 
       <div className="flex flex-col gap-2" role="radiogroup" aria-labelledby="create-job-dias-label">
@@ -284,7 +277,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       {/* U01: the date is always arranged with the worker; older jobs with dates keep them as they are. */}
       {f.dateToArrange ? (
         <div className="flex flex-col gap-1.5">
-          <span className="text-sm text-concrete-500">Data a combinar com o trabalhador.</span>
           <div className="w-[12.5rem]">
             <Input
               id="create-job-diarias"
@@ -323,11 +315,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
             />
           </div>
         </div>
-        {ui.errors.periodo ? (
-          <FieldError message={ui.errors.periodo} />
-        ) : (
-          <span className="text-sm text-concrete-500">Em branco: horário a combinar.</span>
-        )}
+        {ui.errors.periodo ? <FieldError message={ui.errors.periodo} /> : null}
       </div>
 
       <div className="w-[10rem]">
@@ -339,7 +327,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           inputMode="numeric"
           value={f.vagas}
           error={ui.errors.vagas}
-          hint="Quantos trabalhadores você precisa."
           onInput={(v) => set({ vagas: digits(v, 2) }, 'vagas')}
         />
       </div>
@@ -359,7 +346,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
               inputMode="numeric"
               value={f.valor}
               error={ui.errors.valor}
-              hint={ui.errors.valor ? null : `O trabalhador vê esse valor no mural. Mínimo de R$ ${MIN_PAY}.`}
+              hint={ui.errors.valor ? null : `Mínimo de R$ ${MIN_PAY}.`}
               onInput={(v) => set({ valor: digits(v, 5) }, 'valor')}
             />
           </div>
@@ -402,13 +389,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           onInput={(v) => set({ detalhe: v.slice(0, MAX_DESCRIPTION) }, 'detalhe')}
         />
         <span className="text-xs text-concrete-500 self-end">{`${f.detalhe.trim().length}/${MAX_DESCRIPTION}`}</span>
-        {ui.errors.detalhe ? (
-          <FieldError message={ui.errors.detalhe} />
-        ) : (
-          <span className="text-sm text-concrete-500">
-            Quanto mais claro, menos desencontro no canteiro. Essa descrição aparece para quem ver o bico.
-          </span>
-        )}
+        {ui.errors.detalhe ? <FieldError message={ui.errors.detalhe} /> : null}
       </div>
       <div className="flex flex-col items-center gap-3 pt-5 border-t border-concrete-200 text-center">
         <span className="font-semibold text-concrete-900">Como vai aparecer no mural</span>
