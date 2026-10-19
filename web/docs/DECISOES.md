@@ -1548,3 +1548,9 @@ Supabase recusa esse login ("no captcha_token found") e o app dizia "senha incor
 telas quebrariam na produção assim que o captcha fosse ligado. Agora `checkPassword` recebe o captcha como os outros
 formulários públicos (`useCaptcha` nas três telas, widget acima do botão), e os logins feitos pelo Node no E2E mandam
 o token de teste (`CAPTCHA_TESTE`). O teste do `fakeSupabase` confere que o token chega ao Auth.
+
+Na segunda rodada no staging apareceram mais dois pontos. (1) Na tela "Excluir minha conta" o captcha nunca
+aparecia: a tela mostra primeiro o "carregando" e só depois o formulário, e o `useCaptcha` procurava a caixa do
+widget no primeiro instante. Agora o widget é montado quando a caixa aparece (ref por estado). (2) O teste do limite
+de 5 tentativas chamava a função só com `apikey`; no Supabase de verdade a porta das funções com JWT responde 401
+antes da função rodar, então o limite nunca era contado. O teste agora manda o `Authorization`, como o app.

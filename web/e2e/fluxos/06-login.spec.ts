@@ -30,10 +30,17 @@ test('a 6ª tentativa errada no mesmo documento é barrada (429)', async () => {
     // Só no E2E local (todas as execuções saem do mesmo IP): zera o limite por IP de execuções anteriores.
     await admin().from('auth_attempts').delete().like('key', 'ip:%');
   }
+  // Os mesmos cabeçalhos que o app manda (supabase-js): no Supabase de verdade, sem o Authorization a porta
+  // das funções com JWT responde 401 antes da função rodar — e o limite nunca seria contado.
+  const cabecalhos = {
+    apikey: ENV.anonKey(),
+    Authorization: `Bearer ${ENV.anonKey()}`,
+    'Content-Type': 'application/json'
+  };
   const tentar = () =>
     fetch(`${ENV.functionsUrl}/functions/v1/entrar-com-documento`, {
       method: 'POST',
-      headers: { apikey: ENV.anonKey(), 'Content-Type': 'application/json' },
+      headers: cabecalhos,
       body: JSON.stringify({
         documento: conta.documento,
         senha: 'senha-errada-123',
@@ -46,7 +53,7 @@ test('a 6ª tentativa errada no mesmo documento é barrada (429)', async () => {
   // Com o limite batido, nem a senha certa entra (sem revelar se a conta existe).
   const certa = await fetch(`${ENV.functionsUrl}/functions/v1/entrar-com-documento`, {
     method: 'POST',
-    headers: { apikey: ENV.anonKey(), 'Content-Type': 'application/json' },
+    headers: cabecalhos,
     body: JSON.stringify({ documento: conta.documento, senha: ENV.password, captchaToken: CAPTCHA_TESTE })
   });
   expect(certa.status).toBe(429);
