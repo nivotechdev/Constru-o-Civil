@@ -4,7 +4,7 @@ Para os sócios fazerem **no staging**, antes da produção, com dois celulares 
 **iPhone**. Um faz o papel da construtora, o outro o do trabalhador; depois troquem. Use e-mails de teste seus (por
 exemplo `seunome+obra@gmail.com` e `seunome+pedreiro@gmail.com`) — **nunca dados de outras pessoas**.
 
-Endereço do staging: _(a IA preenche depois do R08)_ · Data: \_\_\_ · Quem testou: \_\_\_ · Aparelhos: \_\_\_
+Endereço do staging: **https://nivotechdev.github.io/Constru-o-Civil/** (GitHub Pages, workflow `site`) · Data: \_\_\_ · Quem testou: \_\_\_ · Aparelhos: \_\_\_
 
 Em cada passo, marque ✅ (funcionou), ⚠️ (funcionou, mas estranho/lento/confuso) ou ❌ (não funcionou) e escreva o que
 viu. Print ajuda muito.

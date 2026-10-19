@@ -55,7 +55,8 @@ jobs:
 
   # R08: as 8 Edge Functions, os segredos delas e o Authentication do staging (login, e-mails em português, captcha de
   # teste). Precisa do segredo SUPABASE_ACCESS_TOKEN. O endereço do site de teste vem da variável do repositório
-  # STAGING_SITE_URL (Settings › Secrets and variables › Actions › Variables); sem ela, só localhost (para o E2E).
+  # STAGING_SITE_URL (Settings › Secrets and variables › Actions › Variables); sem ela, o site de teste do GitHub Pages
+  # (workflow site). O localhost do E2E sempre entra junto.
   funcoes:
     needs: migrations
     runs-on: ubuntu-latest
@@ -63,7 +64,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       STAGING_REF: setyxomsbfrkneqqfoam
-      SITE_URL: ${{ vars.STAGING_SITE_URL || 'http://localhost:4173' }}
+      SITE_URL: ${{ vars.STAGING_SITE_URL || 'https://nivotechdev.github.io/Constru-o-Civil' }}
     steps:
       - name: Token do Supabase
         id: cfg
@@ -86,7 +87,9 @@ jobs:
         run: |
           # O E2E roda em http://localhost:4173; o site de teste (se houver) entra na mesma lista.
           origins="http://localhost:4173"
-          [ "$SITE_URL" != "http://localhost:4173" ] && origins="$SITE_URL,$origins"
+          # APP_ORIGIN é só o domínio (sem caminho): https://nivotechdev.github.io/Constru-o-Civil → https://nivotechdev.github.io
+          site_origin=$(node -e 'console.log(new URL(process.argv[1]).origin)' "$SITE_URL")
+          [ "$site_origin" != "http://localhost:4173" ] && origins="$site_origin,$origins"
           npx --yes supabase@2.48.3 secrets set --project-ref "$STAGING_REF" \
             "APP_ORIGIN=$origins" \
             "TURNSTILE_SECRET=1x0000000000000000000000000000000AA" \
