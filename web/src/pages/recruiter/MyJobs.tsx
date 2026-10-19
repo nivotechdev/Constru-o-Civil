@@ -4,9 +4,8 @@ import { HISTORY_PAGE } from '../../services/paging';
 import { usePaging } from '../../hooks/usePaging';
 import { LoadMore } from '../../components/LoadMore';
 import { useState } from 'react';
-import { Badge } from '../../components/Badge';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
+import { IconButton } from '../../components/IconButton';
+import { JobTile, TileGrid } from '../../components/JobTile';
 import { EmptyState } from '../../components/EmptyState';
 import { QueryView } from '../../components/QueryView';
 import { ListSkeleton } from '../../components/Skeleton';
@@ -14,7 +13,6 @@ import { WorkerAvatar } from '../../components/Avatar';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
 import { loadHistory, loadMoreHistory } from '../../services/applications';
-import { jobTitle } from '../../services/catalog';
 import { navigate } from '../../services/router';
 import {
   allJobs,
@@ -26,10 +24,9 @@ import {
   jobState
 } from '../../services/selectors';
 import type { Database, Job } from '../../types/models';
+import type { StatusBadge } from '../../types/ui';
 import type { ScreenProps } from '../../types/screen';
 import { cx } from '../../utils/cx';
-import { formatPay } from '../../utils/format';
-import { dateText } from '../../utils/jobInfo';
 
 type Tab = 'abertas' | 'cheias' | 'encerradas';
 const TABS: { id: Tab; label: string }[] = [
@@ -101,11 +98,11 @@ export default function MyJobs({ params }: ScreenProps) {
               />
             ) : (
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5">
+                <TileGrid>
                   {list.map((job) => (
                     <JobCard key={job.id} db={db} job={job} />
                   ))}
-                </div>
+                </TileGrid>
                 {/* X01: older closed jobs come in pages. */}
                 {tab === 'encerradas' ? <LoadMore paging={paging} /> : null}
               </div>
@@ -128,63 +125,66 @@ function JobCard({ db, job }: { db: Database; job: Job }) {
   const toConfirm = team.filter((t) => t.app.status === 'pre_selecionado').length;
   const toReview = team.filter((t) => t.app.status === 'concluida' && !t.app.companyReviewed).length;
   const outcome = jobOutcome(db, job);
+  const approved = approvedCount(db, job.id);
   const slots = job.slots || 1;
   const closed = outcome !== null;
-  const todo = [
-    fresh ? `${fresh} ${fresh === 1 ? 'candidato novo' : 'candidatos novos'}` : null,
-    !fresh && waiting && !closed ? `${waiting} esperando resposta` : null,
-    toConfirm ? `Falta confirmar ${toConfirm === 1 ? '1 contratação' : `${toConfirm} contratações`}` : null,
-    toReview ? `Falta avaliar ${toReview === 1 ? '1 pessoa' : `${toReview} pessoas`}` : null
-  ].filter(Boolean);
+  // The main status on the photo, then what is left to do (the same pills as the rest of the app).
+  const status: StatusBadge =
+    outcome !== null
+      ? { label: outcome, tone: outcome === 'Concluída' ? 'success' : 'neutral', icon: 'history' }
+      : {
+          label: `${approved} de ${slots} ${slots === 1 ? 'vaga preenchida' : 'vagas preenchidas'}`,
+          tone: approved >= slots ? 'success' : 'brand',
+          icon: 'users'
+        };
+  const todo: StatusBadge[] = [
+    fresh
+      ? { label: `${fresh} ${fresh === 1 ? 'candidato novo' : 'candidatos novos'}`, tone: 'accent', icon: 'bell' }
+      : null,
+    !fresh && waiting && !closed ? { label: `${waiting} esperando resposta`, tone: 'neutral', icon: 'clock' } : null,
+    toConfirm
+      ? {
+          label: `Falta confirmar ${toConfirm === 1 ? '1 contratação' : `${toConfirm} contratações`}`,
+          tone: 'warning',
+          icon: 'user-check'
+        }
+      : null,
+    toReview
+      ? { label: `Falta avaliar ${toReview === 1 ? '1 pessoa' : `${toReview} pessoas`}`, tone: 'warning', icon: 'star' }
+      : null
+  ].filter((b): b is StatusBadge => b !== null);
+  // The team's photos sit on the price row, like the candidates' circles on the other lists.
+  const people = team.length ? (
+    <div className="flex items-center">
+      {team.slice(0, 3).map(({ app, worker }, i) => (
+        <span key={app.id} className={i ? '-ml-2' : undefined}>
+          <WorkerAvatar worker={worker!} size="sm" />
+        </span>
+      ))}
+      {team.length > 3 ? (
+        <span className="ml-1 text-xs font-bold text-concrete-500">{`+${team.length - 3}`}</span>
+      ) : null}
+    </div>
+  ) : null;
   const open = () => navigate(closed ? '/fechado/' + job.id : '/vaga-gerenciar/' + job.id);
-
   return (
-    <Card padding="sm" onClick={open}>
-      <div className="flex flex-col gap-3">
-        <div className="flex items-start gap-3">
-          <div className="flex-1 min-w-0 flex flex-col">
-            <span className="font-semibold text-concrete-900 truncate">{jobTitle(job)}</span>
-            <span className="text-sm text-concrete-500 truncate">{`${job.id} · ${dateText(job)}`}</span>
-          </div>
-          <span className="font-mono font-bold text-lg text-concrete-900 shrink-0">{formatPay(job.pay)}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {closed ? (
-            <Badge label={outcome} tone={outcome === 'Concluída' ? 'success' : 'neutral'} icon="history" />
-          ) : (
-            <Badge
-              label={`${approvedCount(db, job.id)} de ${slots} ${slots === 1 ? 'vaga preenchida' : 'vagas preenchidas'}`}
-              tone={approvedCount(db, job.id) >= slots ? 'success' : 'brand'}
-              icon="users"
-            />
-          )}
-          {fresh ? <Badge label={`${fresh} novo${fresh === 1 ? '' : 's'}`} tone="accent" icon="bell" /> : null}
-        </div>
-        {team.length ? (
-          <div className="flex items-center gap-1.5">
-            {team.slice(0, 5).map(({ app, worker }) => (
-              <WorkerAvatar key={app.id} worker={worker!} size="sm" />
-            ))}
-            {team.length > 5 ? <span className="text-sm text-concrete-500">{`+${team.length - 5}`}</span> : null}
-          </div>
-        ) : null}
-        <div className="flex items-center justify-between gap-2 pt-3 border-t border-concrete-200">
-          <span className="text-sm text-concrete-700 min-w-0 truncate">
-            {todo.length ? todo.join(' · ') : closed ? 'Nada pendente' : 'Nenhum candidato ainda'}
-          </span>
-          {closed ? (
-            <Button
-              label="Publicar de novo"
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate('/publicar-de-novo/' + job.id);
-              }}
-            />
-          ) : null}
-        </div>
-      </div>
-    </Card>
+    <JobTile
+      job={job}
+      badge={status}
+      extraBadges={todo}
+      people={people}
+      onClick={open}
+      corner={
+        closed ? (
+          <IconButton
+            icon="refresh-cw"
+            label="Publicar de novo"
+            variant="solid"
+            size="sm"
+            onClick={() => navigate('/publicar-de-novo/' + job.id)}
+          />
+        ) : null
+      }
+    />
   );
 }

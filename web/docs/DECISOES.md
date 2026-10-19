@@ -1603,3 +1603,13 @@ CEP antes de digitar e "O trabalhador vê esse valor no mural" (valor). Ficam as
 confirmam algo: erros, "Endereço encontrado" / "Não achamos esse CEP", "Mínimo de R$ 80", o aviso de "a combinar" e o
 contador da descrição. A regra de privacidade (candidato vê só bairro e cidade até a aprovação) não mudou: está no
 produto, não precisava estar na tela.
+
+## U03 — Cadastro de vaga e cards de "Minhas vagas" no padrão
+
+Pedido do responsável depois de ver as telas no celular. **Publicar vaga:** sem a seta de voltar (o menu de baixo já
+leva para fora; a edição de uma vaga continua com seta). O "1" e o "2" viraram um seletor em pílula, que troca de
+tela; quem chega ao "Publicar" com erro na tela 1 volta para ela. Diárias, horário e pessoas saíram da tela 1 e foram
+para a tela 2 ("Valor e pessoas"), junto com a validação (`validateStep2`). **Minhas vagas:** cada card é o mesmo
+`JobTile` das outras listas (foto, avisos sobre a foto, linhas de bairro, data e valor); o que falta fazer virou avisos
+na foto, e os trabalhadores aparecem como fotos redondas ao lado do valor. Vagas encerradas mantêm "Publicar de novo"
+no canto. **Lixeira do perfil:** botão menor e avisos com espaço para ele não encostar.

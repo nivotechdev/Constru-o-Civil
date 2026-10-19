@@ -2,7 +2,14 @@
 // the mural's filters and order.
 import { describe, expect, it, vi } from 'vitest';
 import { feedOrigin, orderJobs, passesFilters } from '../pages/worker/feed/feedUI';
-import { draftFromForm, emptyForm, formDiarias, validateStep1, type JobForm } from '../pages/recruiter/jobForm';
+import {
+  draftFromForm,
+  emptyForm,
+  formDiarias,
+  validateStep1,
+  validateStep2,
+  type JobForm
+} from '../pages/recruiter/jobForm';
 import { lookupCep, locate, maskCEP } from '../services/address';
 import type { Job } from '../types/models';
 import { addDays, dayLabel, isValidISODate, todayISO } from '../utils/dates';
@@ -169,7 +176,7 @@ describe('publish form', () => {
     ]);
     const missing = validateStep1(fresh, NOW);
     expect(missing.titulo).toMatch(/título/);
-    expect(missing.vagas).toMatch(/quantas pessoas/);
+    expect(validateStep2({ ...fresh, vagas: '' }).vagas).toMatch(/quantas pessoas/);
     expect(missing.number).toBeUndefined();
     const ok = { ...fresh, titulo: '  Reboco da fachada ', vagas: '2' };
     expect(Object.values(validateStep1(ok, NOW)).filter(Boolean)).toEqual([]);
@@ -200,9 +207,10 @@ describe('publish form', () => {
     expect(validateStep1({ ...valid(), startDate: '2026-10-07' }, NOW).startDate).toMatch(/passado/);
     expect(validateStep1({ ...valid(), endDate: '2026-10-07' }, NOW).endDate).toMatch(/depois do início/);
     // W08: a night shift crosses midnight; the same start and end is refused.
-    expect(validateStep1({ ...valid(), startTime: '22:00', endTime: '06:00' }, NOW).periodo).toBeUndefined();
-    expect(validateStep1({ ...valid(), startTime: '07:00', endTime: '07:00' }, NOW).periodo).toMatch(/iguais/);
-    expect(validateStep1({ ...valid(), startTime: '07:00' }, NOW).periodo).toMatch(/início e o fim/);
+    // U01: the hours are checked in step 2 (valor e pessoas).
+    expect(validateStep2({ ...valid(), startTime: '22:00', endTime: '06:00' }).periodo).toBeUndefined();
+    expect(validateStep2({ ...valid(), startTime: '07:00', endTime: '07:00' }).periodo).toMatch(/iguais/);
+    expect(validateStep2({ ...valid(), startTime: '07:00' }).periodo).toMatch(/início e o fim/);
     expect(validateStep1({ ...valid(), cep: '0330' }, NOW).cep).toBeTruthy();
     // Sat → Sun on weekdays only: no day fits.
     expect(validateStep1({ ...valid(), startDate: '2026-10-10', endDate: '2026-10-11' }, NOW).endDate).toMatch(

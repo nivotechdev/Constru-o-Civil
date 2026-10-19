@@ -38,6 +38,11 @@ import {
 
 type CepStatus = 'idle' | 'loading' | 'found' | 'notfound' | 'error';
 
+const STEPS: { n: 1 | 2; label: string }[] = [
+  { n: 1, label: 'Serviço e local' },
+  { n: 2, label: 'Valor e pessoas' }
+];
+
 interface CreateJobUI {
   step: 1 | 2;
   form: JobForm;
@@ -148,9 +153,11 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       setUi({ step: 2, errors: {} });
       return;
     }
-    const errors = validateStep2(f);
-    if (hasErrors(errors)) {
-      setUi({ errors });
+    // U02: publishing checks both steps; a mistake on step 1 sends the user back to it.
+    const first = validateStep1(f, new Date(), limits, job);
+    const second = validateStep2(f, limits);
+    if (hasErrors(first) || hasErrors(second)) {
+      setUi({ errors: { ...first, ...second }, step: hasErrors(first) ? 1 : 2 });
       return;
     }
     if (ui.publishing) return;
@@ -171,7 +178,10 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
 
   // Editing a job people applied to: a new pay, date or address is told to them.
   const warnChanges =
-    job && candidates.length && !hasErrors(validateStep1(f, new Date(), limits, job))
+    job &&
+    candidates.length &&
+    !hasErrors(validateStep1(f, new Date(), limits, job)) &&
+    !hasErrors(validateStep2(f, limits))
       ? significantChanges(job, draftFromForm(f, job))
       : [];
   const cepHint =
@@ -273,7 +283,47 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
         </div>
         {ui.errors.dias ? <FieldError message={ui.errors.dias} /> : null}
       </div>
+    </div>
+  );
 
+  const step2 = (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col items-start gap-2">
+        {f.negociavel ? null : (
+          <div className="w-full max-w-[15rem]">
+            <Input
+              id="create-job-valor"
+              label="Valor da diária"
+              placeholder="220"
+              suffix="reais"
+              inputMode="numeric"
+              value={f.valor}
+              error={ui.errors.valor}
+              hint={ui.errors.valor ? null : `Mínimo de R$ ${MIN_PAY}.`}
+              onInput={(v) => set({ valor: digits(v, 5) }, 'valor')}
+            />
+          </div>
+        )}
+        {f.negociavel ? null : (
+          <Button
+            label="Deixar valor a combinar"
+            variant="ghost"
+            size="sm"
+            iconLeft="handshake"
+            onClick={() => set({ negociavel: true, valor: '' }, 'valor')}
+          />
+        )}
+        {f.negociavel ? <span className="text-sm font-semibold text-concrete-900">Valor da diária</span> : null}
+        {f.negociavel ? (
+          <div className="w-full flex items-center gap-2 p-3 rounded-control bg-brand-50 border border-brand-200">
+            <Icon name="handshake" size={18} color="var(--text-brand)" />
+            <span className="flex-1 text-sm text-brand-600">
+              O trabalhador vê "A combinar" no lugar do valor, e negocia direto com você.
+            </span>
+            <Button label="Definir um valor" variant="ghost" size="sm" onClick={() => set({ negociavel: false })} />
+          </div>
+        ) : null}
+      </div>
       {/* U01: the date is always arranged with the worker; older jobs with dates keep them as they are. */}
       {f.dateToArrange ? (
         <div className="flex flex-col gap-1.5">
@@ -330,47 +380,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           onInput={(v) => set({ vagas: digits(v, 2) }, 'vagas')}
         />
       </div>
-    </div>
-  );
-
-  const step2 = (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-start gap-2">
-        {f.negociavel ? null : (
-          <div className="w-full max-w-[15rem]">
-            <Input
-              id="create-job-valor"
-              label="Valor da diária"
-              placeholder="220"
-              suffix="reais"
-              inputMode="numeric"
-              value={f.valor}
-              error={ui.errors.valor}
-              hint={ui.errors.valor ? null : `Mínimo de R$ ${MIN_PAY}.`}
-              onInput={(v) => set({ valor: digits(v, 5) }, 'valor')}
-            />
-          </div>
-        )}
-        {f.negociavel ? null : (
-          <Button
-            label="Deixar valor a combinar"
-            variant="ghost"
-            size="sm"
-            iconLeft="handshake"
-            onClick={() => set({ negociavel: true, valor: '' }, 'valor')}
-          />
-        )}
-        {f.negociavel ? <span className="text-sm font-semibold text-concrete-900">Valor da diária</span> : null}
-        {f.negociavel ? (
-          <div className="w-full flex items-center gap-2 p-3 rounded-control bg-brand-50 border border-brand-200">
-            <Icon name="handshake" size={18} color="var(--text-brand)" />
-            <span className="flex-1 text-sm text-brand-600">
-              O trabalhador vê "A combinar" no lugar do valor, e negocia direto com você.
-            </span>
-            <Button label="Definir um valor" variant="ghost" size="sm" onClick={() => set({ negociavel: false })} />
-          </div>
-        ) : null}
-      </div>
       <div className="flex flex-col gap-1.5 w-full">
         <label htmlFor="create-job-detalhe" className="text-sm font-semibold text-concrete-900">
           Descrição do bico
@@ -418,16 +427,40 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
 
   return (
     <div className="flex flex-col">
+      {/* U02: publishing comes from the navbar, so there is no back arrow; editing keeps one. */}
       <BackBar
         title={job ? 'Editar vaga' : 'Publicar vaga'}
-        onBack={() => (ui.step === 2 ? setUi({ step: 1 }) : goBack(job ? '/vaga-gerenciar/' + job.id : '/mural'))}
+        onBack={job ? () => goBack('/vaga-gerenciar/' + job.id) : undefined}
       />
-      <div className="flex items-center gap-2 px-4 sm:px-0 pt-3">
-        <StepDot n={1} active={ui.step >= 1} />
-        <span className="text-sm text-concrete-500">Serviço, local e data</span>
-        <span className="flex-1 h-px bg-concrete-200" />
-        <StepDot n={2} active={ui.step >= 2} />
-        <span className="text-sm text-concrete-500">Valor e requisitos</span>
+      <div className="px-4 sm:px-0 pt-3">
+        <div className="flex bg-concrete-100 rounded-full p-1 gap-1" role="tablist" aria-label="Etapas da vaga">
+          {STEPS.map((step) => {
+            const selected = ui.step === step.n;
+            return (
+              <button
+                key={step.n}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={cx(
+                  'flex-1 min-w-0 h-10 flex items-center justify-center gap-2 px-2 rounded-full text-sm font-bold transition-colors',
+                  selected ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'
+                )}
+                onClick={() => setUi({ step: step.n })}
+              >
+                <span
+                  className={cx(
+                    'inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0',
+                    selected ? 'bg-brand-500 text-white' : 'bg-concrete-200 text-concrete-700'
+                  )}
+                >
+                  {step.n}
+                </span>
+                <span className="truncate">{step.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div className="px-4 sm:px-0 py-5">{ui.step === 1 ? step1 : step2}</div>
       <div className="px-4 sm:px-0 py-3 flex flex-col gap-1.5">
@@ -493,15 +526,5 @@ function DiasOption({ id, checked, onSelect }: { id: DiasKey; checked: boolean; 
       </span>
       <span className="text-xs text-concrete-500">{d.pickSub}</span>
     </button>
-  );
-}
-
-function StepDot({ n, active }: { n: number; active: boolean }) {
-  return (
-    <span
-      className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm ${active ? 'bg-brand-500 text-white' : 'bg-concrete-100 text-concrete-500'}`}
-    >
-      {String(n)}
-    </span>
   );
 }

@@ -220,6 +220,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                           icon="trash-2"
                           label="Excluir vaga"
                           variant="solid"
+                          size="sm"
                           onClick={() => setUi({ deleteId: job.id })}
                         />
                       )

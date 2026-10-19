@@ -1,7 +1,7 @@
 // B05 — editing a job: the owner only, while open; headcount not below who is approved; candidates told
 // when pay, date or address change.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { formFromJob, validateStep1, draftFromForm } from '../pages/recruiter/jobForm';
+import { formFromJob, validateStep1, validateStep2, draftFromForm } from '../pages/recruiter/jobForm';
 
 type M = {
   jobs: typeof import('../services/jobs');
@@ -41,7 +41,7 @@ describe('editing a job', () => {
     expect(
       validateStep1({ ...form, startDate: '2026-01-06' }, now, { originalStartDate: '2026-01-05' }).startDate
     ).toMatch(/passado/);
-    expect(validateStep1({ ...form, vagas: '1' }, now, { minSlots: 2 }).vagas).toMatch(/já aprovou 2/);
+    expect(validateStep2({ ...form, vagas: '1' }, { minSlots: 2 }).vagas).toMatch(/já aprovou 2/);
   });
 
   it('a change of pay tells every active candidate; a description change tells nobody', async () => {

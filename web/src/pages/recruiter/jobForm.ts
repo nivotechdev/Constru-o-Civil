@@ -146,7 +146,7 @@ export interface EditLimits {
   minSlots?: number;
 }
 
-// Step 1: what, where, when and how many.
+// Step 1: what, where and when (the dates, when they are fixed; older jobs keep theirs).
 export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLimits = {}, original?: Job): FormErrors {
   const e: FormErrors = {};
   const titulo = f.titulo.trim();
@@ -175,7 +175,15 @@ export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLi
       e.endDate = `Uma vaga cobre até ${MAX_DAYS} dias. Para mais, publique de novo depois.`;
     if (!e.startDate && !e.endDate && f.dias && formDiarias(f) === 0)
       e.endDate = `Nenhum dia desse período é ${DIAS[f.dias].label.toLowerCase()}. Ajuste as datas ou os dias.`;
-  } else {
+  }
+  return e;
+}
+
+// Step 2: the pay (or "a combinar"), the diárias, the hours, the people and the description.
+export function validateStep2(f: JobForm, limits: EditLimits = {}): FormErrors {
+  const e: FormErrors = {};
+  // U01 (moved here from step 1): the diárias of a job with the date to arrange.
+  if (f.dateToArrange) {
     const n = Number(f.diarias);
     if (!n || n < 1 || n > MAX_DAYS) e.diarias = 'Informe quantas diárias (de 1 a 60).';
   }
@@ -191,12 +199,7 @@ export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLi
   if (!vagas || vagas < 1 || vagas > 50) e.vagas = 'Informe quantas pessoas a vaga precisa (de 1 a 50).';
   else if (limits.minSlots && vagas < limits.minSlots)
     e.vagas = `Você já aprovou ${limits.minSlots} ${limits.minSlots === 1 ? 'pessoa' : 'pessoas'}. Não dá para pedir menos que isso.`;
-  return e;
-}
 
-// Step 2: the pay (or "a combinar") and the description.
-export function validateStep2(f: JobForm): FormErrors {
-  const e: FormErrors = {};
   if (!f.negociavel) {
     const n = parseInt(f.valor, 10);
     if (!f.valor.trim()) e.valor = 'Informe o valor da diária, ou marque como a combinar.';

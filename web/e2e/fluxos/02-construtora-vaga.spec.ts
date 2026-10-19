@@ -69,13 +69,14 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await page.fill('#create-job-cep', '03307000');
   await expect(page.getByText('Endereço encontrado')).toBeVisible();
   await page.getByRole('radio', { name: /Qualquer dia/ }).click();
+  await print(page, 'f2', 'publicar vaga passo 1');
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  // U02: diárias, horário e pessoas ficam no passo 2 (valor e pessoas).
+  await page.fill('#create-job-valor', '250');
   await page.fill('#create-job-diarias', '2');
   await page.fill('#create-job-hora-inicio', '07:00');
   await page.fill('#create-job-hora-fim', '17:00');
   await page.fill('#create-job-vagas', '2');
-  await print(page, 'f2', 'publicar vaga passo 1');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.fill('#create-job-valor', '250');
   await page.fill('#create-job-detalhe', 'Reboco de duas paredes internas. Material no local.');
   await print(page, 'f2', 'publicar vaga passo 2');
   await page.getByRole('button', { name: 'Publicar vaga' }).click();
