@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import type { Company, Job } from '../types/models';
 import type { StatusBadge, Tone } from '../types/ui';
 import { cx } from '../utils/cx';
@@ -32,6 +32,10 @@ interface JobTileProps {
   onClick?: () => void;
   /** Status shown on the photo (used on "Minhas candidaturas"). */
   badge?: StatusBadge | null;
+  /** Further pills on the photo, after the status (e.g. what is left to do on "Minhas vagas"). */
+  extraBadges?: StatusBadge[];
+  /** Small people (the workers' photos) on the price row. */
+  people?: ReactNode;
   mine?: boolean;
   /** Greys out a closed one. */
   muted?: boolean;
@@ -52,6 +56,8 @@ export function JobTile({
   company,
   onClick,
   badge = null,
+  extraBadges = [],
+  people = null,
   mine = false,
   muted = false,
   saved = false,
@@ -64,10 +70,18 @@ export function JobTile({
   const when = whenText(job);
   const label = [jobTitle(job), badge && badge.label, company && company.name, where, when].filter(Boolean).join(', ');
 
+  const statusPill = (b: StatusBadge) =>
+    pill(
+      <>
+        {b.icon ? <Icon name={b.icon} size={12} color={TONE_COLOR[b.tone] || TONE_COLOR.neutral} /> : null}
+        <span className="truncate min-w-0">{b.label}</span>
+      </>
+    );
+
   const pill = (children: ReactNode, className = '') => (
     <span
       className={cx(
-        'inline-flex items-center gap-1 h-6 sm:h-7 px-2 sm:px-2.5 rounded-full bg-white text-[0.6875rem] sm:text-xs font-semibold shadow-[0_1px_3px_rgba(16,20,24,0.18)] whitespace-nowrap',
+        'inline-flex items-center gap-1 max-w-full h-6 sm:h-7 px-2 sm:px-2.5 rounded-full bg-white text-[0.6875rem] sm:text-xs font-semibold shadow-[0_1px_3px_rgba(16,20,24,0.18)] whitespace-nowrap',
         className || 'text-concrete-900'
       )}
     >
@@ -85,17 +99,17 @@ export function JobTile({
         <div className={cx('absolute inset-0', muted ? 'grayscale opacity-60' : '')}>
           <PhotoCarousel job={job} compact className="h-full" />
         </div>
-        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 right-12 flex flex-wrap gap-1.5 pointer-events-none">
-          {badge
-            ? pill(
-                <>
-                  {badge.icon ? (
-                    <Icon name={badge.icon} size={12} color={TONE_COLOR[badge.tone] || TONE_COLOR.neutral} />
-                  ) : null}
-                  {badge.label}
-                </>
-              )
-            : null}
+        <div
+          className={cx(
+            'absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-wrap gap-1.5 pointer-events-none',
+            // Room for the corner button (delete, republish) only when there is one.
+            corner ? 'right-16' : 'right-2 sm:right-3'
+          )}
+        >
+          {badge ? statusPill(badge) : null}
+          {extraBadges.map((b) => (
+            <Fragment key={b.label}>{statusPill(b)}</Fragment>
+          ))}
           {mine ? pill('Sua vaga', 'text-brand-600') : null}
           {/* Z03: the paid boost and the free "urgent" are visible on the card. */}
           {!badge && isBoosted(job)
@@ -150,16 +164,19 @@ export function JobTile({
         )}
         <span className="truncate text-concrete-500">{where}</span>
         <span className="truncate text-concrete-500">{when}</span>
-        <span className={cx('truncate pt-0.5', muted ? 'text-concrete-500' : 'text-concrete-900')}>
-          {job.pay == null ? (
-            <span className="font-semibold">A combinar</span>
-          ) : (
-            <>
-              <span className="font-semibold">{formatBRL(job.pay)}</span>
-              <span className="text-concrete-500"> por diária</span>
-            </>
-          )}
-        </span>
+        <div className="flex items-center justify-between gap-2 pt-0.5">
+          <span className={cx('truncate min-w-0', muted ? 'text-concrete-500' : 'text-concrete-900')}>
+            {job.pay == null ? (
+              <span className="font-semibold">A combinar</span>
+            ) : (
+              <>
+                <span className="font-semibold">{formatBRL(job.pay)}</span>
+                <span className="text-concrete-500"> por diária</span>
+              </>
+            )}
+          </span>
+          {people ? <div className="flex items-center shrink-0">{people}</div> : null}
+        </div>
       </div>
     </div>
   );
