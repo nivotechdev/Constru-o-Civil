@@ -32,6 +32,21 @@ create schema if not exists supabase_migrations;
 create table if not exists supabase_migrations.schema_migrations (version text primary key, statements text[], name text);
 SQL
 
+# R08: até a X13 (20261014000100) o PostGIS fica no schema public, como na produção — a X01 escreve `geography` sem
+# prefixo. Um banco que já o tem em `extensions` (instalado à mão) é refeito na ordem certa; a X13 o move depois.
+# Só mexe enquanto a X13 não está no histórico; as colunas geográficas são refeitas pelas próprias migrations.
+psql_ <<'SQL'
+do $$
+begin
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261014000100')
+     and exists (select 1 from pg_extension e join pg_namespace n on n.oid = e.extnamespace
+                  where e.extname = 'postgis' and n.nspname <> 'public') then
+    drop extension postgis cascade;
+    create extension postgis with schema public;
+  end if;
+end $$;
+SQL
+
 # O app antigo nunca entrou no histórico da produção: aplica enquanto o app novo não começou (sem `accounts`).
 # As migrations antigas são idempotentes, então completam um banco que parou no meio delas; depois que o app
 # novo existe, nunca rodam de novo (devolveriam permissões que a Z08 tirou).
