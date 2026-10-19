@@ -28,16 +28,19 @@ if (ref === 'ppnxdajiihsjaojxokzh' && env.CONFIRMO_PRODUCAO !== 'sim') {
 const site = need('SITE_URL').replace(/\/+$/, '');
 const template = (f) => readFileSync(new URL(`../supabase/email-templates/${f}`, import.meta.url), 'utf8');
 
+const hasSmtp = Boolean(env.BREVO_SMTP_USER) || ref === 'ppnxdajiihsjaojxokzh';
 const config = {
   site_url: site + '/',
-  uri_allow_list: [site + '/**', ...(env.EXTRA_REDIRECTS ? env.EXTRA_REDIRECTS.split(',') : [])].join(','),
+  uri_allow_list: [...new Set([site + '/**', ...(env.EXTRA_REDIRECTS ? env.EXTRA_REDIRECTS.split(',') : [])])].join(
+    ','
+  ),
   mailer_autoconfirm: false,
   password_min_length: 8,
   mailer_otp_exp: 3600,
   // SMTP próprio (Brevo). Remetente de domínio autenticado na Brevo (SPF/DKIM/DMARC — CHECKLIST-LANCAMENTO, L04).
   // Sem BREVO_SMTP_USER (só no staging, para os primeiros testes) fica o e-mail padrão do Supabase: só entrega
   // para membros da equipe do projeto e poucos por hora. Na produção o SMTP é obrigatório.
-  ...(env.BREVO_SMTP_USER || ref === 'ppnxdajiihsjaojxokzh'
+  ...(hasSmtp
     ? {
         smtp_host: 'smtp-relay.brevo.com',
         smtp_port: '587',
@@ -49,14 +52,19 @@ const config = {
         rate_limit_email_sent: Number(env.RATE_LIMIT_EMAIL ?? 100)
       }
     : {}),
-  mailer_subjects_confirmation: 'Confirme seu e-mail na Bicos',
-  mailer_templates_confirmation_content: template('confirmacao.html'),
-  mailer_subjects_recovery: 'Criar uma senha nova na Bicos',
-  mailer_templates_recovery_content: template('redefinir-senha.html'),
-  mailer_subjects_email_change: 'Confirme o novo e-mail da sua conta na Bicos',
-  mailer_templates_email_change_content: template('troca-de-email.html'),
-  mailer_subjects_magic_link: 'Seu link para entrar na Bicos',
-  mailer_templates_magic_link_content: template('link-de-acesso.html'),
+  // Os e-mails em português só podem ser trocados com SMTP próprio (o plano grátis recusa com o e-mail padrão).
+  ...(hasSmtp
+    ? {
+        mailer_subjects_confirmation: 'Confirme seu e-mail na Bicos',
+        mailer_templates_confirmation_content: template('confirmacao.html'),
+        mailer_subjects_recovery: 'Criar uma senha nova na Bicos',
+        mailer_templates_recovery_content: template('redefinir-senha.html'),
+        mailer_subjects_email_change: 'Confirme o novo e-mail da sua conta na Bicos',
+        mailer_templates_email_change_content: template('troca-de-email.html'),
+        mailer_subjects_magic_link: 'Seu link para entrar na Bicos',
+        mailer_templates_magic_link_content: template('link-de-acesso.html')
+      }
+    : {}),
   ...(env.TURNSTILE_SECRET
     ? {
         security_captcha_enabled: true,
