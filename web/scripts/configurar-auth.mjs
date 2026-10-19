@@ -35,14 +35,20 @@ const config = {
   password_min_length: 8,
   mailer_otp_exp: 3600,
   // SMTP próprio (Brevo). Remetente de domínio autenticado na Brevo (SPF/DKIM/DMARC — CHECKLIST-LANCAMENTO, L04).
-  smtp_host: 'smtp-relay.brevo.com',
-  smtp_port: '587',
-  smtp_user: need('BREVO_SMTP_USER'),
-  smtp_pass: need('BREVO_SMTP_KEY'),
-  smtp_admin_email: env.SMTP_SENDER ?? 'nao-responda@nivotech.com.br',
-  smtp_sender_name: 'Bicos',
-  smtp_max_frequency: 60,
-  rate_limit_email_sent: Number(env.RATE_LIMIT_EMAIL ?? 100),
+  // Sem BREVO_SMTP_USER (só no staging, para os primeiros testes) fica o e-mail padrão do Supabase: só entrega
+  // para membros da equipe do projeto e poucos por hora. Na produção o SMTP é obrigatório.
+  ...(env.BREVO_SMTP_USER || ref === 'ppnxdajiihsjaojxokzh'
+    ? {
+        smtp_host: 'smtp-relay.brevo.com',
+        smtp_port: '587',
+        smtp_user: need('BREVO_SMTP_USER'),
+        smtp_pass: need('BREVO_SMTP_KEY'),
+        smtp_admin_email: env.SMTP_SENDER ?? 'nao-responda@nivotech.com.br',
+        smtp_sender_name: 'Bicos',
+        smtp_max_frequency: 60,
+        rate_limit_email_sent: Number(env.RATE_LIMIT_EMAIL ?? 100)
+      }
+    : {}),
   mailer_subjects_confirmation: 'Confirme seu e-mail na Bicos',
   mailer_templates_confirmation_content: template('confirmacao.html'),
   mailer_subjects_recovery: 'Criar uma senha nova na Bicos',
