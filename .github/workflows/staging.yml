@@ -2,7 +2,8 @@
 # (supabase_migrations.schema_migrations) tem de ser igual aos arquivos de web/supabase/migrations.
 # - push no master (ou na branch de trabalho claude/front-novo-supabase) que mexe em migration: aplica no staging e confere;
 # - Actions › staging › Run workflow: o mesmo à mão, em qualquer branch (para ensaiar antes do merge).
-# Sem os segredos STAGING_DB_URL e STAGING_URL o job só avisa e passa (web/docs/STAGING.md).
+# Sem os segredos STAGING_DB_URL e STAGING_URL o job só avisa e passa (web/docs/STAGING.md). E-mail: Brevo (BREVO_SMTP_*,
+# SMTP_SENDER) — sem ele o E2E é pulado.
 name: staging
 
 on:
