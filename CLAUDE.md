@@ -32,7 +32,8 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
   decisões em linguagem simples e peça aprovação nos pontos marcados como "ação do responsável".
 - Lançamento: **web app (PWA)** primeiro; lojas (React Native/Expo) só depois que o app tracionar.
 - Domínio previsto: `https://bicos.nivotech.com.br` (ainda não confirmado no ar).
-- Cidade/região do piloto: **perguntar** — não presumir.
+- Cidade do piloto: **Caxias do Sul (RS)**, confirmado pelo responsável em 19/10/2026. Usar nos testes (cidade do
+  mural, vagas de exemplo) e nos textos legais (`{{CIDADE_FORO}}` ainda é decisão da empresa/advogado).
 
 ## 3. Repositório
 
