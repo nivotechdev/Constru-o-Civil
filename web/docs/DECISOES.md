@@ -1818,3 +1818,14 @@ saiu o botão (e a página `/copiar-codigo`, que não tem mais uso); os 6 númer
 trecho selecionável — um toque (no computador) ou segurar o dedo (no celular) seleciona o código inteiro, sem espaços,
 pronto para "Copiar"; e a frase "Seu código de verificação da Bicos é 735343." deixa o código em texto corrido, o
 formato que o Gmail reconhece para mostrar o "Copiar código" dele. No app continua o "Colar código" (U11).
+
+## U22 — Escolher qualquer cidade em "Editar perfil"
+
+Pedido do responsável: em "Editar perfil" (os dois lados), o lugar salvo não pode depender só da localização atual —
+a pessoa escolhe qualquer cidade, do mesmo jeito do filtro do mural. **Agora** o campo é o mesmo botão "Cidade ·
+Escolher" do filtro, que abre a mesma lista de todas as cidades do Brasil, com busca e "Usar minha localização"
+(`components/ProfileLocationField.tsx`, montado com `LocationButton` + `CityPicker`). Cidade da lista: o ponto é o
+centro dela; localização do celular: o município mais perto e o ponto arredondado (~1 km), como no cadastro. Fica
+salvo no perfil (banco), então vale em toda abertura do app até ser trocado de novo; ao salvar, o mural volta a abrir
+nessa cidade na hora (o estado do mural é refeito). O completar perfil do cadastro continua pedindo a localização
+atual (U12).

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
-import { CurrentLocationField } from '../../components/CurrentLocationField';
+import { ProfileLocationField } from '../../components/ProfileLocationField';
 import type { SavedLocation } from '../../services/location';
 import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
@@ -12,6 +12,8 @@ import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
 import { profileErrors, saveMyProfileImages, updateMyWorkerProfile, type ProfileImages } from '../../services/profiles';
 import { goBack, navigate } from '../../services/router';
+import { FEED_KEY } from '../worker/feed/feedUI';
+import { resetUI } from '../../services/store';
 import { currentWorker } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
@@ -29,7 +31,7 @@ export default function EditWorkerProfile() {
   const worker = currentWorker(useDb());
   const [draft, setDraft] = useState(() => ({
     name: worker.name,
-    // U13: the saved place (city + point), changed only with "Usar minha localização atual".
+    // U13/U22: the saved place (city + point): any city from the list, or the phone's location.
     location: { city: worker.city, lat: worker.lat, lon: worker.lon } as SavedLocation,
     // F10: the professional profile (numbers as typed).
     availability: worker.availability ?? null,
@@ -77,6 +79,8 @@ export default function EditWorkerProfile() {
     () => {
       picked.current = {}; // saved: the local copies now show the saved pictures until they reload
       showToast('Perfil atualizado');
+      // U22: the mural opens again on the place just saved.
+      resetUI(FEED_KEY);
       navigate('/perfil', { replace: true });
     }
   );
@@ -130,10 +134,10 @@ export default function EditWorkerProfile() {
               setErrors((e) => ({ ...e, name: undefined }));
             }}
           />
-          <CurrentLocationField
-            title="Sua localização"
-            help="O mural sempre abre com os bicos perto daqui."
-            value={draft.location}
+          <ProfileLocationField
+            title="Sua cidade"
+            help="O mural sempre abre com os bicos dessa cidade."
+            city={draft.location.city}
             error={errors.city}
             stateKey="edit-worker-city"
             onChange={(location) => {

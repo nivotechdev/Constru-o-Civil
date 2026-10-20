@@ -16,11 +16,13 @@ import {
   type ProfileImages
 } from '../../services/profiles';
 import { goBack, navigate } from '../../services/router';
+import { FEED_KEY } from '../worker/feed/feedUI';
+import { resetUI } from '../../services/store';
 import { currentCompany } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
-import { CurrentLocationField } from '../../components/CurrentLocationField';
+import { ProfileLocationField } from '../../components/ProfileLocationField';
 import { knownCity } from '../../services/cities';
 
 function revoke(urls: (string | null | undefined)[]) {
@@ -31,7 +33,7 @@ export default function EditCompanyProfile() {
   const company = currentCompany(useDb());
   const [draft, setDraft] = useState(() => ({
     name: company.name,
-    // U13: the saved place, changed only with "Usar minha localização atual".
+    // U13/U22: the saved place: any city from the list, or the phone's location.
     location: company.location,
     contactName: company.contactName ?? ''
   }));
@@ -66,6 +68,8 @@ export default function EditCompanyProfile() {
     () => {
       picked.current = {};
       showToast('Dados da empresa atualizados');
+      // U22: the mural opens again on the place just saved.
+      resetUI(FEED_KEY);
       navigate('/empresa', { replace: true });
     }
   );
@@ -145,10 +149,10 @@ export default function EditCompanyProfile() {
               </span>
             </div>
           ) : null}
-          <CurrentLocationField
+          <ProfileLocationField
             title="Onde ficam suas obras"
-            help="Suas vagas novas já começam nessa cidade."
-            value={knownCity(draft.location) ? { city: draft.location } : null}
+            help="O mural abre nessa cidade e suas vagas novas já começam nela."
+            city={knownCity(draft.location) ?? ''}
             error={errors.location}
             stateKey="edit-company-city"
             onChange={(location) => {
