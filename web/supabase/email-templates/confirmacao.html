@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
-    <title>Seu código de confirmação</title>
+    <title>Seu código de verificação</title>
   </head>
   <body style="margin: 0; padding: 0; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2430">
     <!-- Confirm signup (U11: confirmação por código). Variáveis do Supabase Auth: {{ .Token }} (os 6 números),
          {{ .ConfirmationURL }} (o link de um toque), {{ .Email }}. A prévia abaixo mostra o código na lista de
          e-mails e na notificação do celular, sem abrir o e-mail. -->
     <div style="display: none; max-height: 0; overflow: hidden">
-      Seu código da Bicos: {{ .Token }} — copie e cole no app para confirmar seu e-mail.
+      Seu código de verificação da Bicos é {{ .Token }}. Não passe para ninguém.
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f4f5f7">
       <tr>
@@ -33,7 +33,7 @@
             <tr>
               <td style="padding: 28px 24px 4px 24px">
                 <h1 style="margin: 0 0 12px 0; font-size: 22px; line-height: 28px; color: #1f2430">
-                  Seu código de confirmação
+                  Seu código de verificação
                 </h1>
                 <p style="margin: 0; font-size: 16px; line-height: 24px">
                   Copie o código abaixo e cole no app da Bicos para confirmar seu e-mail.
@@ -42,11 +42,12 @@
             </tr>
             <tr>
               <td style="padding: 20px 24px 4px 24px">
-                <!-- U25: o código num cartão, os 6 números em caixas dentro de UM trecho selecionável (user-select: all):
-                     um toque (ou segurar, no celular) seleciona o código inteiro, sem espaços, para copiar. Sem botão:
-                     nenhum programa de e-mail deixa um botão copiar (não roda código), e um link abriria outra página.
-                     O Gmail reconhece o código pela frase "Seu código de verificação da Bicos é …" e mostra o próprio
-                     botão "Copiar código" dele. -->
+                <!-- U27: o "Copiar código" que o Gmail mostra (o cartão "Código solicitado" do GitHub, com o botão) é do
+                     próprio Gmail: ele aparece quando o Gmail reconhece um código de verificação. Para ele reconhecer,
+                     o e-mail segue o formato desses remetentes: "código de verificação" no assunto, o código como UM
+                     número inteiro (sem caixas separadas, sem espaços) e a frase "Seu código de verificação da Bicos é
+                     …". Um e-mail não pode ter botão próprio que copie (nenhum programa de e-mail roda código); o
+                     número também se seleciona inteiro com um toque. -->
                 <table
                   role="presentation"
                   width="100%"
@@ -56,118 +57,27 @@
                 >
                   <tr>
                     <td style="padding: 18px 20px 20px 20px">
-                      <div style="font-size: 13px; line-height: 18px; color: #4a5162; padding-bottom: 12px">
+                      <div style="font-size: 13px; line-height: 18px; color: #4a5162; padding-bottom: 10px">
                         Código de verificação
                       </div>
-                      <div style="white-space: nowrap">
-                        <span style="-webkit-user-select: all; user-select: all; cursor: text"
-                          ><span
-                            style="
-                              display: inline-block;
-                              width: 36px;
-                              height: 46px;
-                              margin-right: 5px;
-                              background: #ffffff;
-                              border: 1px solid #d5dae3;
-                              border-radius: 8px;
-                              text-align: center;
-                              font-family: 'Courier New', Courier, monospace;
-                              font-size: 26px;
-                              line-height: 46px;
-                              font-weight: bold;
-                              color: #101418;
-                            "
-                            >{{ slice .Token 0 1 }}</span
-                          ><span
-                            style="
-                              display: inline-block;
-                              width: 36px;
-                              height: 46px;
-                              margin-right: 5px;
-                              background: #ffffff;
-                              border: 1px solid #d5dae3;
-                              border-radius: 8px;
-                              text-align: center;
-                              font-family: 'Courier New', Courier, monospace;
-                              font-size: 26px;
-                              line-height: 46px;
-                              font-weight: bold;
-                              color: #101418;
-                            "
-                            >{{ slice .Token 1 2 }}</span
-                          ><span
-                            style="
-                              display: inline-block;
-                              width: 36px;
-                              height: 46px;
-                              margin-right: 5px;
-                              background: #ffffff;
-                              border: 1px solid #d5dae3;
-                              border-radius: 8px;
-                              text-align: center;
-                              font-family: 'Courier New', Courier, monospace;
-                              font-size: 26px;
-                              line-height: 46px;
-                              font-weight: bold;
-                              color: #101418;
-                            "
-                            >{{ slice .Token 2 3 }}</span
-                          ><span
-                            style="
-                              display: inline-block;
-                              width: 36px;
-                              height: 46px;
-                              margin-right: 5px;
-                              background: #ffffff;
-                              border: 1px solid #d5dae3;
-                              border-radius: 8px;
-                              text-align: center;
-                              font-family: 'Courier New', Courier, monospace;
-                              font-size: 26px;
-                              line-height: 46px;
-                              font-weight: bold;
-                              color: #101418;
-                            "
-                            >{{ slice .Token 3 4 }}</span
-                          ><span
-                            style="
-                              display: inline-block;
-                              width: 36px;
-                              height: 46px;
-                              margin-right: 5px;
-                              background: #ffffff;
-                              border: 1px solid #d5dae3;
-                              border-radius: 8px;
-                              text-align: center;
-                              font-family: 'Courier New', Courier, monospace;
-                              font-size: 26px;
-                              line-height: 46px;
-                              font-weight: bold;
-                              color: #101418;
-                            "
-                            >{{ slice .Token 4 5 }}</span
-                          ><span
-                            style="
-                              display: inline-block;
-                              width: 36px;
-                              height: 46px;
-                              margin-right: 5px;
-                              background: #ffffff;
-                              border: 1px solid #d5dae3;
-                              border-radius: 8px;
-                              text-align: center;
-                              font-family: 'Courier New', Courier, monospace;
-                              font-size: 26px;
-                              line-height: 46px;
-                              font-weight: bold;
-                              color: #101418;
-                            "
-                            >{{ slice .Token 5 6 }}</span
-                          ></span
-                        >
-                      </div>
-                      <div style="font-size: 13px; line-height: 18px; color: #4a5162; padding-top: 12px">
-                        Toque no código para selecionar e copiar.
+                      <div
+                        style="
+                          display: inline-block;
+                          background: #ffffff;
+                          border: 1px solid #d5dae3;
+                          border-radius: 10px;
+                          padding: 10px 16px 10px 22px;
+                          font-family: 'Courier New', Courier, monospace;
+                          font-size: 32px;
+                          line-height: 40px;
+                          font-weight: bold;
+                          letter-spacing: 8px;
+                          color: #101418;
+                          -webkit-user-select: all;
+                          user-select: all;
+                        "
+                      >
+                        {{ .Token }}
                       </div>
                     </td>
                   </tr>

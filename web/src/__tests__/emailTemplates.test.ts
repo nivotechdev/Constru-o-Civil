@@ -34,20 +34,22 @@ describe('e-mails do Auth (L04)', () => {
 
   it('U11: the sign-up code shows in the preview and can be selected in one tap', () => {
     const html = readFileSync(dir + 'confirmacao.html', 'utf8');
-    expect(html).toMatch(/display: none[^>]*>\s*Seu código da Bicos: \{\{ \.Token \}\}/);
+    expect(html).toMatch(/display: none[^>]*>\s*Seu código de verificação da Bicos é \{\{ \.Token \}\}\./);
     expect(html).toMatch(/user-select: all;[\s\S]*\{\{ \.Token \}\}/);
   });
 
-  it('U25: the code card — the 6 numbers in boxes, selected whole in one tap; no button, no link to another page', () => {
+  it('U27: written the way Gmail recognises a verification code (it then shows its own "Copiar código")', () => {
     for (const f of CODES) {
       const html = readFileSync(dir + f, 'utf8');
-      for (let i = 0; i < 6; i++) expect(html).toContain(`{{ slice .Token ${i} ${i + 1} }}`);
-      expect(html).toMatch(/user-select: all[^>]*>\s*<span[^>]*>\{\{ slice \.Token 0 1 \}\}/);
-      // The sentence Gmail recognises to show its own "Copiar código".
+      // The code as ONE number, selectable in one tap — no boxes, no spaces, no link to another page.
+      expect(html).toMatch(/user-select: all[^>]*>\s*\{\{ \.Token \}\}\s*</);
+      expect(html).not.toMatch(/slice \.Token/);
       expect(html).toMatch(/Seu código de verificação da Bicos é \{\{ \.Token \}\}\./);
       expect(html).not.toContain('copiar-codigo');
-      expect(html).not.toMatch(/<style/);
     }
+    const auth = readFileSync(fileURLToPath(new URL('../../scripts/configurar-auth.mjs', import.meta.url)), 'utf8');
+    expect(auth).toContain("mailer_subjects_confirmation: 'Seu código de verificação da Bicos'");
+    expect(auth).toContain("mailer_subjects_magic_link: 'Seu código de verificação da Bicos'");
   });
 
   it('the e-mail change says the new address', () => {

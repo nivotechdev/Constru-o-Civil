@@ -5,19 +5,19 @@ Os 4 e-mails que o Supabase Auth manda, em português e com a cara da Bicos. Apl
 
 | Arquivo                | Template no Supabase | Assunto                                      |
 | ---------------------- | -------------------- | -------------------------------------------- |
-| `confirmacao.html`     | Confirm signup       | Seu código de confirmação da Bicos           |
+| `confirmacao.html`     | Confirm signup       | Seu código de verificação da Bicos           |
 | `redefinir-senha.html` | Reset password       | Criar uma senha nova na Bicos                |
 | `troca-de-email.html`  | Change email address | Confirme o novo e-mail da sua conta na Bicos |
-| `link-de-acesso.html`  | Magic link           | Seu código de segurança da Bicos             |
+| `link-de-acesso.html`  | Magic link           | Seu código de verificação da Bicos           |
 
 O de cadastro (U11) traz o **código de 6 números** (`{{ .Token }}`, que o app pede em "Confirme seu e-mail"): grande,
 selecionável com um toque, e também na prévia do e-mail (aparece na notificação do celular); o link de um toque fica
 como alternativa. O de segurança (U16, template "Magic link") traz só o código, sem link: é o que confirma a
 exclusão de uma conta sem senha (feita com o Google) ou de quem esqueceu a senha. Os outros dois continuam com link.
 
-U25: nos dois de código, os 6 números ficam num cartão e se selecionam inteiros com um toque (nenhum programa de
-e-mail deixa um botão copiar). A frase "Seu código de verificação da Bicos é …" faz o Gmail mostrar o próprio
-"Copiar código".
+U27: nos dois de código, o assunto diz "código de verificação", o código é UM número inteiro (selecionável com um
+toque) e a frase "Seu código de verificação da Bicos é …" — o formato em que o Gmail reconhece o código e mostra o
+próprio cartão "Código solicitado" com o botão "Copiar código" (o mesmo que aparece nos e-mails do GitHub).
 
 Regras para entregar na caixa de entrada: só HTML com estilos na linha, **sem imagens nem scripts de fora**,
 o link do Auth (`{{ .ConfirmationURL }}`), remetente de domínio autenticado

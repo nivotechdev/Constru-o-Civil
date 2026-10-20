@@ -1856,3 +1856,16 @@ e-mail confirmado e perfil completo, e só se **essa** conta escolheu o escuro. 
 "Completar perfil" e tudo depois de sair ficam sempre no tema original; outra conta começa no claro; a mesma conta,
 ao entrar de novo, volta no escuro. Excluir a conta apaga a escolha dela. A escolha antiga da U21 (uma só para o
 aparelho) é descartada. Sem armazenamento (janela anônima), a escolha vale até fechar o app.
+
+## U27 — O "Copiar código" do Gmail no e-mail da Bicos
+
+Pedido do responsável (com print do GitHub no Gmail): um botão que copie o código num clique, sem abrir página. **O que
+o print mostra é do Gmail, não do e-mail do GitHub**: o cartão "Código solicitado" com "Copiar código" (e o aviso
+"Com base neste e-mail") é um recurso que o Gmail lançou em setembro de 2026 e mostra quando reconhece um código de
+verificação. Nenhum e-mail consegue ter um botão próprio que copie — os programas de e-mail não rodam código. Então o
+e-mail da Bicos segue o formato que o Gmail reconhece, o mesmo desses remetentes: assunto "Seu código de verificação
+da Bicos" (os dois e-mails de código), o código como **um número inteiro** (as caixas separadas da U25 atrapalhavam o
+reconhecimento) e a frase "Seu código de verificação da Bicos é 735343." na prévia e no corpo. **Não depende só de
+nós:** o Gmail decide quando mostrar, e confia mais em remetente com domínio autenticado (SPF/DKIM/DMARC do
+`nivotech.com.br` na Brevo — CHECKLIST L04). Onde o Gmail não mostrar, o número se seleciona inteiro com um toque.
+Fontes: androidpolice.com e ghacks.net (set/2026) sobre o recurso.
