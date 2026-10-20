@@ -1807,3 +1807,14 @@ de 84 × 44 px, sol à esquerda e lua à direita apagados no trilho, e a bola (b
 branca) que anda 40 px dando uma volta inteira, com um leve passo além no fim; a seção "Aparência" fica entre Conta
 e Preferências. Teclado e leitor de tela: dois botões de opção ("Tema claro", "Tema escuro"), setas trocam; sem
 animação para quem pede menos movimento. O axe roda nas 14 telas também no escuro (CI).
+
+## U25 — O código do e-mail se copia sem abrir outra página
+
+Pedido do responsável: o botão "Copiar código" do e-mail abria outra página (a `/copiar-codigo` da U17) — ele quer
+só clicar e copiar. **Não existe, em nenhum programa de e-mail, um botão que copie ao clicar:** Gmail, Outlook e Apple
+Mail tiram qualquer código de dentro da mensagem; um "botão" num e-mail só pode ser um link, e link abre página. O
+"Copiar código" do print é do **próprio Gmail**, que o põe sozinho quando reconhece um código de verificação. Então:
+saiu o botão (e a página `/copiar-codigo`, que não tem mais uso); os 6 números ficam no cartão dentro de um único
+trecho selecionável — um toque (no computador) ou segurar o dedo (no celular) seleciona o código inteiro, sem espaços,
+pronto para "Copiar"; e a frase "Seu código de verificação da Bicos é 735343." deixa o código em texto corrido, o
+formato que o Gmail reconhece para mostrar o "Copiar código" dele. No app continua o "Colar código" (U11).

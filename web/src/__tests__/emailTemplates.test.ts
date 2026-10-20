@@ -38,21 +38,15 @@ describe('e-mails do Auth (L04)', () => {
     expect(html).toMatch(/user-select: all;[\s\S]*\{\{ \.Token \}\}/);
   });
 
-  it('U17: the code e-mails have a "Copiar código" button that opens the copy page with the code after the #', () => {
-    for (const f of CODES) {
-      const html = readFileSync(dir + f, 'utf8');
-      expect(html).toContain('href="{{ .SiteURL }}copiar-codigo#{{ .Token }}"');
-      expect(html).toContain('Copiar código');
-    }
-  });
-
-  it('U20: the code card — the 6 numbers in boxes and the "Copiar código" button with hover and click', () => {
+  it('U25: the code card — the 6 numbers in boxes, selected whole in one tap; no button, no link to another page', () => {
     for (const f of CODES) {
       const html = readFileSync(dir + f, 'utf8');
       for (let i = 0; i < 6; i++) expect(html).toContain(`{{ slice .Token ${i} ${i + 1} }}`);
-      expect(html).toMatch(/\.copy-btn:hover\s*\{/);
-      expect(html).toMatch(/\.copy-btn:active\s*\{/);
-      expect(html).toContain('class="copy-btn"');
+      expect(html).toMatch(/user-select: all[^>]*>\s*<span[^>]*>\{\{ slice \.Token 0 1 \}\}/);
+      // The sentence Gmail recognises to show its own "Copiar código".
+      expect(html).toMatch(/Seu código de verificação da Bicos é \{\{ \.Token \}\}\./);
+      expect(html).not.toContain('copiar-codigo');
+      expect(html).not.toMatch(/<style/);
     }
   });
 

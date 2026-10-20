@@ -91,10 +91,3 @@ describe('X17: real URLs', () => {
     vi.unstubAllGlobals();
   });
 });
-
-describe('U17: the copy page of the code e-mails', () => {
-  it('is open to anyone (the link of the e-mail works logged in or not)', async () => {
-    const { ROUTES } = await import('../routes');
-    expect(matchRoute(ROUTES, '/copiar-codigo')?.route.value.access).toBe('public');
-  });
-});

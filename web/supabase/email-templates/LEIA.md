@@ -15,8 +15,9 @@ selecionável com um toque, e também na prévia do e-mail (aparece na notifica�
 como alternativa. O de segurança (U16, template "Magic link") traz só o código, sem link: é o que confirma a
 exclusão de uma conta sem senha (feita com o Google) ou de quem esqueceu a senha. Os outros dois continuam com link.
 
-U17: os dois de código têm o botão **"📋 Copiar código"**, que abre `{{ .SiteURL }}copiar-codigo#<código>` — a página
-da Bicos copia o código (um e-mail não consegue copiar sozinho).
+U25: nos dois de código, os 6 números ficam num cartão e se selecionam inteiros com um toque (nenhum programa de
+e-mail deixa um botão copiar). A frase "Seu código de verificação da Bicos é …" faz o Gmail mostrar o próprio
+"Copiar código".
 
 Regras para entregar na caixa de entrada: só HTML com estilos na linha, **sem imagens nem scripts de fora**,
 o link do Auth (`{{ .ConfirmationURL }}`), remetente de domínio autenticado

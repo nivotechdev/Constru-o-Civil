@@ -6,34 +6,6 @@
     <meta name="color-scheme" content="light" />
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
     <title>Seu código de confirmação</title>
-    <style>
-      /* U20: onde o programa de e-mail aceita CSS (Gmail no navegador, Apple Mail, Outlook.com), o botão reage ao
-         mouse e ao clique; nos outros fica o estilo da própria tag, que já é o botão completo. */
-      .copy-btn {
-        transition:
-          background-color 0.15s ease,
-          box-shadow 0.15s ease,
-          transform 0.1s ease;
-      }
-      .copy-btn:hover {
-        background-color: #1639c4 !important;
-        box-shadow: 0 4px 14px rgba(29, 75, 237, 0.35);
-        transform: translateY(-1px);
-      }
-      .copy-btn:active {
-        background-color: #10299a !important;
-        box-shadow: none;
-        transform: translateY(0) scale(0.97);
-      }
-      @media (max-width: 400px) {
-        .digit {
-          width: 36px !important;
-          height: 44px !important;
-          font-size: 24px !important;
-          line-height: 44px !important;
-        }
-      }
-    </style>
   </head>
   <body style="margin: 0; padding: 0; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2430">
     <!-- Confirm signup (U11: confirmação por código). Variáveis do Supabase Auth: {{ .Token }} (os 6 números),
@@ -70,11 +42,11 @@
             </tr>
             <tr>
               <td style="padding: 20px 24px 4px 24px">
-                <!-- U20: o código no jeito do GitHub — um cartão com os 6 números em caixas e o botão "Copiar código"
-                     (hover e clique animados onde o programa de e-mail aceita CSS; nos outros, o botão funciona igual).
-                     Um e-mail não roda nada: o botão abre a página da Bicos que copia (U17; o código vai depois do #,
-                     que não chega ao servidor). {{ .SiteURL }} termina em "/". A linha "Código: …" deixa o número
-                     inteiro em texto, que o Gmail reconhece (mostra o próprio "Copiar código") e que se copia segurando. -->
+                <!-- U25: o código num cartão, os 6 números em caixas dentro de UM trecho selecionável (user-select: all):
+                     um toque (ou segurar, no celular) seleciona o código inteiro, sem espaços, para copiar. Sem botão:
+                     nenhum programa de e-mail deixa um botão copiar (não roda código), e um link abriria outra página.
+                     O Gmail reconhece o código pela frase "Seu código de verificação da Bicos é …" e mostra o próprio
+                     botão "Copiar código" dele. -->
                 <table
                   role="presentation"
                   width="100%"
@@ -85,171 +57,126 @@
                   <tr>
                     <td style="padding: 18px 20px 20px 20px">
                       <div style="font-size: 13px; line-height: 18px; color: #4a5162; padding-bottom: 12px">
-                        Código solicitado
+                        Código de verificação
                       </div>
-                      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: separate">
-                        <tr>
-                          <td
-                            class="digit"
-                            align="center"
-                            width="42"
-                            height="50"
+                      <div style="white-space: nowrap">
+                        <span style="-webkit-user-select: all; user-select: all; cursor: text"
+                          ><span
                             style="
-                              width: 42px;
-                              height: 50px;
+                              display: inline-block;
+                              width: 36px;
+                              height: 46px;
+                              margin-right: 5px;
                               background: #ffffff;
                               border: 1px solid #d5dae3;
                               border-radius: 8px;
+                              text-align: center;
                               font-family: 'Courier New', Courier, monospace;
-                              font-size: 28px;
-                              line-height: 50px;
+                              font-size: 26px;
+                              line-height: 46px;
                               font-weight: bold;
                               color: #101418;
                             "
-                          >
-                            {{ slice .Token 0 1 }}
-                          </td>
-                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
-                          <td
-                            class="digit"
-                            align="center"
-                            width="42"
-                            height="50"
+                            >{{ slice .Token 0 1 }}</span
+                          ><span
                             style="
-                              width: 42px;
-                              height: 50px;
+                              display: inline-block;
+                              width: 36px;
+                              height: 46px;
+                              margin-right: 5px;
                               background: #ffffff;
                               border: 1px solid #d5dae3;
                               border-radius: 8px;
+                              text-align: center;
                               font-family: 'Courier New', Courier, monospace;
-                              font-size: 28px;
-                              line-height: 50px;
+                              font-size: 26px;
+                              line-height: 46px;
                               font-weight: bold;
                               color: #101418;
                             "
-                          >
-                            {{ slice .Token 1 2 }}
-                          </td>
-                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
-                          <td
-                            class="digit"
-                            align="center"
-                            width="42"
-                            height="50"
+                            >{{ slice .Token 1 2 }}</span
+                          ><span
                             style="
-                              width: 42px;
-                              height: 50px;
+                              display: inline-block;
+                              width: 36px;
+                              height: 46px;
+                              margin-right: 5px;
                               background: #ffffff;
                               border: 1px solid #d5dae3;
                               border-radius: 8px;
+                              text-align: center;
                               font-family: 'Courier New', Courier, monospace;
-                              font-size: 28px;
-                              line-height: 50px;
+                              font-size: 26px;
+                              line-height: 46px;
                               font-weight: bold;
                               color: #101418;
                             "
-                          >
-                            {{ slice .Token 2 3 }}
-                          </td>
-                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
-                          <td
-                            class="digit"
-                            align="center"
-                            width="42"
-                            height="50"
+                            >{{ slice .Token 2 3 }}</span
+                          ><span
                             style="
-                              width: 42px;
-                              height: 50px;
+                              display: inline-block;
+                              width: 36px;
+                              height: 46px;
+                              margin-right: 5px;
                               background: #ffffff;
                               border: 1px solid #d5dae3;
                               border-radius: 8px;
+                              text-align: center;
                               font-family: 'Courier New', Courier, monospace;
-                              font-size: 28px;
-                              line-height: 50px;
+                              font-size: 26px;
+                              line-height: 46px;
                               font-weight: bold;
                               color: #101418;
                             "
-                          >
-                            {{ slice .Token 3 4 }}
-                          </td>
-                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
-                          <td
-                            class="digit"
-                            align="center"
-                            width="42"
-                            height="50"
+                            >{{ slice .Token 3 4 }}</span
+                          ><span
                             style="
-                              width: 42px;
-                              height: 50px;
+                              display: inline-block;
+                              width: 36px;
+                              height: 46px;
+                              margin-right: 5px;
                               background: #ffffff;
                               border: 1px solid #d5dae3;
                               border-radius: 8px;
+                              text-align: center;
                               font-family: 'Courier New', Courier, monospace;
-                              font-size: 28px;
-                              line-height: 50px;
+                              font-size: 26px;
+                              line-height: 46px;
                               font-weight: bold;
                               color: #101418;
                             "
-                          >
-                            {{ slice .Token 4 5 }}
-                          </td>
-                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
-                          <td
-                            class="digit"
-                            align="center"
-                            width="42"
-                            height="50"
+                            >{{ slice .Token 4 5 }}</span
+                          ><span
                             style="
-                              width: 42px;
-                              height: 50px;
+                              display: inline-block;
+                              width: 36px;
+                              height: 46px;
+                              margin-right: 5px;
                               background: #ffffff;
                               border: 1px solid #d5dae3;
                               border-radius: 8px;
+                              text-align: center;
                               font-family: 'Courier New', Courier, monospace;
-                              font-size: 28px;
-                              line-height: 50px;
+                              font-size: 26px;
+                              line-height: 46px;
                               font-weight: bold;
                               color: #101418;
                             "
-                          >
-                            {{ slice .Token 5 6 }}
-                          </td>
-                        </tr>
-                      </table>
-                      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top: 18px">
-                        <tr>
-                          <td style="border-radius: 999px; background: #1d4bed">
-                            <a
-                              class="copy-btn"
-                              href="{{ .SiteURL }}copiar-codigo#{{ .Token }}"
-                              style="
-                                display: inline-block;
-                                padding: 11px 24px;
-                                border-radius: 999px;
-                                background: #1d4bed;
-                                color: #ffffff;
-                                font-size: 15px;
-                                line-height: 20px;
-                                font-weight: bold;
-                                text-decoration: none;
-                              "
-                              >Copiar código</a
-                            >
-                          </td>
-                        </tr>
-                      </table>
+                            >{{ slice .Token 5 6 }}</span
+                          ></span
+                        >
+                      </div>
+                      <div style="font-size: 13px; line-height: 18px; color: #4a5162; padding-top: 12px">
+                        Toque no código para selecionar e copiar.
+                      </div>
                     </td>
                   </tr>
                 </table>
               </td>
             </tr>
             <tr>
-              <td align="left" style="padding: 10px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
-                Código:
-                <span style="font-weight: bold; color: #1f2430; -webkit-user-select: all; user-select: all"
-                  >{{ .Token }}</span
-                >
-                · Ele vale por 1 hora.
+              <td style="padding: 10px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
+                Seu código de verificação da Bicos é {{ .Token }}. Ele vale por 1 hora.
               </td>
             </tr>
             <tr>
