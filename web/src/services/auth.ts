@@ -8,7 +8,7 @@ import { ACCOUNTS, DEMO_PASSWORD } from '../data/seed';
 import type { Account, Company, Role, Worker } from '../types/models';
 import { localLatency, mockLatency } from './mockLatency';
 import { clearQueries } from './queries';
-import { resetHistory } from './router';
+import { navigate, resetHistory } from './router';
 import {
   getDb,
   getSession,
@@ -30,6 +30,14 @@ import { serviceError } from './errors';
 import { isValidEmail } from '../utils/format';
 import { TERMS_VERSION } from './legal';
 import type { SavedLocation } from './location';
+import {
+  endGoogleSignUp,
+  googleIdentity,
+  googleSignUpPath,
+  rememberGoogleRole,
+  setGoogleIdentity,
+  type GoogleIdentity
+} from './googleSignUp';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -373,26 +381,24 @@ export async function abandonPasswordReset(): Promise<void> {
   if (!IS_DEMO) return remote.abandonPasswordReset();
 }
 
-// ---- Google (L13) ----
-
-const GOOGLE_ROLE_KEY = 'bicos-google-papel';
+// ---- Google (L13, U37) ----
 
 /**
- * "Continuar com o Google": leaves for Google and comes back signed in. Backend: Supabase OAuth.
- * U18: from the sign-up, the side already chosen goes along (in this tab's storage, only until the person comes
- * back), so "Completar cadastro" opens with it marked.
+ * "Continuar com o Google". An account that exists signs in; a Google account without one continues in the normal
+ * sign-up (U37) — the side chosen before, or choosing it first — with the e-mail and its confirmation left out.
+ * Backend: Firebase (window + ID token) and the Edge Function entrar-com-firebase; without Firebase, Supabase OAuth
+ * (leaves the page and comes back).
  */
 export async function signInWithGoogle(role?: Role): Promise<void> {
   if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
-  try {
-    if (role) sessionStorage.setItem(GOOGLE_ROLE_KEY, role);
-    else sessionStorage.removeItem(GOOGLE_ROLE_KEY);
-  } catch {
-    // Without storage the side is just asked again.
-  }
+  rememberGoogleRole(role ?? null);
   // U29: straight into Firebase, nothing awaited before — the Google window must open inside the tap.
-  if (FEATURES.firebase) return remoteFirebase.signInWithFirebaseGoogle();
-  return remote.signInWithGoogle();
+  if (!FEATURES.firebase) return remote.signInWithGoogle();
+  const result = await remoteFirebase.signInWithFirebaseGoogle();
+  if (result !== 'ok') {
+    setGoogleIdentity(result);
+    navigate(googleSignUpPath(), { replace: true });
+  }
 }
 
 /** U29: loads Firebase as a screen with the Google/phone buttons opens, so the tap opens the window at once. */
@@ -438,44 +444,50 @@ export function takeSignUpPhone(): string | null {
   }
 }
 
-/** U18: the side chosen before leaving for Google (read once). */
-export function takeGoogleRole(): Role | null {
-  try {
-    const role = sessionStorage.getItem(GOOGLE_ROLE_KEY);
-    sessionStorage.removeItem(GOOGLE_ROLE_KEY);
-    return role === 'trabalhador' || role === 'recrutador' ? role : null;
-  } catch {
-    return null;
-  }
-}
-
-/** U18: the e-mail and the name the Google account came with, to show and to start the form. */
-export async function oauthIdentity(): Promise<{ email: string; name: string } | null> {
+/**
+ * U37: the Google sign-up in progress on this device (a Google login whose account isn't created yet): its e-mail
+ * and name, for the sign-up screens. Read again when a screen opens (after a reload or Supabase's own Google).
+ */
+export async function loadGoogleSignUp(): Promise<GoogleIdentity | null> {
   if (IS_DEMO) return null;
-  return remote.oauthIdentity();
+  const identity = await remote.pendingGoogleIdentity().catch(() => googleIdentity());
+  setGoogleIdentity(identity);
+  return identity;
 }
 
-export interface OAuthSignUpData {
+/** U37: "Usar outro e-mail": leaves the Google login and goes back to the plain sign-up (e-mail and password). */
+export async function leaveGoogleSignUp(): Promise<void> {
+  endGoogleSignUp();
+  if (!IS_DEMO) await remote.signOut().catch(() => undefined);
+}
+
+export interface GoogleSignUpData {
   role: Role;
   name: string;
   doc: string;
   whatsapp: string;
+  password: string;
   acceptedTermsVersion: string;
   adult: boolean;
   contactName?: string;
 }
 
 /**
- * L13: a Google account without a side yet chooses it and gives the same data as the e-mail sign-up.
- * Backend: RPC create_my_account (same rules), then the session starts as usual.
+ * U37: creates the account of a Google login — the same data and rules as the e-mail sign-up (the e-mail is the
+ * Google one, already confirmed), plus a password, so the account also enters with CPF/CNPJ or e-mail and password.
+ * Backend: Auth updateUser({ password }), RPC create_my_account, then the session starts as usual.
  */
-export async function completeOAuthSignUp(data: OAuthSignUpData): Promise<void> {
+export async function completeGoogleSignUp(data: GoogleSignUpData): Promise<void> {
   if (!data.adult) throw serviceError('validacao', 'A Bicos é só para maiores de 18 anos.');
   const validDoc = data.role === 'recrutador' ? isValidCnpj(data.doc) || isValidCpf(data.doc) : isValidCpf(data.doc);
   if (!validDoc)
     throw serviceError('validacao', data.role === 'recrutador' ? 'CNPJ ou CPF inválido.' : 'CPF inválido.');
+  if (!isValidMobile(data.whatsapp)) throw serviceError('validacao', 'Use o celular com DDD (11 números).');
+  const weak = passwordProblem(data.password);
+  if (weak) throw serviceError('validacao', weak);
   if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, crie a conta pelo cadastro.');
-  return remote.completeOAuthSignUp(data);
+  await remote.completeGoogleSignUp(data);
+  endGoogleSignUp();
 }
 
 // ---- account settings ----

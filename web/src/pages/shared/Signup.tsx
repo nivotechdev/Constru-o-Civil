@@ -3,13 +3,16 @@ import { passwordProblem } from '../../utils/password';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
-import { GoogleButton, OrDivider, PhoneButton } from '../../components/GoogleButton';
+import { GoogleButton, OrDivider } from '../../components/GoogleButton';
+import { GoogleSignUpBanner } from '../../components/GoogleSignUpBanner';
 import { FlowHeading, FlowLayout, FlowProgress } from '../../components/FlowLayout';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
 import {
+  completeGoogleSignUp,
   isFreeForSignUp,
+  leaveGoogleSignUp,
   sendWhatsAppCode,
   signInWithGoogle,
   takeSignUpPhone,
@@ -28,7 +31,8 @@ import type { Role } from '../../types/models';
 import { isValidEmail, maskCNPJ, maskCPF, isValidMobile, maskPhone } from '../../utils/format';
 import { WhatsAppCode } from './WhatsAppCode';
 import { useCaptcha } from '../../components/Captcha';
-import { errorMessage } from '../../services/errors';
+import { errorMessage, ServiceError } from '../../services/errors';
+import { useGoogleSignUp } from '../../hooks/useGoogleSignUp';
 import { isValidCnpj, isValidCpf } from '../../utils/document';
 import { PasswordStrength } from '../../components/PasswordStrength';
 
@@ -216,18 +220,26 @@ function validateField(field: SignupField, values: Values, role: Role): string |
 
 /**
  * The steps of the form. Without a WhatsApp provider to send the code (see WHATSAPP_CODE_AVAILABLE), the
- * code step is left out and the number is kept as typed (not marked as confirmed).
+ * code step is left out and the number is kept as typed (not marked as confirmed). U37: started with Google, the
+ * e-mail step is left out too (Google already confirmed it, so there is no e-mail code either) and the password is
+ * presented as the second way in.
  */
-function signupSteps(role: Role): { overline: string; fields: SignupField[] } {
+function signupSteps(role: Role, google: boolean): { overline: string; fields: SignupField[] } {
   const cfg = PERFIS[role];
-  if (WHATSAPP_CODE_AVAILABLE) return cfg;
   return {
     ...cfg,
     fields: cfg.fields
-      .filter((f) => f.id !== 'codigo')
-      .map((f) =>
-        f.id === 'whatsapp' && f.help ? { ...f, help: f.help.replace(/ Vamos mandar um código[^.]*\./, '') } : f
-      )
+      .filter((f) => (WHATSAPP_CODE_AVAILABLE || f.id !== 'codigo') && !(google && f.id === 'email'))
+      .map((f) => {
+        if (f.id === 'whatsapp' && f.help && !WHATSAPP_CODE_AVAILABLE)
+          return { ...f, help: f.help.replace(/ Vamos mandar um código[^.]*\./, '') };
+        if (f.id === 'senha' && google)
+          return {
+            ...f,
+            help: 'Com ela você também entra pelo CPF ou e-mail, sem precisar do Google. Use 8 caracteres ou mais, com letras e números.'
+          };
+        return f;
+      })
   };
 }
 
@@ -237,7 +249,9 @@ export default function Signup({ params }: ScreenProps) {
   const captcha = useCaptcha();
   const role: Role = params.role === 'recrutador' ? 'recrutador' : 'trabalhador';
   const key = 'cadastro-' + role;
-  const cfg = signupSteps(role);
+  // U37: a Google login without its account: the same steps, without the e-mail ones.
+  const google = useGoogleSignUp();
+  const cfg = signupSteps(role, Boolean(google));
   const [ui, setUi] = useUI<SignupUI>(key, () => ({
     step: 0,
     // U28: a number confirmed by SMS that had no account comes filled in.
@@ -262,6 +276,13 @@ export default function Signup({ params }: ScreenProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const values: Values = { ...ui.values, senha: password };
+  // U37: the name comes from Google (the person's: the worker's full name, the company's contact), still editable.
+  const googleName = google?.name ?? '';
+  useEffect(() => {
+    if (!googleName) return;
+    const nameField: FieldId = role === 'trabalhador' ? 'nome' : 'responsavel';
+    setUi((s) => (s.values[nameField] ? {} : { values: { ...s.values, [nameField]: googleName } }));
+  }, [googleName, role, setUi]);
   useEffect(
     () => () => {
       const to = currentPath();
@@ -405,6 +426,10 @@ export default function Signup({ params }: ScreenProps) {
       return;
     }
     setUi({ submitting: true, acceptError: false, adultError: false, submitError: null });
+    if (google) {
+      finishWithGoogle();
+      return;
+    }
     signUp(
       {
         role,
@@ -445,6 +470,40 @@ export default function Signup({ params }: ScreenProps) {
       .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
   }
 
+  /** U37: the last step of a Google sign-up — the account is created on the Google login (no e-mail to confirm). */
+  function finishWithGoogle() {
+    completeGoogleSignUp({
+      role,
+      name: (role === 'trabalhador' ? ui.values.nome : ui.values.razao) || '',
+      doc: ui.values.doc || '',
+      whatsapp: ui.values.whatsapp || '',
+      password,
+      acceptedTermsVersion: TERMS_VERSION,
+      adult: true,
+      ...(role === 'recrutador' ? { contactName: (ui.values.responsavel || '').trim() } : {})
+    })
+      .then(() => {
+        resetUI(key);
+        navigate('/completar-perfil/' + role, { replace: true });
+      })
+      .catch((e: unknown) => {
+        if (e instanceof ServiceError && e.code === 'conflito') {
+          // Refused without saying why (it would reveal whose the CPF/CNPJ is): back to the document step.
+          setUi({ submitting: false, step: cfg.fields.findIndex((f) => f.id === 'doc'), generalError: true });
+          return;
+        }
+        setUi({ submitting: false, submitError: errorMessage(e) });
+      });
+  }
+
+  /** U37: "Trocar": leaves the Google login; the plain sign-up continues with the answers kept, asking the e-mail. */
+  function switchFromGoogle() {
+    const emailStep = signupSteps(role, false).fields.findIndex((f) => f.id === 'email');
+    void leaveGoogleSignUp().then(() =>
+      setUi((s) => ({ step: Math.min(s.step, emailStep), submitError: null, generalError: false }))
+    );
+  }
+
   return (
     <FlowLayout
       header={<FlowProgress step={step} total={cfg.fields.length} onBack={goBack} />}
@@ -467,17 +526,19 @@ export default function Signup({ params }: ScreenProps) {
             loading={ui.submitting}
             onClick={continueStep}
           />
-          {/* U18: on the first step, the other way in — Google brings the e-mail; the rest is asked on return. */}
-          {step === 0 && (FEATURES.googleLogin || FEATURES.phoneLogin) ? <OrDivider /> : null}
-          {step === 0 && FEATURES.googleLogin ? (
-            <GoogleButton
-              onClick={() => signInWithGoogle(role).catch((e: unknown) => setUi({ submitError: errorMessage(e) }))}
-            />
+          {/* U18/U37: on the first step, the other way in — Google brings the e-mail, already confirmed. */}
+          {step === 0 && FEATURES.googleLogin && !google ? (
+            <>
+              <OrDivider />
+              <GoogleButton
+                onClick={() => signInWithGoogle(role).catch((e: unknown) => setUi({ submitError: errorMessage(e) }))}
+              />
+            </>
           ) : null}
-          {step === 0 && FEATURES.phoneLogin ? <PhoneButton onClick={() => navigate('/entrar-celular')} /> : null}
         </>
       }
     >
+      {google ? <GoogleSignUpBanner email={google.email} onSwitch={switchFromGoogle} /> : null}
       {ui.generalError ? (
         <div className="flex flex-col gap-3.5 p-4 bg-danger-50 border border-danger-500 rounded-card">
           <div className="flex gap-2.5 items-start">
@@ -485,7 +546,7 @@ export default function Signup({ params }: ScreenProps) {
             <div className="flex flex-col gap-1">
               <span className="font-semibold text-danger-500">Não deu para criar a conta com esses dados.</span>
               <span className="text-sm text-concrete-700">
-                {`Confira o ${role === 'recrutador' ? 'CNPJ ou CPF' : 'CPF'} e o e-mail. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
+                {`Confira o ${role === 'recrutador' ? 'CNPJ ou CPF' : 'CPF'}${google ? '' : ' e o e-mail'}. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
               </span>
             </div>
           </div>

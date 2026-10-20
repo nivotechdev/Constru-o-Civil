@@ -2,7 +2,7 @@
 // Google, o código por SMS e o reCAPTCHA contra robôs — e entrega um ID token. Esta função confere o token
 // (_shared/firebase.ts) e abre a sessão da Bicos no Supabase Auth, onde ficam as contas:
 //   * Google (e-mail confirmado pelo Google): entra na conta desse e-mail; sem conta, cria o login (provedor
-//     "google") e o app segue para "Completar cadastro", como o Google do próprio Supabase (L13);
+//     "google") e o app segue pelo cadastro normal, sem o passo do e-mail nem a confirmação dele (U37);
 //   * celular: entra na conta cujo WhatsApp é esse número (o SMS prova que a pessoa tem o número, e o WhatsApp da
 //     conta fica marcado como confirmado). Sem conta com o número, não cria nada: 404 { erro: 'sem-conta' } e o app
 //     oferece criar a conta com esse número.

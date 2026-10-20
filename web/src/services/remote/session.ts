@@ -30,6 +30,7 @@ import { setBootStatus, withTimeout } from '../boot';
 import { clearPaging } from '../paging';
 import { clearContactCache } from '../contacts';
 import { isCandidacyNotice } from '../notifications';
+import { googleSignUpPath, inGoogleSignUp, setGoogleIdentity, type GoogleIdentity } from '../googleSignUp';
 
 /** Where the links sent by e-mail come back to: this page, without a route (see handleAuthRedirect). */
 /** Where the e-mail links come back to: the app's root (X17: `https://site/`, no route in the hash). */
@@ -355,19 +356,32 @@ function flushNotice(): void {
 
 /** Y27: the session points to an account the app doesn't have — sign out and say why. */
 /** L13: signed in with Google (or another provider) — the account may still have to be completed. */
-function isOAuthUser(user: User | null | undefined): boolean {
+export function isOAuthUser(user: User | null | undefined): boolean {
   const meta = user?.app_metadata as { provider?: string; via?: string } | undefined;
   // U28: a login born from "Google" via Firebase is marked by the Edge Function (its sessions are opened by link).
   return Boolean((meta?.provider && meta.provider !== 'email') || meta?.via === 'firebase');
 }
 
+/** U37: the e-mail and name a Google login came with (to show and to start the sign-up). */
+export function googleIdentityOf(user: User): GoogleIdentity {
+  const meta = (user.user_metadata ?? {}) as { full_name?: unknown; name?: unknown };
+  const name = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
+  return { email: user.email ?? '', name: name.trim().slice(0, 80) };
+}
+
+/** U37: a Google login without its account continues in the sign-up (unless it is already there). */
+function continueGoogleSignUp(user: User): void {
+  setGoogleIdentity(googleIdentityOf(user));
+  if (!inGoogleSignUp(currentPath())) navigate(googleSignUpPath(), { replace: true });
+}
+
 /**
- * A session without its account row. A Google account that never chose its side goes to "Completar
- * cadastro" (L13), keeping the session; anything else is a broken session (Y27).
+ * A session without its account row. A Google login whose account isn't created yet continues in the sign-up
+ * (U37), keeping the session; anything else is a broken session (Y27).
  */
 async function missingAccount(user: User | null): Promise<void> {
-  if (isOAuthUser(user)) {
-    navigate('/completar-cadastro', { replace: true });
+  if (user && isOAuthUser(user)) {
+    continueGoogleSignUp(user);
     return;
   }
   await dropBrokenSession();
@@ -517,8 +531,7 @@ function listenToAuth(client: Awaited<ReturnType<typeof db>>): void {
         const confirmedNow = Boolean(session.user.email_confirmed_at) && current && !current.emailConfirmed;
         if (!current || current.accountId !== session.user.id || confirmedNow)
           enterSession(session.user).catch((e: unknown) => {
-            if (e instanceof MissingAccountError && isOAuthUser(session.user))
-              navigate('/completar-cadastro', { replace: true });
+            if (e instanceof MissingAccountError && isOAuthUser(session.user)) continueGoogleSignUp(session.user);
           });
       }
     });

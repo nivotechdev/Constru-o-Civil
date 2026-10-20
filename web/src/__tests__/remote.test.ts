@@ -521,7 +521,7 @@ describe('remote: data and actions', () => {
     expect(m.store.getSession()).toBeNull();
   });
 
-  it('U18: Google from the sign-up keeps the chosen side for "Completar cadastro" and brings the name', async () => {
+  it('U37: Google from the sign-up keeps the chosen side until the account exists and brings the name', async () => {
     const box = new Map<string, string>();
     vi.stubGlobal('sessionStorage', {
       getItem: (k: string) => box.get(k) ?? null,
@@ -542,12 +542,16 @@ describe('remote: data and actions', () => {
     const m = await load(fake);
     await m.auth.signInWithGoogle('recrutador');
     expect(fake.calls.find((c) => c.name === 'signInWithOAuth')?.args).toMatchObject({ provider: 'google' });
-    expect(m.auth.takeGoogleRole()).toBe('recrutador');
-    // Read once: coming back again (or from the login) asks the side.
-    expect(m.auth.takeGoogleRole()).toBeNull();
+    const signUp = await import('../services/googleSignUp');
+    // Kept (not read once): a reload in the middle of the sign-up stays on the same side.
+    expect([signUp.googleRole(), signUp.googleRole()]).toEqual(['recrutador', 'recrutador']);
+    expect(signUp.googleSignUpPath()).toBe('/cadastro/recrutador');
+    // From the login, no side yet: it is chosen first.
     await m.auth.signInWithGoogle();
-    expect(m.auth.takeGoogleRole()).toBeNull();
-    expect(await m.auth.oauthIdentity()).toEqual({ email: 'novo@gmail.com', name: 'Marcos Pereira da Silva' });
+    expect(signUp.googleSignUpPath()).toBe('/escolha-perfil');
+    // The e-mail (already confirmed by Google) and the name, for the steps.
+    expect(await m.auth.loadGoogleSignUp()).toEqual({ email: 'novo@gmail.com', name: 'Marcos Pereira da Silva' });
+    expect(signUp.googleIdentity()?.email).toBe('novo@gmail.com');
     vi.unstubAllGlobals();
   });
 
@@ -1244,30 +1248,37 @@ describe('Z11: opening the app with the real backend', () => {
     expect(m.store.getUI('login', {})).toMatchObject({ identifier: 'ana@exemplo.com' });
   });
 
-  it('L13: a Google account without a side goes to "Completar cadastro" and keeps the session', async () => {
+  it('U37: a Google login without its account continues in the sign-up (no e-mail step) and keeps the session', async () => {
     const hashes: string[] = [];
     vi.stubGlobal('window', { location: { pathname: '/', search: '', hash: '' }, addEventListener: () => undefined });
     vi.stubGlobal('history', { replaceState: (_s: unknown, _t: string, url: string) => hashes.push(url) });
-    const google = { ...authUser('u-google', 'g@y.z'), app_metadata: { provider: 'google' } };
+    const google = { ...authUser('u-google', 'g@y.z'), app_metadata: { provider: 'email', via: 'firebase' } };
     const fake = fakeSupabase({
       tables: { accounts: [] },
-      auth: { getSession: () => ({ data: { session: { user: google } }, error: null }) },
+      auth: {
+        getSession: () => ({ data: { session: { user: google } }, error: null }),
+        updateUser: () => ({ data: { user: google }, error: null })
+      },
       rpc: { create_my_account: () => ({ data: null, error: null }) }
     });
     const { session, m } = await boot(fake);
     await session.startRemoteSession();
-    expect(hashes.at(-1)).toContain('#/completar-cadastro');
+    // No side chosen yet: choosing it is the first step; the session (the Google login) stays.
+    expect(hashes.at(-1)).toContain('#/escolha-perfil');
     expect(fake.calls.some((c) => c.name === 'signOut')).toBe(false);
     await m.auth
-      .completeOAuthSignUp({
+      .completeGoogleSignUp({
         role: 'trabalhador',
         name: 'Pelo Google',
         doc: '390.533.447-05',
         whatsapp: '(11) 98888-7777',
+        password: 'segredo123',
         acceptedTermsVersion: '1.0',
         adult: true
       })
       .catch(() => undefined);
+    // The password first (the account also enters by CPF and password), then the account with the sign-up's rules.
+    expect(fake.calls.find((c) => c.name === 'updateUser')?.args).toEqual({ password: 'segredo123' });
     expect(fake.calls.find((c) => c.name === 'create_my_account')?.args).toEqual({
       p_role: 'trabalhador',
       p_name: 'Pelo Google',

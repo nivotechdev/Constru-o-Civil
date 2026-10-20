@@ -71,7 +71,7 @@ const EditCompanyProfile = screen(() => import('./pages/shared/EditCompanyProfil
 const ChangeWhatsApp = screen(() => import('./pages/shared/ChangeWhatsApp'));
 const ChangePassword = screen(() => import('./pages/shared/ChangePassword'));
 const ChangeEmail = screen(() => import('./pages/shared/ChangeEmail'));
-const CompleteSignup = screen(() => import('./pages/shared/CompleteSignup'));
+const GoogleSignUpRedirect = screen(() => import('./pages/shared/GoogleSignUpRedirect'));
 const PublicJob = screen(() => import('./pages/shared/PublicJob'));
 const VerifyIdentity = screen(() => import('./pages/worker/VerifyIdentity'));
 const BlockedAccounts = screen(() => import('./pages/shared/BlockedAccounts'));
@@ -130,7 +130,8 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/redefinir-senha', anyone(ResetPassword)),
   compileRoute('/termos', anyone(Terms)),
   compileRoute('/privacidade', anyone(PrivacyPolicy)),
-  compileRoute('/completar-cadastro', anyone(CompleteSignup)),
+  // U37: the old "Completar cadastro" (L13) sends a Google login without its account to the normal sign-up.
+  compileRoute('/completar-cadastro', anyone(GoogleSignUpRedirect)),
   compileRoute('/v/:id', anyone(PublicJob)),
   compileRoute('/notificacoes', app(Notifications)),
   compileRoute('/whatsapp', app(ChangeWhatsApp)),

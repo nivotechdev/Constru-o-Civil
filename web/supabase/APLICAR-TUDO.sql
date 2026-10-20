@@ -1,5 +1,5 @@
 -- GERADO por scripts/aplicar-tudo.mjs — não edite à mão. Ordem e conferências em APLICAR.md.
--- 54 migrations (20261010000100_z01_rpcs_candidatura.sql … 20261021000200_u32_perfis.sql).
+-- 55 migrations (20261010000100_z01_rpcs_candidatura.sql … 20261021000300_u37_cadastro_google.sql).
 -- Cole tudo no SQL Editor do Supabase e rode. Cada migration é idempotente: rodar de novo não estraga nada.
 
 -- Parte 1: valores novos de enum (precisam estar gravados antes do resto).
@@ -6037,5 +6037,29 @@ exception when duplicate_object then null;
 end $$;
 grant select (about) on public.companies to authenticated;
 grant update (about) on public.companies to authenticated;
+
+-- ===== 20261021000300_u37_cadastro_google.sql =====
+-- U37 — cadastro com o Google pelo cadastro normal. O app agora leva o login do Google sem conta pelos mesmos passos
+-- do cadastro (sem e-mail e sem confirmação de e-mail) e cria a conta com create_my_account (sem mudança aqui).
+-- O que muda no banco: um login do Google que nunca terminou o cadastro (login criado, conta nunca criada) também é
+-- apagado depois de 7 dias, como o cadastro por e-mail nunca confirmado. Não toca em conta do app antigo com perfil
+-- preenchido (`profiles.tipo`), que ainda ganha a conta nova ao entrar (ensure_my_account).
+create or replace function public.purge_unconfirmed_signups()
+returns integer language sql security definer set search_path = public as $$
+  with x as (
+    delete from auth.users u
+     where u.created_at < now() - interval '7 days'
+       and (
+         u.email_confirmed_at is null
+         or (
+           (u.raw_app_meta_data->>'provider' = 'google' or u.raw_app_meta_data->>'via' = 'firebase')
+           and not exists (select 1 from public.accounts a where a.id = u.id)
+           and not exists (select 1 from public.profiles p where p.id = u.id and p.tipo is not null)
+         )
+       )
+    returning 1
+  ) select count(*)::int from x
+$$;
+revoke all on function public.purge_unconfirmed_signups() from public, anon, authenticated;
 
 commit;

@@ -631,6 +631,15 @@ select count(*) from information_schema.columns
     or (table_name = 'companies' and column_name = 'about'));                                       -- 2
 ```
 
+### 54. `20261021000300_u37_cadastro_google.sql` (U37)
+
+A limpeza diária (`purge_unconfirmed_signups`) também apaga, depois de 7 dias, o login do Google que nunca terminou o
+cadastro (sem linha em `accounts`). Só troca a função; não mexe em dado ao aplicar.
+
+```sql
+select prosrc like '%via%firebase%' from pg_proc where proname = 'purge_unconfirmed_signups';  -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

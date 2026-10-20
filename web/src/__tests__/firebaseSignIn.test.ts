@@ -107,7 +107,8 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     const fake = server('ok');
     holder.client = fake.client;
     const firebase = await import('../services/remote/firebase');
-    await firebase.signInWithFirebaseGoogle();
+    // U37: a Google login without a Bicos account answers its e-mail and name — the sign-up continues with them.
+    expect(await firebase.signInWithFirebaseGoogle()).toEqual({ email: 'ana@exemplo.com', name: '' });
     expect(holder.popup).toBeGreaterThan(0);
     expect(fake.calls.find((c) => c.kind === 'function')?.args).toEqual({ idToken: 'firebase-token-google' });
   });

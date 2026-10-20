@@ -8,7 +8,8 @@ import type { Auth, ConfirmationResult, RecaptchaVerifier } from '@firebase/auth
 import { FIREBASE_CONFIG } from '../features';
 import { serviceError, ServiceError } from '../errors';
 import { db, invokeFunction, toServiceError } from './client';
-import { enterSession } from './session';
+import { enterSession, googleIdentityOf, MissingAccountError } from './session';
+import type { GoogleIdentity } from '../googleSignUp';
 
 type Sdk = typeof import('@firebase/auth');
 
@@ -57,8 +58,11 @@ function firebaseError(e: unknown): ServiceError {
   return toServiceError(e);
 }
 
-/** Exchanges the Firebase ID token for the Bicos session. `sem-conta` (phone without an account) is answered as such. */
-async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'sem-conta'> {
+/**
+ * Exchanges the Firebase ID token for the Bicos session. `sem-conta` (a phone number without an account) is answered
+ * as such; a Google login without its account answers its e-mail and name, for the sign-up (U37).
+ */
+async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'sem-conta' | GoogleIdentity> {
   try {
     const answer = await invokeFunction<{ token_hash: string }>('entrar-com-firebase', { idToken });
     const client = await db();
@@ -66,7 +70,12 @@ async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'se
     if (error) throw toServiceError(error);
     const user = data.user ?? data.session?.user;
     if (!user) throw serviceError('falha_demo');
-    await enterSession(user).catch(() => undefined); // a new Google login without its account goes to "Completar cadastro"
+    try {
+      await enterSession(user);
+    } catch (e) {
+      if (e instanceof MissingAccountError) return googleIdentityOf(user);
+      throw e;
+    }
     return 'ok';
   } catch (e) {
     if (e instanceof ServiceError && e.reason === 'sem-conta') return 'sem-conta';
@@ -80,7 +89,7 @@ async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'se
  * The Google window. When Firebase is already loaded (the usual case: it loads as the screen opens), the window opens
  * right inside the tap — nothing is awaited before it.
  */
-export async function signInWithFirebaseGoogle(): Promise<void> {
+export async function signInWithFirebaseGoogle(): Promise<'ok' | GoogleIdentity> {
   const loaded = ready;
   let popup;
   if (loaded) {
@@ -101,7 +110,10 @@ export async function signInWithFirebaseGoogle(): Promise<void> {
   } catch (e) {
     throw firebaseError(e);
   }
-  await bridge(auth, sdk, idToken);
+  const result = await bridge(auth, sdk, idToken);
+  // Only a phone number can lack an account at the Edge Function; a Google one always gets its login.
+  if (result === 'sem-conta') throw serviceError('falha_demo');
+  return result;
 }
 
 /** Sends the SMS code to "+55<DDD><number>". `container` holds the invisible reCAPTCHA. */
@@ -129,5 +141,7 @@ export async function confirmPhoneCode(code: string): Promise<'ok' | 'sem-conta'
     throw firebaseError(e);
   }
   confirmation = null;
-  return bridge(auth, sdk, idToken);
+  const result = await bridge(auth, sdk, idToken);
+  // The number's account exists (the Edge Function finds it by the WhatsApp), so the session always opens.
+  return typeof result === 'string' ? result : 'ok';
 }

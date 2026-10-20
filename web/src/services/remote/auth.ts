@@ -3,6 +3,7 @@
 // separate question anyone could ask (Z07).
 import type { Role } from '../../types/models';
 import type { CaptchaSource, SignInResult, SignUpData, SignUpResult } from '../auth';
+import type { GoogleIdentity } from '../googleSignUp';
 import { serviceError, ServiceError } from '../errors';
 import { FEATURES } from '../features';
 import { getSession } from '../store';
@@ -12,6 +13,8 @@ import {
   authRedirectUrl,
   enterPendingSession,
   enterSession,
+  googleIdentityOf,
+  isOAuthUser,
   isRecovering,
   leaveSession,
   setRecovering
@@ -421,18 +424,20 @@ export async function signInWithGoogle(): Promise<void> {
   if (error) throw toServiceError(error);
 }
 
-export async function oauthIdentity(): Promise<{ email: string; name: string } | null> {
+/** U37: the e-mail and name of a Google login on this device that has no Bicos account yet (else null). */
+export async function pendingGoogleIdentity(): Promise<GoogleIdentity | null> {
   const client = await db();
   const { data } = await client.auth.getSession();
   const user = data.session?.user;
-  if (!user) return null;
-  const meta = (user.user_metadata ?? {}) as { full_name?: unknown; name?: unknown };
-  const name = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
-  return { email: user.email ?? '', name: name.trim().slice(0, 80) };
+  if (!user || !isOAuthUser(user) || getSession()) return null;
+  return googleIdentityOf(user);
 }
 
-export async function completeOAuthSignUp(data: import('../auth').OAuthSignUpData): Promise<void> {
+/** U37: the Google login gets its password and its account (create_my_account: the e-mail sign-up's rules). */
+export async function completeGoogleSignUp(data: import('../auth').GoogleSignUpData): Promise<void> {
   const client = await db();
+  const { error } = await client.auth.updateUser({ password: data.password });
+  if (error) passwordProblem(error);
   await request(() =>
     client.rpc('create_my_account', {
       p_role: data.role,
