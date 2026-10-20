@@ -83,7 +83,7 @@ test('presença, diária concluída e avaliação dos dois lados', async ({ brow
   // As notas nos perfis, como cada lado vê o outro.
   await c.goto('/trabalhador/' + contas.trabalhador.id);
   await expect(c.getByText('4,0', { exact: true })).toBeVisible();
-  await expect(c.getByText('1 bico concluído na Bicos')).toBeVisible();
+  await expect(c.getByText('1 bico realizado', { exact: true })).toBeVisible();
   await print(c, 'f4', 'nota no perfil do trabalhador');
   await w.goto('/construtora/' + contas.construtora.id);
   await expect(w.getByText('5,0', { exact: true })).toBeVisible();
