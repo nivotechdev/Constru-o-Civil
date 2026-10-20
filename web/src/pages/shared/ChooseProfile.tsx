@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Button } from '../../components/Button';
 import { FieldError } from '../../components/FieldError';
 import { GoogleButton, OrDivider } from '../../components/GoogleButton';
-import { GoogleSignUpBanner } from '../../components/GoogleSignUpBanner';
 import { FlowBar, FlowLayout } from '../../components/FlowLayout';
 import { RadioCard } from '../../components/Radio';
 import { useAction } from '../../hooks/useAction';
@@ -21,6 +20,11 @@ export default function ChooseProfile() {
   const google = useAction(signInWithGoogle);
   // U37: came back from Google without an account: choose the side, then the same sign-up without the e-mail.
   const googleSignUp = useGoogleSignUp();
+  // U40: going back to the login ends the pending Google login (the login and the plain sign-up start clean).
+  const back = () => {
+    if (googleSignUp) void leaveGoogleSignUp();
+    goBack('/login');
+  };
   const next = () => {
     if (googleSignUp) rememberGoogleRole(ui.role);
     navigate('/cadastro/' + ui.role);
@@ -28,7 +32,7 @@ export default function ChooseProfile() {
 
   return (
     <FlowLayout
-      header={<FlowBar title="Criar minha conta" onBack={() => goBack('/login')} />}
+      header={<FlowBar title="Criar minha conta" onBack={back} />}
       className="pt-6 sm:pt-10"
       footer={
         <>
@@ -44,9 +48,6 @@ export default function ChooseProfile() {
         </>
       }
     >
-      {googleSignUp ? (
-        <GoogleSignUpBanner email={googleSignUp.email} onSwitch={() => void leaveGoogleSignUp()} />
-      ) : null}
       <div className="flex flex-col gap-2.5">
         <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Criar conta</span>
         <h1 className="font-display font-bold text-3xl text-concrete-900">Como você vai usar o Bicos?</h1>

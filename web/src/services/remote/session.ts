@@ -205,6 +205,15 @@ export function enterSession(user: User): Promise<Role> {
   return promise;
 }
 
+/**
+ * U40: starts the session of an account that was just created. A read started before it existed (the Auth event of
+ * the password just saved, for one) may still be running and would answer "no account": wait for it, then read again.
+ */
+export async function enterNewAccountSession(user: User): Promise<Role> {
+  if (entering && entering.userId === user.id) await entering.promise.catch(() => undefined);
+  return enterSession(user);
+}
+
 /** U30: the account's theme from account_prefs; on a failure, the one already known stays. */
 async function readMyTheme(accountId: string): Promise<'claro' | 'escuro' | undefined> {
   const client = await db();

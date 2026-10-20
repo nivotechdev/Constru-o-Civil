@@ -4,7 +4,6 @@ import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
 import { GoogleButton, OrDivider } from '../../components/GoogleButton';
-import { GoogleSignUpBanner } from '../../components/GoogleSignUpBanner';
 import { FlowHeading, FlowLayout, FlowProgress } from '../../components/FlowLayout';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
@@ -221,8 +220,8 @@ function validateField(field: SignupField, values: Values, role: Role): string |
 /**
  * The steps of the form. Without a WhatsApp provider to send the code (see WHATSAPP_CODE_AVAILABLE), the
  * code step is left out and the number is kept as typed (not marked as confirmed). U37: started with Google, the
- * e-mail step is left out too (Google already confirmed it, so there is no e-mail code either) and the password is
- * presented as the second way in.
+ * e-mail step is left out too (Google already confirmed it, so there is no e-mail code either); everything else is
+ * the same screen as the plain sign-up (U40).
  */
 function signupSteps(role: Role, google: boolean): { overline: string; fields: SignupField[] } {
   const cfg = PERFIS[role];
@@ -233,11 +232,6 @@ function signupSteps(role: Role, google: boolean): { overline: string; fields: S
       .map((f) => {
         if (f.id === 'whatsapp' && f.help && !WHATSAPP_CODE_AVAILABLE)
           return { ...f, help: f.help.replace(/ Vamos mandar um código[^.]*\./, '') };
-        if (f.id === 'senha' && google)
-          return {
-            ...f,
-            help: 'Com ela você também entra pelo CPF ou e-mail, sem precisar do Google. Use 8 caracteres ou mais, com letras e números.'
-          };
         return f;
       })
   };
@@ -496,12 +490,10 @@ export default function Signup({ params }: ScreenProps) {
       });
   }
 
-  /** U37: "Trocar": leaves the Google login; the plain sign-up continues with the answers kept, asking the e-mail. */
-  function switchFromGoogle() {
-    const emailStep = signupSteps(role, false).fields.findIndex((f) => f.id === 'email');
-    void leaveGoogleSignUp().then(() =>
-      setUi((s) => ({ step: Math.min(s.step, emailStep), submitError: null, generalError: false }))
-    );
+  /** U40: "Entrar na conta" / "Recuperar senha" from the middle of a Google sign-up end the pending Google login. */
+  function leaveTo(path: string) {
+    if (google) void leaveGoogleSignUp();
+    navigate(path);
   }
 
   return (
@@ -538,7 +530,6 @@ export default function Signup({ params }: ScreenProps) {
         </>
       }
     >
-      {google ? <GoogleSignUpBanner email={google.email} onSwitch={switchFromGoogle} /> : null}
       {ui.generalError ? (
         <div className="flex flex-col gap-3.5 p-4 bg-danger-50 border border-danger-500 rounded-card">
           <div className="flex gap-2.5 items-start">
@@ -556,14 +547,14 @@ export default function Signup({ params }: ScreenProps) {
               variant="secondary"
               size="sm"
               className="flex-1"
-              onClick={() => navigate('/login')}
+              onClick={() => leaveTo('/login')}
             />
             <Button
               label="Recuperar senha"
               variant="ghost"
               size="sm"
               className="flex-1"
-              onClick={() => navigate('/esqueci-senha')}
+              onClick={() => leaveTo('/esqueci-senha')}
             />
           </div>
         </div>
@@ -679,14 +670,14 @@ export default function Signup({ params }: ScreenProps) {
             variant="secondary"
             size="sm"
             className="flex-1"
-            onClick={() => navigate('/login')}
+            onClick={() => leaveTo('/login')}
           />
           <Button
             label="Recuperar senha"
             variant="ghost"
             size="sm"
             className="flex-1"
-            onClick={() => navigate('/esqueci-senha')}
+            onClick={() => leaveTo('/esqueci-senha')}
           />
         </div>
       ) : null}

@@ -12,6 +12,7 @@ import { withTimeout } from '../boot';
 import {
   authRedirectUrl,
   enterPendingSession,
+  enterNewAccountSession,
   enterSession,
   googleIdentityOf,
   isOAuthUser,
@@ -451,5 +452,5 @@ export async function completeGoogleSignUp(data: import('../auth').GoogleSignUpD
   );
   const { data: session } = await client.auth.getSession();
   if (!session.session) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
-  await enterSession(session.session.user);
+  await enterNewAccountSession(session.session.user);
 }

@@ -552,6 +552,11 @@ describe('remote: data and actions', () => {
     // The e-mail (already confirmed by Google) and the name, for the steps.
     expect(await m.auth.loadGoogleSignUp()).toEqual({ email: 'novo@gmail.com', name: 'Marcos Pereira da Silva' });
     expect(signUp.googleIdentity()?.email).toBe('novo@gmail.com');
+    // U40: leaving in the middle (back to the login) ends the pending Google login — nothing stays stuck.
+    await m.auth.signInWithGoogle('trabalhador');
+    await m.auth.leaveGoogleSignUp();
+    expect([signUp.googleRole(), signUp.googleIdentity()]).toEqual([null, null]);
+    expect(fake.calls.some((c) => c.name === 'signOut')).toBe(true);
     vi.unstubAllGlobals();
   });
 
