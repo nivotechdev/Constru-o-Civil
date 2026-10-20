@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../../components/Button';
 import { FieldError } from '../../components/FieldError';
-import { GoogleButton, OrDivider } from '../../components/GoogleButton';
+import { GoogleButton, OrDivider, PhoneButton } from '../../components/GoogleButton';
 import { Icon } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
@@ -158,14 +158,11 @@ export default function Login() {
           {ui.error ? <FieldError message={ui.error} /> : null}
           {ui.unconfirmed ? <Unconfirmed ui={ui} setUi={setUi} /> : null}
           <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
+          {FEATURES.googleLogin || FEATURES.phoneLogin ? <OrDivider /> : null}
           {FEATURES.googleLogin ? (
-            <>
-              <OrDivider />
-              <GoogleButton
-                onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))}
-              />
-            </>
+            <GoogleButton onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))} />
           ) : null}
+          {FEATURES.phoneLogin ? <PhoneButton onClick={() => navigate('/entrar-celular')} /> : null}
         </form>
         <div className="flex flex-col items-center gap-1">
           <Button label="Esqueci minha senha" variant="ghost" onClick={() => navigate('/esqueci-senha')} />

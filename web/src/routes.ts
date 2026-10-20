@@ -50,6 +50,7 @@ export function screen(load: Loader): Screen {
 
 const Splash = screen(() => import('./pages/shared/Splash'));
 const ChooseProfile = screen(() => import('./pages/shared/ChooseProfile'));
+const PhoneSignIn = screen(() => import('./pages/shared/PhoneSignIn'));
 const Signup = screen(() => import('./pages/shared/Signup'));
 const VerifyEmail = screen(() => import('./pages/shared/VerifyEmail'));
 const CompleteProfile = screen(() => import('./pages/shared/CompleteProfile'));
@@ -123,6 +124,8 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/completar-perfil/:role', onboarding(CompleteProfile)),
   compileRoute('/aceitar-termos', onboarding(AcceptTerms)),
   compileRoute('/login', guest(Login)),
+  // U28: entrar com o código por SMS.
+  compileRoute('/entrar-celular', guest(PhoneSignIn)),
   compileRoute('/esqueci-senha', anyone(ForgotPassword)),
   compileRoute('/redefinir-senha', anyone(ResetPassword)),
   compileRoute('/termos', anyone(Terms)),
@@ -183,6 +186,7 @@ const AUTH_FLOW = new Set([
   '/verificar-email',
   '/aceitar-termos',
   '/login',
+  '/entrar-celular',
   '/esqueci-senha',
   '/redefinir-senha',
   '/termos',

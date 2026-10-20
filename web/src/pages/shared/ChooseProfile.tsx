@@ -1,6 +1,6 @@
 import { Button } from '../../components/Button';
 import { FieldError } from '../../components/FieldError';
-import { GoogleButton, OrDivider } from '../../components/GoogleButton';
+import { GoogleButton, OrDivider, PhoneButton } from '../../components/GoogleButton';
 import { FlowBar, FlowLayout } from '../../components/FlowLayout';
 import { RadioCard } from '../../components/Radio';
 import { useAction } from '../../hooks/useAction';
@@ -23,13 +23,14 @@ export default function ChooseProfile() {
         <>
           <Button label="Continuar" size="lg" fullWidth onClick={() => navigate('/cadastro/' + ui.role)} />
           {/* U18: the side chosen above goes along to Google and comes back marked. */}
+          {FEATURES.googleLogin || FEATURES.phoneLogin ? <OrDivider /> : null}
           {FEATURES.googleLogin ? (
             <>
-              <OrDivider />
               {google.error ? <FieldError message={google.error} /> : null}
               <GoogleButton loading={google.loading} onClick={() => void google.run(ui.role)} />
             </>
           ) : null}
+          {FEATURES.phoneLogin ? <PhoneButton onClick={() => navigate('/entrar-celular')} /> : null}
         </>
       }
     >

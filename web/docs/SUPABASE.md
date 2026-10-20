@@ -83,6 +83,10 @@ Advisors depois de aplicar (Database › Advisors): segurança sem nenhum ERROR;
    `scripts/configurar-auth.mjs` liga o provedor sozinho; no GitHub, as mesmas secrets ligam o Google no staging e o
    botão no site de teste. A tela de consentimento precisa estar **publicada** (em "Teste", só os e-mails da lista
    de testadores entram).
+6. **Firebase** (U28, Google e celular): no console do Firebase (`bicoapp-6cc68`) ligar os provedores Google e
+   Telefone e autorizar os domínios do app; a Edge Function `entrar-com-firebase` precisa do segredo
+   `FIREBASE_PROJECT_ID` e o build, de `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`
+   e `VITE_FIREBASE_APP_ID`. Com o Firebase no build, o botão do Google usa o Firebase (não precisa do item 5).
 
 ## 4. Edge Functions
 

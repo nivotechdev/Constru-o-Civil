@@ -326,8 +326,9 @@ function flushNotice(): void {
 /** Y27: the session points to an account the app doesn't have — sign out and say why. */
 /** L13: signed in with Google (or another provider) — the account may still have to be completed. */
 function isOAuthUser(user: User | null | undefined): boolean {
-  const provider = (user?.app_metadata as { provider?: string } | undefined)?.provider;
-  return Boolean(provider && provider !== 'email');
+  const meta = user?.app_metadata as { provider?: string; via?: string } | undefined;
+  // U28: a login born from "Google" via Firebase is marked by the Edge Function (its sessions are opened by link).
+  return Boolean((meta?.provider && meta.provider !== 'email') || meta?.via === 'firebase');
 }
 
 /**

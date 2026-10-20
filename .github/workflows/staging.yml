@@ -93,8 +93,9 @@ jobs:
           npx --yes supabase@2.48.3 secrets set --project-ref "$STAGING_REF" \
             "APP_ORIGIN=$origins" \
             "TURNSTILE_SECRET=1x0000000000000000000000000000000AA" \
+            "FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'bicoapp-6cc68' }}" \
             "RELEASE=staging-${GITHUB_SHA::12}"
-      - name: Publicar as 9 funções
+      - name: Publicar as 10 funções
         if: steps.cfg.outputs.ok == 'true'
         run: ./scripts/staging/publicar-funcoes.sh
         env:

@@ -64,6 +64,12 @@ describe('cabeçalhos de segurança (L08)', () => {
     expect(allows(csp['frame-src'], 'https://challenges.cloudflare.com/cdn-cgi/challenge')).toBe(true);
     expect(allows(csp['script-src'], 'https://sdk.mercadopago.com/js/v2')).toBe(true);
     expect(allows(csp['connect-src'], 'https://evil.example.com/steal')).toBe(false);
+    // U28: Firebase Authentication (Google window, SMS code) and its invisible reCAPTCHA.
+    expect(allows(csp['connect-src'], 'https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode')).toBe(
+      true
+    );
+    expect(allows(csp['frame-src'], 'https://bicoapp-6cc68.firebaseapp.com/__/auth/iframe')).toBe(true);
+    expect(allows(csp['script-src'], 'https://www.google.com/recaptcha/api.js')).toBe(true);
   });
 
   it('every outside address fetched or loaded by the code is in the CSP', () => {

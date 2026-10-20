@@ -23,6 +23,7 @@ espera() { # nome, códigos aceitos (separados por |), cabeçalho extra
 echo "Funções chamadas pelo navegador (sem login de pessoa: recusam, nunca 5xx):"
 espera entrar-com-documento "400|401|403|422"
 espera verificar-cadastro "400"
+espera entrar-com-firebase "400|503"
 espera excluir-conta "401"
 espera codigo-whatsapp "401|404|503"
 espera verificar-cnpj "401"

@@ -135,6 +135,7 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 |---|---|---|---|
 | `entrar-com-documento` | login por CPF/CNPJ (resposta única, limite 5/doc e 20/IP por 15 min) | sim | `TURNSTILE_SECRET` |
 | `verificar-cadastro` | cadastro: e-mail/CPF/CNPJ/WhatsApp já tem conta? (U10; limite 30/IP e 10/valor por 15 min; só sim ou não) — **ainda não publicada na produção** | sim | — |
+| `entrar-com-firebase` | Google e celular (U28): confere o ID token do Firebase e abre a sessão da Bicos (limite 20/IP por 15 min) — **ainda não publicada na produção** | sim | `FIREBASE_PROJECT_ID` |
 | `excluir-conta` | exclusão completa (inclui Storage) | sim | — |
 | `codigo-whatsapp` | código por WhatsApp/SMS (Twilio Verify) | sim | `TWILIO_*` |
 | `verificar-cnpj` | CNPJ na Receita (BrasilAPI) — **ligada** | sim | — |

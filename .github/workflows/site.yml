@@ -40,6 +40,13 @@ jobs:
       VITE_SUPORTE_WHATSAPP: "54994731661"
       # U18: o botão do Google aparece quando o Google está configurado no staging (as mesmas secrets do staging.yml).
       VITE_LOGIN_GOOGLE: ${{ secrets.GOOGLE_CLIENT_ID != '' && '1' || '0' }}
+      # U28: Google e celular pelo Firebase Authentication (projeto bicoapp-6cc68). São os identificadores públicos do
+      # app web (vão em toda página que usa Firebase); a segurança está na Edge Function entrar-com-firebase, que
+      # confere a assinatura do Firebase, e nos domínios autorizados do console do Firebase.
+      VITE_FIREBASE_API_KEY: AIzaSyAptCXjxVGbunIaQMFN7b_uXuSA7iC-a64
+      VITE_FIREBASE_AUTH_DOMAIN: bicoapp-6cc68.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: bicoapp-6cc68
+      VITE_FIREBASE_APP_ID: "1:125261137238:web:a7961decdcc3d1e6b4c2f7"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -15,6 +15,11 @@ interface ImportMetaEnv {
   readonly VITE_TURNSTILE_SITE_KEY?: string;
   /** "1" when the Auth has the Google provider configured. */
   readonly VITE_LOGIN_GOOGLE?: string;
+  /** U28: Firebase Authentication (Google and phone sign-in). Public identifiers of the web app, not secrets. */
+  readonly VITE_FIREBASE_API_KEY?: string;
+  readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
+  readonly VITE_FIREBASE_PROJECT_ID?: string;
+  readonly VITE_FIREBASE_APP_ID?: string;
   /** "1" when the WhatsApp/SMS code (Edge Function codigo-whatsapp) has a provider configured. */
   readonly VITE_CODIGO_WHATSAPP?: string;
   /** Web Push public VAPID key; without it, push notifications are hidden. */

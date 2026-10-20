@@ -1869,3 +1869,24 @@ reconhecimento) e a frase "Seu código de verificação da Bicos é 735343." na 
 nós:** o Gmail decide quando mostrar, e confia mais em remetente com domínio autenticado (SPF/DKIM/DMARC do
 `nivotech.com.br` na Brevo — CHECKLIST L04). Onde o Gmail não mostrar, o número se seleciona inteiro com um toque.
 Fontes: androidpolice.com e ghacks.net (set/2026) sobre o recurso.
+
+## U28 — Entrar com o Google e com o celular pelo Firebase
+
+Pedido do responsável (com o projeto Firebase `bicoapp-6cc68`): os botões do Google e do telefone funcionando no
+cadastro e no login. **Como ficou:** o Firebase Authentication faz a parte que só ele faz bem e de graça para começar —
+a janela do Google, o código por SMS e o reCAPTCHA invisível contra robôs — e devolve um ID token; a nova Edge
+Function `entrar-com-firebase` confere esse token (assinatura RS256 com as chaves públicas do Firebase, projeto,
+validade e login de no máximo 10 minutos — `_shared/firebase.ts`, sem biblioteca) e abre a sessão da Bicos no Supabase
+Auth, onde as contas, regras e RLS continuam iguais. A sessão sai de um link de acesso gerado no servidor (nada vai
+por e-mail) que o app troca pela sessão com `verifyOtp`; o Firebase sai logo em seguida, sem guardar sessão própria.
+**Google:** entra na conta do e-mail confirmado pelo Google; sem conta, cria o login (marcado `via: firebase`) e o app
+segue para "Completar cadastro" com o lado já escolhido (U18). **Celular:** "Continuar com o celular" → número → código
+por SMS → entra na conta cujo WhatsApp é esse número (e marca o WhatsApp como confirmado); sem conta com o número, o
+app oferece criar a conta e o cadastro já começa com o número preenchido. **Por que não mover as contas para o
+Firebase:** todo o banco (contas, vagas, RLS, 40+ RPCs) é do Supabase; o Firebase entra só como "porteiro" do Google e
+do SMS. **Peso:** só `@firebase/app` + `@firebase/auth` (o pacote `firebase` inteiro trazia o Firestore, que o app não
+usa, com 4 alertas de segurança do `@grpc/grpc-js`), carregados só ao tocar no botão (36 KB; o app inicial cresceu
+0,7 KB). **Sem Analytics:** o `getAnalytics` do exemplo do Firebase não entrou — a política de privacidade não prevê
+rastreamento e a LGPD pediria consentimento. Os identificadores da configuração web (apiKey, appId…) são públicos por
+natureza; a segurança está na conferência do token e nos domínios autorizados do console. CSP ajustada (Firebase e
+reCAPTCHA). Botões só aparecem com o Firebase configurado no build (`VITE_FIREBASE_*`).

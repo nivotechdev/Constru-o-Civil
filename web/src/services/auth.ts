@@ -388,7 +388,51 @@ export async function signInWithGoogle(role?: Role): Promise<void> {
   } catch {
     // Without storage the side is just asked again.
   }
+  if (FEATURES.firebase) {
+    const firebase = await import('./remote/firebase');
+    return firebase.signInWithFirebaseGoogle();
+  }
   return remote.signInWithGoogle();
+}
+
+// ---- phone (U28) ----
+
+const PHONE_KEY = 'bicos-celular';
+
+/** "Entrar com o celular": sends the SMS code (Firebase). `container` holds the invisible "I'm not a robot". */
+export async function sendPhoneSignInCode(phone: string, container: HTMLElement): Promise<void> {
+  if (IS_DEMO || !FEATURES.phoneLogin) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
+  if (!isValidMobile(phone)) throw serviceError('validacao', 'Use o celular com DDD (11 números).');
+  const firebase = await import('./remote/firebase');
+  return firebase.sendPhoneCode(phone, container);
+}
+
+/**
+ * The SMS code: signs in the account whose WhatsApp is that number; 'sem-conta' when there is none (the number is
+ * kept for the sign-up, which starts with it filled in).
+ */
+export async function confirmPhoneSignInCode(phone: string, code: string): Promise<'ok' | 'sem-conta'> {
+  const firebase = await import('./remote/firebase');
+  const result = await firebase.confirmPhoneCode(code);
+  if (result === 'sem-conta') {
+    try {
+      sessionStorage.setItem(PHONE_KEY, phone.replace(/\D/g, ''));
+    } catch {
+      // The sign-up just asks the number again.
+    }
+  }
+  return result;
+}
+
+/** U28: the number confirmed by SMS that had no account (read once, to start the sign-up with it). */
+export function takeSignUpPhone(): string | null {
+  try {
+    const phone = sessionStorage.getItem(PHONE_KEY);
+    sessionStorage.removeItem(PHONE_KEY);
+    return phone && /^\d{11}$/.test(phone) ? phone : null;
+  } catch {
+    return null;
+  }
 }
 
 /** U18: the side chosen before leaving for Google (read once). */

@@ -3,7 +3,7 @@ import { passwordProblem } from '../../utils/password';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
-import { GoogleButton, OrDivider } from '../../components/GoogleButton';
+import { GoogleButton, OrDivider, PhoneButton } from '../../components/GoogleButton';
 import { FlowHeading, FlowLayout, FlowProgress } from '../../components/FlowLayout';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
@@ -12,6 +12,7 @@ import {
   isFreeForSignUp,
   sendWhatsAppCode,
   signInWithGoogle,
+  takeSignUpPhone,
   signUp,
   verifyWhatsAppCode,
   WHATSAPP_CODE_AVAILABLE,
@@ -236,7 +237,8 @@ export default function Signup({ params }: ScreenProps) {
   const cfg = signupSteps(role);
   const [ui, setUi] = useUI<SignupUI>(key, () => ({
     step: 0,
-    values: {},
+    // U28: a number confirmed by SMS that had no account comes filled in.
+    values: ((phone) => (phone ? { whatsapp: maskPhone(phone) } : {}))(takeSignUpPhone()),
     errors: {},
     generalError: false,
     submitting: false,
@@ -463,14 +465,13 @@ export default function Signup({ params }: ScreenProps) {
             onClick={continueStep}
           />
           {/* U18: on the first step, the other way in — Google brings the e-mail; the rest is asked on return. */}
+          {step === 0 && (FEATURES.googleLogin || FEATURES.phoneLogin) ? <OrDivider /> : null}
           {step === 0 && FEATURES.googleLogin ? (
-            <>
-              <OrDivider />
-              <GoogleButton
-                onClick={() => signInWithGoogle(role).catch((e: unknown) => setUi({ submitError: errorMessage(e) }))}
-              />
-            </>
+            <GoogleButton
+              onClick={() => signInWithGoogle(role).catch((e: unknown) => setUi({ submitError: errorMessage(e) }))}
+            />
           ) : null}
+          {step === 0 && FEATURES.phoneLogin ? <PhoneButton onClick={() => navigate('/entrar-celular')} /> : null}
         </>
       }
     >
