@@ -1933,3 +1933,12 @@ desistências continuam visíveis para construtoras e para a própria pessoa. **
 tela do celular e lê-se de relance; 10 é o bastante para mostrar a trajetória sem virar currículo. **Por que apagar
 as colunas** (e não só esconder): pedido explícito; na produção só há 1 trabalhador e ele não preencheu esses campos
 — mesmo assim, backup manual antes (APLICAR #53).
+
+## U35 — Minhas candidaturas: a situação de volta em cima da foto, e a descrição da vaga
+
+Pedido do responsável: voltar com as "bandeiras" da situação em cima da imagem das vagas em "Minhas candidaturas" e
+mostrar a descrição da vaga. A U04 tinha tirado toda pílula das fotos (e a situação virou texto embaixo do título).
+**Agora** só nessa tela o card volta a ter a situação no canto de cima da foto (`JobTile` › `badge`: ícone colorido pelo
+tom — análise, pré-selecionado, avaliar, não foi essa vez…; cinza quando encerrada, mas fora do cinza da foto para
+continuar legível) e, embaixo do título, a descrição da vaga em até duas linhas e o valor da diária. Vaga antiga sem
+descrição mostra bairro e data no lugar, para todos os cards terem a mesma altura. O mural continua sem pílulas (U04).

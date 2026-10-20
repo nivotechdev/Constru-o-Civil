@@ -13,7 +13,9 @@ import { useDb } from '../../hooks/useStore';
 import { loadMoreMyApplications, loadMyApplications } from '../../services/applications';
 import { navigate } from '../../services/router';
 import { applicationsForWorker, companyOf, currentWorker, getJob, savedJobs } from '../../services/selectors';
-import type { Application } from '../../types/models';
+import type { Application, Job } from '../../types/models';
+import { formatBRL } from '../../utils/format';
+import { whenText } from '../../utils/jobInfo';
 import { ContactButton } from '../../components/ContactButton';
 import { contactOpen } from '../../services/applicationMachine';
 import { isInProgress, needsWorker, statusInfo } from '../../utils/applicationStatus';
@@ -41,18 +43,9 @@ export default function MyApplications() {
         company={company}
         muted={muted}
         onClick={() => navigate(info.to)}
-        // The status is text under the title, not a label on the photo.
-        footer={
-          <span
-            className={cx(
-              'flex items-center gap-1.5 truncate text-sm font-semibold',
-              muted ? 'text-concrete-500' : 'text-concrete-700'
-            )}
-          >
-            <Icon name={info.icon} size={14} color="currentColor" />
-            <span className="truncate">{info.label}</span>
-          </span>
-        }
+        // U35: the status on the photo (grey once closed) and the job's description under the title.
+        badge={{ label: info.label, icon: info.icon, tone: muted ? 'neutral' : info.tone }}
+        footer={<AppDetails job={job} muted={muted} />}
         // Picked for the job: the WhatsApp chat with the company is open.
         corner={contactOpen(app.status) ? <ContactButton applicationId={app.id} round /> : null}
       />
@@ -128,6 +121,26 @@ export default function MyApplications() {
           }
         </QueryView>
       </div>
+    </div>
+  );
+}
+
+/** U35: the job's description (two lines; when, for an old job without one) and the diária. */
+function AppDetails({ job, muted }: { job: Job; muted: boolean }) {
+  const text = job.description.trim() || [job.address.neighborhood, whenText(job)].filter(Boolean).join(' · ');
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="line-clamp-2 min-h-[2.7em] break-words text-concrete-500">{text}</p>
+      <span className={cx('truncate', muted ? 'text-concrete-500' : 'text-concrete-900')}>
+        {job.pay == null ? (
+          <span className="font-semibold">A combinar</span>
+        ) : (
+          <>
+            <span className="font-semibold">{formatBRL(job.pay)}</span>
+            <span className="text-concrete-500"> por diária</span>
+          </>
+        )}
+      </span>
     </div>
   );
 }

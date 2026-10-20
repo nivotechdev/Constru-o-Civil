@@ -1,11 +1,24 @@
 import type { ReactNode } from 'react';
 import type { Company, Job } from '../types/models';
+import type { StatusBadge, Tone } from '../types/ui';
+import { Icon } from './icons/Icon';
 import { cx } from '../utils/cx';
 import { formatBRL } from '../utils/format';
 import { diasInfo, whenText } from '../utils/jobInfo';
 import { PhotoCarousel } from './PhotoCarousel';
 import { jobTitle } from '../services/catalog';
 import { SaveFlag } from './SaveFlag';
+
+// U35: the icon colour of the status badge on the photo, by tone (theme-aware tokens).
+const TONE_COLOR: Record<Tone, string> = {
+  brand: 'var(--text-brand)',
+  success: 'var(--green-500)',
+  warning: 'var(--amber-500)',
+  danger: 'var(--red-500)',
+  accent: 'var(--text-brand)',
+  neutral: 'var(--gray-500)',
+  inverse: 'var(--gray-500)'
+};
 
 /** The fields a tile reads (the publish form's preview passes a partial job). */
 type TileJob = Pick<
@@ -24,6 +37,8 @@ interface JobTileProps {
   onToggleSave?: (() => void) | null;
   /** A button in the photo's top corner (delete, republish, WhatsApp). */
   corner?: ReactNode;
+  /** U35: where the candidacy stands, on the photo's top-left corner ("Minhas candidaturas"). */
+  badge?: StatusBadge | null;
   /** Replaces the details under the title (where, when, pay) — e.g. the candidates on "Minhas vagas". */
   footer?: ReactNode;
 }
@@ -31,7 +46,7 @@ interface JobTileProps {
 /**
  * Mural tile, listing-style: a rounded photo with the save flag (or a corner button) on top, and compact
  * single-line rows underneath (role; neighbourhood and days of the week; date and hours; pay) — no
- * card chrome, and no labels on the photo. Every row truncates, so all tiles in a grid are exactly the
+ * card chrome; on the photo only the candidacy status (U35, "Minhas candidaturas"). Every row truncates, so all tiles in a grid are exactly the
  * same size whatever their content.
  */
 export function JobTile({
@@ -42,13 +57,14 @@ export function JobTile({
   saved = false,
   onToggleSave = null,
   corner = null,
-  footer = null
+  footer = null,
+  badge = null
 }: JobTileProps) {
   const bairro = job.address.neighborhood;
   const dias = diasInfo(job);
   const where = [bairro, dias && dias.short].filter(Boolean).join(' · ');
   const when = whenText(job);
-  const label = [jobTitle(job), company && company.name, where, when].filter(Boolean).join(', ');
+  const label = [jobTitle(job), badge && badge.label, company && company.name, where, when].filter(Boolean).join(', ');
 
   return (
     // X05: the whole card opens the job with the mouse or a tap; for keyboard and screen readers the title is
@@ -60,6 +76,18 @@ export function JobTile({
         <div className={cx('absolute inset-0', muted ? 'grayscale opacity-60' : '')}>
           <PhotoCarousel job={job} compact className="h-full" />
         </div>
+        {badge ? (
+          // Outside the greyed picture: the status keeps its colour on a closed candidacy too.
+          <span
+            className={cx(
+              'absolute top-2 left-2 z-10 inline-flex items-center gap-1 h-6 sm:h-7 px-2 sm:px-2.5 rounded-full bg-concrete-0 text-[0.6875rem] sm:text-xs font-semibold text-concrete-900 shadow-[0_1px_3px_rgba(16,20,24,0.18)] whitespace-nowrap',
+              corner ? 'max-w-[calc(100%-3.5rem)]' : 'max-w-[calc(100%-1rem)]'
+            )}
+          >
+            <Icon name={badge.icon} size={12} color={TONE_COLOR[badge.tone]} />
+            <span className="truncate min-w-0">{badge.label}</span>
+          </span>
+        ) : null}
         {corner ? (
           <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
             {corner}
