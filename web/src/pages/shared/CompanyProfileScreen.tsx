@@ -292,14 +292,20 @@ function VerificationRow({ company }: { company: Company }) {
         </div>
       ) : status === 'reprovada' ? (
         <>
-          <Badge label="Não verificada" tone="danger" icon="circle-x" />
+          {/* U31: the badge as wide as its text (the column would stretch it). */}
+          <span className="self-start">
+            <Badge label="Não verificada" tone="danger" icon="circle-x" />
+          </span>
           <span className="text-xs text-concrete-500">
             Não conseguimos confirmar os dados da empresa. Fale com a gente pela Ajuda.
           </span>
         </>
       ) : (
         <>
-          <Badge label="Verificação pendente" tone="warning" icon="clock" />
+          {/* U31: the badge as wide as its text (the column would stretch it). */}
+          <span className="self-start">
+            <Badge label="Verificação pendente" tone="warning" icon="clock" />
+          </span>
           <span className="text-xs text-concrete-500">
             {company.cnpj
               ? 'Conferimos o CNPJ na Receita. Você já pode publicar vagas; o selo aparece quando der certo.'
