@@ -8,7 +8,7 @@ import { FieldError } from '../../components/FieldError';
 import { FlowBar, FlowHeading, FlowLayout } from '../../components/FlowLayout';
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
-import { confirmPhoneSignInCode, sendPhoneSignInCode } from '../../services/auth';
+import { confirmPhoneSignInCode, sendPhoneSignInCode, prepareSocialSignIn } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
 import { goBack, navigate } from '../../services/router';
 import { CODE_LENGTH } from '../../utils/code';
@@ -18,6 +18,8 @@ type Step = 'numero' | 'codigo' | 'sem-conta';
 const RESEND_SECONDS = 60;
 
 export default function PhoneSignIn() {
+  // U29: Firebase ready before the tap (the Google window must open inside it).
+  useEffect(prepareSocialSignIn, []);
   const robot = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<Step>('numero');
   const [phone, setPhone] = useState('');

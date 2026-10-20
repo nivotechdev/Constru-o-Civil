@@ -23,6 +23,7 @@ import {
 import { DEFAULT_CITY, DEFAULT_POINT } from './defaults';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/auth';
+import * as remoteFirebase from './remote/firebase';
 import { isValidCnpj, isValidCpf } from '../utils/document';
 import { FEATURES } from './features';
 import { serviceError } from './errors';
@@ -388,11 +389,14 @@ export async function signInWithGoogle(role?: Role): Promise<void> {
   } catch {
     // Without storage the side is just asked again.
   }
-  if (FEATURES.firebase) {
-    const firebase = await import('./remote/firebase');
-    return firebase.signInWithFirebaseGoogle();
-  }
+  // U29: straight into Firebase, nothing awaited before — the Google window must open inside the tap.
+  if (FEATURES.firebase) return remoteFirebase.signInWithFirebaseGoogle();
   return remote.signInWithGoogle();
+}
+
+/** U29: loads Firebase as a screen with the Google/phone buttons opens, so the tap opens the window at once. */
+export function prepareSocialSignIn(): void {
+  if (FEATURES.firebase) void remoteFirebase.prepareFirebase().catch(() => undefined);
 }
 
 // ---- phone (U28) ----
@@ -403,8 +407,7 @@ const PHONE_KEY = 'bicos-celular';
 export async function sendPhoneSignInCode(phone: string, container: HTMLElement): Promise<void> {
   if (IS_DEMO || !FEATURES.phoneLogin) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
   if (!isValidMobile(phone)) throw serviceError('validacao', 'Use o celular com DDD (11 números).');
-  const firebase = await import('./remote/firebase');
-  return firebase.sendPhoneCode(phone, container);
+  return remoteFirebase.sendPhoneCode(phone, container);
 }
 
 /**
@@ -412,8 +415,7 @@ export async function sendPhoneSignInCode(phone: string, container: HTMLElement)
  * kept for the sign-up, which starts with it filled in).
  */
 export async function confirmPhoneSignInCode(phone: string, code: string): Promise<'ok' | 'sem-conta'> {
-  const firebase = await import('./remote/firebase');
-  const result = await firebase.confirmPhoneCode(code);
+  const result = await remoteFirebase.confirmPhoneCode(code);
   if (result === 'sem-conta') {
     try {
       sessionStorage.setItem(PHONE_KEY, phone.replace(/\D/g, ''));

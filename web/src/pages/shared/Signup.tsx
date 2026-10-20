@@ -16,7 +16,8 @@ import {
   signUp,
   verifyWhatsAppCode,
   WHATSAPP_CODE_AVAILABLE,
-  type SignUpCheck
+  type SignUpCheck,
+  prepareSocialSignIn
 } from '../../services/auth';
 import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
@@ -231,6 +232,8 @@ function signupSteps(role: Role): { overline: string; fields: SignupField[] } {
 }
 
 export default function Signup({ params }: ScreenProps) {
+  // U29: Firebase ready before the tap (the Google window must open inside it).
+  useEffect(prepareSocialSignIn, []);
   const captcha = useCaptcha();
   const role: Role = params.role === 'recrutador' ? 'recrutador' : 'trabalhador';
   const key = 'cadastro-' + role;

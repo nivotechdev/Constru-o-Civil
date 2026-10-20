@@ -1890,3 +1890,15 @@ usa, com 4 alertas de segurança do `@grpc/grpc-js`), carregados só ao tocar no
 rastreamento e a LGPD pediria consentimento. Os identificadores da configuração web (apiKey, appId…) são públicos por
 natureza; a segurança está na conferência do token e nos domínios autorizados do console. CSP ajustada (Firebase e
 reCAPTCHA). Botões só aparecem com o Firebase configurado no build (`VITE_FIREBASE_*`).
+
+## U29 — A janela do Google abre dentro do toque
+
+O responsável ligou o Google no Firebase e autorizou os domínios (conferido pela configuração pública do projeto),
+mas o botão não funcionava: os registros do staging mostram que a `entrar-com-firebase` nunca foi chamada pelo
+navegador. Causa: o app só carregava o SDK do Firebase **depois** do toque, e o navegador só deixa uma página abrir uma
+janela (a do Google) dentro do próprio toque — depois de esperar o carregamento, ele bloqueia como propaganda.
+**Agora** o Firebase é preparado assim que abre uma tela com os botões (login, "Criar minha conta", 1º passo do
+cadastro, celular — `prepareSocialSignIn`), e no toque a janela abre na hora, sem nada esperado antes (teste
+`firebaseSignIn`). Continua fora do pacote inicial: só baixa quando essas telas abrem. **SMS:** o Firebase respondeu
+"SMS unable to be sent until this region enabled" — falta liberar o Brasil na política de regiões de SMS do console
+(ação do responsável).

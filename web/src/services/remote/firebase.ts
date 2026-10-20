@@ -1,30 +1,36 @@
-// U28: Google and phone sign-in through Firebase Authentication. Firebase does the hard part in the browser — the
+// U28/U29: Google and phone sign-in through Firebase Authentication. Firebase does the hard part in the browser — the
 // Google window, the SMS code and the invisible reCAPTCHA against robots — and returns an ID token; the Edge Function
 // `entrar-com-firebase` checks it and answers a one-time link hash that becomes the Bicos session (Supabase Auth,
-// where the accounts live). The Firebase SDK is loaded only here, when someone taps "Google" or "Celular", so the
-// rest of the app doesn't carry it. Firebase keeps no session of its own: it signs out right after.
+// where the accounts live). Firebase keeps no session of its own: it signs out right after.
+// U29: the SDK is loaded when a screen with the buttons opens (prepareFirebase), NOT on the tap: a browser only lets a
+// page open a window (the Google one) right inside the tap, and loading the SDK first used to make it block the window.
 import type { Auth, ConfirmationResult, RecaptchaVerifier } from '@firebase/auth';
 import { FIREBASE_CONFIG } from '../features';
 import { serviceError, ServiceError } from '../errors';
 import { db, invokeFunction, toServiceError } from './client';
 import { enterSession } from './session';
 
-let authPromise: Promise<Auth> | null = null;
+type Sdk = typeof import('@firebase/auth');
+
+let loading: Promise<{ auth: Auth; sdk: Sdk }> | null = null;
+let ready: { auth: Auth; sdk: Sdk } | null = null;
 let confirmation: ConfirmationResult | null = null;
 let verifier: RecaptchaVerifier | null = null;
 
-async function firebaseAuth(): Promise<Auth> {
-  authPromise ??= (async () => {
-    const [{ initializeApp, getApps }, { getAuth, useDeviceLanguage }] = await Promise.all([
-      import('@firebase/app'),
-      import('@firebase/auth')
-    ]);
+/** Loads and starts Firebase (once). The screens with the buttons call it as they open. */
+export function prepareFirebase(): Promise<{ auth: Auth; sdk: Sdk }> {
+  loading ??= (async () => {
+    const [{ initializeApp, getApps }, sdk] = await Promise.all([import('@firebase/app'), import('@firebase/auth')]);
     const app = getApps()[0] ?? initializeApp(FIREBASE_CONFIG);
-    const auth = getAuth(app);
-    useDeviceLanguage(auth); // the SMS and the Google window in Portuguese
-    return auth;
+    const auth = sdk.getAuth(app);
+    sdk.useDeviceLanguage(auth); // the SMS and the Google window in Portuguese
+    ready = { auth, sdk };
+    return ready;
   })();
-  return authPromise;
+  loading.catch(() => {
+    loading = null; // offline when the screen opened: try again on the tap
+  });
+  return loading;
 }
 
 /** Firebase's errors in the person's words. */
@@ -52,8 +58,7 @@ function firebaseError(e: unknown): ServiceError {
 }
 
 /** Exchanges the Firebase ID token for the Bicos session. `sem-conta` (phone without an account) is answered as such. */
-async function bridge(auth: Auth, idToken: string): Promise<'ok' | 'sem-conta'> {
-  const { signOut } = await import('@firebase/auth');
+async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'sem-conta'> {
   try {
     const answer = await invokeFunction<{ token_hash: string }>('entrar-com-firebase', { idToken });
     const client = await db();
@@ -67,33 +72,45 @@ async function bridge(auth: Auth, idToken: string): Promise<'ok' | 'sem-conta'> 
     if (e instanceof ServiceError && e.reason === 'sem-conta') return 'sem-conta';
     throw e;
   } finally {
-    await signOut(auth).catch(() => undefined);
+    await sdk.signOut(auth).catch(() => undefined);
   }
 }
 
+/**
+ * The Google window. When Firebase is already loaded (the usual case: it loads as the screen opens), the window opens
+ * right inside the tap — nothing is awaited before it.
+ */
 export async function signInWithFirebaseGoogle(): Promise<void> {
-  const auth = await firebaseAuth();
-  const { GoogleAuthProvider, signInWithPopup } = await import('@firebase/auth');
+  const loaded = ready;
+  let popup;
+  if (loaded) {
+    const provider = new loaded.sdk.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    popup = loaded.sdk.signInWithPopup(loaded.auth, provider);
+  }
+  const { auth, sdk } = loaded ?? (await prepareFirebase());
   let idToken: string;
   try {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    const result = await signInWithPopup(auth, provider);
+    if (!popup) {
+      const provider = new sdk.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      popup = sdk.signInWithPopup(auth, provider);
+    }
+    const result = await popup;
     idToken = await result.user.getIdToken();
   } catch (e) {
     throw firebaseError(e);
   }
-  await bridge(auth, idToken);
+  await bridge(auth, sdk, idToken);
 }
 
 /** Sends the SMS code to "+55<DDD><number>". `container` holds the invisible reCAPTCHA. */
 export async function sendPhoneCode(phone: string, container: HTMLElement): Promise<void> {
-  const auth = await firebaseAuth();
-  const { RecaptchaVerifier, signInWithPhoneNumber } = await import('@firebase/auth');
+  const { auth, sdk } = await prepareFirebase();
   try {
     verifier?.clear();
-    verifier = new RecaptchaVerifier(auth, container, { size: 'invisible' });
-    confirmation = await signInWithPhoneNumber(auth, '+55' + phone.replace(/\D/g, ''), verifier);
+    verifier = new sdk.RecaptchaVerifier(auth, container, { size: 'invisible' });
+    confirmation = await sdk.signInWithPhoneNumber(auth, '+55' + phone.replace(/\D/g, ''), verifier);
   } catch (e) {
     verifier?.clear();
     verifier = null;
@@ -103,7 +120,7 @@ export async function sendPhoneCode(phone: string, container: HTMLElement): Prom
 
 export async function confirmPhoneCode(code: string): Promise<'ok' | 'sem-conta'> {
   if (!confirmation) throw serviceError('validacao', 'Peça o código por SMS primeiro.');
-  const auth = await firebaseAuth();
+  const { auth, sdk } = await prepareFirebase();
   let idToken: string;
   try {
     const result = await confirmation.confirm(code);
@@ -112,5 +129,5 @@ export async function confirmPhoneCode(code: string): Promise<'ok' | 'sem-conta'
     throw firebaseError(e);
   }
   confirmation = null;
-  return bridge(auth, idToken);
+  return bridge(auth, sdk, idToken);
 }

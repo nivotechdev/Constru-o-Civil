@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../../components/Button';
 import { FieldError } from '../../components/FieldError';
 import { GoogleButton, OrDivider, PhoneButton } from '../../components/GoogleButton';
@@ -11,7 +11,8 @@ import {
   signIn,
   signInWithGoogle,
   verifyEmailCode,
-  type SignInError
+  type SignInError,
+  prepareSocialSignIn
 } from '../../services/auth';
 import { errorMessage, ServiceError } from '../../services/errors';
 import { homeFor, RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
@@ -64,6 +65,8 @@ const SIGN_IN_ERRORS: Record<Exclude<SignInError, 'email-nao-confirmado'>, strin
 };
 
 export default function Login() {
+  // U29: Firebase ready before the tap (the Google window must open inside it).
+  useEffect(prepareSocialSignIn, []);
   const [ui, setUi] = useUI<LoginUI>('login', LOGIN_DEFAULTS);
   // Y22: the password stays in this screen only (never in the shared store).
   const [password, setPassword] = useState('');

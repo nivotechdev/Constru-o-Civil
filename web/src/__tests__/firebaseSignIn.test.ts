@@ -91,12 +91,24 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     expect(auth.takeSignUpPhone()).toBeNull();
   });
 
+  it('U29: with Firebase prepared as the screen opens, the Google window opens inside the tap (nothing awaited)', async () => {
+    const fake = server('ok');
+    holder.client = fake.client;
+    const firebase = await import('../services/remote/firebase');
+    await firebase.prepareFirebase();
+    const before = holder.popup;
+    const done = firebase.signInWithFirebaseGoogle();
+    // Synchronously, still "inside the tap": the browser allows the window only here.
+    expect(holder.popup).toBe(before + 1);
+    await done;
+  });
+
   it('Google: the Firebase window, then the same exchange for the Bicos session', async () => {
     const fake = server('ok');
     holder.client = fake.client;
     const firebase = await import('../services/remote/firebase');
     await firebase.signInWithFirebaseGoogle();
-    expect(holder.popup).toBe(1);
+    expect(holder.popup).toBeGreaterThan(0);
     expect(fake.calls.find((c) => c.kind === 'function')?.args).toEqual({ idToken: 'firebase-token-google' });
   });
 });

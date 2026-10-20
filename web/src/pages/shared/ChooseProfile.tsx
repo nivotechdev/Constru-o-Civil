@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button } from '../../components/Button';
 import { FieldError } from '../../components/FieldError';
 import { GoogleButton, OrDivider, PhoneButton } from '../../components/GoogleButton';
@@ -5,12 +6,14 @@ import { FlowBar, FlowLayout } from '../../components/FlowLayout';
 import { RadioCard } from '../../components/Radio';
 import { useAction } from '../../hooks/useAction';
 import { useScreenUI } from '../../hooks/useStore';
-import { signInWithGoogle } from '../../services/auth';
+import { signInWithGoogle, prepareSocialSignIn } from '../../services/auth';
 import { FEATURES } from '../../services/features';
 import { goBack, navigate } from '../../services/router';
 import type { Role } from '../../types/models';
 
 export default function ChooseProfile() {
+  // U29: Firebase ready before the tap (the Google window must open inside it).
+  useEffect(prepareSocialSignIn, []);
   const [ui, setUi] = useScreenUI<{ role: Role }>('escolhaPerfil', { role: 'trabalhador' });
   // It leaves for Google; nothing to do after.
   const google = useAction(signInWithGoogle);
