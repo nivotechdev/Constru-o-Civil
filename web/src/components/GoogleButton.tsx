@@ -3,7 +3,7 @@
 // once. The same button on the login, on "Criar minha conta" and on the first step of the sign-up. It only
 // exists when the Google provider is configured (FEATURES.googleLogin): no button that can't work.
 import { cx } from '../utils/cx';
-import { GoogleIcon, Icon } from './icons/Icon';
+import { GoogleIcon } from './icons/Icon';
 
 export function GoogleButton({
   onClick,
@@ -39,25 +39,6 @@ export function GoogleButton({
         <GoogleIcon size={20} />
       )}
       Continuar com o Google
-    </button>
-  );
-}
-
-/** U28: "Continuar com o celular" — the SMS code instead of the password; same size and weight as the Google one. */
-export function PhoneButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cx(
-        'relative tap-target inline-flex items-center justify-center gap-3 w-full h-12 px-4 rounded-control',
-        'bg-concrete-0 border border-concrete-300 text-concrete-900 font-body font-semibold text-base whitespace-nowrap',
-        'hover:bg-concrete-50 active:bg-concrete-100 transition-colors duration-150',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500'
-      )}
-    >
-      <Icon name="phone" size={20} color="var(--brand)" />
-      Continuar com o celular
     </button>
   );
 }

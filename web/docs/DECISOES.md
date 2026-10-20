@@ -1953,3 +1953,36 @@ automática errou nas primeiras rodadas (pintura de museu, astronauta "Foreman",
 fotos de cada vaga foram **escolhidas à mão** entre as candidatas que o modo `ensaio` lista; a busca fica só de
 reserva, exigindo a palavra do ofício no nome do arquivo e barrando pintura, acervo histórico e militar. Cada rodada
 grava com nome novo (sem foto velha no cache). O script recusa a produção.
+
+## U37 — Cadastro com o Google pelo cadastro normal (sem e-mail e sem confirmação)
+
+Pedido do responsável: o Google entrava na conta, mas não criava conta. Causa (vista no registro do staging): a
+função `entrar-com-firebase` criava o login certinho, mas o app mandava a pessoa para uma tela separada ("Completar
+cadastro") por um caminho frágil — o erro "conta não encontrada" era engolido e a ida para a tela dependia de um evento
+do Auth que nem sempre chegava a tempo; a conta nunca era criada. **Agora** a troca do token devolve, para um login do
+Google sem conta, o e-mail e o nome dele, e o app segue de forma determinística para o **mesmo cadastro passo a passo**
+de todo mundo: o lado escolhido antes (ou "Como você vai usar o Bicos?" quando veio do login), nome (já preenchido com
+o do Google, editável), CPF/CNPJ, WhatsApp (com código, quando ligado), senha, 18+ e termos — só saem o passo do
+e-mail e a confirmação dele, porque o Google já confirmou o e-mail. Em todos os passos, um cartão mostra a conta do
+Google, "E-mail confirmado pelo Google" e "Trocar" (sai do login do Google e volta ao cadastro com e-mail, sem perder
+as respostas). No fim: a senha é gravada no login (assim a conta também entra por CPF/CNPJ ou e-mail e senha) e a
+conta nasce pelo `create_my_account` (as mesmas regras do cadastro por e-mail), já com o e-mail confirmado, indo direto
+para "Completar perfil". O lado escolhido fica guardado na aba até a conta existir, então recarregar a página no meio
+não perde nada. A tela "Completar cadastro" (L13) saiu; o endereço antigo só redireciona. No banco
+(`u37_cadastro_google`): um login do Google que nunca terminou o cadastro é apagado depois de 7 dias, como o cadastro
+por e-mail nunca confirmado (contas do app antigo com perfil preenchido ficam).
+
+## U38 — Experiências em pílulas
+
+Pedido do responsável: o campo de experiências ocupava dez linhas. **Agora** são pílulas: um campo só adiciona (Enter
+ou o botão "+"), cada experiência vira uma pílula com "×" para tirar (com "Desfazer" na mensagem, para um toque errado
+não perder nada) e um toque na pílula a traz de volta ao campo para corrigir (✓ salva, Esc cancela). Sair do campo com
+algo escrito já guarda. O contador "n de 10" fica no título; o de letras só aparece perto do limite de 80; repetida e
+curta demais avisam na hora; ao chegar em 10 o campo dá lugar ao aviso. O perfil mostra as experiências nas mesmas
+pílulas. Arrastar para reordenar ficou de fora: a ordem é a de inclusão, e o "×" já é o jeito mais rápido de tirar.
+
+## U39 — Só o Google como outro jeito de entrar
+
+Pedido do responsável: tirar o botão de entrar com o telefone do login. Saiu do login e também de "Criar minha conta"
+e do 1º passo do cadastro, para não ficar um jeito de entrar numa tela e não na outra (o envio de SMS ainda depende de
+liberar o Brasil no Firebase). A tela `/entrar-celular` continua no código, sem botão, para quando o SMS for ligado.
