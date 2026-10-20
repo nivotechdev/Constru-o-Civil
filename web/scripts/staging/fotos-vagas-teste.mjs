@@ -45,7 +45,7 @@ const PICKS = [
   ],
   [/contrapiso/i, ['Now the Concrete for the New Office is Done (5105188241).jpg', 'Rotary Polisher On Concrete.jpg']],
   [/pintor/i, ['Construction workers in Iran 09.jpg', 'Construction workers in Iran 06.jpg']],
-  [/eletricista/i, ['Electricians fixing electricity meter 5.jpg', 'Electricians fixing electricity meter 3.jpg']],
+  [/eletricista/i, ['Electricians fixing electricity meter 5.jpg']],
   [
     /limpeza/i,
     [
@@ -69,7 +69,7 @@ const PICKS = [
 // recentes; pintura, desenho, acervo de museu, militar, espaço e objeto solto ficam de fora.
 const STOCK = /pexels|unsplash|pixabay|stocksnap|burst|rawpixel/i;
 const REJECT =
-  /paint(ing)? by|fresco|munch|drawing|illustration|engraving|lithograph|poster|museum|louvre|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|nasa|\beva\b|sts-|xbox|toy|mascot|broken|wrench|mountain|landscape|fountain|map\b|diagram|logo|recycl|demolition|ruin/i;
+  /paint(ing)? by|fresco|munch|canaletto|stonemason's yard|\(1[5-8]\d\d[-–]1[6-9]\d\d\)|drawing|illustration|engraving|lithograph|poster|museum|louvre|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|nasa|\beva\b|sts-|xbox|toy|mascot|broken|wrench|mountain|landscape|fountain|map\b|diagram|logo|recycl|demolition|ruin/i;
 // ENSAIO=1: só lista as melhores candidatas de cada vaga, sem enviar nada.
 const DRY = process.env.ENSAIO === '1';
 
@@ -181,6 +181,8 @@ if (!jobsRes.ok) throw new Error(`jobs ${jobsRes.status}`);
 const jobs = await jobsRes.json();
 console.log(`${jobs.length} vagas da conta de teste.`);
 const used = new Set();
+// As escolhidas à mão ficam reservadas para a sua vaga: a busca de reserva de outra vaga não as pega.
+const reserved = new Set(PICKS.flatMap(([, titles]) => titles.map((t) => `File:${t}`)));
 const STAMP = Date.now().toString(36);
 const credits = [];
 
@@ -191,7 +193,7 @@ for (const job of jobs) {
   const pool = await picked(PICKS.find(([re]) => re.test(job.title))?.[1] ?? []);
   const hand = new Set(pool.map((c) => c.id));
   for (const [q, re] of [...queries.map((q) => [q, must]), ...FALLBACK[0].map((q) => [q, FALLBACK[1]])]) {
-    pool.push(...(await candidates(q, re)).filter((c) => !pool.some((p) => p.id === c.id)));
+    pool.push(...(await candidates(q, re)).filter((c) => !reserved.has(c.title) && !pool.some((p) => p.id === c.id)));
     if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 6 : PER_JOB + 2)) break;
   }
   // As do ofício antes das gerais; dentro de cada grupo, as de nota maior.
