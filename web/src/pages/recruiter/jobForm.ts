@@ -90,7 +90,7 @@ export function emptyForm(city: string = DEFAULT_CITY): JobForm {
     endDate: '',
     startTime: '',
     endTime: '',
-    diarias: '1',
+    diarias: '',
     vagas: '',
     valor: '',
     negociavel: false,

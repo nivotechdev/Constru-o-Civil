@@ -177,8 +177,11 @@ describe('publish form', () => {
     const missing = validateStep1(fresh, NOW);
     expect(missing.titulo).toMatch(/título/);
     expect(validateStep2({ ...fresh, vagas: '' }).vagas).toMatch(/quantas pessoas/);
+    // U23: "Quantas diárias" starts empty (no "1" to erase) and is asked.
+    expect(fresh.diarias).toBe('');
+    expect(validateStep2(fresh).diarias).toMatch(/quantas diárias/);
     expect(missing.number).toBeUndefined();
-    const ok = { ...fresh, titulo: '  Reboco da fachada ', vagas: '2' };
+    const ok = { ...fresh, titulo: '  Reboco da fachada ', vagas: '2', diarias: '1' };
     expect(Object.values(validateStep1(ok, NOW)).filter(Boolean)).toEqual([]);
     expect(validateStep1({ ...ok, titulo: 'x'.repeat(61) }, NOW).titulo).toMatch(/até 60/);
     const draft = draftFromForm(ok);

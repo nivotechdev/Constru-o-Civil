@@ -327,7 +327,6 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
             <Input
               id="create-job-diarias"
               label="Quantas diárias"
-              placeholder="1"
               suffix="diária(s)"
               inputMode="numeric"
               value={f.diarias}
