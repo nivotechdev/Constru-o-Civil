@@ -1846,3 +1846,13 @@ publicações dela também (não há mais o que moderar). Os arquivos já saíam
 efeito do pedido; (2) os pagamentos de impulso apagados continuam registrados no Mercado Pago (o comprovante fiscal
 fica lá); se o contador pedir esse histórico também na Bicos, dá para guardar só os valores, sem a vaga. A política de
 privacidade foi ajustada ("apagamos na hora … as avaliações que você fez e recebeu").
+
+## U26 — O tema escuro é da conta e só existe dentro do app
+
+Pedido do responsável: com o tema escuro ligado, ao sair ou excluir a conta o login e o cadastro ficavam escuros, e
+outra conta no mesmo celular herdava o escuro. **Agora** (`services/theme.ts`): a escolha é guardada por conta
+(`bicos-tema:<id da conta>` no aparelho) e o tema segue a sessão do app sozinho — escuro só com uma conta logada, com
+e-mail confirmado e perfil completo, e só se **essa** conta escolheu o escuro. Login, cadastro, "Confirme seu e-mail",
+"Completar perfil" e tudo depois de sair ficam sempre no tema original; outra conta começa no claro; a mesma conta,
+ao entrar de novo, volta no escuro. Excluir a conta apaga a escolha dela. A escolha antiga da U21 (uma só para o
+aparelho) é descartada. Sem armazenamento (janela anônima), a escolha vale até fechar o app.

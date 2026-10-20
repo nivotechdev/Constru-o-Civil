@@ -11,6 +11,7 @@ import { mockLatency } from './mockLatency';
 import { withNotification } from './notifications';
 import { getSession, getDb, transact } from './store';
 import { IS_DEMO } from './mode';
+import { forgetTheme } from './theme';
 import * as remote from './remote/actions';
 import * as remoteData from './remote/data';
 
@@ -111,7 +112,13 @@ export async function deleteAccount(
   confirmCommitments: boolean,
   captcha: CaptchaSource = async () => undefined
 ): Promise<void> {
-  if (!IS_DEMO) return remote.deleteAccount(proof, confirmCommitments, captcha);
+  if (!IS_DEMO) {
+    const accountId = getSession()?.accountId;
+    await remote.deleteAccount(proof, confirmCommitments, captcha);
+    // U26: the deleted account's theme choice goes with it.
+    if (accountId) forgetTheme(accountId);
+    return;
+  }
   if ('password' in proof) {
     if (!(await checkPassword(proof.password)))
       throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
@@ -213,5 +220,6 @@ export async function deleteAccount(
     return { ...next, accounts };
   });
   forgetPassword(session.accountId);
+  forgetTheme(session.accountId);
   await signOut();
 }
