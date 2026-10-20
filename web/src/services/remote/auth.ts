@@ -421,6 +421,16 @@ export async function signInWithGoogle(): Promise<void> {
   if (error) throw toServiceError(error);
 }
 
+export async function oauthIdentity(): Promise<{ email: string; name: string } | null> {
+  const client = await db();
+  const { data } = await client.auth.getSession();
+  const user = data.session?.user;
+  if (!user) return null;
+  const meta = (user.user_metadata ?? {}) as { full_name?: unknown; name?: unknown };
+  const name = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
+  return { email: user.email ?? '', name: name.trim().slice(0, 80) };
+}
+
 export async function completeOAuthSignUp(data: import('../auth').OAuthSignUpData): Promise<void> {
   const client = await db();
   await request(() =>

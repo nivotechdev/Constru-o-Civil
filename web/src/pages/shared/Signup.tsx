@@ -3,6 +3,7 @@ import { passwordProblem } from '../../utils/password';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
+import { GoogleButton, OrDivider } from '../../components/GoogleButton';
 import { FlowHeading, FlowLayout, FlowProgress } from '../../components/FlowLayout';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
@@ -10,6 +11,7 @@ import { useUI } from '../../hooks/useStore';
 import {
   isFreeForSignUp,
   sendWhatsAppCode,
+  signInWithGoogle,
   signUp,
   verifyWhatsAppCode,
   WHATSAPP_CODE_AVAILABLE,
@@ -17,6 +19,7 @@ import {
 } from '../../services/auth';
 import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
+import { FEATURES } from '../../services/features';
 import { currentPath, goBack as routerGoBack, navigate } from '../../services/router';
 import { resetUI, setUI } from '../../services/store';
 import type { Role } from '../../types/models';
@@ -459,6 +462,15 @@ export default function Signup({ params }: ScreenProps) {
             loading={ui.submitting}
             onClick={continueStep}
           />
+          {/* U18: on the first step, the other way in — Google brings the e-mail; the rest is asked on return. */}
+          {step === 0 && FEATURES.googleLogin ? (
+            <>
+              <OrDivider />
+              <GoogleButton
+                onClick={() => signInWithGoogle(role).catch((e: unknown) => setUi({ submitError: errorMessage(e) }))}
+              />
+            </>
+          ) : null}
         </>
       }
     >

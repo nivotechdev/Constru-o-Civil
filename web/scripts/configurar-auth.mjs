@@ -5,6 +5,7 @@
 //
 //   SUPABASE_ACCESS_TOKEN=…  PROJECT_REF=<ref>  SITE_URL=https://bicos.nivotech.com.br \
 //   BREVO_SMTP_USER=…@smtp-brevo.com  BREVO_SMTP_KEY=…  TURNSTILE_SECRET=… \
+//   GOOGLE_CLIENT_ID=…  GOOGLE_CLIENT_SECRET=… \
 //     node scripts/configurar-auth.mjs            # aplica
 //   … node scripts/configurar-auth.mjs --mostrar  # só mostra o que mudaria (sem os segredos)
 //
@@ -67,6 +68,15 @@ const config = {
         mailer_templates_magic_link_content: template('link-de-acesso.html')
       }
     : {}),
+  // U18: "Continuar com o Google" — o Client ID/Secret do Google Cloud (OAuth, tipo "Aplicativo da Web"), com a
+  // "Callback URL" do Supabase (https://<ref>.supabase.co/auth/v1/callback) nos URIs de redirecionamento.
+  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? {
+        external_google_enabled: true,
+        external_google_client_id: env.GOOGLE_CLIENT_ID,
+        external_google_secret: env.GOOGLE_CLIENT_SECRET
+      }
+    : {}),
   ...(env.TURNSTILE_SECRET
     ? {
         security_captcha_enabled: true,
@@ -76,7 +86,7 @@ const config = {
     : {})
 };
 
-const SECRET = new Set(['smtp_pass', 'security_captcha_secret']);
+const SECRET = new Set(['smtp_pass', 'security_captcha_secret', 'external_google_secret']);
 const shown = Object.fromEntries(
   Object.entries(config).map(([k, v]) => [
     k,

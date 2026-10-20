@@ -38,6 +38,8 @@ jobs:
       VITE_SENTRY_DSN: https://publica@sentry.invalid/1
       VITE_SENTRY_ENVIRONMENT: staging
       VITE_SUPORTE_WHATSAPP: "54994731661"
+      # U18: o botão do Google aparece quando o Google está configurado no staging (as mesmas secrets do staging.yml).
+      VITE_LOGIN_GOOGLE: ${{ secrets.GOOGLE_CLIENT_ID != '' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -79,7 +79,10 @@ Advisors depois de aplicar (Database › Advisors): segurança sem nenhum ERROR;
 4. **Leaked password protection** (Authentication › Policies): ligar (plano Pro).
 5. **Google** (L13): Authentication › Providers › Google com o Client ID/Secret do Google Cloud (tela de consentimento
    com o domínio publicado; URI de redirecionamento = a "Callback URL" mostrada pelo Supabase). Depois,
-   `VITE_LOGIN_GOOGLE=1` no build.
+   `VITE_LOGIN_GOOGLE=1` no build. U18: com `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` no ambiente, o
+   `scripts/configurar-auth.mjs` liga o provedor sozinho; no GitHub, as mesmas secrets ligam o Google no staging e o
+   botão no site de teste. A tela de consentimento precisa estar **publicada** (em "Teste", só os e-mails da lista
+   de testadores entram).
 
 ## 4. Edge Functions
 

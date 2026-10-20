@@ -521,6 +521,36 @@ describe('remote: data and actions', () => {
     expect(m.store.getSession()).toBeNull();
   });
 
+  it('U18: Google from the sign-up keeps the chosen side for "Completar cadastro" and brings the name', async () => {
+    const box = new Map<string, string>();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (k: string) => box.get(k) ?? null,
+      setItem: (k: string, v: string) => void box.set(k, v),
+      removeItem: (k: string) => void box.delete(k)
+    });
+    const google = {
+      ...authUser('u-novo', 'novo@gmail.com'),
+      app_metadata: { provider: 'google', providers: ['google'] },
+      user_metadata: { full_name: 'Marcos Pereira da Silva' }
+    };
+    const fake = server('ana', {
+      auth: {
+        signInWithOAuth: () => ({ data: {}, error: null }),
+        getSession: () => ({ data: { session: { user: google } }, error: null })
+      }
+    });
+    const m = await load(fake);
+    await m.auth.signInWithGoogle('recrutador');
+    expect(fake.calls.find((c) => c.name === 'signInWithOAuth')?.args).toMatchObject({ provider: 'google' });
+    expect(m.auth.takeGoogleRole()).toBe('recrutador');
+    // Read once: coming back again (or from the login) asks the side.
+    expect(m.auth.takeGoogleRole()).toBeNull();
+    await m.auth.signInWithGoogle();
+    expect(m.auth.takeGoogleRole()).toBeNull();
+    expect(await m.auth.oauthIdentity()).toEqual({ email: 'novo@gmail.com', name: 'Marcos Pereira da Silva' });
+    vi.unstubAllGlobals();
+  });
+
   it('U16: an account made with Google (no password) deletes itself with the code from its e-mail', async () => {
     let codeOk = false;
     const google = { ...authUser(workerAccount.id, workerAccount.email), app_metadata: { providers: ['google'] } };

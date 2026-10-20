@@ -111,6 +111,9 @@ jobs:
           BREVO_SMTP_USER: ${{ secrets.BREVO_SMTP_USER }}
           BREVO_SMTP_KEY: ${{ secrets.BREVO_SMTP_KEY }}
           SMTP_SENDER: ${{ secrets.SMTP_SENDER }}
+          # U18: Google no login e no cadastro (opcional). Sem os dois, o provedor fica como está.
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       - name: Conferir as funções e o login (uma chamada cada)
         if: steps.cfg.outputs.ok == 'true'
         run: |

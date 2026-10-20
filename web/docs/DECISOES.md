@@ -1760,3 +1760,18 @@ O código vai **depois do `#`**, parte do endereço que não chega ao servidor n
 código do endereço assim que lê (não fica no histórico). A página abre para qualquer um, logado ou não: só mostra o
 que veio no próprio link. O endereço sai do `{{ .SiteURL }}` do Auth, que o `configurar-auth.mjs` grava com a barra
 no fim.
+
+## U18 — "Continuar com o Google" no cadastro
+
+Pedido do responsável: o botão de entrar com o Google, profissional e funcionando, na tela de cadastro. O login com o
+Google já existia (L13), mas só na tela de entrar, com um botão comum, e a tela de "Completar cadastro" depois do
+Google era simples demais (lado em etiquetas, sem conferir CPF/WhatsApp repetidos). **Agora:** um `GoogleButton` no
+padrão visual que o Google pede para o botão claro (fundo branco, borda #747775, o "G" colorido, "Continuar com o
+Google"), no login, em "Criar minha conta" e no primeiro passo do cadastro. Quem sai do cadastro leva o lado já
+escolhido (no armazenamento da aba, lido uma vez na volta); "Completar cadastro" abre com esse lado marcado, com o
+nome que veio do Google, mostra o e-mail da conta Google, usa as mesmas regras e mensagens do cadastro por e-mail e
+confere CPF/CNPJ e WhatsApp contra outras contas (U10) antes de criar. **Continua escondido** enquanto o Google não
+estiver configurado (`FEATURES.googleLogin`): nenhum botão que não funcione. Para ligar: Client ID/Secret do Google
+Cloud nas secrets `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` do GitHub — o `configurar-auth.mjs` liga o provedor no
+staging e o site de teste passa a mostrar o botão sozinho; na produção, o provedor já é usado (há contas Google) e o
+build do site precisa de `VITE_LOGIN_GOOGLE=1`. A demonstração não tem Google (não há OAuth sem servidor).

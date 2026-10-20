@@ -373,10 +373,39 @@ export async function abandonPasswordReset(): Promise<void> {
 
 // ---- Google (L13) ----
 
-/** "Continuar com o Google": leaves for Google and comes back signed in. Backend: Supabase OAuth. */
-export async function signInWithGoogle(): Promise<void> {
+const GOOGLE_ROLE_KEY = 'bicos-google-papel';
+
+/**
+ * "Continuar com o Google": leaves for Google and comes back signed in. Backend: Supabase OAuth.
+ * U18: from the sign-up, the side already chosen goes along (in this tab's storage, only until the person comes
+ * back), so "Completar cadastro" opens with it marked.
+ */
+export async function signInWithGoogle(role?: Role): Promise<void> {
   if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
+  try {
+    if (role) sessionStorage.setItem(GOOGLE_ROLE_KEY, role);
+    else sessionStorage.removeItem(GOOGLE_ROLE_KEY);
+  } catch {
+    // Without storage the side is just asked again.
+  }
   return remote.signInWithGoogle();
+}
+
+/** U18: the side chosen before leaving for Google (read once). */
+export function takeGoogleRole(): Role | null {
+  try {
+    const role = sessionStorage.getItem(GOOGLE_ROLE_KEY);
+    sessionStorage.removeItem(GOOGLE_ROLE_KEY);
+    return role === 'trabalhador' || role === 'recrutador' ? role : null;
+  } catch {
+    return null;
+  }
+}
+
+/** U18: the e-mail and the name the Google account came with, to show and to start the form. */
+export async function oauthIdentity(): Promise<{ email: string; name: string } | null> {
+  if (IS_DEMO) return null;
+  return remote.oauthIdentity();
 }
 
 export interface OAuthSignUpData {

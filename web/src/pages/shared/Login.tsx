@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '../../components/Button';
 import { FieldError } from '../../components/FieldError';
-import { GoogleIcon, Icon } from '../../components/icons/Icon';
+import { GoogleButton, OrDivider } from '../../components/GoogleButton';
+import { Icon } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
 import {
@@ -158,20 +159,12 @@ export default function Login() {
           {ui.unconfirmed ? <Unconfirmed ui={ui} setUi={setUi} /> : null}
           <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
           {FEATURES.googleLogin ? (
-            <div className="flex items-center gap-3 py-1">
-              <span className="flex-1 h-px bg-concrete-200" />
-              <span className="text-xs text-concrete-500">ou</span>
-              <span className="flex-1 h-px bg-concrete-200" />
-            </div>
-          ) : null}
-          {FEATURES.googleLogin ? (
-            <Button
-              label="Continuar com o Google"
-              variant="secondary"
-              fullWidth
-              iconLeftNode={<GoogleIcon size={20} />}
-              onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))}
-            />
+            <>
+              <OrDivider />
+              <GoogleButton
+                onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))}
+              />
+            </>
           ) : null}
         </form>
         <div className="flex flex-col items-center gap-1">
