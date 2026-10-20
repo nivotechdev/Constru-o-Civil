@@ -36,6 +36,35 @@ const SEARCHES = [
   [/ajudante de pedreiro|pedreiro/i, ['bricklayer laying bricks', 'mason brick wall'], /brick|mason/i]
 ];
 const FALLBACK = [['construction worker', 'construction site workers'], /construction (site|worker)|building site/i];
+// Escolhidas à mão entre as candidatas do ensaio (todas CC0 ou domínio público). A busca só entra se uma delas
+// sumir do Commons ou mudar de licença.
+const PICKS = [
+  [
+    /mestre de obras/i,
+    ['Construction worker and ad (Unsplash).jpg', 'Moscow, Zhukov Lane, Dubinin-Sky construction site, May 2025 19.jpg']
+  ],
+  [/contrapiso/i, ['Now the Concrete for the New Office is Done (5105188241).jpg', 'Rotary Polisher On Concrete.jpg']],
+  [/pintor/i, ['Construction workers in Iran 09.jpg', 'Construction workers in Iran 06.jpg']],
+  [/eletricista/i, ['Electricians fixing electricity meter 5.jpg', 'Electricians fixing electricity meter 3.jpg']],
+  [
+    /limpeza/i,
+    [
+      'Construction workers in Iran 14.jpg',
+      'A break for the construction workers at the Rokin at the building site of the future metro station underground; free photo of Amsterdam streets by Fons Heijnsbroek, 2007.jpg'
+    ]
+  ],
+  [/telhadista|telha/i, ['Men working on roof.jpg', 'Roofing workers fall prevention (9253637735).jpg']],
+  [/azulejista/i, ['Verlegen von Fliesen mit einem Nivelliersystem.jpg', 'Construction workers in Iran 13.jpg']],
+  [/armador|funda/i, ['Rebar Tying in Beijing.jpg', 'Counting Rebar? (2885736243).jpg']],
+  [
+    /encanador/i,
+    [
+      'A construction worker is working underground during the renovation of Central station Amsterdam; free photo Amsterdam by Fons Heijnsbroek, 2012.jpg',
+      'Construction workers in Iran 11.jpg'
+    ]
+  ],
+  [/ajudante de pedreiro|pedreiro/i, ['Construction workers in Iran 02.jpg', 'Sabbiee-labor-2665057.jpg']]
+];
 // U36: primeiro as fotos de banco de imagem livre (Pexels/Unsplash/Pixabay antigos, CC0), as "Quality images" e as
 // recentes; pintura, desenho, acervo de museu, militar, espaço e objeto solto ficam de fora.
 const STOCK = /pexels|unsplash|pixabay|stocksnap|burst|rawpixel/i;
@@ -58,21 +87,31 @@ const strip = (html) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-async function search(text) {
+async function commons(params) {
   const q = new URLSearchParams({
     action: 'query',
     format: 'json',
-    generator: 'search',
-    gsrnamespace: '6',
-    gsrsearch: `${text} filetype:bitmap`,
-    gsrlimit: '50',
     prop: 'imageinfo',
     iiprop: 'url|size|mime|extmetadata',
-    iiurlwidth: '1280'
+    iiurlwidth: '1280',
+    ...params
   });
   const res = await fetch(`https://commons.wikimedia.org/w/api.php?${q}`, { headers: { 'User-Agent': UA } });
-  if (!res.ok) throw new Error(`Commons ${res.status} para "${text}"`);
-  return Object.values((await res.json()).query?.pages ?? {}).sort((x, y) => x.index - y.index);
+  if (!res.ok) throw new Error(`Commons ${res.status}`);
+  return Object.values((await res.json()).query?.pages ?? {}).sort((x, y) => (x.index ?? 0) - (y.index ?? 0));
+}
+
+const search = (text) =>
+  commons({ generator: 'search', gsrnamespace: '6', gsrsearch: `${text} filetype:bitmap`, gsrlimit: '50' });
+
+/** As fotos escolhidas à mão, na ordem da lista, se ainda existirem e forem livres. */
+async function picked(titles) {
+  const pages = await commons({ titles: titles.map((t) => `File:${t}`).join('|') });
+  const order = (p) => titles.findIndex((t) => `File:${t}` === p.title);
+  return describe(
+    pages.filter((p) => p.imageinfo).sort((a, b) => order(a) - order(b)),
+    /./
+  );
 }
 
 /** As fotos livres e boas de uma busca, com nota: banco de imagem e recentes primeiro. */
@@ -83,6 +122,11 @@ async function candidates(query, must) {
     ...(await search(`${query} pixabay`)),
     ...(await search(query))
   ];
+  return describe(pages, must).sort((a, b) => b.score - a.score);
+}
+
+/** As páginas do Commons que servem (livres, paisagem, boas e do assunto), com nota. */
+function describe(pages, must) {
   const seen = new Set();
   return pages
     .filter((p) => !seen.has(p.pageid) && seen.add(p.pageid))
@@ -114,7 +158,6 @@ async function candidates(query, must) {
         (/quality images|featured pictures/i.test(c.about) ? 3 : 0) +
         (c.year && c.year >= 2010 ? 2 : 0)
     }))
-    .sort((a, b) => b.score - a.score)
     .map(({ id, title, info, about, license, score }) => ({
       id,
       title,
@@ -144,15 +187,17 @@ const credits = [];
 for (const job of jobs) {
   const [, queries, must] = SEARCHES.find(([re]) => re.test(job.title)) ?? [null, ...FALLBACK];
   const photos = [];
-  // As buscas da vaga e, se faltar foto boa, as gerais.
-  const pool = [];
+  // As escolhidas à mão; se faltar alguma, as buscas da vaga e, depois, as gerais.
+  const pool = await picked(PICKS.find(([re]) => re.test(job.title))?.[1] ?? []);
+  const hand = new Set(pool.map((c) => c.id));
   for (const [q, re] of [...queries.map((q) => [q, must]), ...FALLBACK[0].map((q) => [q, FALLBACK[1]])]) {
     pool.push(...(await candidates(q, re)).filter((c) => !pool.some((p) => p.id === c.id)));
-    if (pool.filter((c) => !used.has(c.id)).length >= 6) break;
+    if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 6 : PER_JOB + 2)) break;
   }
   // As do ofício antes das gerais; dentro de cada grupo, as de nota maior.
   const specific = new Set(pool.filter((c) => must.test(c.title.replace(/_/g, ' '))).map((c) => c.id));
-  pool.sort((a, b) => Number(specific.has(b.id)) - Number(specific.has(a.id)) || b.score - a.score);
+  const tier = (c) => (hand.has(c.id) ? 2 : specific.has(c.id) ? 1 : 0);
+  pool.sort((a, b) => tier(b) - tier(a) || b.score - a.score);
   if (DRY) {
     console.log(`\n${job.id} ${job.title}:`);
     for (const c of pool.filter((c) => !used.has(c.id)).slice(0, 6))
