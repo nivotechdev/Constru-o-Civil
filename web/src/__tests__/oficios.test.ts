@@ -8,10 +8,9 @@ import { seedDatabase } from './helpers';
 const db = seedDatabase;
 
 describe('ofícios catalog', () => {
-  it('has unique ids and every seed job and worker points into it', () => {
+  it('has unique ids and every seed job points into it', () => {
     expect(new Set(OFICIOS.map((o) => o.id)).size).toBe(OFICIOS.length);
     for (const job of Object.values(seed.JOBS)) expect(getOficio(job.oficioId), job.id).toBeDefined();
-    for (const w of Object.values(seed.WORKERS)) expect(getOficio(w.oficioId), w.id).toBeDefined();
   });
 
   it('names a job by its title, or by its trade', () => {
@@ -38,13 +37,13 @@ describe('mural filter and search by trade', () => {
     expect(found.every((id) => db().jobs[id].oficioId === 'eletricista')).toBe(true);
   });
 
-  it('finds jobs and workers by a synonym of their trade', () => {
+  it('finds jobs by a synonym of their trade, and workers by name (U12: workers have no trade)', () => {
     const d = db();
     const open = Object.values(d.jobs).filter((j) => !j.closed);
     const r = searchMatches(d, open, 'Hidráulica', 'recrutador', from);
     expect(r.jobs.length).toBeGreaterThan(0);
     expect(r.jobs.every((j) => j.oficioId === 'encanador')).toBe(true);
-    const tiles = searchMatches(d, open, 'porcelanato', 'recrutador', from);
-    expect(tiles.workers.map((w) => w.id).sort()).toEqual(['nelson', 'silas']);
+    expect(searchMatches(d, open, 'porcelanato', 'recrutador', from).workers).toEqual([]);
+    expect(searchMatches(d, open, 'Nelson', 'recrutador', from).workers.map((w) => w.id)).toContain('nelson');
   });
 });

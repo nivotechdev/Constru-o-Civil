@@ -15,7 +15,8 @@ import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorker, getJob, jobState, unavailableText } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
-import { jobTitle, oficioNome } from '../../services/catalog';
+import { jobTitle } from '../../services/catalog';
+import { workerPlace } from '../../utils/workerInfo';
 import { dateText, totalText } from '../../utils/jobInfo';
 import { WorkerAvatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
@@ -87,7 +88,7 @@ export default function ConfirmApplication({ params }: ScreenProps) {
               <WorkerAvatar worker={worker} size="sm" />
               <div className="flex flex-col">
                 <span className="font-semibold text-concrete-900">{worker.name}</span>
-                <span className="text-sm text-concrete-500">{oficioNome(worker.oficioId)}</span>
+                <span className="text-sm text-concrete-500">{workerPlace(worker)}</span>
                 <Rating value={worker.rating} count={worker.reviewCount} />
               </div>
             </div>

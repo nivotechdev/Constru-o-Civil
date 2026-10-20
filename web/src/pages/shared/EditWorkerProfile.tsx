@@ -7,15 +7,12 @@ import { CityPicker, LocationButton } from '../../components/CityPicker';
 import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
 import { PhotoSlot } from '../../components/PhotoSlot';
-import { Select } from '../../components/Select';
 import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
-import { OFICIO_OPTIONS } from '../../services/catalog';
 import { profileErrors, saveMyProfileImages, updateMyWorkerProfile, type ProfileImages } from '../../services/profiles';
 import { goBack, navigate } from '../../services/router';
 import { currentWorker } from '../../services/selectors';
 import { showToast } from '../../services/toast';
-import { SpecialtiesField } from '../../components/SpecialtiesField';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
 import { TextArea } from '../../components/TextArea';
@@ -31,9 +28,7 @@ export default function EditWorkerProfile() {
   const worker = currentWorker(useDb());
   const [draft, setDraft] = useState(() => ({
     name: worker.name,
-    oficioId: worker.oficioId,
     city: worker.city,
-    specialties: [...worker.specialties],
     // F10: the professional profile (numbers as typed).
     availability: worker.availability ?? null,
     years: worker.yearsExperience != null ? String(worker.yearsExperience) : '',
@@ -56,9 +51,7 @@ export default function EditWorkerProfile() {
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
     ...(draft.name !== worker.name ? { name: draft.name } : {}),
-    ...(draft.oficioId !== worker.oficioId ? { oficioId: draft.oficioId } : {}),
     ...(draft.city !== worker.city ? { city: draft.city } : {}),
-    ...(draft.specialties.join('|') !== worker.specialties.join('|') ? { specialties: draft.specialties } : {}),
     ...(draft.availability && draft.availability !== worker.availability ? { availability: draft.availability } : {}),
     ...(num(draft.years) !== (worker.yearsExperience ?? null) ? { yearsExperience: num(draft.years) } : {}),
     ...(num(draft.pay) !== (worker.desiredPay ?? null) ? { desiredPay: num(draft.pay) } : {}),
@@ -134,17 +127,6 @@ export default function EditWorkerProfile() {
               setErrors((e) => ({ ...e, name: undefined }));
             }}
           />
-          <Select
-            label="Seu ofício principal"
-            placeholder="Escolha seu ofício"
-            options={OFICIO_OPTIONS}
-            value={draft.oficioId}
-            error={errors.oficioId}
-            onChange={(v) => {
-              setDraft((d) => ({ ...d, oficioId: v }));
-              setErrors((e) => ({ ...e, oficioId: undefined }));
-            }}
-          />
           <LocationButton title="Onde você quer trabalhar" location={draft.city} onClick={() => setPickerOpen(true)} />
           <WhatsAppRow label="Seu WhatsApp" />
           <div className="flex flex-col gap-1.5">
@@ -211,11 +193,6 @@ export default function EditWorkerProfile() {
               ))}
             </div>
           </div>
-          <SpecialtiesField
-            id="editar-especialidade"
-            value={draft.specialties}
-            onChange={(list) => setDraft((d) => ({ ...d, specialties: list }))}
-          />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {save.error ? <FieldError message={save.error} /> : null}

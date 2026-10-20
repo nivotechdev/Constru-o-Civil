@@ -102,7 +102,6 @@ export function companyFromRow(row: TableRow<'companies'>, reviews: ReviewRow[] 
     reviews: reviews.filter((r) => r.direction === 'para_construtora' && r.company_id === row.id).map(reviewFromRow)
   };
   setIf(company, 'cnpj', row.cnpj);
-  setIf(company, 'tipoObra', row.tipo_obra);
   setIf(company, 'verifiedSince', row.verified_since);
   setIf(company, 'verification', row.verification_status);
   setIf(company, 'contactName', row.contact_name);
@@ -120,7 +119,6 @@ export function companyToRow(company: Company): TableInsert<'companies'> {
     id: company.id,
     name: company.name,
     cnpj: company.cnpj ?? null,
-    tipo_obra: company.tipoObra ?? null,
     location: company.location,
     whatsapp: company.whatsapp,
     rating: company.rating,
@@ -145,7 +143,6 @@ export function workerFromRow(row: TableRow<'workers'>, reviews: ReviewRow[] = [
     id: row.id,
     name: row.name,
     initials: row.initials,
-    oficioId: row.oficio_id ?? '',
     whatsapp: row.whatsapp,
     city: row.city,
     neighborhood: row.neighborhood,
@@ -155,7 +152,6 @@ export function workerFromRow(row: TableRow<'workers'>, reviews: ReviewRow[] = [
     reviewCount: row.review_count,
     jobsDone: row.jobs_done,
     verified: row.verified,
-    specialties: row.specialties,
     facts: row.facts,
     reviews: reviews.filter((r) => r.direction === 'para_trabalhador' && r.worker_id === row.id).map(reviewFromRow)
   };
@@ -176,7 +172,6 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
     id: worker.id,
     name: worker.name,
     initials: worker.initials,
-    oficio_id: worker.oficioId || null,
     whatsapp: worker.whatsapp,
     city: worker.city,
     neighborhood: worker.neighborhood,
@@ -187,7 +182,6 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
     jobs_done: worker.jobsDone,
     novo: Boolean(worker.novo),
     verified: worker.verified,
-    specialties: worker.specialties,
     facts: worker.facts,
     photo_url: worker.photoUrl ?? null,
     cover_url: worker.coverUrl ?? null,

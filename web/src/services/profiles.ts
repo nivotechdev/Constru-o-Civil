@@ -1,7 +1,6 @@
 // Worker and company profiles: reading them and the logged-in account editing its own. Each function
 // says what the real backend does there (docs/CONTRATO-BACKEND.md).
 import type { Company, CompanyVerification, Worker, WorkerPost } from '../types/models';
-import { getOficio } from './catalog';
 import { cityByLabel } from './cities';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
@@ -28,7 +27,7 @@ export async function loadCompanyProfile(_companyId: string): Promise<void> {
 }
 
 export type WorkerProfilePatch = Partial<
-  Pick<Worker, 'name' | 'oficioId' | 'city' | 'specialties' | 'availability' | 'bio'> & {
+  Pick<Worker, 'name' | 'city' | 'availability' | 'bio'> & {
     /** `null` clears the field. */
     yearsExperience: number | null;
     desiredPay: number | null;
@@ -37,7 +36,7 @@ export type WorkerProfilePatch = Partial<
 >;
 
 type ProfileField =
-  'name' | 'oficioId' | 'city' | 'location' | 'contactName' | 'yearsExperience' | 'desiredPay' | 'travelKm' | 'bio';
+  'name' | 'city' | 'location' | 'contactName' | 'yearsExperience' | 'desiredPay' | 'travelKm' | 'bio';
 
 /** L11: the problems of a profile edit, per field (the same in both modes; the database checks too). */
 export function profileErrors(
@@ -67,7 +66,6 @@ export function profileErrors(
     else if (name.length > 80) e.name = 'Use até 80 caracteres.';
     else if (role === 'trabalhador' && name.split(/\s+/).length < 2) e.name = 'Informe nome e sobrenome.';
   }
-  if (patch.oficioId !== undefined && !getOficio(patch.oficioId)) e.oficioId = 'Escolha seu ofício na lista.';
   if (patch.city !== undefined && !cityByLabel(patch.city)) e.city = 'Escolha a cidade na lista.';
   if (patch.location !== undefined && !cityByLabel(patch.location)) e.location = 'Escolha a cidade na lista.';
   if (patch.contactName !== undefined) {
@@ -106,7 +104,7 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   store.updateWorker(currentWorkerId(), { ...rest, ...numbers });
 }
 
-export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'tipoObra' | 'location' | 'contactName'>>;
+export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'location' | 'contactName'>>;
 
 /**
  * Y25: changes the account's WhatsApp (worker or company). A mobile with DDD (11 digits). The number

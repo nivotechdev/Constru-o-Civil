@@ -112,7 +112,7 @@ export const PRIVACY: LegalDocument = {
       title: '2. Dados que coletamos',
       body: [
         'Cadastro: nome ou razão social, CPF ou CNPJ (guardado cifrado), e-mail, WhatsApp, senha (guardada de forma irreversível), data e versão do aceite destes textos. Se entrar com o Google: nome, e-mail e foto da conta Google.',
-        'Perfil: ofício, cidade, especialidades, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Construtora: nome, logo, tipo de obra, cidade, CNPJ e o que a Receita Federal informa sobre ele.',
+        'Perfil: cidade, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Construtora: nome, logo, cidade, CNPJ e o que a Receita Federal informa sobre ele.',
         'Vagas: endereço da obra, datas, horário, valor, fotos e requisitos.',
         'Uso: candidaturas e o histórico de cada uma, presença confirmada, diárias concluídas, avaliações, vagas salvas, convites, alertas de vaga, notificações, denúncias e bloqueios.',
         'Pagamentos do impulso: valor, plano e situação do pagamento. Os dados do cartão vão direto para o Mercado Pago; não ficam com a gente.',

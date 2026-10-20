@@ -105,7 +105,7 @@ describe('reviews', () => {
     );
     expect(r.ok).toBe(true);
     expect(m.store.getDb().companies.cangaiba.reviewCount).toBe(cangaiba.reviewCount + 1);
-    expect(m.store.getDb().companies.cangaiba.reviews[0].authorLabel).toBe('Jorge M. · pedreiro de acabamento');
+    expect(m.store.getDb().companies.cangaiba.reviews[0].authorLabel).toBe('Jorge M.');
 
     await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
     const other = await settle(

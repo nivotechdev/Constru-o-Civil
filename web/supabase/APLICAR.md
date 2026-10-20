@@ -583,6 +583,18 @@ select whatsapp, count(*) from public.accounts where whatsapp <> '' group by 1 h
 select indexname from pg_indexes where indexname = 'accounts_whatsapp_key';                          -- depois: 1 linha
 ```
 
+### 50. `20261020000200_u12_perfil_simples.sql` (U12)
+
+Completar o perfil só com a localização (`finish_sign_up` novo); saem as colunas `workers.oficio_id`,
+`workers.specialties` e `companies.tipo_obra` (e o que as usava: as filas da área da equipe, a anonimização e o
+rótulo da avaliação, que fica "Jorge M."). **Apaga dados**: fazer o backup antes (CLAUDE.md § 7.9) e aplicar **junto
+com o front novo** (o front antigo lê essas colunas).
+
+```sql
+select count(*) from information_schema.columns
+ where table_name in ('workers', 'companies') and column_name in ('oficio_id', 'specialties', 'tipo_obra');  -- 0
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

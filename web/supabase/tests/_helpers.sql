@@ -68,7 +68,6 @@ begin
                              'terms_version', '1.0', 'maior_de_idade', true),
           now(), now());
   update public.accounts set profile_completed_at = now() where id = p_id;
-  update public.workers set oficio_id = 'pedreiro' where id = p_id;
 end;
 $$;
 

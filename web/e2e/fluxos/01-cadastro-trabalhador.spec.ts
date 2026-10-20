@@ -9,6 +9,7 @@ import {
   emailDeTeste,
   ENV,
   idDaConta,
+  liberarLocalizacao,
   nomeDeTeste,
   prepararPagina,
   print,
@@ -49,12 +50,13 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   const codigo = await codigoDeConfirmacao(email);
   await page.fill('#verificar-codigo', codigo);
   await expect(page).toHaveURL(/\/completar-perfil\/trabalhador/);
-  await page.getByLabel('Seu ofício principal').selectOption('pedreiro');
-  await print(page, 'f1', 'completar perfil oficio');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.fill('#completar-especialidade', 'Reboco');
-  await page.getByRole('button', { name: 'Adicionar' }).click();
-  await print(page, 'f1', 'completar perfil especialidade');
+  // U12: uma tela só — capa e foto opcionais, e a localização atual (obrigatória).
+  await page.getByRole('button', { name: 'Concluir perfil' }).click();
+  await expect(page.getByText('Toque em "Usar minha localização atual" para continuar.')).toBeVisible();
+  await liberarLocalizacao(page);
+  await page.getByRole('button', { name: 'Usar minha localização atual' }).click();
+  await expect(page.getByText('São Paulo, SP')).toBeVisible();
+  await print(page, 'f1', 'completar perfil com a localização');
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).toHaveURL(/\/mural/);
   await print(page, 'f1', 'mural do trabalhador');

@@ -87,7 +87,7 @@ export default function Selected({ params }: ScreenProps) {
               <CompanyAvatar company={company} />
               <div className="flex flex-col gap-0.5">
                 <span className="font-semibold text-concrete-900">{company.name}</span>
-                <span className="text-sm text-concrete-500">{company.tipoObra || 'Construção civil'}</span>
+                <span className="text-sm text-concrete-500">{company.location}</span>
               </div>
             </div>
             <ContactButton

@@ -23,7 +23,6 @@ import {
 } from '../../services/selectors';
 import { contactOpen } from '../../services/applicationMachine';
 import { CandidateActions } from '../recruiter/CandidateActions';
-import { oficioNome } from '../../services/catalog';
 import { workerFacts, workerPlace } from '../../utils/workerInfo';
 import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
@@ -123,7 +122,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1.5 min-w-0">
             <span className="font-display font-bold text-2xl text-concrete-900">{worker.name}</span>
-            <span className="text-sm text-concrete-700">{`${oficioNome(worker.oficioId) || 'Ofício não informado'} · ${workerPlace(worker)}`}</span>
+            <span className="text-sm text-concrete-700">{workerPlace(worker)}</span>
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-concrete-700">
               <Icon name="hammer" size={15} color="var(--text-subtle)" />
               {`${worker.jobsDone} ${worker.jobsDone === 1 ? 'bico realizado' : 'bicos realizados'}`}
@@ -161,20 +160,6 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
         </div>
 
         {isOwn ? <IdentityCard worker={worker} /> : null}
-
-        <div className="flex flex-col gap-2.5">
-          <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Especialidades</span>
-          <div className="flex flex-wrap gap-2">
-            {worker.specialties.map((s) => (
-              <span
-                key={s}
-                className="inline-flex items-center h-9 px-3 rounded-full bg-white border border-concrete-300 text-sm font-semibold text-concrete-700"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
 
         {worker.bio ? <p className="text-concrete-700 whitespace-pre-line">{worker.bio}</p> : null}
 

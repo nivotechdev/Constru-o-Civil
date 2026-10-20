@@ -2,7 +2,7 @@
 // (services/auth.ts). The CPF/CNPJ is checked by the database inside the sign-up itself, never by a
 // separate question anyone could ask (Z07).
 import type { Role } from '../../types/models';
-import type { CaptchaSource, ProfileData, SignInResult, SignUpData, SignUpResult } from '../auth';
+import type { CaptchaSource, SignInResult, SignUpData, SignUpResult } from '../auth';
 import { serviceError, ServiceError } from '../errors';
 import { FEATURES } from '../features';
 import { getSession } from '../store';
@@ -242,21 +242,12 @@ export async function resendConfirmationEmail(to?: string): Promise<void> {
   }
 }
 
-/** "Completar perfil": saves it and lets the account into the app. */
-export async function finishSignUp(profile: ProfileData): Promise<void> {
+/** "Completar perfil" (U12): saves the place and lets the account into the app. */
+export async function finishSignUp(location: import('../location').SavedLocation): Promise<void> {
   const client = await db();
-  const { cityByLabel } = await import('../cities');
-  const { DEFAULT_POINT } = await import('../defaults');
-  const p =
-    profile.role === 'trabalhador'
-      ? {
-          oficio_id: profile.oficioId,
-          city: profile.city,
-          specialties: profile.specialties,
-          ...(cityByLabel(profile.city) ?? DEFAULT_POINT)
-        }
-      : { tipo_obra: profile.tipoObra, city: profile.city };
-  await request(() => client.rpc('finish_sign_up', { p }));
+  await request(() =>
+    client.rpc('finish_sign_up', { p: { city: location.city, lat: location.lat, lon: location.lon } })
+  );
   const { data } = await client.auth.getSession();
   if (data.session) await enterSession(data.session.user);
 }

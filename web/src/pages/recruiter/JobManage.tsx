@@ -46,7 +46,7 @@ import {
   totalText,
   whenText
 } from '../../utils/jobInfo';
-import { jobTitle, oficioNome } from '../../services/catalog';
+import { jobTitle } from '../../services/catalog';
 import { workerDistance, workerPlace } from '../../utils/workerInfo';
 import { ContactButton } from '../../components/ContactButton';
 import { boostBlocker, isBoosted } from '../../services/payments';
@@ -285,7 +285,7 @@ export default function JobManage({ params }: ScreenProps) {
                     <CandidateRow
                       key={a.id}
                       worker={worker}
-                      summary={oficioNome(worker.oficioId) + ' · ' + workerPlace(worker)}
+                      summary={workerPlace(worker)}
                       distance={workerDistance(worker, job.address)}
                       isNew={worker.novo}
                       badge={pending ? null : candidateBadge(a)}

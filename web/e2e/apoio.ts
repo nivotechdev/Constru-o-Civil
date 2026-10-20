@@ -161,6 +161,15 @@ export async function linkDeConfirmacao(email: string): Promise<string> {
   return data.properties.action_link;
 }
 
+/**
+ * U12: "Usar minha localização atual" no teste — o navegador libera a localização e diz que está em São Paulo
+ * (os CEPs das vagas de teste são de lá, então o mural do trabalhador abre com elas).
+ */
+export async function liberarLocalizacao(page: Page, lat = -23.5505, lon = -46.6333): Promise<void> {
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation({ latitude: lat, longitude: lon });
+}
+
 /** U11: o código de 6 números que confirma o e-mail (o mesmo efeito do código do e-mail), pela Admin API. */
 export async function codigoDeConfirmacao(email: string): Promise<string> {
   const { data, error } = await admin().auth.admin.generateLink({ type: 'magiclink', email });
@@ -268,10 +277,8 @@ export async function contaPorApi(tag: string, papel: 'trabalhador' | 'recrutado
   if (error || !data.user) throw new Error(`createUser ${tag}: ${error?.message}`);
   criada(data.user.id, email);
   const c = await comoConta(email);
-  const p =
-    papel === 'trabalhador'
-      ? { oficio_id: 'pedreiro', city: 'São Paulo, SP', specialties: ['Reboco'], lat: -23.55, lon: -46.63 }
-      : { tipo_obra: 'Residencial', city: 'São Paulo, SP' };
+  // U12: o perfil se completa só com a localização.
+  const p = { city: 'São Paulo, SP', lat: -23.55, lon: -46.63 };
   const { error: e2 } = await c.rpc('finish_sign_up', { p });
   if (e2) throw new Error(`finish_sign_up ${tag}: ${e2.message}`);
   const conta = { id: data.user.id, email, documento, nome, whatsapp };

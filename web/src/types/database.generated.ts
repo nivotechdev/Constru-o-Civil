@@ -382,7 +382,6 @@ export type Database = {
           id: string;
           name: string;
           cnpj: string | null;
-          tipo_obra: string | null;
           location: string;
           whatsapp: string;
           rating: number;
@@ -404,7 +403,6 @@ export type Database = {
           id?: string;
           name: string;
           cnpj?: string | null;
-          tipo_obra?: string | null;
           location: string;
           whatsapp?: string;
           rating?: number;
@@ -426,7 +424,6 @@ export type Database = {
           id?: string;
           name?: string;
           cnpj?: string | null;
-          tipo_obra?: string | null;
           location?: string;
           whatsapp?: string;
           rating?: number;
@@ -1343,7 +1340,6 @@ export type Database = {
           id: string;
           name: string;
           initials: string;
-          oficio_id: string | null;
           whatsapp: string;
           city: string;
           neighborhood: string | null;
@@ -1354,7 +1350,6 @@ export type Database = {
           jobs_done: number;
           novo: boolean;
           verified: boolean;
-          specialties: string[];
           facts: string[];
           photo_url: string | null;
           cover_url: string | null;
@@ -1372,7 +1367,6 @@ export type Database = {
           id?: string;
           name: string;
           initials?: string;
-          oficio_id?: string | null;
           whatsapp?: string;
           city: string;
           neighborhood?: string | null;
@@ -1383,7 +1377,6 @@ export type Database = {
           jobs_done?: number;
           novo?: boolean;
           verified?: boolean;
-          specialties?: string[];
           facts?: string[];
           photo_url?: string | null;
           cover_url?: string | null;
@@ -1401,7 +1394,6 @@ export type Database = {
           id?: string;
           name?: string;
           initials?: string;
-          oficio_id?: string | null;
           whatsapp?: string;
           city?: string;
           neighborhood?: string | null;
@@ -1412,7 +1404,6 @@ export type Database = {
           jobs_done?: number;
           novo?: boolean;
           verified?: boolean;
-          specialties?: string[];
           facts?: string[];
           photo_url?: string | null;
           cover_url?: string | null;
@@ -1426,15 +1417,7 @@ export type Database = {
           identity_reason?: string | null;
           identity_submitted_at?: string | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: 'workers_oficio_id_fkey';
-            columns: ['oficio_id'];
-            isOneToOne: false;
-            referencedRelation: 'oficios';
-            referencedColumns: ['id'];
-          }
-        ];
+        Relationships: [];
       };
     };
     Views: { [_ in never]: never };
@@ -1461,7 +1444,6 @@ export type Database = {
           company_id: string;
           name: string;
           location: string;
-          tipo_obra: string;
           email: string;
           document: string;
           document_kind: string;
@@ -1480,7 +1462,6 @@ export type Database = {
         Returns: {
           worker_id: string;
           name: string;
-          oficio: string;
           city: string;
           photo_url: string;
           document: string;

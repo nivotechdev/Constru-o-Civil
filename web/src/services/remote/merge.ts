@@ -21,12 +21,12 @@ import { transact } from '../store';
 export const ACCOUNT_COLUMNS =
   'id, email, role, document, whatsapp, whatsapp_verified_at, email_confirmed_at, profile_completed_at, terms_version, terms_accepted_at, worker_id, company_id, created_at';
 export const WORKER_COLUMNS =
-  'id, name, initials, oficio_id, city, neighborhood, lat, lon, rating, review_count, jobs_done, novo, verified, specialties, facts, photo_url, cover_url, identity_status, availability, years_experience, desired_pay, travel_km, bio, created_at';
+  'id, name, initials, city, neighborhood, lat, lon, rating, review_count, jobs_done, novo, verified, facts, photo_url, cover_url, identity_status, availability, years_experience, desired_pay, travel_km, bio, created_at';
 /** What anyone may read of a job (Z06): the exact address comes from get_job_addresses. */
 export const JOB_COLUMNS =
   'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, payment_method, payment_note, public_slug, created_at, updated_at, deleted_at';
 export const COMPANY_COLUMNS =
-  'id, name, cnpj, tipo_obra, location, rating, review_count, verified, verified_since, verification_status, verified_at, contact_name, since_label, respond_time, paid_count, logo_url, cover_url, created_at';
+  'id, name, cnpj, location, rating, review_count, verified, verified_since, verification_status, verified_at, contact_name, since_label, respond_time, paid_count, logo_url, cover_url, created_at';
 
 export type AccountRow = TableRow<'accounts'>;
 export type WorkerRowRead = Omit<TableRow<'workers'>, 'whatsapp'>;

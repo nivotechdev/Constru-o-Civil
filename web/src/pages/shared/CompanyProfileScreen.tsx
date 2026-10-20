@@ -107,7 +107,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1.5 min-w-0">
             <span className="font-display font-bold text-2xl text-concrete-900">{company.name}</span>
-            <span className="text-sm text-concrete-700">{`${company.tipoObra || 'Construção civil'} · ${company.location}`}</span>
+            <span className="text-sm text-concrete-700">{company.location}</span>
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-concrete-700">
               <Icon name="circle-check" size={15} color="var(--text-subtle)" />
               {`${successfulJobs} ${successfulJobs === 1 ? 'bico concluído' : 'bicos concluídos'}`}
@@ -150,10 +150,6 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
                 ) : (
                   <span className="text-sm text-concrete-700 text-right">CPF (não aparece no perfil)</span>
                 )}
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-concrete-500">Tipo de obra</span>
-                <span className="font-semibold text-concrete-900 text-right">{company.tipoObra}</span>
               </div>
               <VerificationRow company={company} />
             </div>

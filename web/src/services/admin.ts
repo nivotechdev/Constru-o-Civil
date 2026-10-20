@@ -10,7 +10,6 @@ import * as store from './store';
 export interface IdentityItem {
   workerId: string;
   name: string;
-  oficio: string | null;
   city: string;
   photoUrl: string | null;
   document: string;
@@ -36,7 +35,6 @@ export interface CompanyItem {
   companyId: string;
   name: string;
   location: string;
-  tipoObra: string | null;
   email: string;
   document: string;
   documentKind: 'cnpj' | 'cpf';

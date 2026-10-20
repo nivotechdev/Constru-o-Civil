@@ -30,7 +30,6 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
     })),
     companies: inserts.companies.map((r): TableRow<'companies'> => ({
       cnpj: null,
-      tipo_obra: null,
       rating: 0,
       review_count: 0,
       verified: false,
@@ -48,14 +47,12 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       id: r.id ?? ''
     })),
     workers: inserts.workers.map((r): TableRow<'workers'> => ({
-      oficio_id: null,
       neighborhood: null,
       rating: 0,
       review_count: 0,
       jobs_done: 0,
       novo: false,
       verified: false,
-      specialties: [],
       facts: [],
       photo_url: null,
       cover_url: null,

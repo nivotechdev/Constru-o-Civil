@@ -15,7 +15,6 @@ import { workerPlace } from '../../../utils/workerInfo';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
 import { FeedGrid, LoadMore, NoJobsState, SearchPill, SearchScope } from './FeedParts';
-import { oficioNome } from '../../../services/catalog';
 import { setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
 import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
 import type { Paging } from '../../../services/paging';
@@ -78,7 +77,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
                 <WorkerAvatar worker={w} size="sm" />
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-concrete-900 truncate">{w.name}</span>
-                  <span className="text-sm text-concrete-500 truncate">{`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}</span>
+                  <span className="text-sm text-concrete-500 truncate">{workerPlace(w)}</span>
                 </div>
                 <Rating value={w.rating} count={w.reviewCount} />
               </div>

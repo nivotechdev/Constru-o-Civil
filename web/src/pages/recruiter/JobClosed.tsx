@@ -19,7 +19,7 @@ import { goBack, navigate } from '../../services/router';
 import { applicationsForJob, currentCompanyId, getJob, getWorker, jobState } from '../../services/selectors';
 import type { Application, Worker } from '../../types/models';
 import { formatPay } from '../../utils/format';
-import { jobTitle, oficioNome } from '../../services/catalog';
+import { jobTitle } from '../../services/catalog';
 import { workerPlace } from '../../utils/workerInfo';
 import { ContactButton } from '../../components/ContactButton';
 import { contactOpen, occupiesSlot } from '../../services/applicationMachine';
@@ -113,7 +113,7 @@ export default function JobClosed({ params }: ScreenProps) {
                         <WorkerAvatar worker={worker} />
                         <div className="flex-1 min-w-0 flex flex-col">
                           <span className="font-semibold text-concrete-900">{worker.name}</span>
-                          <span className="text-sm text-concrete-500">{`${oficioNome(worker.oficioId)} · ${workerPlace(worker)}`}</span>
+                          <span className="text-sm text-concrete-500">{workerPlace(worker)}</span>
                         </div>
                         <Badge label={badge.label} tone={badge.tone} icon={badge.icon} />
                       </div>

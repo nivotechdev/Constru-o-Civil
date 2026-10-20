@@ -145,9 +145,7 @@ function IdentityCard({ item }: { item: IdentityItem }) {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-0.5">
           <span className="font-bold text-concrete-900">{item.name}</span>
-          <span className="text-sm text-concrete-500">
-            {[item.oficio, item.city, item.document].filter(Boolean).join(' · ')}
-          </span>
+          <span className="text-sm text-concrete-500">{[item.city, item.document].filter(Boolean).join(' · ')}</span>
           <span className="text-xs text-concrete-500">
             Conta de {when(item.createdAt)} · enviado em {when(item.submittedAt)}
             {item.submissions > 1 ? ` · ${item.submissions}º envio` : ''}

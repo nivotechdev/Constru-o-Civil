@@ -22,8 +22,6 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   const worker = store.getDb().workers[s.workerId];
   const update: TableUpdate<'workers'> = {};
   if (patch.name !== undefined) update.name = patch.name.trim();
-  if (patch.oficioId !== undefined) update.oficio_id = patch.oficioId;
-  if (patch.specialties !== undefined) update.specialties = patch.specialties;
   if (patch.availability !== undefined) update.availability = patch.availability;
   if (patch.yearsExperience !== undefined) update.years_experience = patch.yearsExperience;
   if (patch.desiredPay !== undefined) update.desired_pay = patch.desiredPay;
@@ -54,7 +52,6 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
   if (!s.companyId) throw serviceError('nao_autorizado', 'Essa conta não é de construtora.');
   const update: TableUpdate<'companies'> = {};
   if (patch.name !== undefined) update.name = patch.name.trim();
-  if (patch.tipoObra !== undefined) update.tipo_obra = patch.tipoObra || null;
   if (patch.location !== undefined) update.location = patch.location;
   if (patch.contactName !== undefined) update.contact_name = patch.contactName.trim() || null;
   if (!Object.keys(update).length) return;

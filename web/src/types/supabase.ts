@@ -6,7 +6,7 @@
 //
 // Tables map to the domain records in models.ts (see services/supabaseMappers.ts):
 //   accounts      – Account (id = auth.users.id; e-mail confirmation, onboarding, worker or company)
-//   oficios       – Oficio: the one catalog of trades (jobs.oficio_id, workers.oficio_id)
+//   oficios       – Oficio: the one catalog of trades (jobs.oficio_id of the older jobs, job_alerts.oficio_id)
 //   companies     – Company (reviews live in `reviews`)
 //   workers       – Worker (reviews live in `reviews`)
 //   jobs          – Job; deleted_at replaces Database.deletedJobIds
@@ -68,7 +68,6 @@ type CompanyRow = {
   id: string;
   name: string;
   cnpj: string | null;
-  tipo_obra: string | null;
   location: string;
   /** Private: readable only through the get_contact RPC. */
   whatsapp: string;
@@ -93,7 +92,6 @@ type WorkerRow = {
   id: string;
   name: string;
   initials: string;
-  oficio_id: string | null;
   /** Private: readable only through the get_contact RPC. */
   whatsapp: string;
   city: string;
@@ -105,7 +103,6 @@ type WorkerRow = {
   jobs_done: number;
   novo: boolean;
   verified: boolean;
-  specialties: string[];
   facts: string[];
   photo_url: string | null;
   cover_url: string | null;
@@ -337,7 +334,7 @@ const fk = (table: string, column: string, to: string, isOneToOne = false): Rela
 /** The foreign keys, for documentation and for the tests (supabase-js only needs their type). */
 export const RELATIONSHIPS = {
   accounts: [fk('accounts', 'worker_id', 'workers', true), fk('accounts', 'company_id', 'companies')],
-  workers: [fk('workers', 'oficio_id', 'oficios')],
+  workers: [],
   jobs: [fk('jobs', 'company_id', 'companies'), fk('jobs', 'oficio_id', 'oficios')],
   applications: [fk('applications', 'job_id', 'jobs'), fk('applications', 'worker_id', 'workers')],
   saved_jobs: [fk('saved_jobs', 'worker_id', 'workers'), fk('saved_jobs', 'job_id', 'jobs')],
@@ -368,7 +365,7 @@ export interface SupabaseDatabase {
       companies: Table<
         CompanyRow,
         'id' | 'rating' | 'review_count' | 'verified' | 'verification_status' | 'verified_at' | 'created_at',
-        'name' | 'tipo_obra' | 'location' | 'logo_url' | 'cover_url' | 'contact_name'
+        'name' | 'location' | 'logo_url' | 'cover_url' | 'contact_name'
       >;
       workers: Table<
         WorkerRow,
@@ -378,19 +375,16 @@ export interface SupabaseDatabase {
         | 'jobs_done'
         | 'novo'
         | 'verified'
-        | 'specialties'
         | 'facts'
         | 'created_at'
         | 'identity_status',
         | 'name'
-        | 'oficio_id'
         | 'city'
         | 'neighborhood'
         | 'lat'
         | 'lon'
         | 'photo_url'
         | 'cover_url'
-        | 'specialties'
         | 'availability'
         | 'years_experience'
         | 'desired_pay'
@@ -535,7 +529,6 @@ export interface SupabaseDatabase {
         Returns: {
           worker_id: string;
           name: string;
-          oficio: string | null;
           city: string;
           photo_url: string | null;
           document: string;
@@ -556,7 +549,6 @@ export interface SupabaseDatabase {
           company_id: string;
           name: string;
           location: string;
-          tipo_obra: string | null;
           email: string;
           document: string;
           document_kind: string;

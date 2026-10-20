@@ -130,15 +130,12 @@ describe('payment of the diária (L18)', () => {
 });
 
 describe('profile edit checks (L11)', () => {
-  it('names, trade and city, per field and the same in both modes', async () => {
+  it('names and city, per field and the same in both modes', async () => {
     const { profileErrors } = await import('../services/profiles');
     expect(profileErrors({ name: 'Jo' }, 'trabalhador').name).toBe('Informe seu nome completo.');
     expect(profileErrors({ name: 'Jorge' }, 'trabalhador').name).toBe('Informe nome e sobrenome.');
     expect(profileErrors({ name: 'Meridiano' }, 'recrutador')).toEqual({});
-    expect(profileErrors({ oficioId: 'astronauta', city: 'Lugar Nenhum, XX' }, 'trabalhador')).toEqual({
-      oficioId: 'Escolha seu ofício na lista.',
-      city: 'Escolha a cidade na lista.'
-    });
+    expect(profileErrors({ city: 'Lugar Nenhum, XX' }, 'trabalhador')).toEqual({ city: 'Escolha a cidade na lista.' });
     expect(profileErrors({ location: 'São Paulo, SP' }, 'recrutador')).toEqual({});
   });
 });

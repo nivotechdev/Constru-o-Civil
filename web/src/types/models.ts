@@ -79,7 +79,6 @@ export interface Company {
   id: string;
   name: string;
   cnpj?: string;
-  tipoObra?: string;
   location: string;
   /** Contact number. Private like the worker's: only contacts.getContact() hands it out (B01). */
   whatsapp: string;
@@ -106,8 +105,6 @@ export interface Worker {
   id: string;
   name: string;
   initials: string;
-  /** Main trade (catalog id); '' until the profile is completed. */
-  oficioId: string;
   /**
    * Contact number. Private: screens never read it from here; it is handed out only by
    * contacts.getContact() to the company that picked or hired the worker (B01).
@@ -126,7 +123,6 @@ export interface Worker {
   jobsDone: number;
   novo?: boolean;
   verified: boolean;
-  specialties: string[];
   /** Old hand-written facts: no longer shown (F10 builds them from the fields below). */
   facts: string[];
   /** F07: where the identity check stands (the "Verificado" badge means "verificado"). */

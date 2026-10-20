@@ -131,14 +131,14 @@ describe('accounts (mock auth)', () => {
     expect(auth.canChangePendingEmail()).toBe(false);
     expect(homeFor(store.getSession()!)).toBe('/completar-perfil/trabalhador');
 
-    await run(
-      auth.finishSignUp({ role: 'trabalhador', oficioId: 'pintor', city: 'Campinas, SP', specialties: ['Textura'] })
-    );
+    // U12: completing the profile saves only the place (from "Usar minha localização atual").
+    await run(auth.finishSignUp({ city: 'Caxias do Sul, RS', lat: -29.17, lon: -51.18 }));
     expect(homeFor(store.getSession()!)).toBe('/mural');
     expect(sel.currentWorker(store.getDb())).toMatchObject({
-      oficioId: 'pintor',
-      city: 'Campinas, SP',
-      specialties: ['Textura']
+      city: 'Caxias do Sul, RS',
+      neighborhood: null,
+      lat: -29.17,
+      lon: -51.18
     });
 
     // The same e-mail can't sign up twice.

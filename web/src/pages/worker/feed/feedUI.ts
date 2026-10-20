@@ -207,10 +207,7 @@ export function searchMatches(
     // L17: workers show up only for companies.
     workers:
       role === 'recrutador'
-        ? allWorkers(db).filter(
-            (w) =>
-              w.name !== 'Conta excluída' && (has(w.name, workerPlace(w)) || oficioSearchText(w.oficioId).includes(q))
-          )
+        ? allWorkers(db).filter((w) => w.name !== 'Conta excluída' && has(w.name, workerPlace(w)))
         : []
   };
 }

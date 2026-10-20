@@ -12,7 +12,6 @@ import type { Database, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
 import { FeedGrid, LoadMore, NoJobsState, SearchPill, SearchScope } from './FeedParts';
 import { noFilters, setFeed, type SearchMatches } from './feedUI';
-import { oficioNome } from '../../../services/catalog';
 import type { FeedLayoutProps } from './MobileFeed';
 import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
 
@@ -163,7 +162,7 @@ function SearchResults({ db, role, search, found }: SearchResultsProps) {
                   key={w.id}
                   avatar={<WorkerAvatar worker={w} />}
                   name={w.name}
-                  meta={`${oficioNome(w.oficioId)} · ${workerPlace(w)}`}
+                  meta={workerPlace(w)}
                   rating={<Rating value={w.rating} count={w.reviewCount} />}
                   onClick={role === 'recrutador' ? () => navigate('/trabalhador/' + w.id) : null}
                 />

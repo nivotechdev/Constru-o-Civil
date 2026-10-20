@@ -2,7 +2,6 @@
 // once each. Each function says what the real backend does there (docs/CONTRATO-BACKEND.md).
 import type { Application, Review, ReviewDirection } from '../types/models';
 import { canReview } from './applicationMachine';
-import { oficioNome } from './catalog';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { applicationFor, currentCompanyId, currentWorkerId } from './selectors';
@@ -97,9 +96,7 @@ export async function submitReview(input: ReviewInput): Promise<void> {
     applicationId: app.id,
     direction: input.direction,
     authorLabel:
-      side === 'trabalhador'
-        ? `${worker.name.split(' ')[0]} ${worker.name.split(' ').slice(-1)[0][0]}. · ${oficioNome(worker.oficioId).toLowerCase()}`
-        : company.name,
+      side === 'trabalhador' ? `${worker.name.split(' ')[0]} ${worker.name.split(' ').slice(-1)[0][0]}.` : company.name,
     value: input.value,
     tags: input.tags,
     comment,

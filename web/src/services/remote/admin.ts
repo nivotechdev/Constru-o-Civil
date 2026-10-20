@@ -17,7 +17,6 @@ export async function identityQueue(): Promise<IdentityItem[]> {
   return (rows ?? []).map((r) => ({
     workerId: r.worker_id,
     name: r.name,
-    oficio: r.oficio,
     city: r.city,
     photoUrl: r.photo_url,
     document: r.document,
@@ -52,7 +51,6 @@ export async function companyQueue(): Promise<CompanyItem[]> {
     companyId: r.company_id,
     name: r.name,
     location: r.location,
-    tipoObra: r.tipo_obra,
     email: r.email,
     document: r.document,
     documentKind: r.document_kind === 'cnpj' ? 'cnpj' : 'cpf',

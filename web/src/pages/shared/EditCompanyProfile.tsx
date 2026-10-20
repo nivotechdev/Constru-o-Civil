@@ -7,10 +7,8 @@ import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { PhotoSlot } from '../../components/PhotoSlot';
-import { Select } from '../../components/Select';
 import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
-import { TIPOS_OBRA } from '../../services/catalog';
 import {
   profileErrors,
   saveMyProfileImages,
@@ -32,7 +30,6 @@ export default function EditCompanyProfile() {
   const company = currentCompany(useDb());
   const [draft, setDraft] = useState(() => ({
     name: company.name,
-    tipoObra: company.tipoObra,
     location: company.location,
     contactName: company.contactName ?? ''
   }));
@@ -49,7 +46,6 @@ export default function EditCompanyProfile() {
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
     ...(draft.name !== company.name ? { name: draft.name } : {}),
-    ...(draft.tipoObra !== company.tipoObra ? { tipoObra: draft.tipoObra } : {}),
     ...(draft.location !== company.location ? { location: draft.location } : {}),
     ...(draft.contactName !== (company.contactName ?? '') ? { contactName: draft.contactName } : {})
   };
@@ -148,12 +144,6 @@ export default function EditCompanyProfile() {
               </span>
             </div>
           ) : null}
-          <Select
-            label="Tipo de obra"
-            options={TIPOS_OBRA}
-            value={draft.tipoObra}
-            onChange={(v) => setDraft((d) => ({ ...d, tipoObra: v }))}
-          />
           {/* L12: the city comes from the list, like everywhere else. */}
           <LocationButton title="Onde ficam suas obras" location={draft.location} onClick={() => setPickerOpen(true)} />
           {errors.location ? <FieldError message={errors.location} /> : null}

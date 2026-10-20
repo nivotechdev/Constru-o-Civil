@@ -117,7 +117,7 @@ export async function deleteAccount(
         notifications: next.notifications.filter((n) => n.workerId !== workerId),
         workers: {
           ...next.workers,
-          [workerId]: { ...worker, name: 'Conta excluída', initials: '–', whatsapp: '', specialties: [], facts: [] }
+          [workerId]: { ...worker, name: 'Conta excluída', initials: '–', whatsapp: '', facts: [] }
         }
       };
     } else if (session.companyId) {

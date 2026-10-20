@@ -144,7 +144,6 @@ export const COMPANIES: Record<string, Company> = {
     name: 'Construtora Meridiano',
     contactName: 'Ricardo Alves',
     cnpj: '18.402.551/0001-47',
-    tipoObra: 'Residencial e reforma',
     location: 'Zona Leste, SP',
     whatsapp: '(11) 98842-3310',
     rating: 4.7,
@@ -160,7 +159,7 @@ export const COMPANIES: Record<string, Company> = {
         id: 'r1',
         applicationId: null,
         direction: 'para_construtora',
-        authorLabel: 'Marcos A. · servente',
+        authorLabel: 'Marcos A.',
         value: 5,
         tags: [],
         comment: 'Pagou em PIX no fim da diária, como combinado.',
@@ -170,7 +169,7 @@ export const COMPANIES: Record<string, Company> = {
         id: 'r2',
         applicationId: null,
         direction: 'para_construtora',
-        authorLabel: 'Jorge M. · pedreiro',
+        authorLabel: 'Jorge M.',
         value: 4,
         tags: [],
         comment: 'Obra organizada e EPI no local. Começou 30 min atrasado.',
@@ -180,7 +179,7 @@ export const COMPANIES: Record<string, Company> = {
         id: 'r3',
         applicationId: null,
         direction: 'para_construtora',
-        authorLabel: 'Edson B. · pedreiro',
+        authorLabel: 'Edson B.',
         value: 5,
         tags: [],
         comment: 'Já trabalhei com eles três vezes. Sempre no horário certo.',
@@ -202,7 +201,7 @@ export const COMPANIES: Record<string, Company> = {
         id: 'r4',
         applicationId: null,
         direction: 'para_construtora',
-        authorLabel: 'Caio N. · pedreiro',
+        authorLabel: 'Caio N.',
         value: 4,
         tags: [],
         comment: 'Bom acabamento, chegou 20 min atrasado.',
@@ -235,7 +234,7 @@ export const COMPANIES: Record<string, Company> = {
         id: 'r5',
         applicationId: null,
         direction: 'para_construtora',
-        authorLabel: 'Nelson A. · azulejista',
+        authorLabel: 'Nelson A.',
         value: 5,
         tags: [],
         comment: 'Assentamento impecável, obra organizada.',
@@ -257,7 +256,7 @@ export const COMPANIES: Record<string, Company> = {
         id: 'r6',
         applicationId: null,
         direction: 'para_construtora',
-        authorLabel: 'Bruno T. · servente',
+        authorLabel: 'Bruno T.',
         value: 5,
         tags: [],
         comment: 'Trabalhador de confiança. Já chamei três vezes.',
@@ -305,7 +304,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'jorge',
     name: 'Jorge Mendes',
     initials: 'JM',
-    oficioId: 'pedreiro-acabamento',
     whatsapp: '(11) 97412-5580',
     ...home('Tatuapé', 'jorge'),
     rating: 4.8,
@@ -313,7 +311,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 23,
     verified: true,
     identity: 'verificado',
-    specialties: ['Acabamento', 'Alvenaria', 'Reboco', 'Assentamento'],
     availability: 'qualquer',
     yearsExperience: 12,
     desiredPay: 200,
@@ -362,7 +359,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'rafael',
     name: 'Rafael Duarte',
     initials: 'RD',
-    oficioId: 'servente',
     whatsapp: '(11) 96630-1147',
     ...home('Vila Prudente', 'rafael'),
     rating: 4.5,
@@ -370,7 +366,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 17,
     verified: true,
     identity: 'verificado',
-    specialties: ['Carga de material', 'Limpeza de obra'],
     facts: ['17 diárias pagas pela plataforma', 'RG e CPF conferidos em 5 ago', 'Responde em 55 min, em média'],
     reviews: [
       {
@@ -389,7 +384,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'nelson',
     name: 'Nelson Aquino',
     initials: 'NA',
-    oficioId: 'azulejista',
     whatsapp: '(11) 98215-4402',
     ...home('Tatuapé', 'nelson'),
     rating: 4.9,
@@ -397,7 +391,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 52,
     verified: true,
     identity: 'verificado',
-    specialties: ['Porcelanato 60x60', 'Rejunte', 'Nivelamento'],
     facts: ['52 diárias pagas pela plataforma', 'RG e CPF conferidos em 8 abr', 'Responde em 15 min, em média'],
     reviews: [
       {
@@ -416,7 +409,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'bruno',
     name: 'Bruno Tavares',
     initials: 'BT',
-    oficioId: 'servente',
     whatsapp: '(11) 95508-7731',
     ...home('Vila Prudente', 'bruno'),
     rating: 4.8,
@@ -424,7 +416,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 28,
     verified: true,
     identity: 'verificado',
-    specialties: ['Carga de material', 'Massa'],
     facts: ['28 diárias pagas pela plataforma', 'RG e CPF conferidos em 15 jun', 'Nunca faltou a uma diária combinada'],
     reviews: [
       {
@@ -443,7 +434,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'marcos',
     name: 'Marcos Aurélio',
     initials: 'MA',
-    oficioId: 'servente',
     whatsapp: '(11) 94471-2265',
     ...home('Penha', 'marcos'),
     rating: 4.6,
@@ -451,7 +441,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 41,
     verified: true,
     identity: 'verificado',
-    specialties: ['Carga de material', 'Limpeza de obra', 'Massa'],
     facts: ['41 diárias pagas pela plataforma', 'RG e CPF conferidos em 30 jul', 'Responde em 1h10, em média'],
     reviews: [
       {
@@ -470,7 +459,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'silas',
     name: 'Silas Pereira',
     initials: 'SP',
-    oficioId: 'azulejista',
     whatsapp: '(11) 99183-0456',
     ...home('Mooca', 'silas'),
     rating: 0,
@@ -478,7 +466,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 0,
     novo: true,
     verified: false,
-    specialties: ['Porcelanato', 'Rejunte'],
     facts: [
       '11 anos de obra, primeiro bico pela plataforma',
       'Documentos enviados, em conferência',
@@ -490,7 +477,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'vitor',
     name: 'Vitor Camargo',
     initials: 'VC',
-    oficioId: 'pedreiro',
     whatsapp: '(11) 97726-3398',
     ...home('Tatuapé', 'vitor'),
     rating: 4.7,
@@ -498,7 +484,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 31,
     verified: true,
     identity: 'verificado',
-    specialties: ['Reboco', 'Contrapiso'],
     facts: ['31 diárias pagas pela plataforma', 'RG e CPF conferidos em 21 jul', 'Responde em 35 min, em média'],
     reviews: [
       {
@@ -517,7 +502,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'caio',
     name: 'Caio Nogueira',
     initials: 'CN',
-    oficioId: 'pedreiro-acabamento',
     whatsapp: '(11) 96052-8814',
     ...home('Penha', 'caio'),
     rating: 4.2,
@@ -525,7 +509,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 9,
     verified: true,
     identity: 'verificado',
-    specialties: ['Massa corrida', 'Acabamento'],
     facts: ['9 diárias pagas pela plataforma', 'RG e CPF conferidos em 2 set', 'Faltou a 1 diária combinada em julho'],
     reviews: [
       {
@@ -544,7 +527,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'edson',
     name: 'Edson Batista',
     initials: 'EB',
-    oficioId: 'pedreiro',
     whatsapp: '(11) 98840-1173',
     ...home('Belém', 'edson'),
     rating: 4.9,
@@ -552,7 +534,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 64,
     verified: true,
     identity: 'verificado',
-    specialties: ['Alvenaria estrutural', 'Contrapiso', 'Reboco'],
     facts: ['64 diárias pagas pela plataforma', 'RG e CPF conferidos em 4 mar', 'Responde em 25 min, em média'],
     reviews: [
       {
@@ -571,7 +552,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'joel',
     name: 'Joel Ribeiro',
     initials: 'JR',
-    oficioId: 'ajudante-geral',
     whatsapp: '(11) 95317-6629',
     ...home('Belém', 'joel'),
     rating: 0,
@@ -579,7 +559,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 0,
     novo: true,
     verified: false,
-    specialties: ['Carga de material'],
     facts: [
       '6 anos de obra, primeiro bico pela plataforma',
       'Documentos enviados, em conferência',
@@ -591,7 +570,6 @@ export const WORKERS: Record<string, Worker> = {
     id: 'antonio',
     name: 'Antônio Ferraz',
     initials: 'AF',
-    oficioId: 'servente',
     whatsapp: '(11) 94208-5590',
     ...home('Vila Prudente', 'antonio'),
     rating: 4.6,
@@ -599,7 +577,6 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 19,
     verified: true,
     identity: 'verificado',
-    specialties: ['Carga de material', 'Limpeza de obra'],
     facts: ['19 diárias pagas pela plataforma', 'RG e CPF conferidos em 3 mai'],
     reviews: []
   }
@@ -1393,16 +1370,6 @@ export const REGIOES_TRABALHADOR = [
   'Belém, SP',
   'Vila Formosa, SP'
 ];
-export const ESPECIALIDADES = [
-  'Acabamento',
-  'Alvenaria',
-  'Reboco',
-  'Assentamento',
-  'Pintura',
-  'Elétrica',
-  'Hidráulica'
-];
-export const TIPOS_OBRA = ['Residencial', 'Comercial', 'Reforma', 'Residencial e reforma', 'Industrial'];
 export const REGIOES_RECRUTADOR = ['Zona Leste, SP', 'Zona Norte, SP', 'Zona Sul, SP', 'Zona Oeste, SP', 'Centro, SP'];
 export const REQUISITOS_OPCOES = [
   'Botina e capacete próprios',

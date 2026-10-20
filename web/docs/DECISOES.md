@@ -1706,3 +1706,19 @@ para ele; a conta com o e-mail errado, nunca confirmada, libera o CPF/CNPJ e o W
 U10). Se o app foi recarregado e esses dados se perderam, "Corrigir" volta ao cadastro, como antes. **No login**, quem
 acerta a senha de uma conta não confirmada digita o código ali mesmo. O campo de código saiu da tela do WhatsApp para
 `components/CodeInput.tsx` (as duas usam o mesmo). `configurar-auth.mjs` passa a fixar o código em 6 números.
+
+## U12 — Completar perfil numa tela só; sem ofício, especialidades e tipo de obra
+
+Pedido do responsável: em vez de duas telas, uma só, com a capa, a foto de perfil (logo, para a construtora) e um
+botão de **localização atual**; os outros campos saem da tela, do banco e de qualquer outro lugar. **A tela:** a capa
+com a foto sobre o canto (como o perfil mostra), as duas opcionais; e "Usar minha localização atual"
+(`components/CurrentLocationField.tsx`), obrigatória para concluir. O GPS dá o ponto e a cidade é o município mais
+perto da lista do IBGE (`services/location.ts`); o ponto é guardado arredondado a 2 casas (~1 km), para mostrar bicos
+perto sem guardar onde a pessoa mora. Se o celular não der a localização (não liberada, GPS desligado, computador
+sem GPS), aparece "Escolher a cidade na lista" — só nesse caso, para ninguém ficar travado no cadastro. **O que saiu:**
+o ofício principal e as especialidades do trabalhador e o tipo de obra da construtora — das telas (cadastro, edição
+de perfil, perfil, listas de candidatos e trabalhadores, busca, área da equipe), dos dados de demonstração, das
+colunas (`u12_perfil_simples`) e da política de privacidade (é menos dado; ninguém precisa aceitar de novo). Onde o
+ofício aparecia ao lado do nome, fica a cidade/bairro; a avaliação passa a ser assinada "Jorge M.". **O que ficou:**
+o ofício das vagas antigas (`jobs.oficio_id`, a U01 já tinha tirado da tela de publicar) e o do alerta de bico
+(`job_alerts.oficio_id`), que não são do perfil.

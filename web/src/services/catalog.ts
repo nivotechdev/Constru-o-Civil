@@ -5,7 +5,7 @@ import { OFICIOS } from '../data/seed';
 import type { BoostPlan, Job, Oficio } from '../types/models';
 import { fold } from '../utils/text';
 
-export { ESPECIALIDADES, REGIOES_RECRUTADOR, REGIOES_TRABALHADOR, REQUISITOS_OPCOES, TIPOS_OBRA } from '../data/seed';
+export { REGIOES_RECRUTADOR, REGIOES_TRABALHADOR, REQUISITOS_OPCOES } from '../data/seed';
 export { OFICIOS };
 
 // ---- ofícios (one catalog for jobs, the mural's filter, worker profiles and the search) ----
@@ -31,9 +31,6 @@ export function oficioSearchText(id: string | null | undefined): string {
   const o = getOficio(id);
   return o ? fold([o.nome, ...o.sinonimos].join(' ')) : '';
 }
-
-/** The catalog as select options (value = id). */
-export const OFICIO_OPTIONS = OFICIOS.map((o) => ({ value: o.id, label: o.nome }));
 
 /** Trades whose name or a synonym contains `query` (accents and case ignored). */
 export function searchOficios(query: string): Oficio[] {

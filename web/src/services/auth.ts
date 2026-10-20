@@ -28,6 +28,7 @@ import { FEATURES } from './features';
 import { serviceError } from './errors';
 import { isValidEmail } from '../utils/format';
 import { TERMS_VERSION } from './legal';
+import type { SavedLocation } from './location';
 
 // ---- mock credentials ----
 // Only the mock keeps passwords, and only in memory: the real backend never stores them in app tables.
@@ -226,7 +227,6 @@ async function createAccount(data: SignUpData, captcha: CaptchaSource): Promise<
       id: 't-' + stamp,
       name: data.name.trim(),
       initials: initialsOf(data.name),
-      oficioId: '',
       whatsapp: data.whatsapp,
       city: DEFAULT_CITY,
       neighborhood: null,
@@ -236,7 +236,6 @@ async function createAccount(data: SignUpData, captcha: CaptchaSource): Promise<
       jobsDone: 0,
       novo: true,
       verified: false,
-      specialties: [],
       facts: [],
       reviews: []
     };
@@ -320,31 +319,19 @@ export async function changePendingEmail(email: string, captcha: CaptchaSource =
   return result;
 }
 
-export type ProfileData =
-  | { role: 'trabalhador'; oficioId: string; city: string; specialties: string[] }
-  | { role: 'recrutador'; tipoObra: string; city: string };
-
-/** Last step of sign-up: saves "Completar perfil" and lets the account into the app. Backend: update the profile row. */
-export async function finishSignUp(profile: ProfileData): Promise<void> {
-  if (!IS_DEMO) return remote.finishSignUp(profile);
+/**
+ * Last step of sign-up (U12): the profile's place, from "Usar minha localização atual" (the photos are saved
+ * apart, by profiles.saveMyProfileImages), and the account goes into the app. It is the place the mural opens
+ * on and the city a new job starts in (U13). Backend: RPC finish_sign_up.
+ */
+export async function finishSignUp(location: SavedLocation): Promise<void> {
+  if (!IS_DEMO) return remote.finishSignUp(location);
   await mockLatency(500);
   const session = getSession();
   if (!session) return;
-  if (profile.role === 'trabalhador' && session.workerId) {
-    // The city picker's list is big: it loads only here, when it is needed.
-    const { cityByLabel } = await import('./cities');
-    const center = cityByLabel(profile.city) ?? DEFAULT_POINT;
-    updateWorker(session.workerId, {
-      oficioId: profile.oficioId,
-      city: profile.city,
-      neighborhood: null,
-      lat: center.lat,
-      lon: center.lon,
-      specialties: profile.specialties
-    });
-  } else if (profile.role === 'recrutador' && session.companyId) {
-    updateCompany(session.companyId, { tipoObra: profile.tipoObra, location: profile.city });
-  }
+  if (session.workerId)
+    updateWorker(session.workerId, { city: location.city, neighborhood: null, lat: location.lat, lon: location.lon });
+  else if (session.companyId) updateCompany(session.companyId, { location: location.city });
   updateAccount(session.accountId, { profileCompletedAt: new Date().toISOString() });
 }
 
