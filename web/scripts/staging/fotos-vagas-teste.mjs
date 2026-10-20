@@ -13,26 +13,36 @@ if (url.includes('ppnxdajiihsjaojxokzh')) throw new Error('Isto é só para o st
 
 const COMPANY = 'b1c05000-0000-4000-8000-00000000c0de';
 const PER_JOB = 2;
-// Palavras do título → buscas no Commons (em inglês, onde o acervo é maior), da mais certeira à mais geral.
+// Palavras do título → buscas no Commons (em inglês, onde o acervo é maior) e o que o NOME do arquivo precisa ter
+// (a busca do Commons acha o termo em qualquer lugar da página — astronauta "Foreman", adaptador de videogame…).
 const SEARCHES = [
-  [/mestre de obras/i, ['construction foreman', 'construction workers helmet site']],
-  [/contrapiso/i, ['concrete floor screed', 'pouring concrete floor worker']],
-  [/pintor/i, ['painter painting wall roller', 'house painter wall']],
-  [/eletricista/i, ['electrician working', 'electrical wiring installation']],
-  [/limpeza/i, ['cleaning construction site', 'renovation cleaning floor']],
-  [/telhadista|telha/i, ['roofer working roof', 'roof tiles installation']],
-  [/azulejista/i, ['tiler laying tiles', 'ceramic tiles installation']],
-  [/armador|funda/i, ['rebar worker', 'steel reinforcement concrete construction']],
-  [/encanador/i, ['plumber working', 'plumbing pipes installation']],
-  [/ajudante de pedreiro|pedreiro/i, ['bricklayer laying bricks', 'mason building brick wall']]
+  [
+    /mestre de obras/i,
+    ['construction site workers', 'construction workers helmet'],
+    /construction (site|worker)|building site|workers? on site/i
+  ],
+  [/contrapiso/i, ['concrete floor screed', 'pouring concrete floor'], /concrete|screed/i],
+  [
+    /pintor/i,
+    ['house painter painting wall', 'painting wall roller'],
+    /(painter|painting|paint roller).*(wall|house|room|interior|facade)|house ?painter|paint roller/i
+  ],
+  [/eletricista/i, ['electrician working', 'electrician wiring'], /electrician|electrical (work|wiring|installation)/i],
+  [/limpeza/i, ['cleaning floor construction', 'cleaning renovation'], /clean/i],
+  [/telhadista|telha/i, ['roofer working roof', 'roofing workers'], /roof/i],
+  [/azulejista/i, ['tiler laying tiles', 'tiling floor worker'], /tiler|tiling|laying tiles?|fliesen/i],
+  [/armador|funda/i, ['rebar worker construction', 'steel reinforcement concrete'], /rebar|reinforc/i],
+  [/encanador/i, ['plumber working', 'plumbing pipes installation'], /plumb/i],
+  [/ajudante de pedreiro|pedreiro/i, ['bricklayer laying bricks', 'mason brick wall'], /brick|mason/i]
 ];
-const FALLBACK = ['construction worker', 'construction site workers'];
-// U36 (2ª rodada): a 1ª trouxe pintura de museu, foto do século passado, ferramenta solta e paisagem. Agora vêm
-// primeiro as fotos de banco de imagem livre (Pexels/Unsplash/Pixabay antigos, CC0) e as recentes; pintura,
-// desenho, acervo histórico, militar e objeto quebrado ficam de fora.
+const FALLBACK = [['construction worker', 'construction site workers'], /construction (site|worker)|building site/i];
+// U36: primeiro as fotos de banco de imagem livre (Pexels/Unsplash/Pixabay antigos, CC0), as "Quality images" e as
+// recentes; pintura, desenho, acervo de museu, militar, espaço e objeto solto ficam de fora.
 const STOCK = /pexels|unsplash|pixabay|stocksnap|burst|rawpixel/i;
 const REJECT =
-  /paint(ing)? by|painting|fresco|munch|drawing|illustration|engraving|lithograph|poster|museum|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|broken|wrench|mountain|landscape|map\b|diagram|logo/i;
+  /paint(ing)? by|fresco|munch|drawing|illustration|engraving|lithograph|poster|museum|louvre|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|nasa|\beva\b|sts-|xbox|toy|mascot|broken|wrench|mountain|landscape|fountain|map\b|diagram|logo|recycl|demolition|ruin/i;
+// ENSAIO=1: só lista as melhores candidatas de cada vaga, sem enviar nada.
+const DRY = process.env.ENSAIO === '1';
 
 const rest = (path, init = {}) =>
   fetch(`${url}${path}`, {
@@ -66,7 +76,7 @@ async function search(text) {
 }
 
 /** As fotos livres e boas de uma busca, com nota: banco de imagem e recentes primeiro. */
-async function candidates(query) {
+async function candidates(query, must) {
   const pages = [
     ...(await search(`${query} pexels`)),
     ...(await search(`${query} unsplash`)),
@@ -86,17 +96,24 @@ async function candidates(query) {
       return { id: p.pageid, title: p.title, info, about, year, license: meta.LicenseShortName?.value ?? '' };
     })
     .filter(
-      ({ info, about, year, license }) =>
+      ({ title, info, about, year, license }) =>
         info?.mime === 'image/jpeg' &&
         FREE.test(license) &&
         info.width >= 1000 &&
         info.width >= info.height &&
         info.width <= info.height * 2.2 &&
         info.thumburl &&
+        must.test(title.replace(/_/g, ' ')) &&
         !REJECT.test(about) &&
         !(year && year < 1995)
     )
-    .map((c) => ({ ...c, score: (STOCK.test(c.about) ? 4 : 0) + (c.year && c.year >= 2010 ? 2 : 0) }))
+    .map((c) => ({
+      ...c,
+      score:
+        (STOCK.test(c.about) ? 4 : 0) +
+        (/quality images|featured pictures/i.test(c.about) ? 3 : 0) +
+        (c.year && c.year >= 2010 ? 2 : 0)
+    }))
     .sort((a, b) => b.score - a.score)
     .map(({ id, title, info, about, license, score }) => ({
       id,
@@ -125,13 +142,23 @@ const STAMP = Date.now().toString(36);
 const credits = [];
 
 for (const job of jobs) {
-  const queries = SEARCHES.find(([re]) => re.test(job.title))?.[1] ?? FALLBACK;
+  const [, queries, must] = SEARCHES.find(([re]) => re.test(job.title)) ?? [null, ...FALLBACK];
   const photos = [];
   // As buscas da vaga e, se faltar foto boa, as gerais.
   const pool = [];
-  for (const q of [...queries, ...FALLBACK]) {
-    pool.push(...(await candidates(q)));
+  for (const [q, re] of [...queries.map((q) => [q, must]), ...FALLBACK[0].map((q) => [q, FALLBACK[1]])]) {
+    pool.push(...(await candidates(q, re)).filter((c) => !pool.some((p) => p.id === c.id)));
     if (pool.filter((c) => !used.has(c.id)).length >= 6) break;
+  }
+  // As do ofício antes das gerais; dentro de cada grupo, as de nota maior.
+  const specific = new Set(pool.filter((c) => must.test(c.title.replace(/_/g, ' '))).map((c) => c.id));
+  pool.sort((a, b) => Number(specific.has(b.id)) - Number(specific.has(a.id)) || b.score - a.score);
+  if (DRY) {
+    console.log(`\n${job.id} ${job.title}:`);
+    for (const c of pool.filter((c) => !used.has(c.id)).slice(0, 6))
+      console.log(`  [${c.score}] ${c.title} (${c.license}) ${c.page}`);
+    pool.slice(0, PER_JOB).forEach((c) => used.add(c.id));
+    continue;
   }
   for (const image of pool) {
     if (photos.length >= PER_JOB) break;
@@ -167,4 +194,4 @@ for (const job of jobs) {
 }
 
 console.log('\nOrigem das fotos (domínio público / CC0):\n' + credits.join('\n'));
-if (!credits.length) throw new Error('Nenhuma foto encontrada.');
+if (!DRY && !credits.length) throw new Error('Nenhuma foto encontrada.');

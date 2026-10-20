@@ -4,6 +4,11 @@ name: staging-fotos
 
 on:
   workflow_dispatch:
+    inputs:
+      ensaio:
+        description: "Só listar as fotos candidatas, sem gravar"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,6 +37,8 @@ jobs:
           echo "SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
       - name: Fotos nas vagas de teste
         # pipefail: um erro do script derruba o passo (o tee sozinho escondia a falha).
+        env:
+          ENSAIO: ${{ inputs.ensaio && '1' || '' }}
         run: |
           set -o pipefail
           node scripts/staging/fotos-vagas-teste.mjs | tee -a "$GITHUB_STEP_SUMMARY"
