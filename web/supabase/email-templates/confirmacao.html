@@ -6,6 +6,34 @@
     <meta name="color-scheme" content="light" />
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
     <title>Seu código de confirmação</title>
+    <style>
+      /* U20: onde o programa de e-mail aceita CSS (Gmail no navegador, Apple Mail, Outlook.com), o botão reage ao
+         mouse e ao clique; nos outros fica o estilo da própria tag, que já é o botão completo. */
+      .copy-btn {
+        transition:
+          background-color 0.15s ease,
+          box-shadow 0.15s ease,
+          transform 0.1s ease;
+      }
+      .copy-btn:hover {
+        background-color: #1639c4 !important;
+        box-shadow: 0 4px 14px rgba(29, 75, 237, 0.35);
+        transform: translateY(-1px);
+      }
+      .copy-btn:active {
+        background-color: #10299a !important;
+        box-shadow: none;
+        transform: translateY(0) scale(0.97);
+      }
+      @media (max-width: 400px) {
+        .digit {
+          width: 36px !important;
+          height: 44px !important;
+          font-size: 24px !important;
+          line-height: 44px !important;
+        }
+      }
+    </style>
   </head>
   <body style="margin: 0; padding: 0; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2430">
     <!-- Confirm signup (U11: confirmação por código). Variáveis do Supabase Auth: {{ .Token }} (os 6 números),
@@ -41,57 +69,187 @@
               </td>
             </tr>
             <tr>
-              <td align="center" style="padding: 20px 24px 6px 24px">
-                <!-- O código inteiro se seleciona com um toque (user-select: all): segurar e copiar. -->
-                <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: separate">
+              <td style="padding: 20px 24px 4px 24px">
+                <!-- U20: o código no jeito do GitHub — um cartão com os 6 números em caixas e o botão "Copiar código"
+                     (hover e clique animados onde o programa de e-mail aceita CSS; nos outros, o botão funciona igual).
+                     Um e-mail não roda nada: o botão abre a página da Bicos que copia (U17; o código vai depois do #,
+                     que não chega ao servidor). {{ .SiteURL }} termina em "/". A linha "Código: …" deixa o número
+                     inteiro em texto, que o Gmail reconhece (mostra o próprio "Copiar código") e que se copia segurando. -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="background: #eef1f5; border-radius: 12px"
+                >
                   <tr>
-                    <td
-                      align="center"
-                      style="
-                        background: #eef2ff;
-                        border: 2px dashed #1d4bed;
-                        border-radius: 14px;
-                        padding: 16px 22px 16px 32px;
-                        font-family: 'Courier New', Courier, monospace;
-                        font-size: 40px;
-                        line-height: 48px;
-                        font-weight: bold;
-                        letter-spacing: 10px;
-                        color: #101418;
-                        -webkit-user-select: all;
-                        user-select: all;
-                      "
-                    >
-                      {{ .Token }}
+                    <td style="padding: 18px 20px 20px 20px">
+                      <div style="font-size: 13px; line-height: 18px; color: #4a5162; padding-bottom: 12px">
+                        Código solicitado
+                      </div>
+                      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: separate">
+                        <tr>
+                          <td
+                            class="digit"
+                            align="center"
+                            width="42"
+                            height="50"
+                            style="
+                              width: 42px;
+                              height: 50px;
+                              background: #ffffff;
+                              border: 1px solid #d5dae3;
+                              border-radius: 8px;
+                              font-family: 'Courier New', Courier, monospace;
+                              font-size: 28px;
+                              line-height: 50px;
+                              font-weight: bold;
+                              color: #101418;
+                            "
+                          >
+                            {{ slice .Token 0 1 }}
+                          </td>
+                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
+                          <td
+                            class="digit"
+                            align="center"
+                            width="42"
+                            height="50"
+                            style="
+                              width: 42px;
+                              height: 50px;
+                              background: #ffffff;
+                              border: 1px solid #d5dae3;
+                              border-radius: 8px;
+                              font-family: 'Courier New', Courier, monospace;
+                              font-size: 28px;
+                              line-height: 50px;
+                              font-weight: bold;
+                              color: #101418;
+                            "
+                          >
+                            {{ slice .Token 1 2 }}
+                          </td>
+                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
+                          <td
+                            class="digit"
+                            align="center"
+                            width="42"
+                            height="50"
+                            style="
+                              width: 42px;
+                              height: 50px;
+                              background: #ffffff;
+                              border: 1px solid #d5dae3;
+                              border-radius: 8px;
+                              font-family: 'Courier New', Courier, monospace;
+                              font-size: 28px;
+                              line-height: 50px;
+                              font-weight: bold;
+                              color: #101418;
+                            "
+                          >
+                            {{ slice .Token 2 3 }}
+                          </td>
+                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
+                          <td
+                            class="digit"
+                            align="center"
+                            width="42"
+                            height="50"
+                            style="
+                              width: 42px;
+                              height: 50px;
+                              background: #ffffff;
+                              border: 1px solid #d5dae3;
+                              border-radius: 8px;
+                              font-family: 'Courier New', Courier, monospace;
+                              font-size: 28px;
+                              line-height: 50px;
+                              font-weight: bold;
+                              color: #101418;
+                            "
+                          >
+                            {{ slice .Token 3 4 }}
+                          </td>
+                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
+                          <td
+                            class="digit"
+                            align="center"
+                            width="42"
+                            height="50"
+                            style="
+                              width: 42px;
+                              height: 50px;
+                              background: #ffffff;
+                              border: 1px solid #d5dae3;
+                              border-radius: 8px;
+                              font-family: 'Courier New', Courier, monospace;
+                              font-size: 28px;
+                              line-height: 50px;
+                              font-weight: bold;
+                              color: #101418;
+                            "
+                          >
+                            {{ slice .Token 4 5 }}
+                          </td>
+                          <td width="6" style="width: 6px; font-size: 0; line-height: 0">&nbsp;</td>
+                          <td
+                            class="digit"
+                            align="center"
+                            width="42"
+                            height="50"
+                            style="
+                              width: 42px;
+                              height: 50px;
+                              background: #ffffff;
+                              border: 1px solid #d5dae3;
+                              border-radius: 8px;
+                              font-family: 'Courier New', Courier, monospace;
+                              font-size: 28px;
+                              line-height: 50px;
+                              font-weight: bold;
+                              color: #101418;
+                            "
+                          >
+                            {{ slice .Token 5 6 }}
+                          </td>
+                        </tr>
+                      </table>
+                      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top: 18px">
+                        <tr>
+                          <td style="border-radius: 999px; background: #1d4bed">
+                            <a
+                              class="copy-btn"
+                              href="{{ .SiteURL }}copiar-codigo#{{ .Token }}"
+                              style="
+                                display: inline-block;
+                                padding: 11px 24px;
+                                border-radius: 999px;
+                                background: #1d4bed;
+                                color: #ffffff;
+                                font-size: 15px;
+                                line-height: 20px;
+                                font-weight: bold;
+                                text-decoration: none;
+                              "
+                              >Copiar código</a
+                            >
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                 </table>
               </td>
             </tr>
             <tr>
-              <td align="center" style="padding: 10px 24px 4px 24px">
-                <!-- U17: um e-mail não roda nada, então "Copiar código" abre a página da Bicos que copia (o código vai
-                     depois do #, parte do endereço que não chega ao servidor). {{ .SiteURL }} termina em "/". -->
-                <a
-                  href="{{ .SiteURL }}copiar-codigo#{{ .Token }}"
-                  style="
-                    display: inline-block;
-                    background: #1d4bed;
-                    color: #ffffff;
-                    font-size: 18px;
-                    line-height: 24px;
-                    font-weight: bold;
-                    text-decoration: none;
-                    border-radius: 12px;
-                    padding: 14px 28px;
-                  "
-                  >&#128203;&nbsp; Copiar código</a
+              <td align="left" style="padding: 10px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
+                Código:
+                <span style="font-weight: bold; color: #1f2430; -webkit-user-select: all; user-select: all"
+                  >{{ .Token }}</span
                 >
-              </td>
-            </tr>
-            <tr>
-              <td align="center" style="padding: 6px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
-                Toque no botão, ou toque e segure no código para copiar. Ele vale por 1 hora.
+                · Ele vale por 1 hora.
               </td>
             </tr>
             <tr>

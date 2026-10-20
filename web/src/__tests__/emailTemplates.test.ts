@@ -46,6 +46,16 @@ describe('e-mails do Auth (L04)', () => {
     }
   });
 
+  it('U20: the code card — the 6 numbers in boxes and the "Copiar código" button with hover and click', () => {
+    for (const f of CODES) {
+      const html = readFileSync(dir + f, 'utf8');
+      for (let i = 0; i < 6; i++) expect(html).toContain(`{{ slice .Token ${i} ${i + 1} }}`);
+      expect(html).toMatch(/\.copy-btn:hover\s*\{/);
+      expect(html).toMatch(/\.copy-btn:active\s*\{/);
+      expect(html).toContain('class="copy-btn"');
+    }
+  });
+
   it('the e-mail change says the new address', () => {
     expect(readFileSync(dir + 'troca-de-email.html', 'utf8')).toContain('{{ .NewEmail }}');
   });

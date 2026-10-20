@@ -1775,3 +1775,15 @@ estiver configurado (`FEATURES.googleLogin`): nenhum botão que não funcione. P
 Cloud nas secrets `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` do GitHub — o `configurar-auth.mjs` liga o provedor no
 staging e o site de teste passa a mostrar o botão sozinho; na produção, o provedor já é usado (há contas Google) e o
 build do site precisa de `VITE_LOGIN_GOOGLE=1`. A demonstração não tem Google (não há OAuth sem servidor).
+
+## U20 — O e-mail do código no jeito do GitHub
+
+Pedido do responsável (com print): o código num cartão como o do GitHub/Gmail, com o botão "Copiar código" que reage
+ao mouse e ao clique. **Agora**, nos dois e-mails de código: um cartão cinza "Código solicitado" com os 6 números em
+caixas brancas (cada número sai do template com `{{ slice .Token i i+1 }}`, conferido com o `html/template` do Go,
+que é o que o Supabase Auth usa) e o botão azul arredondado "Copiar código". O hover (azul mais escuro, sombra e
+leve subida) e o clique (afunda um pouco) ficam num `<style>` no cabeçalho: valem onde o programa de e-mail aceita CSS
+(Gmail no navegador, Apple Mail, Outlook.com); nos outros o botão aparece igual, só sem a animação. **Copiar de
+verdade dentro do e-mail não é possível** (nenhum programa de e-mail roda código): o botão abre a página
+`/copiar-codigo` (U17), que copia. Embaixo fica "Código: 735343" em texto inteiro — é o que o Gmail reconhece para
+mostrar o próprio "Copiar código" dele (o cartão da print é do Gmail) e o que se copia segurando o dedo.
