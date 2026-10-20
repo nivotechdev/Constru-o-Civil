@@ -70,8 +70,29 @@
               </td>
             </tr>
             <tr>
+              <td align="center" style="padding: 10px 24px 4px 24px">
+                <!-- U17: um e-mail não roda nada, então "Copiar código" abre a página da Bicos que copia (o código vai
+                     depois do #, parte do endereço que não chega ao servidor). {{ .SiteURL }} termina em "/". -->
+                <a
+                  href="{{ .SiteURL }}copiar-codigo#{{ .Token }}"
+                  style="
+                    display: inline-block;
+                    background: #1d4bed;
+                    color: #ffffff;
+                    font-size: 18px;
+                    line-height: 24px;
+                    font-weight: bold;
+                    text-decoration: none;
+                    border-radius: 12px;
+                    padding: 14px 28px;
+                  "
+                  >&#128203;&nbsp; Copiar código</a
+                >
+              </td>
+            </tr>
+            <tr>
               <td align="center" style="padding: 6px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
-                Toque e segure no código para copiar. Ele vale por 1 hora e só uma vez.
+                Toque no botão, ou toque e segure no código para copiar. Ele vale por 1 hora e só uma vez.
               </td>
             </tr>
             <tr>

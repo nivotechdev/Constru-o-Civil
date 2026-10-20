@@ -1748,3 +1748,15 @@ própria conta** (`sendSecurityCode`: `signInWithOtp` com `shouldCreateUser: fal
 tela não recebe id nenhum — a Edge Function e a RPC pegam a conta do token da sessão, como antes. O e-mail do código
 é o template "Magic link" do Supabase Auth, que o app não usava: virou "Seu código de segurança" (sem link — o código
 só vale dentro do app, na conta já logada).
+
+## U17 — "Copiar código" no e-mail
+
+Pedido do responsável: no e-mail do código, um ícone que copie o código com um toque (o público pode não saber
+copiar). **Um e-mail não roda nada** — nenhum programa de e-mail deixa um botão mexer na área de transferência. Então
+o botão "📋 Copiar código" (nos dois e-mails de código: cadastro e segurança) é um link para a página da Bicos
+`/copiar-codigo#123456`: ela copia sozinha quando o navegador deixa (o Chrome do Android, que é a maioria, deixa),
+mostra "Código copiado", tem o botão "Copiar de novo" e o "Voltar para a Bicos", onde a pessoa toca em "Colar código".
+O código vai **depois do `#`**, parte do endereço que não chega ao servidor nem aos registros, e a página tira o
+código do endereço assim que lê (não fica no histórico). A página abre para qualquer um, logado ou não: só mostra o
+que veio no próprio link. O endereço sai do `{{ .SiteURL }}` do Auth, que o `configurar-auth.mjs` grava com a barra
+no fim.

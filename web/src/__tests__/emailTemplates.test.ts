@@ -38,6 +38,14 @@ describe('e-mails do Auth (L04)', () => {
     expect(html).toMatch(/user-select: all;[\s\S]*\{\{ \.Token \}\}/);
   });
 
+  it('U17: the code e-mails have a "Copiar código" button that opens the copy page with the code after the #', () => {
+    for (const f of CODES) {
+      const html = readFileSync(dir + f, 'utf8');
+      expect(html).toContain('href="{{ .SiteURL }}copiar-codigo#{{ .Token }}"');
+      expect(html).toContain('Copiar código');
+    }
+  });
+
   it('the e-mail change says the new address', () => {
     expect(readFileSync(dir + 'troca-de-email.html', 'utf8')).toContain('{{ .NewEmail }}');
   });

@@ -72,6 +72,7 @@ const ChangePassword = screen(() => import('./pages/shared/ChangePassword'));
 const ChangeEmail = screen(() => import('./pages/shared/ChangeEmail'));
 const CompleteSignup = screen(() => import('./pages/shared/CompleteSignup'));
 const PublicJob = screen(() => import('./pages/shared/PublicJob'));
+const CopyCode = screen(() => import('./pages/shared/CopyCode'));
 const VerifyIdentity = screen(() => import('./pages/worker/VerifyIdentity'));
 const BlockedAccounts = screen(() => import('./pages/shared/BlockedAccounts'));
 const NotificationSettings = screen(() => import('./pages/shared/NotificationSettings'));
@@ -129,6 +130,8 @@ export const ROUTES: CompiledRoute<RouteDef>[] = [
   compileRoute('/privacidade', anyone(PrivacyPolicy)),
   compileRoute('/completar-cadastro', anyone(CompleteSignup)),
   compileRoute('/v/:id', anyone(PublicJob)),
+  // U17: where the "Copiar código" button of the code e-mails opens (the code comes after the #).
+  compileRoute('/copiar-codigo', anyone(CopyCode)),
   compileRoute('/notificacoes', app(Notifications)),
   compileRoute('/whatsapp', app(ChangeWhatsApp)),
   compileRoute('/configuracoes', app(Settings)),
