@@ -27,6 +27,8 @@ export interface Account {
   /** The company this account belongs to (role recrutador). */
   companyId: string | null;
   createdAt: string;
+  /** U30: the app's theme, chosen by the account (Configurações › Aparência) — the same on every device. */
+  theme: 'claro' | 'escuro';
 }
 
 /** Who is logged in, as the screens and route guards need it. */

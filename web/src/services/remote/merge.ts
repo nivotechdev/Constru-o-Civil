@@ -2,7 +2,7 @@
 // candidacies…), so these merge that slice into what is already there instead of replacing the whole
 // snapshot. Pure functions of a Database (tested in src/__tests__/remoteMerge.test.ts); `apply` swaps
 // the result into the store in one change.
-import type { Application, Database, JobStats } from '../../types/models';
+import type { Account, Application, Database, JobStats } from '../../types/models';
 import type { JobAddressRow, JobStatsRow, TableRow } from '../../types/supabase';
 import {
   accountFromRow,
@@ -47,8 +47,15 @@ function ownWhatsapp(db: Database, accountId: string | null, profileId: string):
 }
 
 export const putAccount =
-  (row: AccountRow): Recipe =>
-  (db) => ({ ...db, accounts: { ...db.accounts, [row.id]: accountFromRow(row) } });
+  (row: AccountRow, theme?: Account['theme']): Recipe =>
+  (db) => ({
+    ...db,
+    // U30: the theme comes from account_prefs; re-reading the account row keeps the one already known.
+    accounts: {
+      ...db.accounts,
+      [row.id]: { ...accountFromRow(row), theme: theme ?? db.accounts[row.id]?.theme ?? 'claro' }
+    }
+  });
 
 /**
  * Worker profiles. `reviews` given: they replace the worker's reviews; left out (a list that doesn't

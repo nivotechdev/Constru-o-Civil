@@ -606,6 +606,15 @@ outro lado são refeitos. Só troca a função `anonymize_account`; não mexe em
 select prosrc like '%delete from public.jobs where company_id%' from pg_proc where proname = 'anonymize_account';  -- true
 ```
 
+### 52. `20261021000100_u30_tema_da_conta.sql` (U30)
+
+Tema claro/escuro guardado na conta: tabela `account_prefs` (RLS, só a própria linha), RPC `set_my_theme` e a tabela
+na publicação `supabase_realtime`. Não mexe em dado existente.
+
+```sql
+select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'account_prefs';  -- 1
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

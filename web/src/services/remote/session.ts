@@ -12,7 +12,7 @@ import type { NotificationKind, Role } from '../../types/models';
 import type { TableRow } from '../../types/supabase';
 import { clearQueries, refreshCandidacies, runQuery } from '../queries';
 import { currentPath, navigate, replaceUrl, resetHistory, routeUrl } from '../router';
-import { clearSessionData, getSession, setSessionAccount, setUI, upsertAccount } from '../store';
+import { clearSessionData, getDb, getSession, setSessionAccount, setUI, updateAccount, upsertAccount } from '../store';
 import { showToast } from '../toast';
 import { db, request, SESSION_ENDED, setSessionEndedHandler } from './client';
 import {
@@ -102,6 +102,15 @@ async function startRealtime(account: TableRow<'accounts'>): Promise<void> {
       apply(updateNotification(payload.new as TableRow<'notifications'>));
       void import('./data').then((m) => m.refreshUnreadCount()).catch(() => undefined);
     })
+    // U30: the theme chosen on another device arrives at once.
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'account_prefs', filter: `account_id=eq.${account.id}` },
+      (payload) => {
+        const row = payload.new as { theme?: string } | null;
+        applyTheme(account.id, row?.theme === 'escuro' ? 'escuro' : 'claro');
+      }
+    )
     .subscribe((status) => {
       if (status !== 'SUBSCRIBED') return;
       // The channel came back after dropping: whatever arrived meanwhile wasn't delivered.
@@ -111,7 +120,10 @@ async function startRealtime(account: TableRow<'accounts'>): Promise<void> {
   const target = globalThis.window;
   if (typeof target?.addEventListener === 'function') {
     const onVisible = () => {
-      if (globalThis.document?.visibilityState === 'visible') rereadNotifications();
+      if (globalThis.document?.visibilityState !== 'visible') return;
+      rereadNotifications();
+      // U30: and the theme, in case the live channel was down while the screen was hidden.
+      void readMyTheme(account.id).then((theme) => applyTheme(account.id, theme));
     };
     target.addEventListener('online', rereadNotifications);
     globalThis.document?.addEventListener('visibilitychange', onVisible);
@@ -130,6 +142,8 @@ const CACHE_KEY = 'bicos.conta';
 
 interface CachedAccount {
   account: TableRow<'accounts'>;
+  /** U30: the account's theme, so the first screen already opens in it (the server confirms right after). */
+  theme?: 'claro' | 'escuro';
   worker?: Parameters<typeof putWorkers>[0][number];
   company?: Parameters<typeof putCompanies>[0][number];
 }
@@ -161,7 +175,7 @@ export function clearAccountCache(): void {
 
 /** Puts a saved account in the store and opens the session with it (no network). */
 function enterCachedSession(cached: CachedAccount): void {
-  const recipes = [putAccount(cached.account)];
+  const recipes = [putAccount(cached.account, cached.theme)];
   if (cached.worker) recipes.push(putWorkers([cached.worker], undefined, cached.account.id));
   if (cached.company) recipes.push(putCompanies([cached.company], undefined, cached.account.id));
   apply(...recipes);
@@ -190,6 +204,19 @@ export function enterSession(user: User): Promise<Role> {
   return promise;
 }
 
+/** U30: the account's theme from account_prefs; on a failure, the one already known stays. */
+async function readMyTheme(accountId: string): Promise<'claro' | 'escuro' | undefined> {
+  const client = await db();
+  const { data, error } = await client.from('account_prefs').select('theme').eq('account_id', accountId).maybeSingle();
+  if (error) return undefined;
+  return data?.theme === 'escuro' ? 'escuro' : 'claro';
+}
+
+/** U30: another device changed the theme (or this one came back to the screen): the store follows. */
+function applyTheme(accountId: string, theme: 'claro' | 'escuro' | undefined): void {
+  if (theme && getDb().accounts[accountId]?.theme !== theme) updateAccount(accountId, { theme });
+}
+
 async function loadSession(user: User): Promise<Role> {
   const client = await db();
   const readAccount = () =>
@@ -206,6 +233,8 @@ async function loadSession(user: User): Promise<Role> {
     ...row,
     email_confirmed_at: user.email_confirmed_at ?? row.email_confirmed_at
   };
+  // U30: the theme the account chose (no row = never chose = light).
+  const theme = await readMyTheme(account.id);
 
   if (account.worker_id) {
     const worker = await request(() =>
@@ -215,8 +244,8 @@ async function loadSession(user: User): Promise<Role> {
         .eq('id', account.worker_id as string)
         .single()
     );
-    apply(putAccount(account), putWorkers([worker], undefined, account.id));
-    saveCache({ account, worker });
+    apply(putAccount(account, theme), putWorkers([worker], undefined, account.id));
+    saveCache({ account, worker, theme });
   } else {
     const company = await request(() =>
       client
@@ -225,8 +254,8 @@ async function loadSession(user: User): Promise<Role> {
         .eq('id', account.company_id as string)
         .single()
     );
-    apply(putAccount(account), putCompanies([company], undefined, account.id));
-    saveCache({ account, company });
+    apply(putAccount(account, theme), putCompanies([company], undefined, account.id));
+    saveCache({ account, company, theme });
   }
   if (getSession()?.accountId !== account.id) setSessionAccount(account.id);
   void startRealtime(account);
@@ -256,7 +285,8 @@ export function enterPendingSession(pending: { id: string; email: string; role: 
     termsAcceptedAt: now,
     workerId: pending.role === 'trabalhador' ? pending.id : null,
     companyId: pending.role === 'recrutador' ? pending.id : null,
-    createdAt: now
+    createdAt: now,
+    theme: 'claro'
   });
   setSessionAccount(pending.id);
 }

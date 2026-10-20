@@ -6,6 +6,20 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      account_prefs: {
+        Row: { account_id: string; theme: string; updated_at: string };
+        Insert: { account_id: string; theme?: string; updated_at?: string };
+        Update: { account_id?: string; theme?: string; updated_at?: string };
+        Relationships: [
+          {
+            foreignKeyName: 'account_prefs_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: true;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       accounts: {
         Row: {
           id: string;
@@ -1794,6 +1808,7 @@ export type Database = {
       };
       set_identity_status: { Args: { p_worker: string; p_status: string; p_reason?: string }; Returns: undefined };
       set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
+      set_my_theme: { Args: { p_theme: string }; Returns: undefined };
       short_datetime_br: { Args: { p_at: string }; Returns: string };
       signup_taken: { Args: { p_kind: string; p_value: string }; Returns: boolean };
       staff_guard: { Args: Record<PropertyKey, never>; Returns: string };

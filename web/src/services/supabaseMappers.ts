@@ -56,7 +56,9 @@ export function accountFromRow(row: TableRow<'accounts'>): Account {
     termsAcceptedAt: row.terms_accepted_at,
     workerId: row.worker_id,
     companyId: row.company_id,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    // U30: the theme is in account_prefs (read with the account); light until it arrives.
+    theme: 'claro'
   };
 }
 

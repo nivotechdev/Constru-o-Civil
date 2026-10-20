@@ -221,7 +221,8 @@ async function createAccount(data: SignUpData, captcha: CaptchaSource): Promise<
     termsAcceptedAt: now,
     workerId: null,
     companyId: null,
-    createdAt: now
+    createdAt: now,
+    theme: 'claro'
   };
   if (data.role === 'trabalhador') {
     const worker: Worker = {

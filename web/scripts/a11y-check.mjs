@@ -27,12 +27,14 @@ for (const [who, email, pages] of [
   ['r', 'construtora@bicos.demo', ['/minhas-vagas', '/publicar', '/pagamentos', '/empresa', '/configuracoes']]
 ]) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
-  // U21: A11Y_TEMA=escuro checks the same screens in the dark theme.
-  // (U26: the theme is per account and only inside the app — the demo accounts' choice is set before they sign in.)
+  // U21/U30: A11Y_TEMA=escuro checks the same screens in the dark theme. The demo keeps no database, so the dark
+  // colours are pinned on the page (the theme's own logic is covered by src/__tests__/theme.test.ts).
   if (process.env.A11Y_TEMA === 'escuro')
     await ctx.addInitScript(() => {
-      localStorage.setItem('bicos-tema:conta-jorge', 'escuro');
-      localStorage.setItem('bicos-tema:conta-meridiano', 'escuro');
+      const root = document.documentElement;
+      const pin = () => root.dataset.theme !== 'dark' && (root.dataset.theme = 'dark');
+      pin();
+      new MutationObserver(pin).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
     });
   const p = await ctx.newPage();
   await p.goto('http://localhost:4173/login');

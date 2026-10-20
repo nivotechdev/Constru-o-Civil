@@ -1902,3 +1902,16 @@ cadastro, celular — `prepareSocialSignIn`), e no toque a janela abre na hora, 
 `firebaseSignIn`). Continua fora do pacote inicial: só baixa quando essas telas abrem. **SMS:** o Firebase respondeu
 "SMS unable to be sent until this region enabled" — falta liberar o Brasil na política de regiões de SMS do console
 (ação do responsável).
+
+## U30 — O tema fica no banco: o mesmo em todo aparelho, trocado ao vivo
+
+Pedido do responsável: a mesma conta aberta em dois navegadores e no celular ficava com temas diferentes, mesmo
+atualizando. Causa: a U26 guardava a escolha no armazenamento **de cada aparelho**. **Agora** a escolha é da conta, no
+banco (`u30_tema_da_conta`): tabela `account_prefs` (uma linha por conta, RLS: cada conta lê só a sua) e RPC
+`set_my_theme`. Ao entrar, o app lê o tema junto com a conta (e guarda no cache da conta, para a primeira tela já
+abrir certa); ao trocar, a tela muda na hora e o servidor grava — se não gravar, a tela volta e avisa (nunca um tema
+aqui e outro no banco); os outros aparelhos abertos recebem a troca **ao vivo** pelo mesmo canal Realtime das
+notificações e, se o canal tiver caído, ao voltar para a tela. A escolha antiga guardada nos aparelhos (U21/U26) é
+apagada. Continua valendo da U26: escuro só dentro do app; login e cadastro sempre no tema original. A exclusão da
+conta leva a linha junto (cascade). Por que tabela própria e não coluna em `accounts`: `accounts` tem permissão por
+coluna e não está no Realtime; uma tabela pequena só de preferências entra no Realtime sem expor nada da conta.

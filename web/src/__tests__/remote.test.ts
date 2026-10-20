@@ -551,6 +551,15 @@ describe('remote: data and actions', () => {
     vi.unstubAllGlobals();
   });
 
+  it('U30: signing in reads the theme the account chose (the same on every device)', async () => {
+    const fake = server('ana', {
+      tables: { account_prefs: [{ account_id: 'u-ana', theme: 'escuro', updated_at: NOW }] }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    expect(m.store.getDb().accounts['u-ana'].theme).toBe('escuro');
+  });
+
   it('U16: an account made with Google (no password) deletes itself with the code from its e-mail', async () => {
     let codeOk = false;
     const google = { ...authUser(workerAccount.id, workerAccount.email), app_metadata: { providers: ['google'] } };

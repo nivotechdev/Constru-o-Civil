@@ -42,7 +42,8 @@ export const ACCOUNTS: Record<string, Account> = {
     termsAcceptedAt: '2025-03-02T13:30:00.000Z',
     workerId: CURRENT_WORKER_ID,
     companyId: null,
-    createdAt: '2025-03-02T13:00:00.000Z'
+    createdAt: '2025-03-02T13:00:00.000Z',
+    theme: 'claro'
   },
   'conta-meridiano': {
     id: 'conta-meridiano',
@@ -57,7 +58,8 @@ export const ACCOUNTS: Record<string, Account> = {
     termsAcceptedAt: '2025-03-01T12:30:00.000Z',
     workerId: null,
     companyId: CURRENT_COMPANY_ID,
-    createdAt: '2025-03-01T12:00:00.000Z'
+    createdAt: '2025-03-01T12:00:00.000Z',
+    theme: 'claro'
   }
 };
 

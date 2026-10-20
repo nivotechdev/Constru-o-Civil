@@ -1,105 +1,129 @@
-// U21/U26: the light/dark theme belongs to an account and exists only inside the app — the login and the sign-up are
-// always in the original theme, another account starts light, leaving or deleting goes back to light.
+// U21/U26/U30: the theme is the ACCOUNT's choice, kept in the database — the same on every device, changed live — and
+// exists only inside the app: login and sign-up are always light, leaving or another account goes back to light.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Session } from '../types/models';
+import type { Account, Session } from '../types/models';
 
-let session: Session | null = null;
-const listeners = new Set<() => void>();
+const h = vi.hoisted(() => ({
+  session: null as Session | null,
+  accounts: {} as Record<string, Partial<Account>>,
+  listeners: new Set<() => void>(),
+  rpc: [] as unknown[],
+  failSave: false
+}));
+const notify = () => h.listeners.forEach((fn) => fn());
+
+vi.mock('../services/mode', () => ({ IS_DEMO: false }));
+vi.mock('../services/toast', () => ({ showToast: () => undefined }));
 vi.mock('../services/store', () => ({
-  getSession: () => session,
+  getSession: () => h.session,
+  getDb: () => ({ accounts: h.accounts }),
+  updateAccount: (id: string, patch: Partial<Account>) => {
+    h.accounts[id] = { ...h.accounts[id], ...patch };
+    notify();
+  },
   subscribe: (fn: () => void) => {
-    listeners.add(fn);
-    return () => listeners.delete(fn);
+    h.listeners.add(fn);
+    return () => h.listeners.delete(fn);
+  }
+}));
+vi.mock('../services/remote/client', () => ({
+  db: async () => ({
+    rpc: async (name: string, args: unknown) => {
+      h.rpc.push({ name, args });
+      return h.failSave ? { data: null, error: { message: 'offline' } } : { data: null, error: null };
+    }
+  }),
+  request: async (fn: () => Promise<{ error: unknown }>) => {
+    const r = await fn();
+    if (r.error) throw new Error('falhou');
   }
 }));
 
-const box = new Map<string, string>();
 const meta = { content: '#1D4BED', setAttribute: (_: string, v: string) => void (meta.content = v) };
 const root = { dataset: {} as Record<string, string>, ownerDocument: { querySelector: () => meta } };
+const dark = () => root.dataset.theme === 'dark';
+const flush = () => new Promise((r) => setTimeout(r, 0));
 
-function signIn(accountId: string, inApp = true) {
-  session = {
-    accountId,
-    email: accountId + '@bicos.test',
+/** An account signed in on this device, with the theme the server has for it. */
+function signIn(id: string, theme: 'claro' | 'escuro' = 'claro', inApp = true) {
+  h.accounts[id] = { id, theme };
+  h.session = {
+    accountId: id,
+    email: id + '@bicos.test',
     role: 'trabalhador',
-    workerId: accountId,
+    workerId: id,
     companyId: null,
     emailConfirmed: inApp,
     profileComplete: inApp,
     termsCurrent: true
   };
-  listeners.forEach((fn) => fn());
+  notify();
 }
 function signOut() {
-  session = null;
-  listeners.forEach((fn) => fn());
+  h.session = null;
+  notify();
 }
-const dark = () => root.dataset.theme === 'dark';
 
-describe('tema (U21/U26)', () => {
+describe('tema da conta (U30)', () => {
   beforeEach(() => {
-    box.clear();
+    h.session = null;
+    h.accounts = {};
+    h.rpc = [];
+    h.failSave = false;
     root.dataset = {};
-    session = null;
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => box.get(k) ?? null,
-      setItem: (k: string, v: string) => void box.set(k, v),
-      removeItem: (k: string) => void box.delete(k)
-    });
     vi.stubGlobal('document', { documentElement: root });
+    vi.stubGlobal('localStorage', { length: 0, key: () => null, getItem: () => null, removeItem: () => undefined });
   });
   afterEach(() => {
-    listeners.clear();
+    h.listeners.clear();
     vi.unstubAllGlobals();
     vi.resetModules();
   });
 
-  it('is saved per account and comes back only for that account', async () => {
+  it('opens in the theme the account has in the database — on any device', async () => {
     const theme = await import('../services/theme');
     theme.startThemeSync();
     expect(dark()).toBe(false);
+    signIn('ana', 'escuro');
+    expect([dark(), theme.getTheme(), meta.content]).toEqual([true, 'escuro', '#0D121B']);
+  });
 
+  it('changing it saves on the server; another device gets it live; leaving goes back to light', async () => {
+    const theme = await import('../services/theme');
+    theme.startThemeSync();
     signIn('ana');
     theme.setTheme('escuro');
-    expect([dark(), theme.getTheme(), meta.content]).toEqual([true, 'escuro', '#0D121B']);
-
-    // Leaving: the login is in the original theme.
+    expect(dark()).toBe(true);
+    await flush();
+    expect(h.rpc).toEqual([{ name: 'set_my_theme', args: { p_theme: 'escuro' } }]);
+    // What the live channel does when the other device changes it back:
+    h.accounts.ana = { ...h.accounts.ana, theme: 'claro' };
+    notify();
+    expect(dark()).toBe(false);
     signOut();
-    expect([dark(), meta.content]).toEqual([false, '#1D4BED']);
-    // Another account on the same phone starts light.
+    expect(dark()).toBe(false);
     signIn('bruno');
     expect(dark()).toBe(false);
-    signOut();
-    // The same account again: dark again.
+  });
+
+  it('if saving fails, the screen goes back — never one theme here and another in the database', async () => {
+    const theme = await import('../services/theme');
+    theme.startThemeSync();
     signIn('ana');
+    h.failSave = true;
+    theme.setTheme('escuro');
     expect(dark()).toBe(true);
-  });
-
-  it('the sign-up screens (e-mail to confirm, profile to complete) are always light, and so is the toggle there', async () => {
-    const theme = await import('../services/theme');
-    theme.startThemeSync();
-    signIn('ana');
-    theme.setTheme('escuro');
-    signIn('ana', false);
-    expect(dark()).toBe(false);
-    theme.setTheme('escuro');
-    expect(dark()).toBe(false);
-    signOut();
-    theme.setTheme('escuro');
+    await flush();
+    await flush();
     expect(dark()).toBe(false);
   });
 
-  it('a deleted account forgets its choice, and the old device-wide choice of U21 is dropped', async () => {
-    box.set('bicos-tema', 'escuro');
+  it('login and sign-up screens are always light, even for an account that chose dark', async () => {
     const theme = await import('../services/theme');
     theme.startThemeSync();
-    expect(box.has('bicos-tema')).toBe(false);
-    signIn('ana');
+    signIn('ana', 'escuro', false);
     expect(dark()).toBe(false);
     theme.setTheme('escuro');
-    theme.forgetTheme('ana');
-    signOut();
-    signIn('ana');
-    expect(dark()).toBe(false);
+    expect(h.rpc).toEqual([]);
   });
 });
