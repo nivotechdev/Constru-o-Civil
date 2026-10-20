@@ -226,7 +226,7 @@ function Slides({ job, photos, frame, compact }: SlidesProps) {
       title={label}
       disabled={dir < 0 ? index === 0 : index === n - 1}
       className={cx(
-        'tap-target absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-white/90 text-concrete-900 shadow-raised transition hover:bg-white hover:scale-105 disabled:!opacity-0 disabled:pointer-events-none',
+        'tap-target absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-concrete-0/90 text-concrete-900 shadow-raised transition hover:bg-concrete-0 hover:scale-105 disabled:!opacity-0 disabled:pointer-events-none',
         compact
           ? 'hidden lg:inline-flex w-8 h-8 opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
           : 'inline-flex w-9 h-9',

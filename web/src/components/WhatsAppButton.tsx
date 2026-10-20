@@ -43,7 +43,7 @@ export function WhatsAppButton({
         rel="noopener noreferrer"
         aria-label={label}
         title={label}
-        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#128C4A] text-white shadow-raised ring-2 ring-white transition hover:bg-[#0E7A3F] hover:scale-105 active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-[#128C4A]/30"
+        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#128C4A] text-white shadow-raised ring-2 ring-concrete-0 transition hover:bg-[#0E7A3F] hover:scale-105 active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-[#128C4A]/30"
         onClick={onClick}
       >
         <Icon name="message-circle" size={19} color="#fff" />

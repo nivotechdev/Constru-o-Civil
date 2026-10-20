@@ -17,7 +17,7 @@ export function ToastHost() {
           key={toast.id}
           className={cx(
             'pointer-events-auto flex items-center gap-3 max-w-md w-full sm:w-auto min-h-12 pl-4 pr-2 py-2 rounded-2xl shadow-float animate-slide-up text-white',
-            toast.tone === 'error' ? 'bg-danger-500' : 'bg-concrete-900'
+            toast.tone === 'error' ? 'bg-danger-solid' : 'bg-ink'
           )}
         >
           <Icon name={toast.tone === 'error' ? 'circle-alert' : 'circle-check'} size={18} />

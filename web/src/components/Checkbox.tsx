@@ -22,7 +22,7 @@ export function Checkbox({ label, checked = false, onChange }: CheckboxProps) {
       <span
         className={cx(
           'inline-flex items-center justify-center w-6 h-6 rounded shrink-0 border-2 transition-colors',
-          checked ? 'bg-brand-500 border-brand-500' : 'border-concrete-400 bg-white'
+          checked ? 'bg-brand-500 border-brand-500' : 'border-concrete-400 bg-concrete-0'
         )}
       >
         {checked ? <Icon name="check" size={16} color="#fff" /> : null}

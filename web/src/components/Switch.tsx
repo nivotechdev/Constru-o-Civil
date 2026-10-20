@@ -32,7 +32,7 @@ export function Switch({ label, description, checked = false, onChange }: Switch
       >
         <span
           className={cx(
-            'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-card transition-transform',
+            'absolute top-0.5 w-5 h-5 rounded-full bg-concrete-0 shadow-card transition-transform',
             checked ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
           )}
         />

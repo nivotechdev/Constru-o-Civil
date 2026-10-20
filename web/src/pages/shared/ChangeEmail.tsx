@@ -36,7 +36,7 @@ export default function ChangeEmail() {
 
   if (sentTo) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center gap-5 px-6 bg-white lg:max-w-app lg:mx-auto">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center gap-5 px-6 bg-concrete-0 lg:max-w-app lg:mx-auto">
         <ResultIcon icon="mail-check" tone="brand" />
         <h1 className="font-display font-bold text-2xl text-concrete-900">Confirme o e-mail novo</h1>
         <p className="text-base text-concrete-700">
@@ -92,7 +92,7 @@ export default function ChangeEmail() {
             }}
           />
         </div>
-        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {captcha.widget}
           {save.error ? <FieldError message={save.error} /> : null}
           <Button label="Trocar e-mail" type="submit" size="lg" fullWidth loading={save.loading} />

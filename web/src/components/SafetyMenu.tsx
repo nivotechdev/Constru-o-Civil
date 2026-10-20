@@ -46,7 +46,7 @@ export function ReportSheet({ open, onClose, target, targetId, what }: ReportShe
           rows={3}
           placeholder="Conte o que aconteceu (opcional)"
           value={details}
-          className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+          className="w-full px-3 py-2.5 bg-concrete-0 rounded-control border border-concrete-300 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
           onInput={(v) => setDetails(v.slice(0, 500))}
         />
         {send.error ? <FieldError message={send.error} /> : null}

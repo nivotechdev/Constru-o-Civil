@@ -3,11 +3,11 @@ import { cx } from '../utils/cx';
 import { Icon, type IconName } from './icons/Icon';
 
 const VARIANTS = {
-  primary: 'bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700 border border-transparent',
-  secondary: 'bg-white text-concrete-900 border border-concrete-300 hover:bg-concrete-50',
+  primary: 'bg-brand-500 text-white hover:bg-brand-hover active:bg-brand-press border border-transparent',
+  secondary: 'bg-concrete-0 text-concrete-900 border border-concrete-300 hover:bg-concrete-50',
   ghost: 'bg-transparent text-brand-600 border border-transparent hover:bg-brand-50',
-  accent: 'bg-accent-500 text-white border border-transparent hover:bg-accent-600',
-  danger: 'bg-white text-danger-500 border border-danger-100 hover:bg-danger-50',
+  accent: 'bg-accent-500 text-white border border-transparent hover:bg-accent-hover',
+  danger: 'bg-concrete-0 text-danger-500 border border-danger-100 hover:bg-danger-50',
   inverse: 'bg-transparent text-white border border-white/40 hover:bg-white/10'
 };
 

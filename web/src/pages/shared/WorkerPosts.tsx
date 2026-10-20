@@ -123,14 +123,14 @@ function PostCard({
 }) {
   const [reporting, setReporting] = useState(false);
   return (
-    <div className="flex flex-col rounded-card overflow-hidden border border-concrete-200 bg-white">
+    <div className="flex flex-col rounded-card overflow-hidden border border-concrete-200 bg-concrete-0">
       <div className="relative">
         {post.mediaUrl ? (
           post.mediaType === 'video' ? (
             <video
               src={post.mediaUrl}
               controls
-              className="w-full h-72 lg:h-auto lg:aspect-square object-cover bg-concrete-900"
+              className="w-full h-72 lg:h-auto lg:aspect-square object-cover bg-ink"
             />
           ) : (
             <button type="button" className="block w-full" aria-label="Ver em tela cheia" onClick={onOpen}>
@@ -258,7 +258,7 @@ function Composer({ ui, setUi }: ComposerProps) {
           rows={3}
           placeholder="Conte o que foi feito nesse bico..."
           value={ui.caption}
-          className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150"
+          className="w-full px-3 py-2.5 bg-concrete-0 rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150"
           onInput={(v) => setUi({ caption: v.slice(0, MAX_CAPTION) })}
         />
         <span className="text-xs text-concrete-500 self-end">{`${ui.caption.length}/${MAX_CAPTION}`}</span>

@@ -21,7 +21,7 @@ export function Tag({ label, icon, selected = false, onClick, onRemove }: TagPro
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
         selected
           ? 'bg-brand-50 border border-brand-500 text-brand-600'
-          : 'bg-white border border-concrete-300 text-concrete-700 hover:bg-concrete-50'
+          : 'bg-concrete-0 border border-concrete-300 text-concrete-700 hover:bg-concrete-50'
       )}
       onClick={onClick}
     >

@@ -87,7 +87,7 @@ export function ReviewForm({ question, tags, commentHint, maxComment, loading, e
           rows={4}
           placeholder="Conte em poucas palavras como foi."
           value={comment}
-          className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150"
+          className="w-full px-3 py-2.5 bg-concrete-0 rounded-control border border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150"
           onInput={(v) => setComment(v.slice(0, maxComment))}
         />
         <div className="flex justify-between gap-3 text-sm text-concrete-500">

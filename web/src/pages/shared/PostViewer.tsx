@@ -103,7 +103,7 @@ export function PostViewer({ posts, index, isOwn, onIndex }: PostViewerProps) {
               id="post-legenda"
               rows={3}
               value={editing}
-              className="w-full px-3 py-2.5 bg-white rounded-control border outline-none text-base text-concrete-900 resize-none"
+              className="w-full px-3 py-2.5 bg-concrete-0 rounded-control border outline-none text-base text-concrete-900 resize-none"
               onInput={(v) => setEditing(v.slice(0, MAX_CAPTION))}
             />
             <span className="text-xs text-white/60 self-end">{`${editing.length}/${MAX_CAPTION}`}</span>

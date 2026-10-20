@@ -15,7 +15,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
       </span>
       <span
         className={cx(
-          'font-display font-bold leading-none tracking-tight text-brand-500',
+          'font-display font-bold leading-none tracking-tight text-brand-logo',
           compact ? 'text-[1.5rem]' : 'text-[1.625rem]'
         )}
       >

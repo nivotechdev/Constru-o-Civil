@@ -7,7 +7,7 @@ import { Icon } from './icons/Icon';
 export function MapLinks({ job }: { job: Pick<Job, 'address'> }) {
   const links = mapLinks(job);
   const cls =
-    'inline-flex items-center justify-center gap-1.5 h-11 px-3 rounded-control border border-concrete-300 bg-white text-sm font-bold text-concrete-900 hover:bg-concrete-50';
+    'inline-flex items-center justify-center gap-1.5 h-11 px-3 rounded-control border border-concrete-300 bg-concrete-0 text-sm font-bold text-concrete-900 hover:bg-concrete-50';
   return (
     <div className="flex gap-2">
       <a className={cls + ' flex-1'} href={links.google} target="_blank" rel="noopener noreferrer">

@@ -114,7 +114,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
           <button
             key={o.id}
             type="button"
-            className={`relative tap-target flex-1 h-10 rounded-full text-sm font-bold transition-colors ${ui.sort === o.id ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'}`}
+            className={`relative tap-target flex-1 h-10 rounded-full text-sm font-bold transition-colors ${ui.sort === o.id ? 'bg-concrete-0 text-brand-600 shadow-card' : 'text-concrete-500'}`}
             onClick={() => setFeed({ sort: o.id })}
           >
             {o.label}
@@ -134,7 +134,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
 
   return (
     <div className="flex flex-col lg:hidden">
-      <div className="sticky top-0 z-20 flex flex-col gap-2 px-4 pt-2 pb-3.5 bg-white border-b border-concrete-200">
+      <div className="sticky top-0 z-20 flex flex-col gap-2 px-4 pt-2 pb-3.5 bg-concrete-0 border-b border-concrete-200">
         <div className="flex items-center justify-between gap-2 min-h-12">
           <h1 className="inline-flex" aria-label="Bicos">
             <Logo compact />

@@ -171,10 +171,11 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
       {showMobilePill ? (
         <nav
           aria-label="Navegação principal"
-          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-3.5 rounded-full px-5 py-2 shadow-raised border border-white/60"
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-3.5 rounded-full px-5 py-2 shadow-raised border border-concrete-0/60"
           style={{
             bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
-            backgroundColor: 'rgba(255,255,255,0.72)',
+            // U21: the surface colour (white in the light theme), translucent.
+            backgroundColor: 'rgb(var(--c-concrete-0) / 0.72)',
             backdropFilter: 'blur(16px) saturate(1.6)',
             WebkitBackdropFilter: 'blur(16px) saturate(1.6)'
           }}
@@ -309,14 +310,16 @@ function TopBar({ role, items, active, account }: TopBarProps) {
               aria-expanded={menu.notificationsOpen ? 'true' : 'false'}
               title="Notificações"
               className={cx(
-                'relative inline-flex items-center justify-center w-11 h-11 rounded-full text-concrete-900 ring-1 transition-colors hover:bg-white',
-                menu.notificationsOpen ? 'bg-white ring-concrete-300 shadow-raised' : 'bg-white/70 ring-concrete-900/5'
+                'relative inline-flex items-center justify-center w-11 h-11 rounded-full text-concrete-900 ring-1 transition-colors hover:bg-concrete-0',
+                menu.notificationsOpen
+                  ? 'bg-concrete-0 ring-concrete-300 shadow-raised'
+                  : 'bg-concrete-0/70 ring-concrete-900/5'
               )}
               onClick={() => setMenu({ notificationsOpen: !menu.notificationsOpen, menuOpen: false })}
             >
               <Icon name="bell" size={18} />
               {notifications.unread ? (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-danger-500 text-white text-[0.625rem] font-bold leading-[1.125rem] text-center ring-2 ring-white">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-danger-solid text-white text-[0.625rem] font-bold leading-[1.125rem] text-center ring-2 ring-concrete-0">
                   {String(notifications.unread)}
                 </span>
               ) : null}
@@ -340,7 +343,7 @@ function TopBar({ role, items, active, account }: TopBarProps) {
               aria-haspopup="menu"
               aria-expanded={menu.menuOpen ? 'true' : 'false'}
               className={cx(
-                'inline-flex items-center gap-2.5 h-11 pl-3.5 pr-1.5 rounded-full border bg-white/80 transition-shadow hover:bg-white hover:shadow-raised',
+                'inline-flex items-center gap-2.5 h-11 pl-3.5 pr-1.5 rounded-full border bg-concrete-0/80 transition-shadow hover:bg-concrete-0 hover:shadow-raised',
                 menu.menuOpen ? 'border-concrete-300 shadow-raised' : 'border-concrete-200'
               )}
               onClick={() => setMenu({ menuOpen: !menu.menuOpen, notificationsOpen: false })}
@@ -353,7 +356,7 @@ function TopBar({ role, items, active, account }: TopBarProps) {
                 <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setMenu({ menuOpen: false })} />
                 <div
                   role="menu"
-                  className="absolute right-0 top-full mt-3 z-50 w-72 py-2 bg-white rounded-2xl border border-concrete-200 shadow-float animate-fade-in"
+                  className="absolute right-0 top-full mt-3 z-50 w-72 py-2 bg-concrete-0 rounded-2xl border border-concrete-200 shadow-float animate-fade-in"
                 >
                   <div className="flex items-center gap-3 px-4 pt-2 pb-3">
                     {avatar('lg')}

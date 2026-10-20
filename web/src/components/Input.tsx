@@ -84,7 +84,7 @@ export function Input({
       ) : null}
       <div
         className={cx(
-          'flex items-center gap-2 min-h-12 px-3 bg-white rounded-control border transition-colors duration-150',
+          'flex items-center gap-2 min-h-12 px-3 bg-concrete-0 rounded-control border transition-colors duration-150',
           error || invalid
             ? 'border-danger-500'
             : 'border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'
@@ -166,7 +166,7 @@ export function PasswordInput({
       </label>
       <div
         className={cx(
-          'flex items-center gap-2 min-h-12 pl-3 pr-1.5 bg-white rounded-control border transition-colors duration-150',
+          'flex items-center gap-2 min-h-12 pl-3 pr-1.5 bg-concrete-0 rounded-control border transition-colors duration-150',
           error
             ? 'border-danger-500'
             : 'border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'

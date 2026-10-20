@@ -39,7 +39,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white lg:max-w-app lg:mx-auto">
+    <div className="min-h-screen flex flex-col bg-concrete-0 lg:max-w-app lg:mx-auto">
       <div className="flex items-center gap-1.5 min-h-14 px-2 border-b border-concrete-200">
         <IconButton icon="arrow-left" label="Voltar" onClick={() => goBack('/login')} />
         <span className="font-display font-semibold text-xl text-concrete-900">Recuperar senha</span>

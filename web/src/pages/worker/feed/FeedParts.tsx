@@ -89,7 +89,7 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
     <div
       role="search"
       className={cx(
-        'flex items-center rounded-full bg-white border border-concrete-200 shadow-float transition focus-within:border-brand-300 focus-within:ring-4 focus-within:ring-brand-100',
+        'flex items-center rounded-full bg-concrete-0 border border-concrete-200 shadow-float transition focus-within:border-brand-300 focus-within:ring-4 focus-within:ring-brand-100',
         compact ? 'gap-3 h-14 pl-1.5 pr-2' : 'gap-4 h-[4.25rem] pl-2 pr-3'
       )}
     >
@@ -98,7 +98,7 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
         aria-label="Buscar"
         title="Buscar"
         className={cx(
-          'shrink-0 inline-flex items-center justify-center rounded-full bg-brand-500 shadow-raised transition hover:bg-brand-600 active:scale-95',
+          'shrink-0 inline-flex items-center justify-center rounded-full bg-brand-500 shadow-raised transition hover:bg-brand-hover active:scale-95',
           compact ? 'w-11 h-11' : 'w-[3.25rem] h-[3.25rem]'
         )}
         onClick={() => inputRef.current?.focus()}

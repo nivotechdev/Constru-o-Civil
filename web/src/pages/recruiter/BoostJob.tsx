@@ -94,7 +94,7 @@ export default function BoostJob({ params }: ScreenProps) {
                   key={p.id}
                   type="button"
                   onClick={() => setUi({ plan: p.id })}
-                  className={`flex items-center gap-3 w-full min-h-[4.5rem] px-4 py-3.5 rounded-card border transition-colors text-left ${active ? 'bg-brand-50 border-brand-500' : 'bg-white border-concrete-300 shadow-card'}`}
+                  className={`flex items-center gap-3 w-full min-h-[4.5rem] px-4 py-3.5 rounded-card border transition-colors text-left ${active ? 'bg-brand-50 border-brand-500' : 'bg-concrete-0 border-concrete-300 shadow-card'}`}
                 >
                   <span
                     className={`shrink-0 w-5 h-5 rounded-full border-2 ${active ? 'border-brand-500 bg-brand-500' : 'border-concrete-400'}`}

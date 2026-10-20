@@ -269,7 +269,7 @@ export default function JobManage({ params }: ScreenProps) {
               ) : null}
             </div>
             {applications.length ? (
-              <div className="bg-white border border-concrete-200 rounded-card shadow-card overflow-hidden">
+              <div className="bg-concrete-0 border border-concrete-200 rounded-card shadow-card overflow-hidden">
                 {applications.map((a) => {
                   const worker = workerOf(db, a);
                   const pending = isPending(a.status);
@@ -345,7 +345,7 @@ export default function JobManage({ params }: ScreenProps) {
           {deleteLink()}
         </aside>
       </div>
-      <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-white shadow-bar flex flex-col gap-1 lg:hidden">
+      <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-1 lg:hidden">
         <div className="flex gap-3">{actions()}</div>
         {deleteLink()}
       </div>

@@ -71,7 +71,7 @@ export function CodeInput({
               <span
                 key={i}
                 className={cx(
-                  'flex items-center justify-center h-14 sm:h-16 rounded-control border-2 bg-white font-mono font-bold text-2xl text-concrete-900 transition-colors',
+                  'flex items-center justify-center h-14 sm:h-16 rounded-control border-2 bg-concrete-0 font-mono font-bold text-2xl text-concrete-900 transition-colors',
                   disabled && 'bg-concrete-50 text-concrete-500',
                   error
                     ? 'border-danger-500'

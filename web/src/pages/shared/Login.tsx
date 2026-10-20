@@ -106,7 +106,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-concrete-0">
       <div className="max-w-app mx-auto px-6 sm:px-8 pt-14 pb-10 flex flex-col gap-8">
         <div className="flex flex-col items-center gap-5 text-center">
           <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-brand-500">

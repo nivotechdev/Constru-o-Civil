@@ -47,7 +47,7 @@ export default function ResetPassword() {
 
   if (ui.done) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center gap-5 px-6 bg-white lg:max-w-app lg:mx-auto">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center gap-5 px-6 bg-concrete-0 lg:max-w-app lg:mx-auto">
         <ResultIcon icon="circle-check" tone="success" />
         <h1 className="font-display font-bold text-2xl text-concrete-900">Senha redefinida</h1>
         <p className="text-base text-concrete-700">Use sua nova senha para entrar na sua conta.</p>
@@ -57,7 +57,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white lg:max-w-app lg:mx-auto">
+    <div className="min-h-screen flex flex-col bg-concrete-0 lg:max-w-app lg:mx-auto">
       <div className="flex items-center gap-1.5 min-h-14 px-2 border-b border-concrete-200">
         <IconButton icon="arrow-left" label="Voltar" onClick={() => goBack('/login')} />
         <span className="font-display font-semibold text-xl text-concrete-900">Criar nova senha</span>

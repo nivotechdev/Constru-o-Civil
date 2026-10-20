@@ -111,7 +111,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
           <div className="relative w-full h-full">
             <WorkerAvatar worker={worker} size="lg" className="w-full h-full" />
             {worker.verified ? (
-              <span className="absolute -right-0.5 -bottom-0.5 inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-500 border-[3px] border-white">
+              <span className="absolute -right-0.5 -bottom-0.5 inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-500 border-[3px] border-concrete-0">
                 <Icon name="check" size={14} color="#fff" />
               </span>
             ) : null}

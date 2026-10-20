@@ -26,7 +26,7 @@ export function LocationButton({ title, location, onClick }: { title: string; lo
       <button
         type="button"
         aria-haspopup="dialog"
-        className="flex items-center gap-3 w-full p-3 rounded-card border border-concrete-300 bg-white text-left transition-colors hover:bg-concrete-50 hover:border-concrete-400"
+        className="flex items-center gap-3 w-full p-3 rounded-card border border-concrete-300 bg-concrete-0 text-left transition-colors hover:bg-concrete-50 hover:border-concrete-400"
         onClick={onClick}
       >
         <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-50 shrink-0">

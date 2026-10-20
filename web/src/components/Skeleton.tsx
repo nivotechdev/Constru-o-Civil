@@ -55,7 +55,7 @@ export function RowSkeleton() {
 
 export function ListSkeleton({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="bg-white border border-concrete-200 rounded-card" role="status" aria-label="Carregando">
+    <div className="bg-concrete-0 border border-concrete-200 rounded-card" role="status" aria-label="Carregando">
       {Array.from({ length: rows }, (_, i) => (
         <RowSkeleton key={i} />
       ))}

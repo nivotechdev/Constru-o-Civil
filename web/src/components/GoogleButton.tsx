@@ -24,6 +24,8 @@ export function GoogleButton({
         'relative tap-target inline-flex items-center justify-center gap-3 w-full h-12 px-4 rounded-control',
         'bg-white border border-[#747775] text-[#1F1F1F] font-body font-semibold text-base whitespace-nowrap',
         'hover:bg-[#F8FAFF] active:bg-[#EEF2FB] disabled:opacity-70 transition-colors duration-150',
+        // U21: Google's own dark button in the dark theme.
+        'dark:bg-[#131314] dark:border-[#8E918F] dark:text-[#E3E3E3] dark:hover:bg-[#1F1F21] dark:active:bg-[#2A2A2C]',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
         className
       )}

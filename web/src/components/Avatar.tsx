@@ -17,9 +17,9 @@ type Size = keyof typeof SIZES;
  * The one white border around a profile photo, wherever it sits on top of something (stacked photos,
  * the photo over a cover): thin and the same everywhere. Drawn on the photo itself, so it hugs it.
  */
-export const AVATAR_BORDER = 'ring-[1.5px] ring-white';
+export const AVATAR_BORDER = 'ring-[1.5px] ring-concrete-0';
 /** The same border for a photo placed inside a frame (the profile headers, the logo over a job's cover). */
-export const AVATAR_FRAME = 'rounded-full bg-white p-[1.5px]';
+export const AVATAR_FRAME = 'rounded-full bg-concrete-0 p-[1.5px]';
 
 export function WorkerAvatar({
   worker,

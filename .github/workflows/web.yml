@@ -102,6 +102,8 @@ jobs:
           npx playwright install chromium
           curl -sf http://localhost:4173/ > /dev/null || ((npx vite preview --port 4173 --strictPort &) && sleep 3)
           node scripts/a11y-check.mjs
+          # U21: as mesmas telas no tema escuro.
+          A11Y_TEMA=escuro node scripts/a11y-check.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

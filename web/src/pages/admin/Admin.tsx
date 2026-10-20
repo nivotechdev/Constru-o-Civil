@@ -82,7 +82,7 @@ export default function Admin() {
                       aria-selected={ui.tab === t.id}
                       className={cx(
                         'flex-1 h-10 rounded-full text-xs sm:text-sm font-bold transition-colors',
-                        ui.tab === t.id ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'
+                        ui.tab === t.id ? 'bg-concrete-0 text-brand-600 shadow-card' : 'text-concrete-500'
                       )}
                       onClick={() => setUi({ tab: t.id })}
                     >

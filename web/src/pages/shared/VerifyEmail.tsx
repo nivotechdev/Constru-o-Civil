@@ -173,7 +173,7 @@ export default function VerifyEmail() {
       />
 
       {ui.editing ? (
-        <div className="flex flex-col gap-3 p-4 rounded-card bg-white border border-concrete-200">
+        <div className="flex flex-col gap-3 p-4 rounded-card bg-concrete-0 border border-concrete-200">
           <Input
             id="verificar-novo-email"
             label="E-mail certo"
@@ -198,7 +198,7 @@ export default function VerifyEmail() {
           />
         </div>
       ) : (
-        <div className="flex items-center gap-3 p-3.5 rounded-card bg-white border border-concrete-200">
+        <div className="flex items-center gap-3 p-3.5 rounded-card bg-concrete-0 border border-concrete-200">
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-50 shrink-0">
             <Icon name="mail" size={20} color="var(--brand)" />
           </span>

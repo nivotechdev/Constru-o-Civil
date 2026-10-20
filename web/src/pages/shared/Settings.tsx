@@ -1,5 +1,6 @@
 import { useSyncExternalStore, type ReactNode } from 'react';
 import { BackBar } from '../../components/BackBar';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { Icon, type IconName } from '../../components/icons/Icon';
 import { Switch } from '../../components/Switch';
 import { useQuery } from '../../hooks/useQuery';
@@ -10,6 +11,7 @@ import { IS_DEMO } from '../../services/mode';
 import { goBack, navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
 import { FEATURES } from '../../services/features';
+import { getTheme, subscribeTheme } from '../../services/theme';
 
 interface RowProps {
   icon: IconName;
@@ -24,7 +26,7 @@ function Row({ icon, label, description, onClick, danger = false }: RowProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3.5 w-full min-h-14 px-4 py-3 bg-white text-left hover:bg-concrete-50 transition-colors"
+      className="flex items-center gap-3.5 w-full min-h-14 px-4 py-3 bg-concrete-0 text-left hover:bg-concrete-50 transition-colors"
     >
       <span
         className={`shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full ${danger ? 'bg-danger-50' : 'bg-concrete-100'}`}
@@ -46,7 +48,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       {title ? (
         <div className="px-4 text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">{title}</div>
       ) : null}
-      <div className="flex flex-col divide-y divide-concrete-200 bg-white border border-concrete-200 rounded-card overflow-hidden mx-4 sm:mx-0">
+      <div className="flex flex-col divide-y divide-concrete-200 bg-concrete-0 border border-concrete-200 rounded-card overflow-hidden mx-4 sm:mx-0">
         {children}
       </div>
     </div>
@@ -54,6 +56,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function Settings() {
+  const theme = useSyncExternalStore(subscribeTheme, getTheme, getTheme);
   const role = useRole();
   // L06: the team's area shows up only for staff accounts (the server answers; demo: never).
   useQuery('admin-staff', checkStaff);
@@ -72,6 +75,16 @@ export default function Settings() {
           <Row icon="mail" label="Trocar e-mail" onClick={() => navigate('/configuracoes/email')} />
           <Row icon="phone" label="Trocar WhatsApp" onClick={() => navigate('/whatsapp')} />
           <Row icon="lock" label="Trocar senha" onClick={() => navigate('/configuracoes/senha')} />
+        </Section>
+        {/* U21: light or dark, right here (no extra screen). */}
+        <Section title="Aparência">
+          <div className="flex items-center gap-3.5 w-full min-h-16 px-4 py-3 bg-concrete-0">
+            <span className="flex-1 min-w-0 flex flex-col">
+              <span className="font-semibold text-concrete-900">Tema</span>
+              <span className="text-sm text-concrete-500">{theme === 'escuro' ? 'Escuro' : 'Claro'}</span>
+            </span>
+            <ThemeToggle />
+          </div>
         </Section>
         <Section title="Preferências">
           <Row
@@ -135,7 +148,7 @@ export default function Settings() {
         </Section>
         {IS_DEMO ? (
           <Section title="Demonstração">
-            <div className="px-4 py-1 bg-white">
+            <div className="px-4 py-1 bg-concrete-0">
               <Switch
                 label="Simular falhas de conexão"
                 description="Para testar: toda ação e carregamento passa a dar erro, com a opção de tentar de novo."

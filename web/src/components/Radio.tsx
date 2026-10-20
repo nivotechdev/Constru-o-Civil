@@ -19,7 +19,7 @@ export function RadioCard({ name, icon, label, description, checked = false, onC
       htmlFor={fieldId}
       className={cx(
         'flex items-center gap-3.5 min-h-[5.5rem] p-4 rounded-card border cursor-pointer transition-colors',
-        checked ? 'bg-brand-50 border-brand-500' : 'bg-white border-concrete-300 hover:bg-concrete-50'
+        checked ? 'bg-brand-50 border-brand-500' : 'bg-concrete-0 border-concrete-300 hover:bg-concrete-50'
       )}
     >
       <input

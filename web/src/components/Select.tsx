@@ -26,7 +26,7 @@ export function Select({ label, placeholder = 'Selecione', options = [], value =
       ) : null}
       <div
         className={cx(
-          'relative flex items-center min-h-12 px-3 bg-white rounded-control border',
+          'relative flex items-center min-h-12 px-3 bg-concrete-0 rounded-control border',
           error
             ? 'border-danger-500'
             : 'border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'

@@ -287,7 +287,7 @@ export default function JobDetail({ params }: ScreenProps) {
         </div>
 
         <aside className="hidden lg:block lg:sticky lg:top-28">
-          <div className="flex flex-col gap-5 p-6 bg-white rounded-2xl border border-concrete-200 shadow-float">
+          <div className="flex flex-col gap-5 p-6 bg-concrete-0 rounded-2xl border border-concrete-200 shadow-float">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-bold tracking-[0.08em] uppercase text-brand-600">Diária</span>
               <div className="flex items-baseline gap-2">
@@ -312,7 +312,7 @@ export default function JobDetail({ params }: ScreenProps) {
       </div>
 
       {role === 'trabalhador' ? (
-        <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-white shadow-bar flex flex-col gap-1.5 lg:hidden">
+        <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-1.5 lg:hidden">
           {actions()}
         </div>
       ) : null}

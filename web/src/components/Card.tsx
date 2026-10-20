@@ -2,7 +2,7 @@ import type { MouseEventHandler, ReactNode } from 'react';
 import { cx } from '../utils/cx';
 
 const TONES = {
-  default: 'bg-white border border-concrete-200 shadow-card',
+  default: 'bg-concrete-0 border border-concrete-200 shadow-card',
   sunken: 'bg-concrete-100 border-0',
   brand: 'bg-brand-50 border border-brand-200'
 };

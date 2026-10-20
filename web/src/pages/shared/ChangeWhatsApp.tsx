@@ -159,7 +159,7 @@ export default function ChangeWhatsApp() {
           />
         )}
       </div>
-      <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+      <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
         {step === 'codigo' && !codeError && error ? <FieldError message={error} /> : null}
         <Button
           label={step === 'codigo' ? 'Confirmar número' : WHATSAPP_CODE_AVAILABLE ? 'Enviar código' : 'Salvar número'}

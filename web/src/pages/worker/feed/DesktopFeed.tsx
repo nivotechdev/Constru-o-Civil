@@ -43,7 +43,7 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, 
   );
 
   return (
-    <div className="hidden lg:block min-h-[calc(100vh-5rem)] bg-white">
+    <div className="hidden lg:block min-h-[calc(100vh-5rem)] bg-concrete-0">
       <div className="page-x pt-1 pb-8 border-b border-concrete-200">
         <div className="max-w-[60rem] mx-auto flex items-center gap-3">
           <div className="flex-1 min-w-0">
@@ -53,7 +53,7 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, 
             type="button"
             aria-haspopup="dialog"
             className={cx(
-              'relative shrink-0 inline-flex items-center gap-2.5 h-[4.25rem] px-6 rounded-full bg-white border shadow-float font-semibold text-concrete-900 transition hover:border-concrete-300 hover:shadow-raised',
+              'relative shrink-0 inline-flex items-center gap-2.5 h-[4.25rem] px-6 rounded-full bg-concrete-0 border shadow-float font-semibold text-concrete-900 transition hover:border-concrete-300 hover:shadow-raised',
               count ? 'border-brand-500' : 'border-concrete-200'
             )}
             onClick={() => setFeed({ filtersOpen: true })}
@@ -184,7 +184,7 @@ interface PersonCardProps {
 
 function PersonCard({ avatar, name, meta, rating, onClick }: PersonCardProps) {
   const className = cx(
-    'flex items-center gap-4 p-4 rounded-2xl border border-concrete-200 bg-white text-left',
+    'flex items-center gap-4 p-4 rounded-2xl border border-concrete-200 bg-concrete-0 text-left',
     onClick ? 'transition hover:shadow-raised hover:border-concrete-300' : ''
   );
   const content = (

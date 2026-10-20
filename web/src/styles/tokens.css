@@ -3,6 +3,59 @@
    elevation) is in the legacy app, archive/app/css/tokens.css.
    Spacing itself is NOT tokenized here: screens use Tailwind's rem-based spacing scale directly. */
 :root {
+  /* U21: the palette of the Tailwind classes (tailwind.config.js), as "R G B" so classes can add opacity. These are
+     the light theme's values, the same hex the app always had; [data-theme='dark'] below swaps them. */
+  --c-brand-50: 239 243 254;
+  --c-brand-100: 219 228 253;
+  --c-brand-200: 183 200 251;
+  --c-brand-300: 139 165 247;
+  --c-brand-400: 88 122 243;
+  --c-brand-500: 29 75 237;
+  --c-brand-600: 22 60 194;
+  --c-brand-700: 18 47 151;
+  --c-brand-800: 14 36 114;
+  --c-brand-900: 10 26 84;
+  --c-brand-hover: 22 60 194;
+  --c-brand-press: 18 47 151;
+  --c-brand-logo: 29 75 237;
+  --c-accent-50: 231 246 244;
+  --c-accent-100: 200 234 230;
+  --c-accent-200: 150 214 207;
+  --c-accent-300: 94 189 179;
+  --c-accent-400: 42 160 150;
+  --c-accent-500: 15 143 130;
+  --c-accent-600: 11 115 104;
+  --c-accent-700: 9 91 83;
+  --c-accent-800: 7 68 62;
+  --c-accent-900: 5 48 44;
+  --c-accent-hover: 11 115 104;
+  --c-concrete-0: 255 255 255;
+  --c-concrete-25: 251 252 253;
+  --c-concrete-50: 244 246 248;
+  --c-concrete-100: 234 238 242;
+  --c-concrete-200: 220 224 229;
+  --c-concrete-300: 195 201 209;
+  --c-concrete-400: 138 147 159;
+  --c-concrete-500: 92 102 114;
+  --c-concrete-600: 67 76 87;
+  --c-concrete-700: 47 55 66;
+  --c-concrete-800: 29 37 48;
+  --c-concrete-900: 16 20 24;
+  --c-success-50: 231 246 238;
+  --c-success-100: 198 233 214;
+  --c-success-500: 11 122 75;
+  --c-success-600: 8 99 60;
+  --c-warning-50: 255 244 224;
+  --c-warning-100: 255 228 181;
+  --c-warning-500: 165 90 0;
+  --c-warning-600: 138 74 0;
+  --c-danger-50: 253 236 236;
+  --c-danger-100: 249 210 210;
+  --c-danger-500: 192 38 38;
+  --c-danger-600: 156 28 28;
+  --c-danger-solid: 192 38 38;
+  --c-ink: 16 20 24;
+
   /* Azul Nivo (brand / recruiter accent) */
   --blue-100: #dbe4fd;
   --blue-500: #1d4bed;
@@ -50,4 +103,82 @@
   --dur-normal: 180ms;
   --dur-slow: 240ms;
   --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+/* U21 — the dark theme (Configurações › Aparência). Built around the brand blue, which stays #1D4BED on buttons and
+   selections: the neutrals are a deep slate tinted towards the same blue (hue ~220) instead of pure grey, so the blue
+   sits in it naturally; the page is the deepest layer, cards and inputs one step lighter, borders two. Text and
+   coloured text are lighter tints chosen for contrast (body 11.8:1, secondary 7.4:1, links 7.7:1, every status colour
+   above 6:1 — equal or better than the light theme). Solid fills behind white text keep >= 4.7:1. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-brand-50: 21 32 70;
+  --c-brand-100: 27 43 94;
+  --c-brand-200: 36 57 125;
+  --c-brand-300: 52 82 179;
+  --c-brand-400: 91 123 242;
+  --c-brand-500: 29 75 237;
+  --c-brand-600: 147 171 251;
+  --c-brand-700: 182 198 252;
+  --c-brand-800: 213 222 253;
+  --c-brand-900: 236 240 254;
+  --c-brand-hover: 58 98 243;
+  --c-brand-press: 23 63 207;
+  --c-brand-logo: 123 149 246;
+  --c-accent-50: 14 43 41;
+  --c-accent-100: 18 63 58;
+  --c-accent-200: 24 90 83;
+  --c-accent-300: 34 131 122;
+  --c-accent-400: 54 175 163;
+  --c-accent-500: 15 143 130;
+  --c-accent-600: 82 205 191;
+  --c-accent-700: 134 221 211;
+  --c-accent-800: 181 235 229;
+  --c-accent-900: 221 246 243;
+  --c-accent-hover: 12 122 111;
+  --c-concrete-0: 22 28 39;
+  --c-concrete-25: 19 25 36;
+  --c-concrete-50: 13 18 27;
+  --c-concrete-100: 31 38 51;
+  --c-concrete-200: 43 51 67;
+  --c-concrete-300: 59 69 88;
+  --c-concrete-400: 128 139 157;
+  --c-concrete-500: 161 171 186;
+  --c-concrete-600: 185 193 205;
+  --c-concrete-700: 209 215 224;
+  --c-concrete-800: 227 232 238;
+  --c-concrete-900: 242 245 249;
+  --c-success-50: 15 42 31;
+  --c-success-100: 21 64 44;
+  --c-success-500: 70 201 138;
+  --c-success-600: 116 219 168;
+  --c-warning-50: 45 33 17;
+  --c-warning-100: 69 50 26;
+  --c-warning-500: 240 168 75;
+  --c-warning-600: 246 192 122;
+  --c-danger-50: 51 23 27;
+  --c-danger-100: 77 31 37;
+  --c-danger-500: 245 122 122;
+  --c-danger-600: 248 163 163;
+  --c-danger-solid: 215 54 54;
+  --c-ink: 42 51 69;
+
+  --blue-100: #1b2b5e;
+  --blue-500: #1d4bed;
+  --blue-600: #93abfb;
+  --blue-700: #b6c6fc;
+  --teal-500: #36afa3;
+  --gray-50: #0d121b;
+  --gray-100: #1f2633;
+  --gray-300: #3b4558;
+  --gray-400: #808b9d;
+  --gray-500: #a1abba;
+  --gray-600: #b9c1cd;
+  --gray-700: #d1d7e0;
+  --gray-900: #f2f5f9;
+  --green-500: #46c98a;
+  --amber-500: #f0a84b;
+  --red-500: #f57a7a;
+  --brand: #5b7bf2;
+  --scrim: rgba(3, 6, 12, 0.7);
 }

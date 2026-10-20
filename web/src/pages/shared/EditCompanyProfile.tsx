@@ -158,7 +158,7 @@ export default function EditCompanyProfile() {
           />
           <WhatsAppRow label="WhatsApp de contato" />
         </div>
-        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {save.error ? <FieldError message={save.error} /> : null}
           <div className="flex gap-3">
             <Button label="Cancelar" variant="secondary" className="flex-1" onClick={cancel} />

@@ -1787,3 +1787,23 @@ leve subida) e o clique (afunda um pouco) ficam num `<style>` no cabeçalho: val
 verdade dentro do e-mail não é possível** (nenhum programa de e-mail roda código): o botão abre a página
 `/copiar-codigo` (U17), que copia. Embaixo fica "Código: 735343" em texto inteiro — é o que o Gmail reconhece para
 mostrar o próprio "Copiar código" dele (o cartão da print é do Gmail) e o que se copia segurando o dedo.
+
+## U21 — Tema claro e escuro
+
+Pedido do responsável: em Configurações, um botão-pílula com sol, lua e uma bola sobre o tema ativo, que rola para
+o lado tocado; tema escuro profissional, que mantenha o azul principal. **Como funciona:** todas as cores das classes
+Tailwind viraram variáveis (`tailwind.config.js` → `styles/tokens.css`); no tema claro os valores são exatamente os
+hex de antes (nada muda), e `<html data-theme="dark">` troca os valores. A escolha fica no aparelho (`services/theme.ts`,
+`localStorage`) e vale antes da primeira tela. **A paleta escura**, pensada a partir do azul #1D4BED (que continua nos
+botões, seleções e na bola do botão): neutros de ardósia azulada (matiz ~220, o mesmo do azul) em vez de cinza puro,
+para o azul "morar" nela — página #0D121B (a camada mais funda), cartões e campos #161C27, bordas #2B3343; texto
+#F2F5F9/#D1D7E0/#A1ABBA; links e azul de texto #93ABFB; status verde/âmbar/vermelho clareados. Contraste conferido
+par a par: corpo 11,8:1, secundário 7,4:1, links 7,7:1, status acima de 6:1 — igual ou melhor que o tema claro; branco
+sobre os fundos sólidos ≥ 4,7:1. Onde uma cor tinha dois papéis (texto e fundo), entrou um token próprio
+(`brand-hover`, `brand-press`, `brand-logo`, `accent-hover`, `danger-solid`, `ink`) com o mesmo valor no claro.
+Superfícies brancas viraram `concrete-0`; o que é branco de verdade fica branco (texto sobre azul, pontos das fotos,
+os QR codes do PIX, o botão do Google, que usa o padrão escuro do próprio Google). **O botão** (`ThemeToggle`): pílula
+de 84 × 44 px, sol à esquerda e lua à direita apagados no trilho, e a bola (branca com sol dourado; azul com lua
+branca) que anda 40 px dando uma volta inteira, com um leve passo além no fim; a seção "Aparência" fica entre Conta
+e Preferências. Teclado e leitor de tela: dois botões de opção ("Tema claro", "Tema escuro"), setas trocam; sem
+animação para quem pede menos movimento. O axe roda nas 14 telas também no escuro (CI).

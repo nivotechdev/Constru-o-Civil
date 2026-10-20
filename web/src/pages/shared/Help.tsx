@@ -102,7 +102,7 @@ export default function Help() {
         </Card>
         <div className="flex flex-col gap-2">
           <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Perguntas frequentes</div>
-          <div className="flex flex-col divide-y divide-concrete-200 bg-white border border-concrete-200 rounded-card overflow-hidden">
+          <div className="flex flex-col divide-y divide-concrete-200 bg-concrete-0 border border-concrete-200 rounded-card overflow-hidden">
             {questions.map((item) => (
               <details key={item.q} className="group">
                 <summary className="flex items-center gap-3 min-h-14 px-4 py-3 cursor-pointer list-none font-semibold text-concrete-900 hover:bg-concrete-50">
@@ -127,7 +127,7 @@ function SupportLink({ href, icon, children }: { href: string; icon: ReactNode; 
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-full sm:w-auto sm:flex-1 inline-flex items-center justify-center gap-2 h-14 px-5 rounded-full font-semibold bg-white text-concrete-900 border border-concrete-300 hover:bg-concrete-50"
+      className="w-full sm:w-auto sm:flex-1 inline-flex items-center justify-center gap-2 h-14 px-5 rounded-full font-semibold bg-concrete-0 text-concrete-900 border border-concrete-300 hover:bg-concrete-50"
     >
       {icon}
       {children}

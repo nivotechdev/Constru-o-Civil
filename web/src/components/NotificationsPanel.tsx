@@ -40,7 +40,7 @@ export function NotificationsPanel({
         role="dialog"
         aria-label="Notificações"
         className={cx(
-          'z-50 flex flex-col bg-white rounded-2xl border border-concrete-200 shadow-float overflow-hidden animate-fade-in',
+          'z-50 flex flex-col bg-concrete-0 rounded-2xl border border-concrete-200 shadow-float overflow-hidden animate-fade-in',
           className
         )}
       >

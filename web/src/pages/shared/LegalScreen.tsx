@@ -7,7 +7,7 @@ import { formatPostDate } from '../../utils/format';
 /** Terms of use or privacy policy, readable with or without an account. */
 function LegalScreen({ doc }: { doc: LegalDocument }) {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-concrete-0">
       <div className="max-w-[44rem] mx-auto flex flex-col">
         <BackBar title={doc.title} onBack={() => goBack('/splash')} />
         <article className="flex flex-col gap-6 px-5 sm:px-8 py-6 pb-12">

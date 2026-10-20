@@ -45,7 +45,10 @@ export function CurrentLocationField({ title, help, value, onChange, error, stat
         <span className="text-sm text-concrete-500">{help}</span>
       </div>
       {value ? (
-        <div className="flex items-center gap-3 p-3 rounded-card border border-concrete-200 bg-white" role="status">
+        <div
+          className="flex items-center gap-3 p-3 rounded-card border border-concrete-200 bg-concrete-0"
+          role="status"
+        >
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-success-50 shrink-0">
             <Icon name="map-pin" size={20} color="var(--green-500)" />
           </span>

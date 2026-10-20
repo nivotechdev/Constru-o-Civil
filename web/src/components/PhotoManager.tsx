@@ -27,7 +27,7 @@ export function PhotoManager({ photos, onChange, max = 6 }: PhotoManagerProps) {
             type="button"
             aria-label={`Remover foto ${i + 1}`}
             title="Remover foto"
-            className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/90 text-concrete-900 shadow-raised hover:bg-white"
+            className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-7 h-7 rounded-full bg-concrete-0/90 text-concrete-900 shadow-raised hover:bg-concrete-0"
             onClick={() => onChange(photos.filter((_, k) => k !== i))}
           >
             <Icon name="x" size={14} />

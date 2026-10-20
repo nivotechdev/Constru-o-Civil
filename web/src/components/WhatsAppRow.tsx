@@ -12,7 +12,7 @@ export function WhatsAppRow({ label }: { label: string }) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-sm font-semibold text-concrete-900">{label}</span>
-      <div className="flex items-center gap-3 min-h-12 px-3.5 py-2 rounded-control bg-white border border-concrete-300">
+      <div className="flex items-center gap-3 min-h-12 px-3.5 py-2 rounded-control bg-concrete-0 border border-concrete-300">
         <Icon name="phone" size={20} color="var(--text-subtle)" />
         <span className="flex-1 min-w-0 flex flex-col">
           <span className="font-mono text-concrete-900 truncate">

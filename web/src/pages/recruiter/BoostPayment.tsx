@@ -176,7 +176,7 @@ export default function BoostPayment({ params }: ScreenProps) {
               aria-selected={ui.method === m ? 'true' : 'false'}
               className={cx(
                 'flex-1 h-11 rounded-full text-sm font-bold transition-colors',
-                ui.method === m ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'
+                ui.method === m ? 'bg-concrete-0 text-brand-600 shadow-card' : 'text-concrete-500'
               )}
               onClick={() => setUi({ method: m })}
             >
@@ -406,7 +406,7 @@ function PixWaiting({
       </div>
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-semibold text-concrete-900">PIX copia e cola</span>
-        <div className="flex items-center gap-2 p-3 rounded-control border border-concrete-300 bg-white">
+        <div className="flex items-center gap-2 p-3 rounded-control border border-concrete-300 bg-concrete-0">
           <span className="flex-1 min-w-0 font-mono text-xs text-concrete-700 break-all line-clamp-2">{code}</span>
           <Button label={copied ? 'Copiado' : 'Copiar'} variant="secondary" size="sm" iconLeft="copy" onClick={copy} />
         </div>

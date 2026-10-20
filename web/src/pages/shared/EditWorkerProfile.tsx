@@ -151,7 +151,7 @@ export default function EditWorkerProfile() {
               rows={3}
               placeholder="Ex.: Faço reboco, contrapiso e acabamento há 12 anos. Tenho ferramenta própria."
               value={draft.bio}
-              className="w-full px-3 py-2.5 bg-white rounded-control border border-concrete-300 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+              className="w-full px-3 py-2.5 bg-concrete-0 rounded-control border border-concrete-300 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
               onInput={(v) => setDraft((d) => ({ ...d, bio: v.slice(0, 280) }))}
             />
             <span className="text-xs text-concrete-500 self-end">{`${draft.bio.length}/280`}</span>
@@ -207,7 +207,7 @@ export default function EditWorkerProfile() {
             </div>
           </div>
         </div>
-        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {save.error ? <FieldError message={save.error} /> : null}
           <div className="flex gap-3">
             <Button label="Cancelar" variant="secondary" className="flex-1" onClick={cancel} />

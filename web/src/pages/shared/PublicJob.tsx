@@ -64,7 +64,7 @@ export default function PublicJob({ params }: ScreenProps) {
 
   return (
     <div className="min-h-screen bg-concrete-50">
-      <header className="flex items-center justify-between min-h-14 px-4 bg-white border-b border-concrete-200">
+      <header className="flex items-center justify-between min-h-14 px-4 bg-concrete-0 border-b border-concrete-200">
         <Logo compact />
         {session ? null : <Button label="Entrar" variant="ghost" size="sm" onClick={() => enter('/login')} />}
       </header>

@@ -231,7 +231,7 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
   }
 
   return (
-    <div className="sticky bottom-0 px-4 sm:px-6 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none lg:pt-0 lg:pb-6">
+    <div className="sticky bottom-0 px-4 sm:px-6 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none lg:pt-0 lg:pb-6">
       {error ? <FieldError message={error} /> : null}
       {body}
       <Dialog

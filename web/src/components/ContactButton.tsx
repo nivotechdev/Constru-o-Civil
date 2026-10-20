@@ -54,7 +54,7 @@ export function ContactButton({
         aria-label={loading ? status : `Contato não carregou. ${status}`}
         title={loading ? status : state.message}
         disabled={loading}
-        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-concrete-500 shadow-raised ring-2 ring-white"
+        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-concrete-0 text-concrete-500 shadow-raised ring-2 ring-concrete-0"
         onClick={(e) => {
           e.stopPropagation();
           retry();
@@ -70,7 +70,7 @@ export function ContactButton({
         type="button"
         disabled={loading}
         className={cx(
-          'inline-flex items-center justify-center gap-2 rounded-full font-semibold border border-concrete-300 bg-white text-concrete-700 disabled:opacity-70',
+          'inline-flex items-center justify-center gap-2 rounded-full font-semibold border border-concrete-300 bg-concrete-0 text-concrete-700 disabled:opacity-70',
           size === 'lg' ? 'h-14 px-5 text-base' : 'h-9 px-3.5 text-sm',
           fullWidth ? 'w-full' : ''
         )}

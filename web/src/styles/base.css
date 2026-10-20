@@ -228,8 +228,8 @@ button {
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .app-header.is-scrolled .app-island {
-  background: rgba(255, 255, 255, 0.78);
-  border-color: rgba(255, 255, 255, 0.7);
+  background: rgb(var(--c-concrete-0) / 0.78);
+  border-color: rgb(var(--c-concrete-0) / 0.7);
   -webkit-backdrop-filter: blur(18px) saturate(1.8);
   backdrop-filter: blur(18px) saturate(1.8);
   box-shadow:

@@ -386,7 +386,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           placeholder="Ex.: reboco de duas paredes internas, argamassa e areia já estão no local."
           value={f.detalhe}
           className={cx(
-            'w-full px-3 py-2.5 bg-white rounded-control border outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150',
+            'w-full px-3 py-2.5 bg-concrete-0 rounded-control border outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150',
             ui.errors.detalhe
               ? 'border-danger-500'
               : 'border-concrete-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-100'
@@ -440,7 +440,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
                 aria-selected={selected}
                 className={cx(
                   'flex-1 min-w-0 h-10 flex items-center justify-center gap-2 px-2 rounded-full text-sm font-bold transition-colors',
-                  selected ? 'bg-white text-brand-600 shadow-card' : 'text-concrete-500'
+                  selected ? 'bg-concrete-0 text-brand-600 shadow-card' : 'text-concrete-500'
                 )}
                 onClick={() => goToStep(step.n)}
               >
@@ -508,7 +508,7 @@ function DiasOption({ id, checked, onSelect }: { id: DiasKey; checked: boolean; 
         'relative flex flex-col items-center justify-center gap-0.5 min-h-[4.5rem] px-2 py-2.5 rounded-card border text-center transition-colors',
         checked
           ? 'bg-brand-50 border-brand-500 ring-1 ring-brand-500'
-          : 'bg-white border-concrete-300 hover:bg-concrete-50'
+          : 'bg-concrete-0 border-concrete-300 hover:bg-concrete-50'
       )}
       onClick={onSelect}
     >
@@ -553,8 +553,8 @@ function PayField({
           disabled
             ? 'bg-concrete-50 border-concrete-200'
             : error
-              ? 'bg-white border-danger-500'
-              : 'bg-white border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'
+              ? 'bg-concrete-0 border-danger-500'
+              : 'bg-concrete-0 border-concrete-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100'
         )}
       >
         {disabled ? null : <span className="font-display font-semibold text-xl text-concrete-500">R$</span>}

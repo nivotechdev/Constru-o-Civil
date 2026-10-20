@@ -71,7 +71,7 @@ export default function CopyCode() {
         title="Seu código"
         help="Copie o código, volte para a Bicos e toque em Colar código."
       />
-      <div className="flex flex-col items-center gap-4 p-6 rounded-card bg-white border border-concrete-200">
+      <div className="flex flex-col items-center gap-4 p-6 rounded-card bg-concrete-0 border border-concrete-200">
         <span
           className="font-mono font-bold text-5xl tracking-[0.2em] pl-[0.2em] text-concrete-900 select-all"
           aria-label={`Código ${code.split('').join(' ')}`}

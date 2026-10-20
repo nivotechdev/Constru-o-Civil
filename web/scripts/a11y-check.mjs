@@ -27,6 +27,8 @@ for (const [who, email, pages] of [
   ['r', 'construtora@bicos.demo', ['/minhas-vagas', '/publicar', '/pagamentos', '/empresa', '/configuracoes']]
 ]) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+  // U21: A11Y_TEMA=escuro checks the same screens in the dark theme.
+  if (process.env.A11Y_TEMA === 'escuro') await ctx.addInitScript(() => localStorage.setItem('bicos-tema', 'escuro'));
   const p = await ctx.newPage();
   await p.goto('http://localhost:4173/login');
   await p.waitForTimeout(800);

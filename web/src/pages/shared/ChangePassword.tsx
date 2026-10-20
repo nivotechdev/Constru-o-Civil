@@ -80,7 +80,7 @@ export default function ChangePassword() {
             }}
           />
         </div>
-        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
+        <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {captcha.widget}
           {save.error ? <FieldError message={save.error} /> : null}
           <Button label="Salvar senha nova" type="submit" size="lg" fullWidth loading={save.loading} />

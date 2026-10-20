@@ -21,8 +21,8 @@ export function FlowLayout({
   className?: string;
 }) {
   return (
-    <div className="flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden bg-white lg:h-[calc(100vh-5rem)] lg:supports-[height:100dvh]:h-[calc(100dvh-5rem)] lg:max-w-app lg:mx-auto lg:my-10 lg:rounded-card lg:shadow-card">
-      {header ? <div className="shrink-0 bg-white border-b border-concrete-200">{header}</div> : null}
+    <div className="flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden bg-concrete-0 lg:h-[calc(100vh-5rem)] lg:supports-[height:100dvh]:h-[calc(100dvh-5rem)] lg:max-w-app lg:mx-auto lg:my-10 lg:rounded-card lg:shadow-card">
+      {header ? <div className="shrink-0 bg-concrete-0 border-b border-concrete-200">{header}</div> : null}
       <main
         className={cx(
           'flex-1 min-h-0 overflow-y-auto overscroll-contain bg-concrete-50 px-5 sm:px-8 py-8 flex flex-col gap-7',
@@ -32,7 +32,7 @@ export function FlowLayout({
         {children}
       </main>
       {footer ? (
-        <div className="shrink-0 bg-white shadow-bar px-5 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex flex-col gap-2">
+        <div className="shrink-0 bg-concrete-0 shadow-bar px-5 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex flex-col gap-2">
           {footer}
         </div>
       ) : null}

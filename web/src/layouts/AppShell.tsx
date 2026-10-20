@@ -79,7 +79,7 @@ export function AppShell({ path, pattern, children }: AppShellProps) {
   }
 
   return (
-    <div className={cx('lg:flex lg:flex-col lg:min-h-screen', isMural ? 'bg-white' : '')}>
+    <div className={cx('lg:flex lg:flex-col lg:min-h-screen', isMural ? 'bg-concrete-0' : '')}>
       {/* X05: not remounted on every data change (that dropped the keyboard focus in the bar). */}
       <AppNav role={role} active={tabIdForPath(path, role)} showMobilePill={showMobileNav} account={account} />
       <main
@@ -87,7 +87,7 @@ export function AppShell({ path, pattern, children }: AppShellProps) {
           'flex-1 min-w-0',
           showMobileNav ? 'pb-28 lg:pb-0' : '',
           isMural
-            ? 'bg-white min-h-screen'
+            ? 'bg-concrete-0 min-h-screen'
             : cx(
                 'lg:w-full lg:mx-auto lg:px-8 lg:pt-8 lg:pb-16',
                 NARROW_SCREENS.has(pattern) ? 'lg:max-w-[40rem]' : 'lg:max-w-panel'

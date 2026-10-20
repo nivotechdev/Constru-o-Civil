@@ -53,7 +53,7 @@ export function Dialog({
         role={tone === 'danger' ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby={titleId}
-        className="outline-none w-full sm:max-w-sm bg-white rounded-t-sheet sm:rounded-sheet p-5 flex flex-col gap-4 animate-slide-up"
+        className="outline-none w-full sm:max-w-sm bg-concrete-0 rounded-t-sheet sm:rounded-sheet p-5 flex flex-col gap-4 animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col gap-1.5">
@@ -110,7 +110,7 @@ export function Sheet({ open, title, onClose, children }: SheetProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="outline-none w-full sm:max-w-app lg:max-w-[34rem] bg-white rounded-t-sheet lg:rounded-sheet shadow-sheet p-4 lg:p-6 flex flex-col gap-4 overflow-y-auto animate-slide-up"
+        className="outline-none w-full sm:max-w-app lg:max-w-[34rem] bg-concrete-0 rounded-t-sheet lg:rounded-sheet shadow-sheet p-4 lg:p-6 flex flex-col gap-4 overflow-y-auto animate-slide-up"
         style={{ maxHeight: '85vh' }}
         onClick={(e) => e.stopPropagation()}
       >

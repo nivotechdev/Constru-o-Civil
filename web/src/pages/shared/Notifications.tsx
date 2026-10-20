@@ -56,7 +56,7 @@ export default function Notifications() {
                   type="button"
                   className={cx(
                     'relative flex gap-3 p-4 border rounded-card text-left transition-colors hover:bg-concrete-50',
-                    n.readAt ? 'bg-white border-concrete-200' : 'bg-brand-50/40 border-brand-100'
+                    n.readAt ? 'bg-concrete-0 border-concrete-200' : 'bg-brand-50/40 border-brand-100'
                   )}
                   onClick={() => open(n)}
                 >

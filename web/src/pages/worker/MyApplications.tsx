@@ -61,7 +61,7 @@ export default function MyApplications() {
 
   return (
     <div className="flex flex-col">
-      <div className="sticky top-0 z-20 flex items-center justify-between min-h-14 px-4 sm:px-0 bg-white border-b border-concrete-200 lg:static lg:bg-transparent lg:border-0 lg:pb-2">
+      <div className="sticky top-0 z-20 flex items-center justify-between min-h-14 px-4 sm:px-0 bg-concrete-0 border-b border-concrete-200 lg:static lg:bg-transparent lg:border-0 lg:pb-2">
         <h1 className="font-display font-semibold text-xl lg:text-[1.75rem] text-concrete-900">Minhas candidaturas</h1>
         {query.status === 'ready' && !paging.hasMore ? (
           <span className="text-sm text-concrete-500">

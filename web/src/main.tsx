@@ -6,6 +6,7 @@ import { installGlobalErrorReporting } from './services/monitoring';
 import { IS_DEMO } from './services/mode';
 import { currentPath, navigate, startRouter } from './services/router';
 import { startServiceWorker } from './services/pwa';
+import { applySavedTheme } from './services/theme';
 import '@fontsource/barlow/latin-600.css';
 import '@fontsource/barlow/latin-700.css';
 import '@fontsource/plus-jakarta-sans/latin-400.css';
@@ -18,6 +19,8 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/tailwind.css';
 
+// U21: the saved theme before anything is drawn.
+applySavedTheme();
 installGlobalErrorReporting();
 // Z10: a screen's file that vanished after a new version was published → reload once to get the new one.
 window.addEventListener('vite:preloadError', (event) => {

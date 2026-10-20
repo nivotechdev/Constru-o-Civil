@@ -17,7 +17,7 @@ export default function AcceptTerms() {
   const [checked, setChecked] = useState(false);
   const accept = useAction(acceptTerms, () => navigate('/mural', { replace: true }));
   return (
-    <div className="min-h-screen flex flex-col bg-white lg:max-w-app lg:mx-auto">
+    <div className="min-h-screen flex flex-col bg-concrete-0 lg:max-w-app lg:mx-auto">
       <div className="flex-1 flex flex-col gap-6 px-5 sm:px-8 pt-12 pb-6">
         <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand-50">
           <Icon name="file-check" size={28} color="var(--brand-500)" />

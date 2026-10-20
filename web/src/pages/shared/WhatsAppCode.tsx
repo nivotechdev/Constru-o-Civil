@@ -50,7 +50,7 @@ export function WhatsAppCode({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3 p-3.5 rounded-card bg-white border border-concrete-200">
+      <div className="flex items-center gap-3 p-3.5 rounded-card bg-concrete-0 border border-concrete-200">
         <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#128C4A]/10 shrink-0">
           <Icon name="message-circle" size={20} color="#128C4A" />
         </span>
