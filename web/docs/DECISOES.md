@@ -1663,3 +1663,14 @@ com o trabalhador**: ligado, o campo fica no lugar, apagado e escrito "A combina
 aparece "A combinar"" embaixo; desligado, volta a pedir o valor. O erro de campo vazio passou a citar a escolha que
 existe na tela ("ou escolha combinar com o trabalhador"). Regras, mínimo, máximo e o que vai para o banco não mudaram;
 o campo mantém o id `create-job-valor` (usado pelo E2E).
+
+## U09 — Telas de cadastro com a altura da tela e o botão sempre à vista
+
+O responsável viu, no Android, o botão "Continuar" do cadastro escondido atrás dos botões do celular. Causa: as telas
+usavam `min-h-screen` (`100vh`), e no celular `100vh` conta também a barra do navegador — a página ficava mais alta
+que a área visível e o botão, que vinha no fim dela, saía da tela. Agora as telas de conseguir uma conta (escolher o
+lado, cadastro, confirmar e-mail, completar perfil, completar cadastro do Google) usam um layout só
+(`components/FlowLayout.tsx`): altura exata da área visível (`100dvh`, com `100vh` para navegador antigo), cabeçalho
+em cima, só o meio rola e os botões ficam presos embaixo, acima dos botões do celular (`env(safe-area-inset-bottom)`,
+que funciona porque o `index.html` já tem `viewport-fit=cover`). No tablet deitado e no computador continua um cartão
+centralizado.

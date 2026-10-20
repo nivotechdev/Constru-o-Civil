@@ -3,7 +3,7 @@ import { passwordProblem } from '../../utils/password';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
 import { FieldError } from '../../components/FieldError';
-import { IconButton } from '../../components/IconButton';
+import { FlowHeading, FlowLayout, FlowProgress } from '../../components/FlowLayout';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
@@ -392,182 +392,164 @@ export default function Signup({ params }: ScreenProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white lg:min-h-0 lg:h-[calc(100vh-5rem)] lg:max-w-app lg:mx-auto lg:shadow-card lg:my-10 lg:rounded-card lg:overflow-hidden">
-      <div className="sticky top-0 z-10 bg-white border-b border-concrete-200 px-2 pb-3">
-        <div className="flex items-center gap-1.5 min-h-14">
-          <IconButton icon="arrow-left" label="Voltar" onClick={goBack} />
-          <span className="flex-1 text-sm font-semibold text-concrete-500">{`Passo ${step + 1} de ${cfg.fields.length}`}</span>
-        </div>
-        <div className="h-1 mx-2 rounded-full bg-concrete-200 overflow-hidden">
-          <div
-            className="h-full bg-brand-500 rounded-full transition-all duration-200"
-            style={{ width: ((step + 1) / cfg.fields.length) * 100 + '%' }}
+    <FlowLayout
+      header={<FlowProgress step={step} total={cfg.fields.length} onBack={goBack} />}
+      footer={
+        <>
+          {captcha.widget}
+          {ui.submitError ? <FieldError message={ui.submitError} /> : null}
+          <Button
+            label={
+              isLast
+                ? 'Criar minha conta'
+                : field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE
+                  ? 'Enviar código'
+                  : field.isCode
+                    ? 'Confirmar número'
+                    : 'Continuar'
+            }
+            size="lg"
+            fullWidth
+            loading={ui.submitting}
+            onClick={continueStep}
           />
-        </div>
-      </div>
-      <div className="flex-1 px-5 sm:px-8 py-8 flex flex-col gap-7 bg-concrete-50 lg:min-h-0 lg:overflow-y-auto">
-        {ui.generalError ? (
-          <div className="flex flex-col gap-3.5 p-4 bg-danger-50 border border-danger-500 rounded-card">
-            <div className="flex gap-2.5 items-start">
-              <span className="shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold text-danger-500">Não deu para criar a conta com esses dados.</span>
-                <span className="text-sm text-concrete-700">
-                  {`Confira o ${role === 'recrutador' ? 'CNPJ ou CPF' : 'CPF'} e o e-mail. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                label="Entrar na conta"
-                variant="secondary"
-                size="sm"
-                className="flex-1"
-                onClick={() => navigate('/login')}
-              />
-              <Button
-                label="Recuperar senha"
-                variant="ghost"
-                size="sm"
-                className="flex-1"
-                onClick={() => navigate('/esqueci-senha')}
-              />
+        </>
+      }
+    >
+      {ui.generalError ? (
+        <div className="flex flex-col gap-3.5 p-4 bg-danger-50 border border-danger-500 rounded-card">
+          <div className="flex gap-2.5 items-start">
+            <span className="shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-danger-500">Não deu para criar a conta com esses dados.</span>
+              <span className="text-sm text-concrete-700">
+                {`Confira o ${role === 'recrutador' ? 'CNPJ ou CPF' : 'CPF'} e o e-mail. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
+              </span>
             </div>
           </div>
-        ) : null}
-        <div className="flex flex-col gap-2.5">
-          <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">{cfg.overline}</span>
-          <h1 className="font-display font-bold text-3xl text-concrete-900">{field.question}</h1>
-          <p className="text-base text-concrete-700">{field.help}</p>
-        </div>
-        {field.isCode ? (
-          <WhatsAppCode
-            id={fieldDomId}
-            phone={ui.values.whatsapp || ''}
-            code={ui.values.codigo || ''}
-            error={ui.errors.codigo}
-            sentAt={ui.codeSentAt}
-            resending={ui.resending}
-            resent={ui.resent}
-            onCode={setValue}
-            onEnter={continueByEnter}
-            onResend={resendCode}
-            onEditNumber={goBack}
-          />
-        ) : field.isPassword ? (
-          <div className="flex flex-col gap-5">
-            <PasswordInput
-              id={key + '-senha'}
-              label={field.label}
-              placeholder={field.placeholder}
-              value={password}
-              error={ui.errors.senha}
-              visible={ui.passwordVisible}
-              onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
-              autoComplete="new-password"
-              onInput={setValue}
-              onEnter={continueByEnter}
+          <div className="flex gap-2">
+            <Button
+              label="Entrar na conta"
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+              onClick={() => navigate('/login')}
             />
-            <PasswordInput
-              id={key + '-confirm'}
-              autoComplete="new-password"
-              label="Confirme a senha"
-              placeholder="Repita a senha"
-              value={confirmPassword}
-              error={ui.confirmError}
-              visible={ui.passwordVisible}
-              onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
-              onInput={(v) => {
-                setConfirmPassword(v);
-                setUi({ confirmError: null });
-              }}
-              onEnter={continueByEnter}
+            <Button
+              label="Recuperar senha"
+              variant="ghost"
+              size="sm"
+              className="flex-1"
+              onClick={() => navigate('/esqueci-senha')}
             />
-            <div className="flex flex-col gap-5">
-              <PasswordStrength password={password} />
-              <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
-                <Checkbox
-                  label="Tenho 18 anos ou mais"
-                  checked={ui.adult}
-                  onChange={(v) => setUi({ adult: v, adultError: false })}
-                />
-                {ui.adultError ? (
-                  <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
-                    A Bicos é só para maiores de 18 anos.
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex flex-col gap-1">
-                <Checkbox
-                  label="Li e aceito os Termos de uso e a Política de privacidade"
-                  checked={ui.accepted}
-                  onChange={(v) => setUi({ accepted: v, acceptError: false })}
-                />
-                <div className="flex gap-4 pl-9">
-                  <button
-                    type="button"
-                    className="text-sm text-brand-600 underline"
-                    onClick={() => navigate('/termos')}
-                  >
-                    Termos de uso
-                  </button>
-                  <button
-                    type="button"
-                    className="text-sm text-brand-600 underline"
-                    onClick={() => navigate('/privacidade')}
-                  >
-                    Política de privacidade
-                  </button>
-                </div>
-                {ui.acceptError ? (
-                  <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
-                    Aceite as condições para criar sua conta.
-                  </span>
-                ) : null}
-              </div>
-            </div>
           </div>
-        ) : (
-          <Input
-            key={field.id}
-            id={key + '-' + field.id}
+        </div>
+      ) : null}
+      <FlowHeading overline={cfg.overline} title={field.question} help={field.help} />
+      {field.isCode ? (
+        <WhatsAppCode
+          id={fieldDomId}
+          phone={ui.values.whatsapp || ''}
+          code={ui.values.codigo || ''}
+          error={ui.errors.codigo}
+          sentAt={ui.codeSentAt}
+          resending={ui.resending}
+          resent={ui.resent}
+          onCode={setValue}
+          onEnter={continueByEnter}
+          onResend={resendCode}
+          onEditNumber={goBack}
+        />
+      ) : field.isPassword ? (
+        <div className="flex flex-col gap-5">
+          <PasswordInput
+            id={key + '-senha'}
             label={field.label}
             placeholder={field.placeholder}
-            icon={field.icon}
-            type={field.type || 'text'}
-            value={ui.values[field.id] || ''}
-            error={ui.errors[field.id]}
-            mono={Boolean(field.mono)}
-            inputMode={
-              field.mask === 'phone' ? 'tel' : field.mask ? 'numeric' : field.type === 'email' ? 'email' : 'text'
-            }
-            autoComplete={fieldAutoComplete(field, role)}
+            value={password}
+            error={ui.errors.senha}
+            visible={ui.passwordVisible}
+            onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
+            autoComplete="new-password"
             onInput={setValue}
             onEnter={continueByEnter}
-            autoFocus
           />
-        )}
-      </div>
-      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar flex flex-col gap-2">
-        {captcha.widget}
-        {ui.submitError ? <FieldError message={ui.submitError} /> : null}
-        <Button
-          label={
-            isLast
-              ? 'Criar minha conta'
-              : field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE
-                ? 'Enviar código'
-                : field.isCode
-                  ? 'Confirmar número'
-                  : 'Continuar'
+          <PasswordInput
+            id={key + '-confirm'}
+            autoComplete="new-password"
+            label="Confirme a senha"
+            placeholder="Repita a senha"
+            value={confirmPassword}
+            error={ui.confirmError}
+            visible={ui.passwordVisible}
+            onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
+            onInput={(v) => {
+              setConfirmPassword(v);
+              setUi({ confirmError: null });
+            }}
+            onEnter={continueByEnter}
+          />
+          <div className="flex flex-col gap-5">
+            <PasswordStrength password={password} />
+            <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
+              <Checkbox
+                label="Tenho 18 anos ou mais"
+                checked={ui.adult}
+                onChange={(v) => setUi({ adult: v, adultError: false })}
+              />
+              {ui.adultError ? (
+                <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
+                  A Bicos é só para maiores de 18 anos.
+                </span>
+              ) : null}
+            </div>
+            <div className="flex flex-col gap-1">
+              <Checkbox
+                label="Li e aceito os Termos de uso e a Política de privacidade"
+                checked={ui.accepted}
+                onChange={(v) => setUi({ accepted: v, acceptError: false })}
+              />
+              <div className="flex gap-4 pl-9">
+                <button type="button" className="text-sm text-brand-600 underline" onClick={() => navigate('/termos')}>
+                  Termos de uso
+                </button>
+                <button
+                  type="button"
+                  className="text-sm text-brand-600 underline"
+                  onClick={() => navigate('/privacidade')}
+                >
+                  Política de privacidade
+                </button>
+              </div>
+              {ui.acceptError ? (
+                <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
+                  Aceite as condições para criar sua conta.
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Input
+          key={field.id}
+          id={key + '-' + field.id}
+          label={field.label}
+          placeholder={field.placeholder}
+          icon={field.icon}
+          type={field.type || 'text'}
+          value={ui.values[field.id] || ''}
+          error={ui.errors[field.id]}
+          mono={Boolean(field.mono)}
+          inputMode={
+            field.mask === 'phone' ? 'tel' : field.mask ? 'numeric' : field.type === 'email' ? 'email' : 'text'
           }
-          size="lg"
-          fullWidth
-          loading={ui.submitting}
-          onClick={continueStep}
+          autoComplete={fieldAutoComplete(field, role)}
+          onInput={setValue}
+          onEnter={continueByEnter}
+          autoFocus
         />
-      </div>
-    </div>
+      )}
+    </FlowLayout>
   );
 }
 

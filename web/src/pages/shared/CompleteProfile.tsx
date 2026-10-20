@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Button } from '../../components/Button';
 import { CityPicker, LocationButton } from '../../components/CityPicker';
 import { FieldError } from '../../components/FieldError';
-import { IconButton } from '../../components/IconButton';
+import { FlowLayout, FlowProgress } from '../../components/FlowLayout';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { Select } from '../../components/Select';
 import { useUI } from '../../hooks/useStore';
@@ -49,29 +49,19 @@ interface ShellProps {
 
 function Shell({ step, total, onBack, children, onContinue, label, loading = false, error = null }: ShellProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-white lg:min-h-0 lg:h-[calc(100vh-5rem)] lg:max-w-app lg:mx-auto lg:shadow-card lg:my-10 lg:rounded-card lg:overflow-hidden">
-      <div className="sticky top-0 z-10 bg-white border-b border-concrete-200 px-2 pb-3">
-        <div className="flex items-center gap-1.5 min-h-14">
-          {onBack ? <IconButton icon="arrow-left" label="Voltar" onClick={onBack} /> : <span className="w-11 h-11" />}
-          <span className="flex-1 text-sm font-semibold text-concrete-500">{`Passo ${step + 1} de ${total}`}</span>
-        </div>
-        <div className="h-1 mx-2 rounded-full bg-concrete-200 overflow-hidden">
-          <div
-            className="h-full bg-brand-500 rounded-full transition-all duration-200"
-            style={{ width: ((step + 1) / total) * 100 + '%' }}
-          />
-        </div>
-      </div>
-      <div className="flex-1 px-5 sm:px-8 py-8 flex flex-col gap-7 bg-concrete-50 lg:min-h-0 lg:overflow-y-auto">
-        {children}
-      </div>
-      <div className="px-5 sm:px-8 py-3 bg-white shadow-bar flex flex-col gap-2">
-        {error ? <FieldError message={error} /> : null}
-        <Button label={label} size="lg" fullWidth loading={loading} onClick={onContinue} />
-        {/* Y26: a way out for whoever entered the wrong account. */}
-        <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
-      </div>
-    </div>
+    <FlowLayout
+      header={<FlowProgress step={step} total={total} onBack={onBack} />}
+      footer={
+        <>
+          {error ? <FieldError message={error} /> : null}
+          <Button label={label} size="lg" fullWidth loading={loading} onClick={onContinue} />
+          {/* Y26: a way out for whoever entered the wrong account. */}
+          <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
+        </>
+      }
+    >
+      {children}
+    </FlowLayout>
   );
 }
 

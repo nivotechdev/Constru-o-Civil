@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { FieldError } from '../../components/FieldError';
+import { FlowLayout } from '../../components/FlowLayout';
 import { Icon } from '../../components/icons/Icon';
 import { ResultIcon } from '../../components/ResultIcon';
 import { useSession, useScreenUI } from '../../hooks/useStore';
@@ -86,67 +87,69 @@ export default function VerifyEmail() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-concrete-50 lg:max-w-app lg:mx-auto">
-      <div className="flex-1 flex flex-col items-center text-center gap-6 px-6 pt-16 pb-8">
-        <ResultIcon icon="mail-check" tone="brand" />
-        <div className="flex flex-col gap-2">
-          <h1 className="font-display font-bold text-2xl text-concrete-900">
-            {ui.fromSignup ? 'Conta criada. Confirme seu e-mail' : 'Confirme seu e-mail'}
-          </h1>
-          <p className="text-base text-concrete-700">
-            Enviamos um link de confirmação para{' '}
-            <strong className="text-concrete-900">{session?.email ?? 'seu e-mail'}</strong>. Abra o link para ativar sua
-            conta.
-          </p>
-        </div>
-        <Card tone="sunken" padding="md" className="w-full text-left">
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2.5 items-center">
-              <Icon name="clock" size={20} color="var(--text-subtle)" />
-              <span className="text-sm text-concrete-700">
-                O link vence depois de um tempo. Se vencer, peça outro aqui.
-              </span>
-            </div>
-            <div className="flex gap-2.5 items-center">
-              <Icon name="search-x" size={20} color="var(--text-subtle)" />
-              <span className="text-sm text-concrete-700">Não chegou? Confira a caixa de spam.</span>
-            </div>
+    <FlowLayout
+      className="items-center text-center gap-6 px-6 pt-16"
+      footer={
+        <>
+          <Button
+            label={IS_DEMO ? 'Abrir meu e-mail' : 'Já confirmei meu e-mail'}
+            size="lg"
+            fullWidth
+            iconLeft="mail"
+            loading={ui.confirming}
+            onClick={open}
+          />
+          {IS_DEMO ? (
+            <span className="text-xs text-center text-concrete-500">
+              Demonstração: este botão faz o papel do link enviado por e-mail.
+            </span>
+          ) : null}
+          <Button
+            label={wait > 0 ? `Reenviar o link em 0:${String(wait).padStart(2, '0')}` : 'Reenviar o link'}
+            variant="ghost"
+            fullWidth
+            loading={ui.resending}
+            disabled={wait > 0}
+            onClick={resend}
+          />
+          <Button label="Corrigir e-mail" variant="ghost" fullWidth onClick={fixEmail} />
+          <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
+        </>
+      }
+    >
+      <ResultIcon icon="mail-check" tone="brand" />
+      <div className="flex flex-col gap-2">
+        <h1 className="font-display font-bold text-2xl text-concrete-900">
+          {ui.fromSignup ? 'Conta criada. Confirme seu e-mail' : 'Confirme seu e-mail'}
+        </h1>
+        <p className="text-base text-concrete-700">
+          Enviamos um link de confirmação para{' '}
+          <strong className="text-concrete-900">{session?.email ?? 'seu e-mail'}</strong>. Abra o link para ativar sua
+          conta.
+        </p>
+      </div>
+      <Card tone="sunken" padding="md" className="w-full text-left">
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2.5 items-center">
+            <Icon name="clock" size={20} color="var(--text-subtle)" />
+            <span className="text-sm text-concrete-700">
+              O link vence depois de um tempo. Se vencer, peça outro aqui.
+            </span>
           </div>
-        </Card>
-        {ui.resent ? (
-          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success-500">
-            <Icon name="circle-check" size={16} />
-            Enviamos o link de novo.
-          </span>
-        ) : null}
-        {ui.error ? <FieldError message={ui.error} /> : null}
-      </div>
-      <div className="px-6 pb-8 flex flex-col gap-2">
-        <Button
-          label={IS_DEMO ? 'Abrir meu e-mail' : 'Já confirmei meu e-mail'}
-          size="lg"
-          fullWidth
-          iconLeft="mail"
-          loading={ui.confirming}
-          onClick={open}
-        />
-        {IS_DEMO ? (
-          <span className="text-xs text-center text-concrete-500">
-            Demonstração: este botão faz o papel do link enviado por e-mail.
-          </span>
-        ) : null}
-        <Button
-          label={wait > 0 ? `Reenviar o link em 0:${String(wait).padStart(2, '0')}` : 'Reenviar o link'}
-          variant="ghost"
-          fullWidth
-          loading={ui.resending}
-          disabled={wait > 0}
-          onClick={resend}
-        />
-        <Button label="Corrigir e-mail" variant="ghost" fullWidth onClick={fixEmail} />
-        <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
-      </div>
-    </div>
+          <div className="flex gap-2.5 items-center">
+            <Icon name="search-x" size={20} color="var(--text-subtle)" />
+            <span className="text-sm text-concrete-700">Não chegou? Confira a caixa de spam.</span>
+          </div>
+        </div>
+      </Card>
+      {ui.resent ? (
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success-500">
+          <Icon name="circle-check" size={16} />
+          Enviamos o link de novo.
+        </span>
+      ) : null}
+      {ui.error ? <FieldError message={ui.error} /> : null}
+    </FlowLayout>
   );
 }
 
