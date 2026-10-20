@@ -1,4 +1,4 @@
-# U36 — Põe fotos reais (domínio público/CC0, do Openverse) nas vagas da conta de TESTE do staging.
+# U36 — Põe fotos reais (domínio público/CC0, do Wikimedia Commons) nas vagas da conta de TESTE do staging.
 # Só manual (Actions › staging-fotos › Run workflow): não roda a cada envio ao master.
 name: staging-fotos
 
@@ -31,4 +31,7 @@ jobs:
           echo "SERVICE_ROLE_KEY=$svc" >> "$GITHUB_ENV"
           echo "SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
       - name: Fotos nas vagas de teste
-        run: node scripts/staging/fotos-vagas-teste.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+        # pipefail: um erro do script derruba o passo (o tee sozinho escondia a falha).
+        run: |
+          set -o pipefail
+          node scripts/staging/fotos-vagas-teste.mjs | tee -a "$GITHUB_STEP_SUMMARY"

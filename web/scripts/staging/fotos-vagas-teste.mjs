@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// U36 — Fotos reais nas vagas de TESTE do staging (conta recrutador.teste@bicos.test). Busca no Openverse (o acervo
-// aberto do WordPress/Creative Commons) só fotos de domínio público ou CC0 — uso livre, sem obrigação de crédito —,
-// duas por vaga, sem repetir, envia ao bucket `vagas` na pasta da construtora (a mesma regra do app) e grava em
+// U36 — Fotos reais nas vagas de TESTE do staging (conta recrutador.teste@bicos.test). Busca no Wikimedia Commons só
+// fotos de domínio público ou CC0 — uso livre, sem obrigação de crédito —, duas por vaga, sem repetir, já reduzidas a
+// 1280 px pelo próprio Commons, envia ao bucket `vagas` na pasta da construtora (a mesma regra do app) e grava em
 // jobs.photos. Roda pelo workflow "staging-fotos" (aqui a rede de fora não alcança os bancos de imagens).
 //
 //   SUPABASE_URL=https://<ref>.supabase.co SERVICE_ROLE_KEY=… node scripts/staging/fotos-vagas-teste.mjs
@@ -13,7 +13,7 @@ if (url.includes('ppnxdajiihsjaojxokzh')) throw new Error('Isto é só para o st
 
 const COMPANY = 'b1c05000-0000-4000-8000-00000000c0de';
 const PER_JOB = 2;
-// Palavras do título → busca no Openverse (em inglês, onde o acervo é maior).
+// Palavras do título → busca no Commons (em inglês, onde o acervo é maior).
 const SEARCHES = [
   [/mestre de obras/i, 'construction site workers'],
   [/contrapiso/i, 'concrete floor construction worker'],
@@ -33,32 +33,52 @@ const rest = (path, init = {}) =>
     headers: { apikey: key, Authorization: `Bearer ${key}`, ...(init.headers ?? {}) }
   });
 
+const UA = 'BicosStaging/1.0 (https://github.com/nivotechdev/Constru-o-Civil)';
+const FREE = /^(public domain|pd|cc0|cc-zero|cc0 1\.0)/i;
+
 async function candidates(query) {
-  const q = new URLSearchParams({ q: query, license: 'cc0,pdm', page_size: '30', mature: 'false' });
-  const res = await fetch(`https://api.openverse.org/v1/images/?${q}`, { headers: { 'User-Agent': 'bicos-staging' } });
-  if (!res.ok) throw new Error(`Openverse ${res.status} para "${query}"`);
-  const { results } = await res.json();
-  return results.filter(
-    (r) => /jpe?g/i.test(r.filetype ?? r.url) && r.width >= 900 && r.width >= r.height && r.width <= r.height * 2.2
-  );
+  const q = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    generator: 'search',
+    gsrnamespace: '6',
+    gsrsearch: `${query} filetype:bitmap`,
+    gsrlimit: '50',
+    prop: 'imageinfo',
+    iiprop: 'url|size|mime|extmetadata',
+    iiurlwidth: '1280'
+  });
+  const res = await fetch(`https://commons.wikimedia.org/w/api.php?${q}`, { headers: { 'User-Agent': UA } });
+  if (!res.ok) throw new Error(`Commons ${res.status} para "${query}"`);
+  const pages = Object.values((await res.json()).query?.pages ?? {}).sort((x, y) => x.index - y.index);
+  return pages
+    .map((p) => ({ id: p.pageid, title: p.title, info: p.imageinfo?.[0] }))
+    .filter(({ info }) => {
+      const license = info?.extmetadata?.LicenseShortName?.value ?? '';
+      return (
+        info?.mime === 'image/jpeg' &&
+        FREE.test(license) &&
+        info.width >= 1000 &&
+        info.width >= info.height &&
+        info.width <= info.height * 2.2 &&
+        info.thumburl
+      );
+    })
+    .map(({ id, title, info }) => ({
+      id,
+      title,
+      thumb: info.thumburl,
+      license: info.extmetadata?.LicenseShortName?.value,
+      creator: (info.extmetadata?.Artist?.value ?? '').replace(/<[^>]+>/g, '').trim(),
+      page: info.descriptionurl
+    }));
 }
 
 async function download(image) {
-  // A miniatura grande do próprio Openverse (redimensionada e comprimida); senão o original, se não for enorme.
-  for (const src of [
-    `https://api.openverse.org/v1/images/${image.id}/thumb/?full_size=true&compressed=true`,
-    image.url
-  ]) {
-    try {
-      const res = await fetch(src, { headers: { 'User-Agent': 'bicos-staging' } });
-      if (!res.ok || !/image\/jpe?g/i.test(res.headers.get('content-type') ?? '')) continue;
-      const bytes = new Uint8Array(await res.arrayBuffer());
-      if (bytes.length > 20_000 && bytes.length < 3_500_000) return bytes;
-    } catch {
-      // tenta a próxima
-    }
-  }
-  return null;
+  const res = await fetch(image.thumb, { headers: { 'User-Agent': UA } });
+  if (!res.ok || !/image\/jpe?g/i.test(res.headers.get('content-type') ?? '')) return null;
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  return bytes.length > 20_000 && bytes.length < 3_500_000 ? bytes : null;
 }
 
 const jobsRes = await rest(`/rest/v1/jobs?company_id=eq.${COMPANY}&select=id,title&order=id`);
@@ -71,7 +91,9 @@ const credits = [];
 for (const job of jobs) {
   const query = SEARCHES.find(([re]) => re.test(job.title))?.[1] ?? 'construction worker';
   const photos = [];
-  for (const image of await candidates(query)) {
+  // A busca da vaga e, se faltar foto boa, uma mais geral.
+  const pool = [...(await candidates(query)), ...(await candidates('construction worker building site'))];
+  for (const image of pool) {
     if (photos.length >= PER_JOB) break;
     if (used.has(image.id)) continue;
     const bytes = await download(image);
@@ -103,3 +125,4 @@ for (const job of jobs) {
 }
 
 console.log('\nOrigem das fotos (domínio público / CC0):\n' + credits.join('\n'));
+if (!credits.length) throw new Error('Nenhuma foto encontrada.');
