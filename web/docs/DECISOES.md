@@ -1942,3 +1942,14 @@ mostrar a descrição da vaga. A U04 tinha tirado toda pílula das fotos (e a si
 tom — análise, pré-selecionado, avaliar, não foi essa vez…; cinza quando encerrada, mas fora do cinza da foto para
 continuar legível) e, embaixo do título, a descrição da vaga em até duas linhas e o valor da diária. Vaga antiga sem
 descrição mostra bairro e data no lugar, para todos os cards terem a mesma altura. O mural continua sem pílulas (U04).
+
+## U36 — Fotos reais nas 10 vagas de teste do staging
+
+Pedido do responsável: fotos bonitas e reais nas vagas de teste (BC-5071 a BC-5080, só no staging). A rede desta
+sessão não alcança bancos de imagem, então o workflow manual `staging-fotos` faz o trabalho
+(`scripts/staging/fotos-vagas-teste.mjs`): só fotos **CC0 ou domínio público** do Wikimedia Commons (uso livre, sem
+crédito obrigatório), em paisagem, já em 1280 px, enviadas ao bucket `vagas` na pasta da construtora de teste. A busca
+automática errou nas primeiras rodadas (pintura de museu, astronauta "Foreman", adaptador de videogame), então as duas
+fotos de cada vaga foram **escolhidas à mão** entre as candidatas que o modo `ensaio` lista; a busca fica só de
+reserva, exigindo a palavra do ofício no nome do arquivo e barrando pintura, acervo histórico e militar. Cada rodada
+grava com nome novo (sem foto velha no cache). O script recusa a produção.
