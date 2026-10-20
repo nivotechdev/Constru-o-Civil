@@ -1573,6 +1573,7 @@ export type Database = {
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       check_cron_failures: { Args: Record<PropertyKey, never>; Returns: number };
       claim_document_for: { Args: { p_user_id: string; p_digits: string }; Returns: undefined };
+      claim_whatsapp_for: { Args: { p_user_id: string; p_phone: string }; Returns: undefined };
       cnpj_valid: { Args: { p_document: string }; Returns: boolean };
       company_cnpj_for_check: { Args: { p_company: string }; Returns: string };
       conclude_finished_jobs: { Args: { p_worker?: string; p_company?: string }; Returns: number };
@@ -1813,6 +1814,7 @@ export type Database = {
       set_identity_status: { Args: { p_worker: string; p_status: string; p_reason?: string }; Returns: undefined };
       set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
       short_datetime_br: { Args: { p_at: string }; Returns: string };
+      signup_taken: { Args: { p_kind: string; p_value: string }; Returns: boolean };
       staff_guard: { Args: Record<PropertyKey, never>; Returns: string };
       staff_log: {
         Args: { p_action: string; p_target_type: string; p_target_id: string; p_reason: string };

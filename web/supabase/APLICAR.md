@@ -571,6 +571,18 @@ concluída, prazo, conta excluída). **Junto com o front novo** (o front antigo 
 select to_regprocedure('public.close_job(text)');   -- null
 ```
 
+### 49. `20261020000100_u10_dados_unicos.sql` (U10)
+
+E-mail, CPF/CNPJ e WhatsApp de uma conta só, conferidos no passo do cadastro: `signup_taken` (só para a Edge Function
+`verificar-cadastro`, que vai junto), WhatsApp único (`claim_whatsapp_for` no cadastro e na troca do número, índice
+`accounts_whatsapp_key`). Se houver número repetido, fica com a conta confirmada mais antiga (na produção não havia em
+20/10). **Antes:** conferir de novo que não há repetido; **junto:** publicar `verificar-cadastro` (o front novo chama).
+
+```sql
+select whatsapp, count(*) from public.accounts where whatsapp <> '' group by 1 having count(*) > 1;  -- antes: 0 linhas
+select indexname from pg_indexes where indexname = 'accounts_whatsapp_key';                          -- depois: 1 linha
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

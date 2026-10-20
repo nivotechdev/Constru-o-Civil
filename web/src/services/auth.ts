@@ -140,6 +140,27 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase() || '?';
 }
 
+/** U10: the data the sign-up checks as soon as it is typed (each one belongs to a single account). */
+export type SignUpCheck = 'email' | 'documento' | 'whatsapp';
+
+/**
+ * U10: whether the e-mail, CPF/CNPJ or WhatsApp is still free — asked on the sign-up step where it is typed,
+ * so a taken one stops the person there instead of at the end. Only a confirmed account holds it (a sign-up
+ * never confirmed gives it up). Backend: Edge Function `verificar-cadastro` (attempt limits, yes/no only).
+ */
+export async function isFreeForSignUp(kind: SignUpCheck, value: string): Promise<boolean> {
+  if (!IS_DEMO) return remote.isFreeForSignUp(kind, value);
+  await mockLatency(300);
+  const accounts = Object.values(getDb().accounts);
+  if (kind === 'email') return !accounts.some((a) => a.email.toLowerCase() === value.trim().toLowerCase());
+  if (kind === 'documento')
+    return (
+      !TAKEN_DOCS.some((d) => digits(d) === digits(value)) &&
+      !accounts.some((a) => digits(a.document) === digits(value))
+    );
+  return !accounts.some((a) => digits(a.whatsapp) === digits(value));
+}
+
 /**
  * Creates the account and its empty profile, and logs it in. The e-mail confirmation and the profile
  * come next (the route guards send the user there). Backend: Supabase Auth `signUp` + a trigger that
@@ -160,6 +181,8 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
     return { ok: false, reason: 'recusado' };
   if (accounts.some((a) => a.email.toLowerCase() === data.email.trim().toLowerCase()))
     return { ok: false, reason: 'email-taken' };
+  if (accounts.some((a) => digits(a.whatsapp) === digits(data.whatsapp)))
+    throw serviceError('conflito', 'Esse WhatsApp já está em outra conta da Bicos.');
 
   const stamp = Date.now().toString(36);
   const now = new Date().toISOString();

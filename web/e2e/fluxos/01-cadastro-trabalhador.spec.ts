@@ -11,7 +11,8 @@ import {
   linkDeConfirmacao,
   nomeDeTeste,
   prepararPagina,
-  print
+  print,
+  whatsappDeTeste
 } from '../apoio';
 
 test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ page }) => {
@@ -19,6 +20,7 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   const email = emailDeTeste('trabalhador');
   const cpf = cpfValido('trabalhador');
   const nome = nomeDeTeste('Teste Trabalhador');
+  const whatsapp = whatsappDeTeste('trabalhador');
 
   await page.goto('/cadastro/trabalhador');
   const k = '#cadastro-trabalhador-';
@@ -28,7 +30,7 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   await page.getByRole('button', { name: 'Continuar' }).click();
   await page.fill(k + 'email', email);
   await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.fill(k + 'whatsapp', '11988887777');
+  await page.fill(k + 'whatsapp', whatsapp);
   await page.getByRole('button', { name: 'Continuar' }).click();
   await page.fill(k + 'senha', ENV.password);
   await page.fill(k + 'confirm', ENV.password);
@@ -54,5 +56,5 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).toHaveURL(/\/mural/);
   await print(page, 'f1', 'mural do trabalhador');
-  atualizar((e) => (e.contas.trabalhador = { id, email, documento: cpf, nome }));
+  atualizar((e) => (e.contas.trabalhador = { id, email, documento: cpf, nome, whatsapp }));
 });

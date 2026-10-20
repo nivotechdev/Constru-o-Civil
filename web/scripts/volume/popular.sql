@@ -33,7 +33,7 @@ select gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated
        'volume+' || n || '@bicos.invalid', now(),
        jsonb_build_object('role', case when n <= 50 then 'recrutador' else 'trabalhador' end,
                           'nome', case when n <= 50 then 'Construtora Volume ' || n else 'Trabalhador Volume ' || n end,
-                          'documento', pg_temp.cpf('volume-' || n), 'whatsapp', '11988887777',
+                          'documento', pg_temp.cpf('volume-' || n), 'whatsapp', '1190' || lpad(n::text, 7, '0'),
                           'terms_version', '1.0', 'maior_de_idade', true),
        now(), now()
   from generate_series(1, 2050) n;

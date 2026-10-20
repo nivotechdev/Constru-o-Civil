@@ -94,7 +94,7 @@ jobs:
             "APP_ORIGIN=$origins" \
             "TURNSTILE_SECRET=1x0000000000000000000000000000000AA" \
             "RELEASE=staging-${GITHUB_SHA::12}"
-      - name: Publicar as 8 funções
+      - name: Publicar as 9 funções
         if: steps.cfg.outputs.ok == 'true'
         run: ./scripts/staging/publicar-funcoes.sh
         env:

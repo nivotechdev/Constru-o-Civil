@@ -45,6 +45,7 @@ export function corsHeaders(origins: string[], requestOrigin: string | null): Re
 
 /** R02: as funções que o navegador chama (exigem APP_ORIGIN). As outras são chamadas pelo banco ou por provedor. */
 export const BROWSER_FUNCTIONS = [
+  'verificar-cadastro',
   'codigo-whatsapp',
   'criar-cobranca',
   'entrar-com-documento',

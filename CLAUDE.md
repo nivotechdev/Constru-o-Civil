@@ -134,6 +134,7 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 | Função | Papel | JWT | Segredos |
 |---|---|---|---|
 | `entrar-com-documento` | login por CPF/CNPJ (resposta única, limite 5/doc e 20/IP por 15 min) | sim | `TURNSTILE_SECRET` |
+| `verificar-cadastro` | cadastro: e-mail/CPF/CNPJ/WhatsApp já tem conta? (U10; limite 30/IP e 10/valor por 15 min; só sim ou não) — **ainda não publicada na produção** | sim | — |
 | `excluir-conta` | exclusão completa (inclui Storage) | sim | — |
 | `codigo-whatsapp` | código por WhatsApp/SMS (Twilio Verify) | sim | `TWILIO_*` |
 | `verificar-cnpj` | CNPJ na Receita (BrasilAPI) — **ligada** | sim | — |

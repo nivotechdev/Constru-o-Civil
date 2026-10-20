@@ -291,6 +291,42 @@ describe('remote: sign-in and sign-up', () => {
     });
   });
 
+  it('U10: asks verificar-cadastro whether the e-mail, CPF/CNPJ or WhatsApp is still free', async () => {
+    const answers: Record<string, boolean> = { email: false, documento: true, whatsapp: true };
+    const fake = fakeSupabase({
+      functions: {
+        'verificar-cadastro': (body) => ({
+          data: { disponivel: answers[(body as { campo: string }).campo] },
+          error: null
+        })
+      }
+    });
+    const m = await load(fake);
+    expect(await m.auth.isFreeForSignUp('email', 'ana@exemplo.com')).toBe(false);
+    expect(await m.auth.isFreeForSignUp('documento', '123.456.789-09')).toBe(true);
+    expect(fake.calls.filter((c) => c.kind === 'function').map((c) => c.args)).toEqual([
+      { campo: 'email', valor: 'ana@exemplo.com' },
+      { campo: 'documento', valor: '123.456.789-09' }
+    ]);
+    const tooMany = await load(
+      fakeSupabase({
+        functions: {
+          'verificar-cadastro': () => ({
+            data: null,
+            error: {
+              name: 'FunctionsHttpError',
+              context: new Response(JSON.stringify({ erro: 'muitas-tentativas' }), { status: 429 })
+            }
+          })
+        }
+      })
+    );
+    await expect(tooMany.auth.isFreeForSignUp('whatsapp', '11988887777')).rejects.toMatchObject({
+      code: 'conflito',
+      message: expect.stringContaining('Muitas tentativas')
+    });
+  });
+
   it('signs up: sends the profile data (no separate document check), waits for the e-mail confirmation', async () => {
     const fake = fakeSupabase({
       auth: {

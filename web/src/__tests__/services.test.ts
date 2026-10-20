@@ -61,7 +61,7 @@ describe('simulated backend calls keep the legacy delays', () => {
       role: 'trabalhador' as const,
       name: 'Ana',
       email: 'ana@x.com',
-      whatsapp: '(11) 98842-3310',
+      whatsapp: '(11) 98111-0001',
       password: 'abcdefgh1',
       acceptedTermsVersion: '1.0',
       adult: true
@@ -71,11 +71,23 @@ describe('simulated backend calls keep the legacy delays', () => {
     expect(await settlesAfter(s.auth.signUp({ ...data, doc: '111.111.111-11' }), 700)).toEqual(refused);
     expect(await settlesAfter(s.auth.signUp({ ...data, doc: '111.444.777-35' }), 700)).toEqual(refused);
     expect(await settlesAfter(s.auth.signUp({ ...data, doc: '390.533.447-05' }), 700)).toEqual({ ok: true });
-    const company = { ...data, role: 'recrutador' as const, email: 'obra@x.com' };
+    // U10: one WhatsApp per account.
+    const samePhone = s.auth.signUp({ ...data, email: 'outra@x.com', doc: '246.813.579-28' }).catch((e: unknown) => e);
+    expect(await settlesAfter(samePhone, 700)).toMatchObject({ code: 'conflito' });
+    const company = { ...data, role: 'recrutador' as const, email: 'obra@x.com', whatsapp: '(11) 98111-0002' };
     expect(await settlesAfter(s.auth.signUp({ ...company, doc: '11.222.333/0001-81' }), 700)).toEqual(refused);
     expect(await settlesAfter(s.auth.signUp({ ...company, doc: '11.222.333/0001-80' }), 700)).toEqual(refused);
     // A recruiter on their own signs up with a CPF.
     expect(await settlesAfter(s.auth.signUp({ ...company, doc: '123.456.789-09' }), 700)).toEqual({ ok: true });
+  });
+
+  it('U10: tells on the step whether the e-mail, CPF/CNPJ or WhatsApp is free', async () => {
+    expect(await settlesAfter(s.auth.isFreeForSignUp('email', ' Trabalhador@Bicos.demo '), 300)).toBe(false);
+    expect(await settlesAfter(s.auth.isFreeForSignUp('email', 'ninguem@x.com'), 300)).toBe(true);
+    expect(await settlesAfter(s.auth.isFreeForSignUp('documento', '111.444.777-35'), 300)).toBe(false);
+    expect(await settlesAfter(s.auth.isFreeForSignUp('documento', '390.533.447-05'), 300)).toBe(true);
+    expect(await settlesAfter(s.auth.isFreeForSignUp('whatsapp', '11974125580'), 300)).toBe(false);
+    expect(await settlesAfter(s.auth.isFreeForSignUp('whatsapp', '(11) 98111-0009'), 300)).toBe(true);
   });
 
   it('keeps the password flows at 600 ms and the data export at 900 ms', async () => {
@@ -332,7 +344,7 @@ describe('L10: automatic company check (demo)', () => {
           name: 'Obra Teste',
           doc,
           email,
-          whatsapp: '(11) 98842-3310',
+          whatsapp: email === 'cnpj@x.com' ? '(11) 98111-0101' : '(11) 98111-0102',
           password: 'abcdefgh1',
           acceptedTermsVersion: '1.0',
           adult: true

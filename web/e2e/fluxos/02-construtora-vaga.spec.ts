@@ -16,7 +16,8 @@ import {
   linkDeConfirmacao,
   nomeDeTeste,
   prepararPagina,
-  print
+  print,
+  whatsappDeTeste
 } from '../apoio';
 
 const FOTO = fileURLToPath(new URL('../fixtures/foto.png', import.meta.url));
@@ -26,6 +27,8 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   const email = emailDeTeste('construtora');
   const cnpj = cnpjValido('construtora');
   const nome = nomeDeTeste('Construtora Teste');
+  const whatsapp = whatsappDeTeste('construtora');
+  const trabalhador = estado().contas.trabalhador;
 
   await page.goto('/cadastro/recrutador');
   const k = '#cadastro-recrutador-';
@@ -34,11 +37,24 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await seguir();
   await page.fill(k + 'responsavel', 'Ana Responsável');
   await seguir();
+  // U10: CPF, e-mail e WhatsApp de outra conta param o cadastro no próprio passo (o do trabalhador do fluxo 1).
+  await page.fill(k + 'doc', trabalhador.documento);
+  await seguir();
+  await expect(page.getByText('Esse CPF já tem conta na Bicos.', { exact: false })).toBeVisible();
+  await print(page, 'f2', 'cadastro para no CPF que já tem conta');
   await page.fill(k + 'doc', cnpj);
   await seguir();
+  await page.fill(k + 'email', trabalhador.email);
+  await seguir();
+  await expect(page.getByText('Esse e-mail já tem conta na Bicos.', { exact: false })).toBeVisible();
   await page.fill(k + 'email', email);
   await seguir();
-  await page.fill(k + 'whatsapp', '11955554444');
+  if (trabalhador.whatsapp) {
+    await page.fill(k + 'whatsapp', trabalhador.whatsapp);
+    await seguir();
+    await expect(page.getByText('Esse WhatsApp já está em outra conta', { exact: false })).toBeVisible();
+  }
+  await page.fill(k + 'whatsapp', whatsapp);
   await seguir();
   await page.fill(k + 'senha', ENV.password);
   await page.fill(k + 'confirm', ENV.password);
@@ -48,7 +64,7 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await expect(page).toHaveURL(/\/verificar-email/);
   const id = await idDaConta(email);
   criada(id, email);
-  atualizar((e) => (e.contas.construtora = { id, email, documento: cnpj, nome }));
+  atualizar((e) => (e.contas.construtora = { id, email, documento: cnpj, nome, whatsapp }));
 
   await page.goto(await linkDeConfirmacao(email));
   await expect(page).toHaveURL(/\/completar-perfil\/recrutador/);

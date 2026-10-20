@@ -51,6 +51,12 @@ begin
 end;
 $$;
 
+-- U10: o WhatsApp é de uma conta só — cada conta de teste ganha um celular próprio (vem do id).
+create or replace function pg_temp.phone_for(p_seed text)
+returns text language sql immutable as $$
+  select '119' || lpad((abs(('x' || substr(md5(p_seed), 1, 8))::bit(32)::int) % 100000000)::text, 8, '0')
+$$;
+
 create or replace function pg_temp.new_user(p_id uuid, p_role text, p_name text, p_document text default null)
 returns void language plpgsql as $$
 begin
@@ -58,7 +64,7 @@ begin
   insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at, raw_user_meta_data, created_at, updated_at)
   values (p_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
           'teste+' || p_id || '@bicos.test', now(),
-          jsonb_build_object('role', p_role, 'nome', p_name, 'documento', p_document, 'whatsapp', '11988887777',
+          jsonb_build_object('role', p_role, 'nome', p_name, 'documento', p_document, 'whatsapp', pg_temp.phone_for(p_id::text),
                              'terms_version', '1.0', 'maior_de_idade', true),
           now(), now());
   update public.accounts set profile_completed_at = now() where id = p_id;

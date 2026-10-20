@@ -190,6 +190,17 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
   return { ok: true };
 }
 
+export async function isFreeForSignUp(kind: import('../auth').SignUpCheck, value: string): Promise<boolean> {
+  try {
+    const answer = await invokeFunction<{ disponivel?: boolean }>('verificar-cadastro', { campo: kind, valor: value });
+    return answer?.disponivel !== false;
+  } catch (e) {
+    if (e instanceof ServiceError && e.reason === 'muitas-tentativas')
+      throw serviceError('conflito', 'Muitas tentativas agora. Espere alguns minutos e tente de novo.');
+    throw e;
+  }
+}
+
 /** "Já confirmei": the link may have been opened in another tab or device — check with the server. */
 export async function confirmEmail(): Promise<'entrou' | 'entrar-com-senha'> {
   const client = await db();

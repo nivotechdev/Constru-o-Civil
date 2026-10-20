@@ -44,6 +44,8 @@ export interface Conta {
   email: string;
   documento: string;
   nome: string;
+  /** U10: o WhatsApp é de uma conta só — cada conta de teste tem o seu. */
+  whatsapp?: string;
 }
 export interface Estado {
   execucao: string;
@@ -104,6 +106,11 @@ export function cpfValido(seed: string): string {
     d.push(r === 10 ? 0 : r);
   }
   return d.join('');
+}
+
+/** U10: um celular diferente para cada semente e execução (o WhatsApp é de uma conta só). */
+export function whatsappDeTeste(seed: string): string {
+  return '119' + digitos('zap-' + seed + estado().execucao, 8).join('');
 }
 
 /** Um CNPJ válido e diferente para cada semente. */
@@ -235,6 +242,7 @@ export async function contaPorApi(tag: string, papel: 'trabalhador' | 'recrutado
   const nome = nomeDeTeste(base);
   const email = emailDeTeste(tag);
   const documento = papel === 'trabalhador' ? cpfValido(tag) : cnpjValido(tag);
+  const whatsapp = whatsappDeTeste(tag);
   const { data, error } = await admin().auth.admin.createUser({
     email,
     password: ENV.password,
@@ -244,7 +252,7 @@ export async function contaPorApi(tag: string, papel: 'trabalhador' | 'recrutado
       role: papel,
       tipo: papel === 'trabalhador' ? 'pedreiro' : 'construtora',
       documento,
-      whatsapp: '11977776666',
+      whatsapp,
       terms_version: (await import('../src/services/legal')).TERMS_VERSION,
       maior_de_idade: true
     }
@@ -258,7 +266,7 @@ export async function contaPorApi(tag: string, papel: 'trabalhador' | 'recrutado
       : { tipo_obra: 'Residencial', city: 'São Paulo, SP' };
   const { error: e2 } = await c.rpc('finish_sign_up', { p });
   if (e2) throw new Error(`finish_sign_up ${tag}: ${e2.message}`);
-  const conta = { id: data.user.id, email, documento, nome };
+  const conta = { id: data.user.id, email, documento, nome, whatsapp };
   atualizar((e) => (e.contas[tag] = conta));
   return conta;
 }

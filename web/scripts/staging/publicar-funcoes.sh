@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# L02 — Publica as 8 Edge Functions num projeto (staging por padrão). As chamadas pelo banco ou por um provedor
+# L02 — Publica as 9 Edge Functions num projeto (staging por padrão). As chamadas pelo banco ou por um provedor
 # (sem JWT) conferem um segredo próprio e vão com --no-verify-jwt, como na produção (docs/SUPABASE.md › 4).
 #
 # --use-api: o Supabase empacota as funções (sem Docker; o repositório de imagens limita os downloads do CI).
@@ -14,7 +14,7 @@ if [ "$STAGING_REF" = "ppnxdajiihsjaojxokzh" ] && [ "${CONFIRMO_PRODUCAO:-}" != 
 fi
 cd "$(dirname "$0")/../.."
 cli="${SUPABASE_CLI:-npx --yes supabase}"
-with_jwt=(entrar-com-documento excluir-conta codigo-whatsapp verificar-cnpj criar-cobranca)
+with_jwt=(entrar-com-documento verificar-cadastro excluir-conta codigo-whatsapp verificar-cnpj criar-cobranca)
 without_jwt=(webhook-pagamento enviar-push limpar-arquivos)
 for f in "${with_jwt[@]}"; do
   echo "→ $f"
@@ -24,4 +24,4 @@ for f in "${without_jwt[@]}"; do
   echo "→ $f (sem JWT)"
   $cli functions deploy "$f" --project-ref "$STAGING_REF" --use-api --no-verify-jwt
 done
-echo "8 funções publicadas em $STAGING_REF."
+echo "9 funções publicadas em $STAGING_REF."

@@ -73,7 +73,7 @@ test('candidatura, aprovação com WhatsApp liberado, recusa e desfazer', async 
   await expect(w.getByRole('link', { name: 'Falar no WhatsApp' }).first()).toBeVisible();
   await print(w, 'f3', 'whatsapp liberado para o trabalhador');
   const href = await w.getByRole('link', { name: 'Falar no WhatsApp' }).first().getAttribute('href');
-  expect(href).toContain('wa.me/5511955554444');
+  expect(href).toContain('wa.me/55' + contas.construtora.whatsapp);
   await w.close();
   await c.close();
 });

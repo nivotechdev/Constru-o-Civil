@@ -19,13 +19,13 @@ as variáveis estão explicadas em `web/.env.example` — só valores **público
 
 ## 2. Situação do banco
 
-| O quê                                                       | Situação                                                                                     |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `20261009000100/200/300` (esquema, regras, dados)           | **aplicadas**                                                                                |
-| As 36 migrations de `20261010…` a `20261014…` (fases A–E)   | **aplicadas em 12/10/2026**, na ordem de `supabase/APLICAR.md`                               |
-| `…000700_x22_limpeza_tentativas` e `…000800_x23_indices_fk` | **aplicadas em 12/10/2026** (correção do cron de limpeza e índices que faltavam)             |
-| Extensão `pg_net` (chamadas do banco para as funções)       | **ligada**                                                                                   |
-| As 8 Edge Functions (tabela da seção 4)                     | **publicadas** — as que dependem de provedor respondem "desligado" até os segredos existirem |
+| O quê                                                       | Situação                                                                                                                                                 |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261009000100/200/300` (esquema, regras, dados)           | **aplicadas**                                                                                                                                            |
+| As 36 migrations de `20261010…` a `20261014…` (fases A–E)   | **aplicadas em 12/10/2026**, na ordem de `supabase/APLICAR.md`                                                                                           |
+| `…000700_x22_limpeza_tentativas` e `…000800_x23_indices_fk` | **aplicadas em 12/10/2026** (correção do cron de limpeza e índices que faltavam)                                                                         |
+| Extensão `pg_net` (chamadas do banco para as funções)       | **ligada**                                                                                                                                               |
+| As Edge Functions (tabela da seção 4)                       | **publicadas** (a `verificar-cadastro`, da U10, ainda não — só com "pode") — as que dependem de provedor respondem "desligado" até os segredos existirem |
 
 O histórico do banco tem as versões da hora em que cada uma foi aplicada (não as dos arquivos); antes de usar
 `supabase db push` em produção, alinhe com o `repair` de "Histórico de migrations" em `APLICAR.md`.
@@ -91,6 +91,7 @@ segredos da tabela, cada função recusa o pedido (401 ou 503) — nada acontece
 | Função                 | Para quê                                                   | Segredos (Edge Functions › Secrets)                                                                        | Sem JWT |
 | ---------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------- |
 | `entrar-com-documento` | entrar com CPF/CNPJ sem expor o e-mail                     | `TURNSTILE_SECRET` (obrigatório)                                                                           |         |
+| `verificar-cadastro`   | cadastro: e-mail, CPF/CNPJ ou WhatsApp já tem conta? (U10) | —                                                                                                          |         |
 | `excluir-conta`        | exclusão completa, com os arquivos do Storage (Y15)        | —                                                                                                          |         |
 | `codigo-whatsapp`      | código de confirmação do WhatsApp (Twilio Verify, Y25)     | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `TWILIO_VERIFY_CHANNEL` (`whatsapp`/`sms`) |         |
 | `verificar-cnpj`       | consulta do CNPJ na Receita (BrasilAPI, L10)               | `BRASILAPI_URL` (opcional)                                                                                 |         |
@@ -99,7 +100,7 @@ segredos da tabela, cada função recusa o pedido (401 ou 503) — nada acontece
 | `enviar-push`          | notificação no celular a cada aviso novo (X03)             | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_WEBHOOK_SECRET`                            | sim     |
 | `limpar-arquivos`      | apagar arquivos órfãos e fotos de identidade antigas (X09) | `CLEANUP_SECRET`                                                                                           | sim     |
 
-As chamadas pelo navegador (`entrar-com-documento`, `excluir-conta`, `codigo-whatsapp`, `verificar-cnpj`,
+As chamadas pelo navegador (`entrar-com-documento`, `verificar-cadastro`, `excluir-conta`, `codigo-whatsapp`, `verificar-cnpj`,
 `criar-cobranca`): `APP_ORIGIN` (**obrigatório** — sem ele a função não sobe, L05; o endereço publicado, ou uma
 lista separada por vírgula, com `https://*.dominio` para prévias). As servidor-a-servidor (`webhook-pagamento`,
 `enviar-push`, `limpar-arquivos`) **não usam** `APP_ORIGIN` nem mandam cabeçalho CORS (R02): um segredo esquecido não

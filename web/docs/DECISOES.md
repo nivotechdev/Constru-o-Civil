@@ -1674,3 +1674,17 @@ lado, cadastro, confirmar e-mail, completar perfil, completar cadastro do Google
 em cima, só o meio rola e os botões ficam presos embaixo, acima dos botões do celular (`env(safe-area-inset-bottom)`,
 que funciona porque o `index.html` já tem `viewport-fit=cover`). No tablet deitado e no computador continua um cartão
 centralizado.
+
+## U10 — E-mail, CPF/CNPJ e WhatsApp de uma conta só, conferidos no passo do cadastro
+
+Pedido do responsável: quem digitava um CPF, CNPJ ou e-mail que já tinha conta só via o erro no fim, depois de
+preencher tudo; e o WhatsApp podia se repetir entre contas. **O que mudou:** cada um desses passos pergunta ao servidor,
+ao tocar em "Continuar", se o dado já é de outra conta, e para ali mesmo com a mensagem certa ("Esse CPF já tem conta
+na Bicos…", com "Entrar na conta" e "Recuperar senha"). O WhatsApp passou a ser único no banco (índice
+`accounts_whatsapp_key`), com a mesma regra do documento: um cadastro nunca confirmado libera o número; o de conta
+confirmada é recusado — no cadastro, no cadastro pelo Google e na troca do número.
+**O que pesou:** a Z07 escondia de propósito se um CPF tinha conta (perguntar isso permite descobrir quem usa a Bicos).
+O responsável preferiu o aviso no passo. Para não virar uma consulta aberta, a pergunta passa por uma Edge Function
+(`verificar-cadastro`) que só responde sim ou não, conta só contas confirmadas e limita a 30 perguntas por IP e 10 por
+valor a cada 15 minutos (as mesmas tabelas do `entrar-com-documento`). O login continua com uma resposta só para "não
+existe" e "senha errada". Os testes passaram a dar um celular diferente para cada conta de teste (SQL, E2E, volume).

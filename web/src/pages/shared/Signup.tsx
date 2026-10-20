@@ -7,7 +7,14 @@ import { FlowHeading, FlowLayout, FlowProgress } from '../../components/FlowLayo
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
 import { useUI } from '../../hooks/useStore';
-import { sendWhatsAppCode, signUp, verifyWhatsAppCode, WHATSAPP_CODE_AVAILABLE } from '../../services/auth';
+import {
+  isFreeForSignUp,
+  sendWhatsAppCode,
+  signUp,
+  verifyWhatsAppCode,
+  WHATSAPP_CODE_AVAILABLE,
+  type SignUpCheck
+} from '../../services/auth';
 import { TERMS_VERSION } from '../../services/legal';
 import type { ScreenProps } from '../../types/screen';
 import { currentPath, goBack as routerGoBack, navigate } from '../../services/router';
@@ -164,6 +171,17 @@ interface SignupUI {
   resent: boolean;
   /** A request failed (no connection…): shown above the button, the answers stay. */
   submitError: string | null;
+  /** U10: the step whose e-mail or CPF/CNPJ already has an account (offers "Entrar" and "Recuperar senha"). */
+  taken: FieldId | null;
+}
+
+/** U10: the steps checked against the other accounts as soon as they are filled in. */
+const CHECKED: Partial<Record<FieldId, SignUpCheck>> = { doc: 'documento', email: 'email', whatsapp: 'whatsapp' };
+
+function takenMessage(id: FieldId, value: string): string {
+  if (id === 'email') return 'Esse e-mail já tem conta na Bicos. Entre na conta ou use outro e-mail.';
+  if (id === 'whatsapp') return 'Esse WhatsApp já está em outra conta da Bicos. Use outro número.';
+  return `Esse ${value.replace(/\D/g, '').length === 14 ? 'CNPJ' : 'CPF'} já tem conta na Bicos. Entre na conta ou recupere a senha.`;
 }
 
 function validateField(field: SignupField, values: Values, role: Role): string | null {
@@ -228,7 +246,8 @@ export default function Signup({ params }: ScreenProps) {
     codeSentAt: 0,
     resending: false,
     resent: false,
-    submitError: null
+    submitError: null,
+    taken: null
   }));
   // Y22: the password only lives in this screen (never in the shared store), and the draft (name,
   // document, e-mail…) is forgotten when the flow is left — except for a look at the terms.
@@ -295,7 +314,8 @@ export default function Signup({ params }: ScreenProps) {
       values: { ...s.values, [field.id]: value },
       errors: { ...s.errors, [field.id]: null },
       generalError: false,
-      submitError: null
+      submitError: null,
+      taken: null
     }));
   }
 
@@ -306,6 +326,32 @@ export default function Signup({ params }: ScreenProps) {
       setUi((s) => ({ errors: { ...s.errors, [field.id]: err } }));
       return;
     }
+    // U10: an e-mail, CPF/CNPJ or WhatsApp that already has an account stops the sign-up right here.
+    const check = CHECKED[field.id];
+    if (check) {
+      const value = ui.values[field.id] || '';
+      setUi({ submitting: true, submitError: null, taken: null });
+      isFreeForSignUp(check, value)
+        .then((free) => {
+          if (free) {
+            setUi({ submitting: false });
+            advance();
+            return;
+          }
+          setUi((s) => ({
+            submitting: false,
+            taken: field.id === 'whatsapp' ? null : field.id,
+            errors: { ...s.errors, [field.id]: takenMessage(field.id, value) }
+          }));
+        })
+        .catch((e: unknown) => setUi({ submitting: false, submitError: errorMessage(e) }));
+      return;
+    }
+    advance();
+  }
+
+  /** The step is filled in and checked: send the code, check it, go on, or create the account. */
+  function advance() {
     if (field.id === 'whatsapp' && WHATSAPP_CODE_AVAILABLE) {
       setUi({ submitting: true, submitError: null });
       sendWhatsAppCode(ui.values.whatsapp || '', captcha.getToken)
@@ -549,6 +595,24 @@ export default function Signup({ params }: ScreenProps) {
           autoFocus
         />
       )}
+      {ui.taken === field.id ? (
+        <div className="flex gap-2 -mt-3">
+          <Button
+            label="Entrar na conta"
+            variant="secondary"
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate('/login')}
+          />
+          <Button
+            label="Recuperar senha"
+            variant="ghost"
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate('/esqueci-senha')}
+          />
+        </div>
+      ) : null}
     </FlowLayout>
   );
 }
