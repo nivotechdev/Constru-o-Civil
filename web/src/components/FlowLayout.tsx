@@ -58,6 +58,20 @@ export function FlowProgress({ step, total, onBack }: { step: number; total: num
   );
 }
 
+/**
+ * U14: the way back and the screen's name, for the header of a FlowLayout — the same geometry as FlowProgress
+ * (the arrow in its full 44 px circle, then the title). BackBar is for the app's pages: from the desktop layout
+ * up it pulls itself 12 px to the left, which inside this card cut the arrow at the edge.
+ */
+export function FlowBar({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <div className="flex items-center gap-1.5 min-h-14 px-2">
+      <IconButton icon="arrow-left" label="Voltar" onClick={onBack} />
+      <h1 className="flex-1 min-w-0 font-display font-semibold text-xl text-concrete-900 truncate">{title}</h1>
+    </div>
+  );
+}
+
 /** The overline, question and help text at the top of a step. */
 export function FlowHeading({ overline, title, help }: { overline: string; title: string; help?: ReactNode }) {
   return (

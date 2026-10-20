@@ -1,6 +1,5 @@
-import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
-import { FlowLayout } from '../../components/FlowLayout';
+import { FlowBar, FlowLayout } from '../../components/FlowLayout';
 import { RadioCard } from '../../components/Radio';
 import { useScreenUI } from '../../hooks/useStore';
 import { goBack, navigate } from '../../services/router';
@@ -11,7 +10,7 @@ export default function ChooseProfile() {
 
   return (
     <FlowLayout
-      header={<BackBar title="Criar minha conta" onBack={() => goBack('/login')} />}
+      header={<FlowBar title="Criar minha conta" onBack={() => goBack('/login')} />}
       className="pt-6 sm:pt-10"
       footer={
         <Button
