@@ -12,15 +12,7 @@ export default function ChooseProfile() {
     <FlowLayout
       header={<FlowBar title="Criar minha conta" onBack={() => goBack('/login')} />}
       className="pt-6 sm:pt-10"
-      footer={
-        <Button
-          label="Continuar"
-          size="lg"
-          fullWidth
-          iconRight="arrow-right"
-          onClick={() => navigate('/cadastro/' + ui.role)}
-        />
-      }
+      footer={<Button label="Continuar" size="lg" fullWidth onClick={() => navigate('/cadastro/' + ui.role)} />}
     >
       <div className="flex flex-col gap-2.5">
         <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Criar conta</span>
