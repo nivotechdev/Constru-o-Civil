@@ -62,19 +62,44 @@ export function deletionImpact(db: Database = getDb()): DeletionImpact {
 }
 
 /**
- * Deletes the logged-in account after checking its password. A worker gives up the diárias in progress
- * and withdraws pending applications; a company cancels its hires and closes its open jobs (the other
- * side is told). The profile is anonymised (history the other side keeps, like reviews, stays without
- * the name) and the session ends.
+ * U16: how the account proves it is its owner before deleting — its password, or, for an account without one
+ * (made with "Continuar com o Google"), a 6-number code sent to its e-mail. The code also works for anyone who
+ * forgot the password.
+ */
+export type DeletionProof = { password: string } | { code: string };
+
+/** U16: whether the account has a password (an account made with Google has none: it confirms by code). */
+export async function accountHasPassword(): Promise<boolean> {
+  if (!IS_DEMO) return remote.accountHasPassword();
+  return true;
+}
+
+/** U16: sends the 6-number security code to the account's own e-mail. */
+export async function sendSecurityCode(captcha: CaptchaSource = async () => undefined): Promise<void> {
+  if (!IS_DEMO) return remote.sendSecurityCode(captcha);
+  if (!getSession()) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
+  await mockLatency(600);
+}
+
+/**
+ * Deletes the logged-in account after it proves it is its owner (password or e-mail code). A worker gives up
+ * the diárias in progress and withdraws pending applications; a company cancels its hires and closes its open
+ * jobs (the other side is told). The profile is anonymised (history the other side keeps, like reviews, stays
+ * without the name) and the session ends. Only the session's own account: the backend takes it from the token.
  * Backend: re-authenticate, then an RPC does the same in one transaction and deletes the Auth user.
  */
 export async function deleteAccount(
-  password: string,
+  proof: DeletionProof,
   confirmCommitments: boolean,
   captcha: CaptchaSource = async () => undefined
 ): Promise<void> {
-  if (!IS_DEMO) return remote.deleteAccount(password, confirmCommitments, captcha);
-  if (!(await checkPassword(password))) throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
+  if (!IS_DEMO) return remote.deleteAccount(proof, confirmCommitments, captcha);
+  if ('password' in proof) {
+    if (!(await checkPassword(proof.password)))
+      throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
+  } else if (!/^\d{6}$/.test(proof.code)) {
+    throw serviceError('validacao', 'Código incorreto ou vencido. Confira o e-mail mais recente ou peça outro código.');
+  }
   const session = getSession();
   if (!session) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
   concludeFinishedJobs();

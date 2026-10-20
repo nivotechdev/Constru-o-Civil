@@ -507,9 +507,9 @@ describe('remote: data and actions', () => {
     const m = await load(fake);
     const account = await import('../services/account');
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
-    await expect(account.deleteAccount('segredo123', false)).rejects.toMatchObject({ code: 'conflito' });
+    await expect(account.deleteAccount({ password: 'segredo123' }, false)).rejects.toMatchObject({ code: 'conflito' });
     expect(m.store.getSession()).not.toBeNull();
-    await account.deleteAccount('segredo123', true, async () => 'tok-excluir');
+    await account.deleteAccount({ password: 'segredo123' }, true, async () => 'tok-excluir');
     expect(fake.calls.filter((c) => c.name === 'signInWithPassword').at(-1)?.args).toMatchObject({
       options: { captchaToken: 'tok-excluir' }
     });
@@ -518,6 +518,37 @@ describe('remote: data and actions', () => {
       { confirmCommitments: true }
     ]);
     expect(fake.calls.some((c) => c.name === 'delete_my_account')).toBe(false);
+    expect(m.store.getSession()).toBeNull();
+  });
+
+  it('U16: an account made with Google (no password) deletes itself with the code from its e-mail', async () => {
+    let codeOk = false;
+    const google = { ...authUser(workerAccount.id, workerAccount.email), app_metadata: { providers: ['google'] } };
+    const fake = server('ana', {
+      auth: {
+        getSession: () => ({ data: { session: { user: google } }, error: null }),
+        signInWithOtp: () => ({ data: {}, error: null }),
+        verifyOtp: (args: unknown) =>
+          (args as { token: string }).token === '123456'
+            ? ((codeOk = true), { data: { user: google, session: { user: google } }, error: null })
+            : { data: {}, error: { code: 'otp_expired', status: 403, message: 'x' } }
+      },
+      functions: { 'excluir-conta': () => ({ data: { ok: true, arquivos: 0 }, error: null }) }
+    });
+    const m = await load(fake);
+    const account = await import('../services/account');
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    expect(await account.accountHasPassword()).toBe(false);
+    await account.sendSecurityCode(async () => 'tok-codigo');
+    expect(fake.calls.find((c) => c.name === 'signInWithOtp')?.args).toEqual({
+      email: 'ana@exemplo.com',
+      options: { shouldCreateUser: false, captchaToken: 'tok-codigo' }
+    });
+    await expect(account.deleteAccount({ code: '000000' }, true)).rejects.toMatchObject({ code: 'validacao' });
+    expect(fake.calls.some((c) => c.kind === 'function')).toBe(false);
+    await account.deleteAccount({ code: '123456' }, true);
+    expect(codeOk).toBe(true);
+    expect(fake.calls.filter((c) => c.kind === 'function').map((c) => c.args)).toEqual([{ confirmCommitments: true }]);
     expect(m.store.getSession()).toBeNull();
   });
 

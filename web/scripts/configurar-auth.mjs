@@ -63,7 +63,7 @@ const config = {
         mailer_templates_recovery_content: template('redefinir-senha.html'),
         mailer_subjects_email_change: 'Confirme o novo e-mail da sua conta na Bicos',
         mailer_templates_email_change_content: template('troca-de-email.html'),
-        mailer_subjects_magic_link: 'Seu link para entrar na Bicos',
+        mailer_subjects_magic_link: 'Seu código de segurança da Bicos',
         mailer_templates_magic_link_content: template('link-de-acesso.html')
       }
     : {}),

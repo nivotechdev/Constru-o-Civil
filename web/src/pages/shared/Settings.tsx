@@ -123,6 +123,15 @@ export default function Settings() {
         ) : null}
         <Section title="">
           <Row icon="log-out" label="Sair da conta" danger onClick={() => askSignOut()} />
+          {/* U16: deleting is one tap away from here (it was only inside "Privacidade e dados"). It deletes the
+              logged-in account only: the screen asks for its password or an e-mail code. */}
+          <Row
+            icon="trash-2"
+            label="Excluir minha conta"
+            description="Apaga sua conta e seus dados da Bicos"
+            danger
+            onClick={() => navigate('/configuracoes/excluir-conta')}
+          />
         </Section>
         {IS_DEMO ? (
           <Section title="Demonstração">

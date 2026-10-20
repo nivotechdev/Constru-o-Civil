@@ -35,13 +35,13 @@ describe('deleting the account', () => {
     // a1 (pré-selecionado on BC-4821) and a8 (contratado on BC-4712) hold slots.
     expect(impact.commitments.map((c) => c.app.id).sort()).toEqual(['a1', 'a8']);
 
-    const wrong = await settle(m.account.deleteAccount('errada', true));
+    const wrong = await settle(m.account.deleteAccount({ password: 'errada' }, true));
     expect(!wrong.ok && wrong.e.message).toMatch(/Senha incorreta/);
-    const unconfirmed = await settle(m.account.deleteAccount('bicos123', false));
+    const unconfirmed = await settle(m.account.deleteAccount({ password: 'bicos123' }, false));
     expect(!unconfirmed.ok && unconfirmed.e.message).toMatch(/Confirme/);
     expect(m.store.getSession()).not.toBeNull();
 
-    expect((await settle(m.account.deleteAccount('bicos123', true))).ok).toBe(true);
+    expect((await settle(m.account.deleteAccount({ password: 'bicos123' }, true))).ok).toBe(true);
     const db = m.store.getDb();
     expect(m.store.getSession()).toBeNull();
     expect(db.accounts['conta-jorge']).toBeUndefined();
@@ -58,11 +58,21 @@ describe('deleting the account', () => {
     });
   });
 
+  it('U16: the e-mail code also proves it is the owner (accounts without a password)', async () => {
+    await settle(m.auth.signIn('trabalhador@bicos.demo', 'bicos123'));
+    expect(await m.account.accountHasPassword()).toBe(true);
+    expect((await settle(m.account.sendSecurityCode())).ok).toBe(true);
+    const short = await settle(m.account.deleteAccount({ code: '12' }, true));
+    expect(!short.ok && short.e.message).toMatch(/Código incorreto/);
+    expect((await settle(m.account.deleteAccount({ code: '123456' }, true))).ok).toBe(true);
+    expect(m.store.getSession()).toBeNull();
+  });
+
   it('company: hires cancelled and open jobs closed, candidates told', async () => {
     await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
     const impact = m.account.deletionImpact();
     expect(impact.openJobs.map((j) => j.id)).toContain('BC-4998');
-    expect((await settle(m.account.deleteAccount('bicos123', true))).ok).toBe(true);
+    expect((await settle(m.account.deleteAccount({ password: 'bicos123' }, true))).ok).toBe(true);
     const db = m.store.getDb();
     expect(db.jobs['BC-4998'].closed).toBe(true);
     expect(db.applications.find((a) => a.id === 'a11')?.status).toBe('nao_selecionado');

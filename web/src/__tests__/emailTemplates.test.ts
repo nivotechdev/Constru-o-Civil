@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const dir = fileURLToPath(new URL('../../supabase/email-templates/', import.meta.url));
 const files = readdirSync(dir).filter((f) => f.endsWith('.html'));
+const CODES = ['confirmacao.html', 'link-de-acesso.html'];
 
 describe('e-mails do Auth (L04)', () => {
   it('has the four templates', () => {
@@ -18,14 +19,16 @@ describe('e-mails do Auth (L04)', () => {
   });
 
   for (const f of files) {
-    it(`${f}: link do Auth, pt-BR, sem imagem nem script de fora`, () => {
+    it(`${f}: link ou código do Auth, pt-BR, sem imagem nem script de fora`, () => {
       const html = readFileSync(dir + f, 'utf8');
-      expect(html).toContain('href="{{ .ConfirmationURL }}"');
       expect(html).toContain('lang="pt-BR"');
       expect(html).not.toMatch(/<img|<script|<link /i);
-      // U11: only the sign-up confirmation carries a code to type; the others are links.
-      if (f === 'confirmacao.html') expect(html.match(/\{\{ \.Token \}\}/g)?.length).toBeGreaterThanOrEqual(2);
+      // U11/U16: the sign-up confirmation and the security code carry a code to type; the others are links.
+      if (CODES.includes(f)) expect(html.match(/\{\{ \.Token \}\}/g)?.length).toBeGreaterThanOrEqual(2);
       else expect(html).not.toMatch(/\{\{\s*\.Token\s*\}\}/);
+      // U16: the security code has no link — it only works inside the app, for the account already logged in.
+      if (f === 'link-de-acesso.html') expect(html).not.toContain('{{ .ConfirmationURL }}');
+      else expect(html).toContain('href="{{ .ConfirmationURL }}"');
     });
   }
 

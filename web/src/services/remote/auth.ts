@@ -132,6 +132,66 @@ export async function checkPassword(password: string, captcha: CaptchaSource): P
   throw toServiceError(result.error);
 }
 
+// ---- U16: proving it is the owner without a password ----
+
+const WRONG_SECURITY_CODE = 'Código incorreto ou vencido. Confira o e-mail mais recente ou peça outro código.';
+
+/** An account made with Google has no password: its only login is the "google" provider. */
+export async function accountHasPassword(): Promise<boolean> {
+  const client = await db();
+  const { data } = await client.auth.getSession();
+  const meta = (data.session?.user.app_metadata ?? {}) as { provider?: string; providers?: unknown };
+  const providers = Array.isArray(meta.providers) ? (meta.providers as string[]) : [meta.provider ?? 'email'];
+  return providers.includes('email');
+}
+
+/**
+ * The 6-number code to the session's own e-mail (the "link de acesso" message of Supabase Auth, which now
+ * carries the code). `shouldCreateUser: false`: it never creates an account.
+ */
+export async function sendSecurityCode(captcha: CaptchaSource): Promise<void> {
+  const email = getSession()?.email;
+  if (!email) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
+  const client = await db();
+  let result;
+  try {
+    result = await client.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, captchaToken: await captchaToken(captcha) }
+    });
+  } catch (e) {
+    throw toServiceError(e);
+  }
+  if (result.error) {
+    if (authCode(result.error) === 'over_email_send_rate_limit' || result.error.status === 429)
+      throw serviceError('conflito', 'Já mandamos um código agora há pouco. Espere um minuto e peça de novo.');
+    throw toServiceError(result.error);
+  }
+}
+
+/** The code from the e-mail: a fresh sign-in of the same account (what delete_my_account asks for). */
+export async function checkSecurityCode(code: string): Promise<void> {
+  const email = getSession()?.email;
+  if (!email) throw serviceError('nao_autorizado', 'Entre na sua conta de novo para continuar.');
+  const client = await db();
+  let result;
+  try {
+    result = await client.auth.verifyOtp({ email, token: code, type: 'email' });
+  } catch (e) {
+    throw toServiceError(e);
+  }
+  if (result.error) {
+    const reason = authCode(result.error);
+    if (reason === 'otp_expired' || reason === 'otp_disabled' || result.error.status === 403)
+      throw serviceError('validacao', WRONG_SECURITY_CODE);
+    if (reason === 'over_request_rate_limit')
+      throw serviceError('conflito', 'Muitas tentativas. Espere alguns minutos e tente de novo.');
+    throw toServiceError(result.error);
+  }
+  const user = result.data.user ?? result.data.session?.user;
+  if (!user) throw serviceError('validacao', WRONG_SECURITY_CODE);
+}
+
 // ---- sign-up ----
 
 const ROLE_TIPO: Record<Role, string> = { trabalhador: 'pedreiro', recrutador: 'construtora' };

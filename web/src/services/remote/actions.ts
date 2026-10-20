@@ -10,10 +10,12 @@ import { boostPaymentFromRow } from '../supabaseMappers';
 import { companyToWorkerUrl, workerToCompanyUrl } from '../../utils/whatsapp';
 import type { ProviderCardToken } from '../payments';
 import type { CaptchaSource } from '../auth';
+import type { DeletionProof } from '../account';
 import { db, invokeFunction, request } from './client';
 import { loadJob } from './data';
 import { apply, putPayments } from './merge';
-import { checkPassword, signOut } from './auth';
+import { checkPassword, checkSecurityCode, signOut } from './auth';
+export { accountHasPassword, sendSecurityCode } from './auth';
 
 // ---- notifications ----
 
@@ -151,13 +153,22 @@ export async function exportMyData(): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+/** When the e-mail code last proved it was the owner: a retry within 4 minutes doesn't spend another code. */
+let codeCheckedAt = 0;
+
 export async function deleteAccount(
-  password: string,
+  proof: DeletionProof,
   confirmCommitments: boolean,
   captcha: CaptchaSource
 ): Promise<void> {
-  if (!(await checkPassword(password, captcha)))
-    throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
+  if ('password' in proof) {
+    if (!(await checkPassword(proof.password, captcha)))
+      throw serviceError('validacao', 'Senha incorreta. Confira e tente de novo.');
+  } else if (Date.now() - codeCheckedAt > 4 * 60_000) {
+    // U16: the code from the e-mail signs the same account in again (fresh login, as the RPC asks).
+    await checkSecurityCode(proof.code);
+    codeCheckedAt = Date.now();
+  }
   // Y15: the Edge Function runs delete_my_account as this user (recent sign-in, anonymized reviews) and
   // then removes the user's files from Storage.
   await invokeFunction('excluir-conta', { confirmCommitments });

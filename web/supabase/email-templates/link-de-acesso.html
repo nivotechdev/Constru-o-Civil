@@ -4,11 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <title>Seu link para entrar</title>
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+    <title>Seu código de segurança</title>
   </head>
   <body style="margin: 0; padding: 0; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2430">
-    <!-- Magic link (Link de acesso). Variáveis do Supabase Auth: {{ .ConfirmationURL }} (link pronto), {{ .Email }}, {{ .SiteURL }}. -->
-    <div style="display: none; max-height: 0; overflow: hidden">Use o link para entrar na Bicos sem senha.</div>
+    <!-- Magic link (U16: código de segurança). O app só manda este e-mail para confirmar que é a dona da conta
+         quem pede uma ação séria (hoje: excluir a conta sem senha, como as feitas com o Google). Variáveis do
+         Supabase Auth: {{ .Token }} (os 6 números), {{ .Email }}. Sem link: o código só vale dentro do app. -->
+    <div style="display: none; max-height: 0; overflow: hidden">
+      Seu código de segurança da Bicos: {{ .Token }} — use só no app, não passe para ninguém.
+    </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f4f5f7">
       <tr>
         <td align="center" style="padding: 24px 12px">
@@ -26,53 +31,59 @@
               </td>
             </tr>
             <tr>
-              <td style="padding: 28px 24px 8px 24px">
+              <td style="padding: 28px 24px 4px 24px">
                 <h1 style="margin: 0 0 12px 0; font-size: 22px; line-height: 28px; color: #1f2430">
-                  Seu link para entrar
+                  Seu código de segurança
                 </h1>
-                <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 24px">
-                  Toque no botão para entrar na sua conta da Bicos.
-                </p>
-                <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 24px">
-                  O link vale por 1 hora e só funciona uma vez. Se vencer, peça outro no app.
+                <p style="margin: 0; font-size: 16px; line-height: 24px">
+                  Você pediu para excluir sua conta na Bicos. Para confirmar que é você, copie o código abaixo e cole no
+                  app.
                 </p>
               </td>
             </tr>
             <tr>
-              <td align="center" style="padding: 16px 24px 8px 24px">
-                <a
-                  href="{{ .ConfirmationURL }}"
-                  style="
-                    display: inline-block;
-                    background: #1d4bed;
-                    color: #ffffff;
-                    text-decoration: none;
-                    font-size: 17px;
-                    font-weight: bold;
-                    padding: 15px 28px;
-                    border-radius: 12px;
-                  "
-                  >Entrar na Bicos</a
-                >
+              <td align="center" style="padding: 20px 24px 6px 24px">
+                <!-- O código inteiro se seleciona com um toque (user-select: all): segurar e copiar. -->
+                <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: separate">
+                  <tr>
+                    <td
+                      align="center"
+                      style="
+                        background: #eef2ff;
+                        border: 2px dashed #1d4bed;
+                        border-radius: 14px;
+                        padding: 16px 22px 16px 32px;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 40px;
+                        line-height: 48px;
+                        font-weight: bold;
+                        letter-spacing: 10px;
+                        color: #101418;
+                        -webkit-user-select: all;
+                        user-select: all;
+                      "
+                    >
+                      {{ .Token }}
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>
-              <td style="padding: 16px 24px 8px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
-                Se o botão não abrir, copie este endereço no navegador:<br />
-                <a href="{{ .ConfirmationURL }}" style="color: #1d4bed; word-break: break-all"
-                  >{{ .ConfirmationURL }}</a
-                >
+              <td align="center" style="padding: 6px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
+                Toque e segure no código para copiar. Ele vale por 1 hora e só uma vez.
               </td>
             </tr>
             <tr>
-              <td style="padding: 16px 24px 24px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
-                Não pediu? Ignore este e-mail: ninguém entra sem tocar no link.
+              <td style="padding: 12px 24px 24px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
+                Ninguém da Bicos vai pedir esse código por telefone ou WhatsApp: não passe para ninguém. Não foi você?
+                Ignore este e-mail: sem o código, nada acontece com a sua conta.
               </td>
             </tr>
             <tr>
               <td style="background: #f4f5f7; padding: 16px 24px; font-size: 12px; line-height: 17px; color: #8a90a0">
-                Bicos, da NivoTech · Este e-mail foi enviado para {{ .Email }} porque alguém usou este endereço na
-                Bicos. Não responda: esta caixa não é lida. Dúvidas? Abra a Bicos › Ajuda.
+                Bicos, da NivoTech · Este e-mail foi enviado para {{ .Email }} porque alguém pediu um código para a
+                conta da Bicos com este endereço. Não responda: esta caixa não é lida. Dúvidas? Abra a Bicos › Ajuda.
               </td>
             </tr>
           </table>

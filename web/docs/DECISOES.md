@@ -1736,3 +1736,15 @@ localização atual" (o trabalhador grava cidade e ponto). O filtro do mural já
 conta e a cada abertura do app ele volta ao lugar salvo — nada disso é gravado no aparelho. Se o lugar salvo não for
 uma cidade da lista (dado antigo de demonstração), o mural abre na cidade padrão, nunca quebrado. **Contas antigas**
 que ficaram com São Paulo continuam assim até a pessoa atualizar em Editar perfil (a produção só se mexe com "pode").
+
+## U16 — Excluir a própria conta, com ou sem senha
+
+Pedido do responsável: um botão para excluir a conta, que só sirva para a própria conta. A exclusão já existia (Y15),
+mas ficava escondida em "Privacidade e dados" e **só funcionava com a senha** — quem criou a conta com o Google não tem
+senha e não conseguia excluir. **Agora:** "Excluir minha conta" fica em Configurações, logo abaixo de "Sair da conta";
+a tela pede a senha ou, para conta sem senha (e para quem esqueceu), um **código de 6 números enviado ao e-mail da
+própria conta** (`sendSecurityCode`: `signInWithOtp` com `shouldCreateUser: false`; o código é conferido com
+`verifyOtp` logo antes de excluir, o que renova o login como a `delete_my_account` exige). **Só a própria conta:** a
+tela não recebe id nenhum — a Edge Function e a RPC pegam a conta do token da sessão, como antes. O e-mail do código
+é o template "Magic link" do Supabase Auth, que o app não usava: virou "Seu código de segurança" (sem link — o código
+só vale dentro do app, na conta já logada).

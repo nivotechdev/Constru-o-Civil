@@ -1,18 +1,29 @@
-// "Excluir minha conta": confirm the password, see what happens to the bicos in progress (and confirm
-// it), confirm once more, then the account is deleted and the session ends.
-import { useState } from 'react';
+// "Excluir minha conta": prove it is the owner (the password, or — U16 — a 6-number code sent to the account's
+// e-mail, the only way for an account made with Google, which has no password), see what happens to the bicos
+// in progress (and confirm it), confirm once more, then the account is deleted and the session ends. Only the
+// logged-in account: the backend takes it from the session, never from the screen.
+import { useEffect, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { useCaptcha } from '../../components/Captcha';
 import { Card } from '../../components/Card';
 import { Checkbox } from '../../components/Checkbox';
+import { CodeInput } from '../../components/CodeInput';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { PasswordInput } from '../../components/Input';
 import { Dialog } from '../../components/Modal';
 import { useAction } from '../../hooks/useAction';
-import { useDb, useRole } from '../../hooks/useStore';
-import { deleteAccount, deletionImpact, loadDeletionImpact } from '../../services/account';
+import { useDb, useRole, useSession } from '../../hooks/useStore';
+import {
+  accountHasPassword,
+  deleteAccount,
+  deletionImpact,
+  loadDeletionImpact,
+  sendSecurityCode
+} from '../../services/account';
+import { errorMessage } from '../../services/errors';
+import { CODE_LENGTH } from '../../utils/code';
 import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
@@ -23,6 +34,13 @@ import { dateText } from '../../utils/jobInfo';
 export default function DeleteAccount() {
   const db = useDb();
   const role = useRole();
+  const email = useSession()?.email ?? '';
+  // null while asking whether the account has a password.
+  const [method, setMethod] = useState<'senha' | 'codigo' | null>(null);
+  const [hasPassword, setHasPassword] = useState(true);
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const [sending, setSending] = useState(false);
   const [password, setPassword] = useState('');
   const [visible, setVisible] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -31,15 +49,56 @@ export default function DeleteAccount() {
   const captcha = useCaptcha();
   const query = useQuery('deletion-impact', loadDeletionImpact);
   const remove = useAction(deleteAccount, () => navigate('/conta-excluida', { replace: true }));
-  const back = () => goBack('/configuracoes/privacidade');
-  if (query.status !== 'ready')
+  const back = () => goBack('/configuracoes');
+  useEffect(() => {
+    let live = true;
+    accountHasPassword()
+      .catch(() => true)
+      .then((has) => {
+        if (!live) return;
+        setHasPassword(has);
+        setMethod(has ? 'senha' : 'codigo');
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+  if (query.status !== 'ready' || !method)
     return <ScreenLoading title="Excluir minha conta" onBack={back} query={query} skeleton={<PageSkeleton />} />;
   const impact = deletionImpact(db);
   const worker = role === 'trabalhador';
 
+  const proven = method === 'senha' ? Boolean(password) : code.length === CODE_LENGTH;
+
+  function sendCode() {
+    if (sending) return;
+    setSending(true);
+    setFieldError(null);
+    sendSecurityCode(captcha.getToken)
+      .then(() => {
+        setCodeSent(true);
+        setCode('');
+      })
+      .catch((e: unknown) => setFieldError(errorMessage(e)))
+      .finally(() => setSending(false));
+  }
+
+  function switchMethod(next: 'senha' | 'codigo') {
+    setMethod(next);
+    setFieldError(null);
+  }
+
   function start() {
-    if (!password) {
+    if (method === 'senha' && !password) {
       setFieldError('Digite sua senha para confirmar que é você.');
+      return;
+    }
+    if (method === 'codigo' && !codeSent) {
+      setFieldError('Toque em "Enviar código" para receber o código no seu e-mail.');
+      return;
+    }
+    if (method === 'codigo' && code.length !== CODE_LENGTH) {
+      setFieldError('Digite os 6 números do código que chegou no seu e-mail.');
       return;
     }
     if (impact.commitments.length && !agreed) {
@@ -118,20 +177,74 @@ export default function DeleteAccount() {
           </div>
         ) : null}
 
-        <PasswordInput
-          id="delete-password"
-          label="Sua senha"
-          value={password}
-          error={fieldError}
-          visible={visible}
-          onToggleVisible={() => setVisible(!visible)}
-          onInput={(v) => {
-            setPassword(v);
-            setFieldError(null);
-          }}
-          onEnter={start}
-        />
-        {impact.commitments.length && !agreed && password ? (
+        {method === 'senha' ? (
+          <div className="flex flex-col gap-1.5">
+            <PasswordInput
+              id="delete-password"
+              label="Sua senha"
+              value={password}
+              error={fieldError}
+              visible={visible}
+              onToggleVisible={() => setVisible(!visible)}
+              onInput={(v) => {
+                setPassword(v);
+                setFieldError(null);
+              }}
+              onEnter={start}
+            />
+            <button
+              type="button"
+              className="self-start h-10 -ml-3 px-3 rounded-full text-sm font-semibold text-brand-600 hover:bg-brand-50"
+              onClick={() => switchMethod('codigo')}
+            >
+              Não lembra a senha? Confirmar com um código no e-mail
+            </button>
+          </div>
+        ) : (
+          <Card padding="md">
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3 items-start">
+                <Icon name="mail" size={20} color="var(--brand)" />
+                <span className="text-sm text-concrete-700">
+                  {codeSent
+                    ? `Enviamos um código de 6 números para ${email}. Digite ou cole aqui.`
+                    : `Para confirmar que é você, vamos enviar um código de 6 números para ${email}.`}
+                </span>
+              </div>
+              {codeSent ? (
+                <CodeInput
+                  id="delete-code"
+                  label="Código do e-mail"
+                  code={code}
+                  error={fieldError}
+                  pasteButton
+                  autoFocus
+                  onCode={(v) => {
+                    setCode(v);
+                    setFieldError(null);
+                  }}
+                  onEnter={start}
+                />
+              ) : fieldError ? (
+                <FieldError message={fieldError} />
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  label={codeSent ? 'Reenviar código' : 'Enviar código'}
+                  variant={codeSent ? 'ghost' : 'secondary'}
+                  size="sm"
+                  iconLeft="mail"
+                  loading={sending}
+                  onClick={sendCode}
+                />
+                {hasPassword ? (
+                  <Button label="Usar minha senha" variant="ghost" size="sm" onClick={() => switchMethod('senha')} />
+                ) : null}
+              </div>
+            </div>
+          </Card>
+        )}
+        {impact.commitments.length && !agreed && proven ? (
           <FieldError message="Confirme o que acontece com os bicos em andamento." />
         ) : null}
         {captcha.widget}
@@ -145,7 +258,7 @@ export default function DeleteAccount() {
         confirmLabel="Sim, excluir conta"
         loading={remove.loading}
         error={remove.error}
-        onConfirm={() => void remove.run(password, agreed, captcha.getToken)}
+        onConfirm={() => void remove.run(method === 'senha' ? { password } : { code }, agreed, captcha.getToken)}
         cancelLabel="Cancelar"
         onCancel={() => setAsking(false)}
       />
