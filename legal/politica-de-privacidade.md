@@ -61,7 +61,7 @@ Com autoridades, quando a lei ou uma ordem judicial exigir.
 
 ## 6. Por quanto tempo guardamos
 
-Conta, perfil, vagas, candidaturas e avaliações: enquanto a conta existir. Ao excluir a conta, apagamos seus dados e arquivos na hora; o que precisa ficar para o histórico do outro lado (uma avaliação já feita, por exemplo) fica sem o seu nome.
+Conta, perfil, vagas, candidaturas e avaliações: enquanto a conta existir. Ao excluir a conta, apagamos na hora seus dados, arquivos, vagas, candidaturas e as avaliações que você fez e recebeu.
 
 Cadastro que nunca confirmou o e-mail: 7 dias. Tentativas de login com IP e códigos do WhatsApp: 1 dia. Selfie e documento: 30 dias depois da decisão.
 

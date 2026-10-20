@@ -29,7 +29,7 @@ describe('deleting the account', () => {
     return r;
   };
 
-  it('worker: wrong password and unconfirmed commitments are refused; then gives up and leaves', async () => {
+  it('worker: wrong password and unconfirmed commitments are refused; then everything of it is deleted (U24)', async () => {
     await settle(m.auth.signIn('trabalhador@bicos.demo', 'bicos123'));
     const impact = m.account.deletionImpact();
     // a1 (pré-selecionado on BC-4821) and a8 (contratado on BC-4712) hold slots.
@@ -45,11 +45,12 @@ describe('deleting the account', () => {
     const db = m.store.getDb();
     expect(m.store.getSession()).toBeNull();
     expect(db.accounts['conta-jorge']).toBeUndefined();
-    expect(db.workers.jorge.name).toBe('Conta excluída');
-    expect(db.applications.find((a) => a.id === 'a1')?.status).toBe('desistiu');
-    expect(
-      db.applications.some((a) => a.workerId === 'jorge' && (a.status === 'enviada' || a.status === 'em_analise'))
-    ).toBe(false);
+    // U24: the profile and everything of it is gone — every candidacy, post and notice.
+    expect(db.workers.jorge).toBeUndefined();
+    expect(db.applications.some((a) => a.workerId === 'jorge')).toBe(false);
+    expect(db.workerPosts.some((p) => p.workerId === 'jorge')).toBe(false);
+    expect(db.notifications.some((n) => n.workerId === 'jorge')).toBe(false);
+    // The company of the bico in progress is told.
     expect(db.notifications.some((n) => n.kind === 'desistencia' && n.companyId === 'meridiano')).toBe(true);
     // The old login no longer works.
     expect(await settle(m.auth.signIn('trabalhador@bicos.demo', 'bicos123'))).toMatchObject({
@@ -68,16 +69,17 @@ describe('deleting the account', () => {
     expect(m.store.getSession()).toBeNull();
   });
 
-  it('company: hires cancelled and open jobs closed, candidates told', async () => {
+  it('company: every job and candidacy deleted, the hired worker told (U24)', async () => {
     await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
     const impact = m.account.deletionImpact();
-    expect(impact.openJobs.map((j) => j.id)).toContain('BC-4998');
+    expect(impact.jobs.map((j) => j.id)).toContain('BC-4998');
     expect((await settle(m.account.deleteAccount({ password: 'bicos123' }, true))).ok).toBe(true);
     const db = m.store.getDb();
-    expect(db.jobs['BC-4998'].closed).toBe(true);
-    expect(db.applications.find((a) => a.id === 'a11')?.status).toBe('nao_selecionado');
-    expect(db.applications.find((a) => a.id === 'a1')?.status).toBe('cancelado_pela_construtora');
+    // U24: every job it published is gone, with its candidacies; the hired worker is told.
+    expect(Object.values(db.jobs).some((j) => j.companyId === 'meridiano')).toBe(false);
+    expect(db.jobs['BC-4998']).toBeUndefined();
+    expect(db.applications.some((a) => a.id === 'a11' || a.id === 'a1')).toBe(false);
+    expect(db.companies.meridiano).toBeUndefined();
     expect(db.notifications.some((n) => n.workerId === 'jorge' && n.kind === 'contratacao_cancelada')).toBe(true);
-    expect(db.companies.meridiano.whatsapp).toBe('');
   });
 });

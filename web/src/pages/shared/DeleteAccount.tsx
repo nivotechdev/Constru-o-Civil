@@ -119,14 +119,17 @@ export default function DeleteAccount() {
             <div className="flex flex-col gap-1">
               <span className="font-semibold text-danger-500">Essa ação não pode ser desfeita</span>
               <span className="text-sm text-concrete-600">
-                Seu perfil, fotos, contatos, candidaturas, posts e notificações são apagados. Avaliações e o histórico
-                dos bicos continuam para o outro lado, sem o seu nome.
+                Tudo o que é seu na Bicos é apagado de vez: perfil, fotos, contatos, notificações e as avaliações que
+                você fez e recebeu.{' '}
+                {worker
+                  ? 'Você sai de todos os bicos e candidaturas, e suas vagas salvas e publicações somem.'
+                  : 'Todas as vagas que você publicou somem, com os candidatos e os impulsionamentos.'}
               </span>
             </div>
           </div>
         </Card>
 
-        {impact.commitments.length || impact.openJobs.length ? (
+        {impact.commitments.length || impact.jobs.length ? (
           <div className="flex flex-col gap-2.5">
             <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">
               O que acontece com seus bicos
@@ -143,13 +146,13 @@ export default function DeleteAccount() {
                     </span>
                   </div>
                 ))}
-                {impact.openJobs.length ? (
+                {impact.jobs.length ? (
                   <div className="flex gap-2.5 items-start">
                     <Icon name="circle-x" size={18} color="var(--gray-500)" />
                     <span className="text-sm text-concrete-700">
-                      {impact.openJobs.length === 1
-                        ? 'Sua vaga aberta é encerrada, e os candidatos são avisados.'
-                        : `Suas ${impact.openJobs.length} vagas abertas são encerradas, e os candidatos são avisados.`}
+                      {impact.jobs.length === 1
+                        ? 'Sua vaga é apagada, com os candidatos dela.'
+                        : `Suas ${impact.jobs.length} vagas são apagadas, com os candidatos delas.`}
                     </span>
                   </div>
                 ) : null}

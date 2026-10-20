@@ -116,7 +116,7 @@ select pg_temp.logout();
 select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'falta'), '10000000-0000-0000-0000-0000000000a1') = 'nao_compareceu',
   'marcar falta no dia do bico');
 
--- Avaliações para conferir a anonimização na exclusão de conta.
+-- Avaliação para conferir que a exclusão da conta a apaga e refaz a nota da construtora (U24).
 select pg_temp.login('10000000-0000-0000-0000-0000000000a3');
 select public.submit_review((select id from public.applications where job_id = (select v from t_ids where k = 'hoje')
                               and worker_id = '10000000-0000-0000-0000-0000000000a3'),
@@ -137,16 +137,24 @@ select pg_temp.ok(exists (select 1 from public.notifications where worker_id = '
 select pg_temp.login('10000000-0000-0000-0000-0000000000a2');
 select pg_temp.fails(format('select public.submit_application(%L)', (select v from t_ids where k = 'remover')), 'BC409');
 
--- Excluir conta: sem login recente é recusado; com login recente apaga e anonimiza (Y15).
+-- Excluir conta: sem login recente é recusado; com login recente apaga tudo (Y15, U24).
 select pg_temp.login('10000000-0000-0000-0000-0000000000a3', 3600);
 select pg_temp.fails('select public.delete_my_account(true)', 'BC401');
 select pg_temp.login('10000000-0000-0000-0000-0000000000a3', 10);
 select public.delete_my_account(true);
 select pg_temp.logout();
 select pg_temp.ok(not exists (select 1 from auth.users where id = '10000000-0000-0000-0000-0000000000a3'), 'conta apagada do Auth');
-select pg_temp.ok((select name from public.workers where id = '10000000-0000-0000-0000-0000000000a3') = 'Conta excluída',
-  'perfil anonimizado');
-select pg_temp.ok(not exists (select 1 from public.reviews where author_label like 'Carla%'), 'nome sai das avaliações');
+select pg_temp.ok(not exists (select 1 from public.workers where id = '10000000-0000-0000-0000-0000000000a3'),
+  'U24: perfil apagado');
+select pg_temp.ok(not exists (select 1 from public.applications where worker_id = '10000000-0000-0000-0000-0000000000a3'),
+  'U24: candidaturas apagadas');
+select pg_temp.ok(not exists (select 1 from public.reviews where worker_id = '10000000-0000-0000-0000-0000000000a3'),
+  'U24: avaliações apagadas');
+select pg_temp.ok((select c.review_count = (select count(*) from public.reviews r
+                                             where r.company_id = c.id and r.direction = 'para_construtora')
+                     from public.companies c join public.jobs j on j.company_id = c.id
+                    where j.id = (select v from t_ids where k = 'hoje')),
+  'U24: a nota da construtora é refeita sem a avaliação apagada');
 
 -- Visitante sem login não chama nada disso.
 set local role anon;

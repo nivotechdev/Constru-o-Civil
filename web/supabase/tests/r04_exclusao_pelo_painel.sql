@@ -1,5 +1,5 @@
--- R04 — apagar a conta direto em auth.users (painel/Admin API) faz a mesma limpeza da exclusão pelo app: perfil
--- anonimizado, bicos avisados, vagas fora do mural e do link público, selfie e fotos para a limpeza diária.
+-- R04/U24 — apagar a conta direto em auth.users (painel/Admin API) faz a mesma limpeza da exclusão pelo app: quem
+-- estava no bico é avisado e depois TUDO da conta sai (U24: perfil, vagas, candidaturas, selfie); fotos para a limpeza.
 begin;
 select pg_temp.new_user('94000000-0000-0000-0000-0000000000c1', 'recrutador', 'Obra Que Sai', '11.222.333/0001-81');
 select pg_temp.new_user('94000000-0000-0000-0000-0000000000c2', 'recrutador', 'Obra Que Fica', '45.723.174/0001-10');
@@ -33,29 +33,32 @@ select pg_temp.ok((select count(*) from public.orphan_storage_objects(500) where
 -- Apagar as duas contas como o painel faz.
 delete from auth.users where id in ('94000000-0000-0000-0000-0000000000a1', '94000000-0000-0000-0000-0000000000c1');
 
-select pg_temp.ok((select name = 'Conta excluída' and photo_url is null from public.workers
-                    where id = '94000000-0000-0000-0000-0000000000a1'), 'trabalhadora anonimizada');
-select pg_temp.ok((select name = 'Construtora (conta excluída)' and cnpj is null from public.companies
-                    where id = '94000000-0000-0000-0000-0000000000c1'), 'construtora anonimizada');
+select pg_temp.ok(not exists (select 1 from public.workers where id = '94000000-0000-0000-0000-0000000000a1'),
+                  'U24: perfil da trabalhadora apagado');
+select pg_temp.ok(not exists (select 1 from public.companies where id = '94000000-0000-0000-0000-0000000000c1'),
+                  'U24: construtora apagada');
+select pg_temp.ok(not exists (select 1 from public.accounts where id in ('94000000-0000-0000-0000-0000000000a1',
+                                                                         '94000000-0000-0000-0000-0000000000c1')),
+                  'U24: logins apagados');
 select pg_temp.ok(not exists (select 1 from public.identity_submissions where worker_id = '94000000-0000-0000-0000-0000000000a1'),
                   'envio da selfie apagado');
-select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'j2'), '94000000-0000-0000-0000-0000000000a1') = 'desistiu',
-                  'bico da trabalhadora: desistência registrada');
+select pg_temp.ok(not exists (select 1 from public.applications where worker_id = '94000000-0000-0000-0000-0000000000a1'),
+                  'U24: a trabalhadora saiu de todos os bicos');
 select pg_temp.ok(exists (select 1 from public.notifications where company_id = '94000000-0000-0000-0000-0000000000c2'
                             and title = 'Um trabalhador saiu da Bicos'), 'construtora que fica foi avisada');
-select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'j1'), '94000000-0000-0000-0000-0000000000a2') = 'cancelado_pela_construtora',
-                  'bico na construtora que saiu: cancelado');
+select pg_temp.ok(not exists (select 1 from public.jobs where id = (select v from t_ids where k = 'j1')),
+                  'U24: vaga da construtora apagada');
+select pg_temp.ok(not exists (select 1 from public.applications where job_id = (select v from t_ids where k = 'j1')),
+                  'U24: candidaturas da vaga apagada saem junto');
 select pg_temp.ok(exists (select 1 from public.notifications where worker_id = '94000000-0000-0000-0000-0000000000a2'
                             and kind = 'contratacao_cancelada'), 'trabalhador que fica foi avisado');
-select pg_temp.ok((select closed and hidden_at is not null and photos is null from public.jobs
-                    where id = (select v from t_ids where k = 'j1')), 'vaga encerrada, oculta e sem fotos');
 select pg_temp.ok(public.public_job_card((select v from t_ids where k = 's1')) is null, 'link público não abre');
+select pg_temp.ok(exists (select 1 from public.jobs where id = (select v from t_ids where k = 'j2')),
+                  'a vaga da construtora que fica continua');
 
 select pg_temp.login('94000000-0000-0000-0000-0000000000a2');
 select pg_temp.ok(not exists (select 1 from public.feed_jobs('São Paulo', 'SP', -23.54, -46.57, null, null, null, 'Obra', true) f
                                where f ->> 'company_id' = '94000000-0000-0000-0000-0000000000c1'), 'fora do mural e da busca');
-select pg_temp.ok((select name from public.workers where id = '94000000-0000-0000-0000-0000000000a1') = 'Conta excluída',
-                  'perfil visto pelos outros já anonimizado');
 select pg_temp.logout();
 
 select pg_temp.ok((select count(*) from public.orphan_storage_objects(500) where name like '94000000-%') = 3,

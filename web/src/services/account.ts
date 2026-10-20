@@ -1,8 +1,8 @@
 // The logged-in account's privacy operations (LGPD): exporting and deleting its data. Each function
 // says what the real backend does there (docs/CONTRATO-BACKEND.md).
-import type { Application, Database, Job } from '../types/models';
-import { holdsSlot, isPending, transition } from './applicationMachine';
-import { closeJobApplications, concludeFinishedJobs } from './applications';
+import type { Application, Database, Job, Review } from '../types/models';
+import { holdsSlot } from './applicationMachine';
+import { concludeFinishedJobs } from './applications';
 import { checkPassword, forgetPassword, signOut } from './auth';
 import type { CaptchaSource } from './auth';
 import { jobTitle } from './catalog';
@@ -30,34 +30,52 @@ export async function loadDeletionImpact(): Promise<void> {
   concludeFinishedJobs();
 }
 
+/** U24: a profile without the reviews of the candidacies that were deleted; the rating is redone without them. */
+function withoutReviews<P extends { rating: number; reviewCount: number; reviews: Review[] }>(
+  profile: P,
+  gone: Set<string>
+): P {
+  const removed = profile.reviews.filter((r) => r.applicationId && gone.has(r.applicationId));
+  if (!removed.length) return profile;
+  const count = Math.max(0, profile.reviewCount - removed.length);
+  const sum = profile.rating * profile.reviewCount - removed.reduce((t, r) => t + r.value, 0);
+  return {
+    ...profile,
+    reviews: profile.reviews.filter((r) => !removed.includes(r)),
+    reviewCount: count,
+    rating: count ? Math.round((sum / count) * 10) / 10 : 0
+  };
+}
+
 /** What deleting the account would affect, to show before confirming. */
 export interface DeletionImpact {
   /** Worker: diárias picked/hired that will be given up. Company: hires that will be cancelled. */
   commitments: { app: Application; job: Job }[];
-  /** Company: open jobs that will be closed (their candidates are told). */
-  openJobs: Job[];
+  /** Company (U24): every job it published, all deleted with their candidacies. */
+  jobs: Job[];
 }
 
 export function deletionImpact(db: Database = getDb()): DeletionImpact {
   const session = getSession();
-  if (!session) return { commitments: [], openJobs: [] };
+  if (!session) return { commitments: [], jobs: [] };
   if (session.role === 'trabalhador') {
     return {
       commitments: db.applications
         .filter((a) => a.workerId === session.workerId && holdsSlot(a.status))
         .map((app) => ({ app, job: db.jobs[app.jobId] })),
-      openJobs: []
+      jobs: []
     };
   }
   const mine = Object.values(db.jobs).filter(
-    (j) => j.companyId === session.companyId && !j.closed && !db.deletedJobIds.includes(j.id)
+    (j) => j.companyId === session.companyId && !db.deletedJobIds.includes(j.id)
   );
-  const mineIds = new Set(mine.map((j) => j.id));
+  // Hires still to happen are on the open jobs (the server checks the same).
+  const openIds = new Set(mine.filter((j) => !j.closed).map((j) => j.id));
   return {
     commitments: db.applications
-      .filter((a) => mineIds.has(a.jobId) && holdsSlot(a.status))
+      .filter((a) => openIds.has(a.jobId) && holdsSlot(a.status))
       .map((app) => ({ app, job: db.jobs[app.jobId] })),
-    openJobs: mine
+    jobs: mine
   };
 }
 
@@ -108,19 +126,13 @@ export async function deleteAccount(
     throw serviceError('conflito', 'Confirme o que acontece com os bicos em andamento antes de excluir.');
   await mockLatency(900);
   const at = new Date().toISOString();
-  const reason = 'Conta excluída';
 
   transact((db) => {
     let next: Database = db;
+    // U24: everything the account has goes away; the other side is told first and its numbers are redone.
     if (session.role === 'trabalhador' && session.workerId) {
       const workerId = session.workerId;
-      for (const { app, job } of impact.commitments) {
-        next = {
-          ...next,
-          applications: next.applications.map((a) =>
-            a.id === app.id ? transition(a, 'desistir', 'trabalhador', at, reason) : a
-          )
-        };
+      for (const { job } of impact.commitments) {
         next = withNotification(
           next,
           {
@@ -134,26 +146,26 @@ export async function deleteAccount(
           at
         );
       }
-      const worker = next.workers[workerId];
+      const gone = new Set(next.applications.filter((a) => a.workerId === workerId).map((a) => a.id));
+      const workers = { ...next.workers };
+      delete workers[workerId];
+      const alerts = { ...next.jobAlerts };
+      delete alerts[workerId];
       next = {
         ...next,
-        applications: next.applications.filter((a) => !(a.workerId === workerId && isPending(a.status))),
+        applications: next.applications.filter((a) => !gone.has(a.id)),
         workerPosts: next.workerPosts.filter((p) => p.workerId !== workerId),
         notifications: next.notifications.filter((n) => n.workerId !== workerId),
-        workers: {
-          ...next.workers,
-          [workerId]: { ...worker, name: 'Conta excluída', initials: '–', whatsapp: '', facts: [] }
-        }
+        invites: next.invites?.filter((i) => i.workerId !== workerId),
+        savedJobIds: [],
+        jobAlerts: alerts,
+        workers,
+        // The companies it reviewed: their rating without those reviews.
+        companies: Object.fromEntries(Object.entries(next.companies).map(([id, c]) => [id, withoutReviews(c, gone)]))
       };
     } else if (session.companyId) {
       const companyId = session.companyId;
       for (const { app, job } of impact.commitments) {
-        next = {
-          ...next,
-          applications: next.applications.map((a) =>
-            a.id === app.id ? transition(a, 'cancelar_contratacao', 'construtora', at, reason) : a
-          )
-        };
         next = withNotification(
           next,
           {
@@ -167,18 +179,33 @@ export async function deleteAccount(
           at
         );
       }
-      for (const job of impact.openJobs) {
-        const closed: Job = { ...job, closed: true, semContratacao: true };
-        next = closeJobApplications({ ...next, jobs: { ...next.jobs, [job.id]: closed } }, closed, at);
-      }
-      const company = next.companies[companyId];
+      const jobIds = new Set(
+        Object.values(next.jobs)
+          .filter((j) => j.companyId === companyId)
+          .map((j) => j.id)
+      );
+      const goneApps = next.applications.filter((a) => jobIds.has(a.jobId));
+      const gone = new Set(goneApps.map((a) => a.id));
+      const jobs = Object.fromEntries(Object.entries(next.jobs).filter(([id]) => !jobIds.has(id)));
+      const companies = { ...next.companies };
+      delete companies[companyId];
       next = {
         ...next,
+        jobs,
+        applications: next.applications.filter((a) => !gone.has(a.id)),
+        boostPayments: next.boostPayments.filter((p) => !jobIds.has(p.jobId)),
         notifications: next.notifications.filter((n) => n.companyId !== companyId),
-        companies: {
-          ...next.companies,
-          [companyId]: { ...company, name: 'Construtora (conta excluída)', whatsapp: '' }
-        }
+        invites: next.invites?.filter((i) => i.companyId !== companyId),
+        savedJobIds: next.savedJobIds.filter((id) => !jobIds.has(id)),
+        companies,
+        // The workers it reviewed: their rating without those reviews, and the bicos done with it out of the count.
+        workers: Object.fromEntries(
+          Object.entries(next.workers).map(([id, w]) => {
+            const done = goneApps.filter((a) => a.workerId === id && a.status === 'concluida').length;
+            const cleared = withoutReviews(w, gone);
+            return [id, done ? { ...cleared, jobsDone: Math.max(0, cleared.jobsDone - done) } : cleared];
+          })
+        )
       };
     }
     const accounts = { ...next.accounts };

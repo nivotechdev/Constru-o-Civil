@@ -595,6 +595,17 @@ select count(*) from information_schema.columns
  where table_name in ('workers', 'companies') and column_name in ('oficio_id', 'specialties', 'tipo_obra');  -- 0
 ```
 
+### 51. `20261020000300_u24_exclusao_completa.sql` (U24)
+
+Excluir a conta (pelo app ou pelo painel) passa a **apagar tudo** o que é dela em vez de anonimizar: a construtora
+leva todas as vagas (candidaturas, vagas salvas, impulsos, denúncias sobre elas) e as avaliações dos dois lados; o
+trabalhador sai de todos os bicos e leva vagas salvas, publicações, alertas e avaliações. Notas e bicos feitos do
+outro lado são refeitos. Só troca a função `anonymize_account`; não mexe em dado existente ao aplicar.
+
+```sql
+select prosrc like '%delete from public.jobs where company_id%' from pg_proc where proname = 'anonymize_account';  -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

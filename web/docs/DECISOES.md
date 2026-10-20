@@ -1829,3 +1829,20 @@ centro dela; localização do celular: o município mais perto e o ponto arredon
 salvo no perfil (banco), então vale em toda abertura do app até ser trocado de novo; ao salvar, o mural volta a abrir
 nessa cidade na hora (o estado do mural é refeito). O completar perfil do cadastro continua pedindo a localização
 atual (U12).
+
+## U24 — Excluir a conta apaga tudo o que é dela
+
+Pedido do responsável: quando uma conta é excluída, tudo ligado a ela sai do banco e do app. Antes (Y15/R04) o perfil
+ficava anonimizado ("Conta excluída") e o histórico ficava para o outro lado (avaliações sem nome, vagas encerradas e
+ocultas). **Agora** (`u24_exclusao_completa`, a mesma `anonymize_account` que a exclusão pelo app e pelo painel já
+chamam): construtora — todas as vagas que publicou, com candidaturas e seus eventos, vagas salvas, convites e
+impulsionamentos, as avaliações que fez e recebeu, notificações, equipe e a empresa; trabalhador — todas as
+candidaturas (sai de todos os bicos), vagas salvas, publicações, alertas, convites, identidade enviada, avaliações e
+o perfil. Quem estava num bico em andamento com a conta continua sendo avisado antes, e a vaga do trabalhador que saiu
+reabre. Para o outro lado não ficar com número errado, a nota (`recount_rating`) e os bicos feitos (`jobs_done`) são
+refeitos sem o que saiu. Denúncias feitas pela conta saem com o login; as feitas sobre o perfil, as vagas e as
+publicações dela também (não há mais o que moderar). Os arquivos já saíam pela `excluir-conta` e pela limpeza diária.
+**Pontos para a empresa saber:** (1) um trabalhador perde a avaliação que recebeu de uma construtora que saiu — é o
+efeito do pedido; (2) os pagamentos de impulso apagados continuam registrados no Mercado Pago (o comprovante fiscal
+fica lá); se o contador pedir esse histórico também na Bicos, dá para guardar só os valores, sem a vaga. A política de
+privacidade foi ajustada ("apagamos na hora … as avaliações que você fez e recebeu").

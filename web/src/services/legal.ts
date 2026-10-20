@@ -151,7 +151,7 @@ export const PRIVACY: LegalDocument = {
     {
       title: '6. Por quanto tempo guardamos',
       body: [
-        'Conta, perfil, vagas, candidaturas e avaliações: enquanto a conta existir. Ao excluir a conta, apagamos seus dados e arquivos na hora; o que precisa ficar para o histórico do outro lado (uma avaliação já feita, por exemplo) fica sem o seu nome.',
+        'Conta, perfil, vagas, candidaturas e avaliações: enquanto a conta existir. Ao excluir a conta, apagamos na hora seus dados, arquivos, vagas, candidaturas e as avaliações que você fez e recebeu.',
         'Cadastro que nunca confirmou o e-mail: 7 dias. Tentativas de login com IP e códigos do WhatsApp: 1 dia. Selfie e documento: 30 dias depois da decisão.',
         'Pagamentos: {{PRAZO_PAGAMENTOS}}, por obrigação fiscal. Registros de acesso: {{PRAZO_REGISTROS_ACESSO}} (Marco Civil da Internet, art. 15). Registro das decisões da equipe (moderação e verificação): {{PRAZO_AUDITORIA}}. Relatórios de erro: 30 dias.'
       ]
