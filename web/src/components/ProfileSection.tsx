@@ -33,3 +33,19 @@ export function FillProfileCard({ text, onClick }: { text: string; onClick: () =
     </Card>
   );
 }
+
+/** U38: the worker's experiences, as the same pills the edit screen uses (read only). */
+export function ExperiencePills({ items }: { items: string[] }) {
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {items.map((e) => (
+        <li
+          key={e}
+          className="inline-flex items-center max-w-full min-h-8 px-3 py-1 rounded-full bg-brand-50 border border-brand-100 text-[0.8125rem] leading-snug font-medium text-brand-700 break-words"
+        >
+          {e}
+        </li>
+      ))}
+    </ul>
+  );
+}

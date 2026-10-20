@@ -24,7 +24,7 @@ import {
 import { contactOpen } from '../../services/applicationMachine';
 import { CandidateActions } from '../recruiter/CandidateActions';
 import { workerPlace } from '../../utils/workerInfo';
-import { AboutText, FillProfileCard, ProfileSection } from '../../components/ProfileSection';
+import { AboutText, ExperiencePills, FillProfileCard, ProfileSection } from '../../components/ProfileSection';
 import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { AVATAR_FRAME, WorkerAvatar } from '../../components/Avatar';
@@ -177,18 +177,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
 
         {experiences.length ? (
           <ProfileSection title="Experiências">
-            <Card padding="md">
-              <ul className="flex flex-col gap-3">
-                {experiences.map((e) => (
-                  <li key={e} className="flex gap-2.5 items-start">
-                    <span className="mt-0.5 shrink-0">
-                      <Icon name="circle-check" size={18} color="var(--text-brand)" />
-                    </span>
-                    <span className="text-sm text-concrete-700 break-words min-w-0">{e}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+            <ExperiencePills items={experiences} />
           </ProfileSection>
         ) : null}
 

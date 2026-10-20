@@ -20,7 +20,7 @@ import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
 import { AboutField } from '../../components/AboutField';
 import { cleanExperiences } from '../../utils/profileText';
-import { ExperiencesField, type ExperienceDraft } from './ExperiencesField';
+import { ExperiencesField } from './ExperiencesField';
 
 /** Frees the local copies of pictures that were picked and then dropped. */
 function revoke(urls: (string | null | undefined)[]) {
@@ -34,13 +34,10 @@ export default function EditWorkerProfile() {
     // U13/U22: the saved place (city + point): any city from the list, or the phone's location.
     location: { city: worker.city, lat: worker.lat, lon: worker.lon } as SavedLocation,
     bio: worker.bio ?? '',
-    // U34: one field per experience; a new profile starts with one empty line to fill.
-    experiences: (worker.experiences?.length ? worker.experiences : ['']).map((text, i): ExperienceDraft => ({
-      key: i + 1,
-      text
-    }))
+    // U38: the experiences as pills.
+    experiences: worker.experiences ?? []
   }));
-  const experiences = cleanExperiences(draft.experiences.map((e) => e.text));
+  const experiences = cleanExperiences(draft.experiences);
   const [images, setImages] = useState<ProfileImages>({});
   const [progress, setProgress] = useState<number | null>(null);
   const picked = useRef<ProfileImages>({});
