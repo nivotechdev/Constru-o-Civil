@@ -232,6 +232,19 @@ export async function prepararPagina(page: Page): Promise<void> {
       }
     })
   );
+  // CNPJ na Receita: o CNPJ de teste é sorteado e às vezes é de uma empresa real (uma BAIXADA reprovou a
+  // construtora e travou a publicação). A resposta é a de "Receita fora do ar": a construtora fica pendente,
+  // como a fila da equipe (fluxo 7) espera, e nenhum CNPJ sorteado vai para a BrasilAPI.
+  await page.route('**/functions/v1/verificar-cnpj', (route) => {
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': 'POST, OPTIONS'
+    };
+    return route.request().method() === 'OPTIONS'
+      ? route.fulfill({ status: 204, headers })
+      : route.fulfill({ headers, json: { status: 'pendente', motivo: 'indisponivel' } });
+  });
 }
 
 let n = 0;
