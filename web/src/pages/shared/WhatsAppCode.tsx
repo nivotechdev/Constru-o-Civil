@@ -1,12 +1,9 @@
 // Sign-up step that confirms the WhatsApp number: six code boxes, the number the code went to (with a
 // way to fix it) and a resend that unlocks every WHATSAPP_RESEND_SECONDS seconds.
-import { useEffect, useState, type KeyboardEvent } from 'react';
-import { FieldError } from '../../components/FieldError';
+import { useEffect, useState } from 'react';
+import { CodeInput } from '../../components/CodeInput';
 import { Icon } from '../../components/icons/Icon';
 import { WHATSAPP_RESEND_SECONDS } from '../../services/auth';
-import { cx } from '../../utils/cx';
-
-const LENGTH = 6;
 
 interface WhatsAppCodeProps {
   /** id of the (visually hidden) input, so the step can focus it. */
@@ -49,14 +46,7 @@ export function WhatsAppCode({
   onResend,
   onEditNumber
 }: WhatsAppCodeProps) {
-  const [focused, setFocused] = useState(false);
   const seconds = useCountdown(sentAt);
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      onEnter();
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,53 +68,7 @@ export function WhatsAppCode({
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor={id} className="text-sm font-semibold text-concrete-900">
-          Código de confirmação
-        </label>
-        {/* One real input (typing, paste, backspace and SMS/WhatsApp autofill work natively) laid over
-            six boxes that show the digits. */}
-        <div className="relative">
-          <div className="grid grid-cols-6 gap-2 sm:gap-2.5" aria-hidden="true">
-            {Array.from({ length: LENGTH }, (_, i) => {
-              const current = focused && (i === code.length || (i === LENGTH - 1 && code.length === LENGTH));
-              return (
-                <span
-                  key={i}
-                  className={cx(
-                    'flex items-center justify-center h-14 sm:h-16 rounded-control border-2 bg-white font-mono font-bold text-2xl text-concrete-900 transition-colors',
-                    error
-                      ? 'border-danger-500'
-                      : current
-                        ? 'border-brand-500 ring-4 ring-brand-100'
-                        : code[i]
-                          ? 'border-concrete-400'
-                          : 'border-concrete-300'
-                  )}
-                >
-                  {code[i] || ''}
-                </span>
-              );
-            })}
-          </div>
-          <input
-            id={id}
-
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={LENGTH}
-            value={code}
-            aria-label="Código de 6 números"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-text"
-            onChange={(e) => onCode(e.target.value.replace(/\D/g, '').slice(0, LENGTH))}
-            onKeyDown={onKeyDown}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-          />
-        </div>
-        {error ? <FieldError message={error} /> : null}
-      </div>
+      <CodeInput id={id} label="Código de confirmação" code={code} error={error} onCode={onCode} onEnter={onEnter} />
 
       <div className="flex flex-col items-center gap-1.5 text-center">
         {resent ? (
@@ -136,7 +80,7 @@ export function WhatsAppCode({
         {seconds > 0 ? (
           <span className="text-sm text-concrete-500">
             Não chegou? Você pode pedir outro código em{' '}
-            <span className="font-mono font-bold text-concrete-700">{`0:${String(seconds).padStart(2, '0')}`}</span>
+            <span className="font-mono font-bold text-concrete-700">{clock(seconds)}</span>
           </span>
         ) : (
           <button
@@ -153,4 +97,9 @@ export function WhatsAppCode({
       </div>
     </div>
   );
+}
+
+/** 60 → "1:00", 45 → "0:45". */
+function clock(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }

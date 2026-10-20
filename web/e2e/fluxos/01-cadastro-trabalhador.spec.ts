@@ -1,14 +1,14 @@
-// Fluxo 1: cadastro do trabalhador (CPF válido, 18+) → confirmação de e-mail (link pela Admin API) →
+// Fluxo 1: cadastro do trabalhador (CPF válido, 18+) → confirmação de e-mail pelo código de 6 números (U11) →
 // completar perfil → mural.
 import { expect, test } from '@playwright/test';
 import {
   atualizar,
+  codigoDeConfirmacao,
   cpfValido,
   criada,
   emailDeTeste,
   ENV,
   idDaConta,
-  linkDeConfirmacao,
   nomeDeTeste,
   prepararPagina,
   print,
@@ -45,7 +45,9 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   const id = await idDaConta(email);
   criada(id, email);
 
-  await page.goto(await linkDeConfirmacao(email));
+  // U11: digitar os 6 números confirma sozinho e segue para completar o perfil.
+  const codigo = await codigoDeConfirmacao(email);
+  await page.fill('#verificar-codigo', codigo);
   await expect(page).toHaveURL(/\/completar-perfil\/trabalhador/);
   await page.getByLabel('Seu ofício principal').selectOption('pedreiro');
   await print(page, 'f1', 'completar perfil oficio');

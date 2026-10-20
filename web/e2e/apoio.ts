@@ -161,6 +161,14 @@ export async function linkDeConfirmacao(email: string): Promise<string> {
   return data.properties.action_link;
 }
 
+/** U11: o código de 6 números que confirma o e-mail (o mesmo efeito do código do e-mail), pela Admin API. */
+export async function codigoDeConfirmacao(email: string): Promise<string> {
+  const { data, error } = await admin().auth.admin.generateLink({ type: 'magiclink', email });
+  const codigo = data?.properties?.email_otp;
+  if (error || !codigo) throw new Error(`generateLink (código): ${error?.message}`);
+  return codigo;
+}
+
 export async function linkDeRecuperacao(email: string): Promise<string> {
   const { data, error } = await admin().auth.admin.generateLink({
     type: 'recovery',

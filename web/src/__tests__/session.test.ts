@@ -118,7 +118,17 @@ describe('accounts (mock auth)', () => {
     expect(homeFor(session!)).toBe('/verificar-email');
     expect(sel.currentWorker(store.getDb())).toMatchObject({ name: 'Ana Souza', initials: 'AS' });
 
-    await run(auth.confirmEmail());
+    // U11: "Corrigir e-mail" on the code screen: an address with an account is refused, a new one takes over.
+    expect(auth.canChangePendingEmail()).toBe(true);
+    expect(await run(auth.changePendingEmail('trabalhador@bicos.demo'))).toEqual({ ok: false, reason: 'email-taken' });
+    expect(await run(auth.changePendingEmail('ana.souza@exemplo.com'))).toEqual({ ok: true });
+    expect(store.getSession()?.email).toBe('ana.souza@exemplo.com');
+    // U11: a wrong code doesn't confirm; the right one does (demo: any 6 numbers but 000000).
+    const wrong = await run(auth.verifyEmailCode('ana.souza@exemplo.com', '000000').catch((e: unknown) => e));
+    expect(wrong).toMatchObject({ code: 'validacao' });
+    expect(homeFor(store.getSession()!)).toBe('/verificar-email');
+    await run(auth.verifyEmailCode('ana.souza@exemplo.com', '123456'));
+    expect(auth.canChangePendingEmail()).toBe(false);
     expect(homeFor(store.getSession()!)).toBe('/completar-perfil/trabalhador');
 
     await run(
@@ -137,8 +147,8 @@ describe('accounts (mock auth)', () => {
         role: 'recrutador',
         name: 'Outra',
         doc: '12.345.678/0001-95',
-        email: 'ANA@exemplo.com',
-        whatsapp: '(11) 91234-5678',
+        email: 'ANA.Souza@exemplo.com',
+        whatsapp: '(11) 91234-0000',
         password: 'abcdefgh1',
         acceptedTermsVersion: TERMS_VERSION,
         adult: true

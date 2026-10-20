@@ -201,27 +201,34 @@ export async function isFreeForSignUp(kind: import('../auth').SignUpCheck, value
   }
 }
 
-/** "Já confirmei": the link may have been opened in another tab or device — check with the server. */
-export async function confirmEmail(): Promise<'entrou' | 'entrar-com-senha'> {
+/** U11: the 6-number code from the e-mail confirms it and opens the session. */
+export async function verifyEmailCode(email: string, code: string): Promise<void> {
   const client = await db();
-  const { data } = await client.auth.getSession();
-  let user = data.session?.user ?? null;
-  // A sign-up waiting for the link has no Auth session here: only signing in can tell (Y19).
-  if (!user) return 'entrar-com-senha';
-  if (!user.email_confirmed_at) {
-    const fresh = await client.auth.getUser();
-    user = fresh.data.user ?? user;
+  let result;
+  try {
+    result = await client.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: 'email' });
+  } catch (e) {
+    throw toServiceError(e);
   }
-  if (user.email_confirmed_at) {
-    await enterSession(user);
-    return 'entrou';
+  if (result.error) {
+    const reason = authCode(result.error);
+    if (reason === 'otp_expired' || reason === 'otp_disabled' || result.error.status === 403)
+      throw serviceError(
+        'validacao',
+        'Código incorreto ou vencido. Confira o e-mail mais recente ou peça outro código.'
+      );
+    if (reason === 'over_request_rate_limit')
+      throw serviceError('conflito', 'Muitas tentativas. Espere alguns minutos e tente de novo.');
+    throw toServiceError(result.error);
   }
-  throw serviceError('conflito', 'Ainda não recebemos a confirmação. Abra o link que enviamos para o seu e-mail.');
+  const user = result.data.user ?? result.data.session?.user;
+  if (!user) throw serviceError('validacao', 'Código incorreto ou vencido. Peça outro código.');
+  await enterSession(user);
 }
 
 export async function resendConfirmationEmail(to?: string): Promise<void> {
   const email = to ?? getSession()?.email;
-  if (!email) throw serviceError('nao_autorizado', 'Entre com seu e-mail e senha para receber o link de novo.');
+  if (!email) throw serviceError('nao_autorizado', 'Entre com seu e-mail e senha para receber o código de novo.');
   const client = await db();
   const { error } = await client.auth.resend({
     type: 'signup',
@@ -230,7 +237,7 @@ export async function resendConfirmationEmail(to?: string): Promise<void> {
   });
   if (error) {
     if (authCode(error) === 'over_email_send_rate_limit')
-      throw serviceError('conflito', 'Já enviamos o link há pouco. Espere alguns minutos para pedir outro.');
+      throw serviceError('conflito', 'Já enviamos um código há pouco. Espere um minuto para pedir outro.');
     throw toServiceError(error);
   }
 }

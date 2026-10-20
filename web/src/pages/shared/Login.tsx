@@ -9,15 +9,17 @@ import {
   resendConfirmationEmail,
   signIn,
   signInWithGoogle,
+  verifyEmailCode,
   type SignInError
 } from '../../services/auth';
 import { errorMessage, ServiceError } from '../../services/errors';
-import { RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
+import { homeFor, RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { navigate } from '../../services/router';
-import { getUI, resetUI, type UIPatch } from '../../services/store';
+import { getSession, getUI, resetUI, type UIPatch } from '../../services/store';
 import { useCaptcha } from '../../components/Captcha';
 import { FEATURES } from '../../services/features';
 import { Card } from '../../components/Card';
+import { CodeInput } from '../../components/CodeInput';
 
 interface LoginUI {
   identifier: string;
@@ -34,6 +36,10 @@ interface LoginUI {
   unconfirmed: string | null;
   resending: boolean;
   resent: boolean;
+  /** U11: the e-mail code typed right here. */
+  code: string;
+  codeError: string | null;
+  confirming: boolean;
 }
 
 const LOGIN_DEFAULTS: LoginUI = {
@@ -45,6 +51,9 @@ const LOGIN_DEFAULTS: LoginUI = {
   error: null,
   notice: null,
   unconfirmed: null,
+  code: '',
+  codeError: null,
+  confirming: false,
   resending: false,
   resent: false
 };
@@ -197,29 +206,66 @@ export default function Login() {
   );
 }
 
-// Y19: the password was right but the e-mail was never confirmed — say so and offer the link again.
+// Y19/U11: the password was right but the e-mail was never confirmed — the code is typed right here (a new
+// one can be sent), and the account goes on to the next step.
 function Unconfirmed({ ui, setUi }: { ui: LoginUI; setUi: (patch: UIPatch<LoginUI>) => void }) {
   function resend() {
     if (ui.resending || !ui.unconfirmed) return;
-    setUi({ resending: true, resent: false, error: null });
+    setUi({ resending: true, resent: false, error: null, codeError: null });
     resendConfirmationEmail(ui.unconfirmed)
-      .then(() => setUi({ resending: false, resent: true }))
+      .then(() => setUi({ resending: false, resent: true, code: '' }))
       .catch((e: unknown) => setUi({ resending: false, error: errorMessage(e) }));
+  }
+  function confirm(code = ui.code) {
+    if (ui.confirming || !ui.unconfirmed) return;
+    if (code.length !== 6) {
+      setUi({ codeError: 'Digite os 6 números do código.' });
+      return;
+    }
+    setUi({ confirming: true, codeError: null });
+    verifyEmailCode(ui.unconfirmed, code)
+      .then(() => {
+        resetUI('login');
+        const next = getSession();
+        navigate(next ? homeFor(next) : '/mural', { replace: true });
+      })
+      .catch((e: unknown) => setUi({ confirming: false, code: '', codeError: errorMessage(e) }));
   }
   return (
     <Card tone="sunken" padding="md">
-      <div className="flex flex-col gap-3" role="status">
+      <div className="flex flex-col gap-4" role="status">
         <div className="flex gap-2.5 items-start">
           <Icon name="mail" size={20} color="var(--text-subtle)" />
           <span className="text-sm text-concrete-700">
-            Falta confirmar seu e-mail. Abra o link que enviamos para{' '}
-            <strong className="text-concrete-900">{ui.unconfirmed}</strong> e depois entre de novo.
+            Falta confirmar seu e-mail. Digite o código de 6 números que enviamos para{' '}
+            <strong className="text-concrete-900">{ui.unconfirmed}</strong>.
           </span>
         </div>
+        <CodeInput
+          id="login-codigo"
+          label="Código do e-mail"
+          code={ui.code}
+          error={ui.codeError}
+          disabled={ui.confirming}
+          pasteButton
+          onCode={(code) => {
+            setUi({ code, codeError: null });
+            if (code.length === 6 && code !== ui.code) confirm(code);
+          }}
+          onEnter={() => confirm()}
+        />
+        <Button label="Confirmar e-mail" fullWidth loading={ui.confirming} onClick={() => confirm()} />
         {ui.resent ? (
-          <span className="text-sm font-semibold text-success-500">Enviamos o link de novo.</span>
+          <span className="text-sm font-semibold text-success-500">Enviamos um novo código.</span>
         ) : (
-          <Button label="Reenviar o link" variant="secondary" fullWidth loading={ui.resending} onClick={resend} />
+          <Button
+            label="Enviar outro código"
+            variant="ghost"
+            size="sm"
+            fullWidth
+            loading={ui.resending}
+            onClick={resend}
+          />
         )}
       </div>
     </Card>

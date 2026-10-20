@@ -97,6 +97,7 @@ export async function signIn(
 
 /** Ends the session and forgets every screen's state. Backend: Supabase Auth `signOut`. */
 export async function signOut(): Promise<void> {
+  pendingSignUp = null;
   if (!IS_DEMO) return remote.signOut();
   await localLatency(300); // signing out works offline too: the session is dropped on the device
   setSessionAccount(null);
@@ -170,6 +171,25 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
   // X18: only a mobile (DDD + 9 + 8 digits) is a WhatsApp — the same check as the server.
   if (!isValidMobile(data.whatsapp))
     throw serviceError('validacao', 'Confira o WhatsApp: celular com DDD, 11 números.');
+  const result = await createAccount(data, captcha);
+  // U11: kept in memory only (never stored) so "Corrigir e-mail" can redo it with the right address.
+  pendingSignUp = result.ok ? data : pendingSignUp;
+  return result;
+}
+
+/**
+ * U11: the sign-up waiting for its e-mail code, while the app stays open — what "Corrigir e-mail" needs to
+ * send the code to another address without asking everything again. Forgotten on reload, sign-out and once
+ * the e-mail is confirmed.
+ */
+let pendingSignUp: SignUpData | null = null;
+
+/** Whether the e-mail can still be corrected right on the code screen (the sign-up is in memory). */
+export function canChangePendingEmail(): boolean {
+  return pendingSignUp !== null;
+}
+
+async function createAccount(data: SignUpData, captcha: CaptchaSource): Promise<SignUpResult> {
   if (!IS_DEMO) return remote.signUp(data, captcha);
   await mockLatency(700);
   const accounts = Object.values(getDb().accounts);
@@ -246,27 +266,58 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource = noCaptch
   return { ok: true };
 }
 
+/** U11: what the e-mail code screen says when the code is wrong or old. */
+export const WRONG_EMAIL_CODE = 'Código incorreto. Confira os 6 números no e-mail e tente de novo.';
+
 /**
- * Demo stand-in for opening the link sent by e-mail: confirms the logged-in account's e-mail.
- * Backend: Supabase Auth confirms it when the link is opened; the app only re-reads the session.
+ * U11: confirms the e-mail with the 6-number code sent to it, and enters the account (the next step is
+ * completing the profile). Backend: Supabase Auth `verifyOtp({ email, token, type: 'email' })`, which opens
+ * the session. Demo: any 6 numbers confirm, except 000000.
  */
-/**
- * "Já confirmei": `entrou` when the account is confirmed and in; `entrar-com-senha` when this device has
- * no session to check (the sign-up waits for the link without one): the user signs in with the password
- * (Y19). Still not confirmed → a "not yet" error.
- */
-export async function confirmEmail(): Promise<'entrou' | 'entrar-com-senha'> {
-  if (!IS_DEMO) return remote.confirmEmail();
+export async function verifyEmailCode(email: string, code: string): Promise<void> {
+  if (!/^\d{6}$/.test(code)) throw serviceError('validacao', 'Digite os 6 números do código.');
+  if (!IS_DEMO) {
+    await remote.verifyEmailCode(email, code);
+    pendingSignUp = null;
+    return;
+  }
   await mockLatency(500);
-  const session = getSession();
-  if (session) updateAccount(session.accountId, { emailConfirmedAt: new Date().toISOString() });
-  return 'entrou';
+  if (code === '000000') throw serviceError('validacao', WRONG_EMAIL_CODE);
+  const account = Object.values(getDb().accounts).find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
+  if (!account) throw serviceError('validacao', WRONG_EMAIL_CODE);
+  updateAccount(account.id, { emailConfirmedAt: new Date().toISOString() });
+  setSessionAccount(account.id);
+  pendingSignUp = null;
 }
 
-/** Sends the confirmation link again. Backend: Supabase Auth `resend({ type: 'signup' })`. */
+/** Sends a new e-mail code (the old one stops working). Backend: Supabase Auth `resend({ type: 'signup' })`. */
 export async function resendConfirmationEmail(email?: string): Promise<void> {
   if (!IS_DEMO) return remote.resendConfirmationEmail(email);
   await mockLatency(600);
+}
+
+/**
+ * U11: "Corrigir e-mail" on the code screen — the sign-up is done again with the new address (same data, kept
+ * in memory) and the code goes there; the account with the wrong address, never confirmed, gives up the
+ * CPF/CNPJ and the WhatsApp to the new one. `email-taken`: the new address already has an account.
+ */
+export async function changePendingEmail(email: string, captcha: CaptchaSource = noCaptcha): Promise<SignUpResult> {
+  const clean = email.trim().toLowerCase();
+  if (!isValidEmail(clean)) throw serviceError('validacao', 'E-mail inválido. Confira se tem @ e o domínio.');
+  const pending = pendingSignUp;
+  if (!pending) throw serviceError('validacao', 'Para trocar o e-mail, faça o cadastro de novo.');
+  if (clean === pending.email.trim().toLowerCase()) throw serviceError('validacao', 'Esse já é o e-mail do cadastro.');
+  if (!(await isFreeForSignUp('email', clean))) return { ok: false, reason: 'email-taken' };
+  if (IS_DEMO) {
+    await mockLatency(500);
+    const session = getSession();
+    if (session) updateAccount(session.accountId, { email: clean });
+    pendingSignUp = { ...pending, email: clean };
+    return { ok: true };
+  }
+  const result = await remote.signUp({ ...pending, email: clean }, captcha);
+  if (result.ok) pendingSignUp = { ...pending, email: clean };
+  return result;
 }
 
 export type ProfileData =

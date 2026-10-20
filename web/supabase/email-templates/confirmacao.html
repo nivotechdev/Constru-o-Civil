@@ -4,11 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <title>Confirme seu e-mail</title>
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+    <title>Seu código de confirmação</title>
   </head>
   <body style="margin: 0; padding: 0; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2430">
-    <!-- Confirm signup (Confirmação de cadastro). Variáveis do Supabase Auth: {{ .ConfirmationURL }} (link pronto), {{ .Email }}, {{ .SiteURL }}. -->
-    <div style="display: none; max-height: 0; overflow: hidden">Falta só um passo para entrar na Bicos.</div>
+    <!-- Confirm signup (U11: confirmação por código). Variáveis do Supabase Auth: {{ .Token }} (os 6 números),
+         {{ .ConfirmationURL }} (o link de um toque), {{ .Email }}. A prévia abaixo mostra o código na lista de
+         e-mails e na notificação do celular, sem abrir o e-mail. -->
+    <div style="display: none; max-height: 0; overflow: hidden">
+      Seu código da Bicos: {{ .Token }} — copie e cole no app para confirmar seu e-mail.
+    </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f4f5f7">
       <tr>
         <td align="center" style="padding: 24px 12px">
@@ -26,47 +31,77 @@
               </td>
             </tr>
             <tr>
-              <td style="padding: 28px 24px 8px 24px">
+              <td style="padding: 28px 24px 4px 24px">
                 <h1 style="margin: 0 0 12px 0; font-size: 22px; line-height: 28px; color: #1f2430">
-                  Confirme seu e-mail
+                  Seu código de confirmação
                 </h1>
-                <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 24px">
-                  Que bom ter você na Bicos! Toque no botão abaixo para confirmar seu e-mail e entrar no app.
-                </p>
-                <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 24px">
-                  O link vale por 1 hora. Se vencer, toque em “Reenviar o link” no app.
+                <p style="margin: 0; font-size: 16px; line-height: 24px">
+                  Copie o código abaixo e cole no app da Bicos para confirmar seu e-mail.
                 </p>
               </td>
             </tr>
             <tr>
-              <td align="center" style="padding: 16px 24px 8px 24px">
-                <a
-                  href="{{ .ConfirmationURL }}"
-                  style="
-                    display: inline-block;
-                    background: #1d4bed;
-                    color: #ffffff;
-                    text-decoration: none;
-                    font-size: 17px;
-                    font-weight: bold;
-                    padding: 15px 28px;
-                    border-radius: 12px;
-                  "
-                  >Confirmar meu e-mail</a
-                >
+              <td align="center" style="padding: 20px 24px 6px 24px">
+                <!-- O código inteiro se seleciona com um toque (user-select: all): segurar e copiar. -->
+                <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: separate">
+                  <tr>
+                    <td
+                      align="center"
+                      style="
+                        background: #eef2ff;
+                        border: 2px dashed #1d4bed;
+                        border-radius: 14px;
+                        padding: 16px 22px 16px 32px;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 40px;
+                        line-height: 48px;
+                        font-weight: bold;
+                        letter-spacing: 10px;
+                        color: #101418;
+                        -webkit-user-select: all;
+                        user-select: all;
+                      "
+                    >
+                      {{ .Token }}
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>
-              <td style="padding: 16px 24px 8px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
-                Se o botão não abrir, copie este endereço no navegador:<br />
-                <a href="{{ .ConfirmationURL }}" style="color: #1d4bed; word-break: break-all"
-                  >{{ .ConfirmationURL }}</a
-                >
+              <td align="center" style="padding: 6px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
+                Toque e segure no código para copiar. Ele vale por 1 hora.
               </td>
             </tr>
             <tr>
-              <td style="padding: 16px 24px 24px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
-                Não criou conta na Bicos? Pode apagar este e-mail: sem a confirmação, o cadastro some sozinho em 7 dias.
+              <td style="padding: 20px 24px 8px 24px">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td
+                      style="
+                        border-top: 1px solid #e3e6ec;
+                        padding-top: 18px;
+                        font-size: 14px;
+                        line-height: 21px;
+                        color: #5b6273;
+                      "
+                    >
+                      Prefere não digitar?
+                      <a
+                        href="{{ .ConfirmationURL }}"
+                        style="color: #1d4bed; font-weight: bold; text-decoration: underline"
+                        >Confirmar com um toque</a
+                      >
+                      — abre a Bicos com o e-mail já confirmado.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 24px 24px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
+                Ninguém da Bicos vai pedir esse código por telefone ou WhatsApp: não passe para ninguém. Não criou conta
+                na Bicos? Pode apagar este e-mail: sem a confirmação, o cadastro some sozinho em 7 dias.
               </td>
             </tr>
             <tr>

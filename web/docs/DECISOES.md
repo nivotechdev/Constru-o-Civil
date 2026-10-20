@@ -1688,3 +1688,21 @@ O responsável preferiu o aviso no passo. Para não virar uma consulta aberta, a
 (`verificar-cadastro`) que só responde sim ou não, conta só contas confirmadas e limita a 30 perguntas por IP e 10 por
 valor a cada 15 minutos (as mesmas tabelas do `entrar-com-documento`). O login continua com uma resposta só para "não
 existe" e "senha errada". Os testes passaram a dar um celular diferente para cada conta de teste (SQL, E2E, volume).
+
+## U11 — Confirmação de e-mail por código de 6 números
+
+Pedido do responsável: confirmar o e-mail digitando um código, com um jeito simples de copiar do e-mail e colar no
+app, e corrigir o e-mail digitado errado sem refazer o cadastro. **O e-mail** (`email-templates/confirmacao.html`,
+assunto "Seu código de confirmação da Bicos"): o código grande, numa caixa que se seleciona inteira com um toque
+(`user-select: all`), e também na prévia do e-mail — aparece na lista e na notificação do celular sem abrir.
+Botão de "copiar" de verdade dentro do e-mail não existe: os programas de e-mail não rodam script; o toque que seleciona
+tudo (e o "Copiar código" que o Gmail e o iPhone mostram sozinhos para códigos) é o equivalente. O link de um toque
+continua como alternativa ("Prefere não digitar?"). **No app** (`/verificar-email`): seis caixas sobre um campo só, que
+aceita colar o código de uma vez (até "Seu código: 123 456" vira 123456), o preenchimento automático do celular e o
+botão **Colar código**; o sexto número já confirma (`verifyOtp`, tipo `email`) e a pessoa segue para completar o perfil.
+"Reenviar código" a cada 1 minuto. **Corrigir e-mail** abre um campo na própria tela: o cadastro é refeito com o novo
+endereço e os mesmos dados (que ficam só na memória enquanto o app está aberto; a senha nunca é gravada) e o código vai
+para ele; a conta com o e-mail errado, nunca confirmada, libera o CPF/CNPJ e o WhatsApp para a nova (regra da Z07 e da
+U10). Se o app foi recarregado e esses dados se perderam, "Corrigir" volta ao cadastro, como antes. **No login**, quem
+acerta a senha de uma conta não confirmada digita o código ali mesmo. O campo de código saiu da tela do WhatsApp para
+`components/CodeInput.tsx` (as duas usam o mesmo). `configurar-auth.mjs` passa a fixar o código em 6 números.

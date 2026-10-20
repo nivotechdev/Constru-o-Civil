@@ -253,8 +253,29 @@ describe('remote: sign-in and sign-up', () => {
     expect(m.store.getSession()).toBeNull();
     await m.auth.resendConfirmationEmail('ana@exemplo.com');
     expect(resent).toMatchObject([{ type: 'signup', email: 'ana@exemplo.com' }]);
-    // "Já confirmei" on a device without a session: sign in with the password.
-    expect(await m.auth.confirmEmail()).toBe('entrar-com-senha');
+  });
+
+  it('U11: the 6-number e-mail code confirms the account and opens the session; a wrong one says so', async () => {
+    const fake = server('ana', {
+      auth: {
+        verifyOtp: (args: unknown) =>
+          (args as { token: string }).token === '123456'
+            ? { data: { user: authUser('u-ana', 'ana@exemplo.com'), session: {} }, error: null }
+            : { data: { user: null, session: null }, error: { code: 'otp_expired', status: 403, message: 'x' } }
+      }
+    });
+    const m = await load(fake);
+    await expect(m.auth.verifyEmailCode('ana@exemplo.com', '654321')).rejects.toMatchObject({
+      code: 'validacao',
+      message: expect.stringContaining('Código incorreto')
+    });
+    await m.auth.verifyEmailCode(' Ana@Exemplo.com ', '123456');
+    expect(fake.calls.filter((c) => c.name === 'verifyOtp').map((c) => c.args)).toEqual([
+      { email: 'ana@exemplo.com', token: '654321', type: 'email' },
+      { email: 'ana@exemplo.com', token: '123456', type: 'email' }
+    ]);
+    expect(m.store.getSession()).toMatchObject({ role: 'trabalhador' });
+    await expect(m.auth.verifyEmailCode('ana@exemplo.com', '12345')).rejects.toMatchObject({ code: 'validacao' });
   });
 
   it('Z07: by CPF the server checks the password and answers only that e-mail; the sign-in is the normal one', async () => {

@@ -37,6 +37,8 @@ const config = {
   mailer_autoconfirm: false,
   password_min_length: 8,
   mailer_otp_exp: 3600,
+  // U11: o e-mail de cadastro traz um código de 6 números (supabase/email-templates/confirmacao.html).
+  mailer_otp_length: 6,
   // SMTP próprio (Brevo). Remetente de domínio autenticado na Brevo (SPF/DKIM/DMARC — CHECKLIST-LANCAMENTO, L04).
   // Sem BREVO_SMTP_USER (só no staging, para os primeiros testes) fica o e-mail padrão do Supabase: só entrega
   // para membros da equipe do projeto e poucos por hora. Na produção o SMTP é obrigatório.
@@ -55,7 +57,7 @@ const config = {
   // Os e-mails em português só podem ser trocados com SMTP próprio (o plano grátis recusa com o e-mail padrão).
   ...(hasSmtp
     ? {
-        mailer_subjects_confirmation: 'Confirme seu e-mail na Bicos',
+        mailer_subjects_confirmation: 'Seu código de confirmação da Bicos',
         mailer_templates_confirmation_content: template('confirmacao.html'),
         mailer_subjects_recovery: 'Criar uma senha nova na Bicos',
         mailer_templates_recovery_content: template('redefinir-senha.html'),
