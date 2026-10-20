@@ -1722,3 +1722,17 @@ colunas (`u12_perfil_simples`) e da política de privacidade (é menos dado; nin
 ofício aparecia ao lado do nome, fica a cidade/bairro; a avaliação passa a ser assinada "Jorge M.". **O que ficou:**
 o ofício das vagas antigas (`jobs.oficio_id`, a U01 já tinha tirado da tela de publicar) e o do alerta de bico
 (`job_alerts.oficio_id`), que não são do perfil.
+
+## U13 — A localização do perfil vale no app todo
+
+Pedido do responsável: o lugar salvo ao criar o perfil tem de ficar sempre salvo — o mural abre nele, e a construtora
+já começa uma vaga nova nele —, mudando só em "Editar perfil"; os filtros continuam trocando a cidade quando quiser,
+mas ao sair e voltar ao app volta o lugar salvo. **O erro de "sempre São Paulo"** tinha três causas: o completar perfil
+começava com São Paulo marcado (a U12 tirou: a localização é obrigatória e vem do botão), o mural da construtora abria
+sempre em São Paulo (fixo no código) e a vaga nova começava em São Paulo. **Agora:** `homeCity` (mural) usa a cidade do
+perfil para os dois lados; a vaga nova (`emptyForm`) começa na cidade da construtora, e o CEP continua trocando a
+cidade sozinho; em "Editar perfil" (trabalhador e construtora) a localização muda pelo mesmo botão "Usar minha
+localização atual" (o trabalhador grava cidade e ponto). O filtro do mural já vivia só na memória: a cada entrada na
+conta e a cada abertura do app ele volta ao lugar salvo — nada disso é gravado no aparelho. Se o lugar salvo não for
+uma cidade da lista (dado antigo de demonstração), o mural abre na cidade padrão, nunca quebrado. **Contas antigas**
+que ficaram com São Paulo continuam assim até a pessoa atualizar em Editar perfil (a produção só se mexe com "pode").

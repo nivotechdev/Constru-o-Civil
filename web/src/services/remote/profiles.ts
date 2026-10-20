@@ -27,7 +27,10 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   if (patch.desiredPay !== undefined) update.desired_pay = patch.desiredPay;
   if (patch.travelKm !== undefined) update.travel_km = patch.travelKm;
   if (patch.bio !== undefined) update.bio = patch.bio.trim() || null;
-  if (patch.city !== undefined && patch.city !== worker?.city) {
+  if (patch.point && patch.city !== undefined) {
+    // U13: the place from "Usar minha localização atual" (the point already rounded to ~1 km).
+    Object.assign(update, { city: patch.city, neighborhood: null, lat: patch.point.lat, lon: patch.point.lon });
+  } else if (patch.city !== undefined && patch.city !== worker?.city) {
     // A new city moves the worker's base to its centre (the neighbourhood is no longer known).
     const { cityByLabel } = await import('../cities');
     const center = cityByLabel(patch.city);

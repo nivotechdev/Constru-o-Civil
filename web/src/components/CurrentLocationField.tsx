@@ -14,7 +14,8 @@ interface CurrentLocationFieldProps {
   title: string;
   /** What the location is used for, under the title. */
   help: string;
-  value: SavedLocation | null;
+  /** The place saved now (only its city is shown). */
+  value: Pick<SavedLocation, 'city'> | null;
   onChange: (location: SavedLocation) => void;
   /** A problem from the screen (e.g. "use the button to continue"). */
   error?: string | null;
@@ -84,22 +85,30 @@ export function CurrentLocationField({ title, help, value, onChange, error, stat
       ) : error ? (
         <FieldError message={error} />
       ) : null}
-      <CityPicker
-        open={pickerOpen}
-        title="Escolha a cidade"
-        value={value?.city ?? ''}
-        stateKey={stateKey}
-        onChoose={(label) => {
-          setPickerOpen(false);
-          void locationFromCity(label).then((location) => {
-            if (location) {
-              setProblem(null);
-              onChange(location);
-            }
-          });
+      {/* Inside a profile form: Enter in the list's search box must not save the form. */}
+      <div
+        className="contents"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.preventDefault();
         }}
-        onClose={() => setPickerOpen(false)}
-      />
+      >
+        <CityPicker
+          open={pickerOpen}
+          title="Escolha a cidade"
+          value={value?.city ?? ''}
+          stateKey={stateKey}
+          onChoose={(label) => {
+            setPickerOpen(false);
+            void locationFromCity(label).then((location) => {
+              if (location) {
+                setProblem(null);
+                onChange(location);
+              }
+            });
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      </div>
     </div>
   );
 }

@@ -72,7 +72,8 @@ export const MIN_DESCRIPTION = 20;
 export const MAX_TITLE = 60;
 export const MAX_DESCRIPTION = 1000;
 
-export function emptyForm(): JobForm {
+/** A new job's form; it starts in `city` (U13: the company's saved place). */
+export function emptyForm(city: string = DEFAULT_CITY): JobForm {
   return {
     fotos: [],
     oficioId: '',
@@ -82,7 +83,7 @@ export function emptyForm(): JobForm {
     number: '',
     complement: '',
     neighborhood: '',
-    city: DEFAULT_CITY,
+    city,
     dias: null,
     dateToArrange: true,
     startDate: '',

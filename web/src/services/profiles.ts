@@ -28,6 +28,8 @@ export async function loadCompanyProfile(_companyId: string): Promise<void> {
 
 export type WorkerProfilePatch = Partial<
   Pick<Worker, 'name' | 'city' | 'availability' | 'bio'> & {
+    /** U13: a new place from "Usar minha localização atual" (city and point together). */
+    point: { lat: number; lon: number };
     /** `null` clears the field. */
     yearsExperience: number | null;
     desiredPay: number | null;
@@ -88,13 +90,18 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   await mockLatency(600);
   const worker = store.getDb().workers[currentWorkerId()];
   // null clears a number of the professional profile (F10).
-  const { yearsExperience, desiredPay, travelKm, ...rest } = patch;
+  const { yearsExperience, desiredPay, travelKm, point, ...rest } = patch;
   const numbers: Partial<Worker> = {
     ...(yearsExperience !== undefined ? { yearsExperience: yearsExperience ?? undefined } : {}),
     ...(desiredPay !== undefined ? { desiredPay: desiredPay ?? undefined } : {}),
     ...(travelKm !== undefined ? { travelKm: travelKm ?? undefined } : {})
   };
-  // A new city moves the worker's base to its centre (the neighbourhood is no longer known).
+  // U13: the place from the location button (city and its point); the neighbourhood is no longer known.
+  if (point && worker) {
+    store.updateWorker(worker.id, { ...rest, ...numbers, neighborhood: null, lat: point.lat, lon: point.lon });
+    return;
+  }
+  // A new city alone moves the worker's base to its centre.
   if (patch.city !== undefined && worker && patch.city !== worker.city) {
     const center = cityByLabel(patch.city);
     if (!center) throw serviceError('validacao', 'Escolha a cidade na lista.');

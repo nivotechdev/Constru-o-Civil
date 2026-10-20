@@ -12,6 +12,7 @@ import { TextArea } from '../../components/TextArea';
 import { useDb, useScreenUI } from '../../hooks/useStore';
 import { useTextField } from '../../hooks/useTextField';
 import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
+import { knownCity } from '../../services/cities';
 import { IS_DEMO } from '../../services/mode';
 import { errorMessage } from '../../services/errors';
 import { publishJob, significantChanges, updateJob } from '../../services/jobs';
@@ -82,7 +83,10 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
   const limits = job ? { originalStartDate: job.startDate, minSlots: holding } : {};
   const [ui, setUi] = useScreenUI<CreateJobUI>(KEY, () => ({
     step: 1,
-    form: job ? formFromJob(job) : (template ?? emptyForm()),
+    // U13: a new job starts in the city saved in the company's profile (the CEP still changes it).
+    form: job
+      ? formFromJob(job)
+      : (template ?? emptyForm(knownCity(getCompany(db, currentCompanyId())?.location) ?? undefined)),
     errors: {},
     cepStatus: 'idle',
     cepError: null,

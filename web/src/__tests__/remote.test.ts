@@ -617,6 +617,15 @@ describe('remote: data and actions', () => {
       desired_pay: null,
       bio: 'Oi'
     });
+    // U13: the place from "Usar minha localização atual" goes with its own point (not the city centre).
+    await profiles.updateMyWorkerProfile({ city: 'Caxias do Sul, RS', point: { lat: -29.17, lon: -51.18 } });
+    const updates = fake.calls.filter((c) => c.name === 'workers' && c.ops?.some((o) => o[0] === 'update'));
+    expect(updates[updates.length - 1]?.ops?.find((o) => o[0] === 'update')?.[1]).toEqual({
+      city: 'Caxias do Sul, RS',
+      neighborhood: null,
+      lat: -29.17,
+      lon: -51.18
+    });
 
     fake = server('obra', {
       rpc: { worker_track_record: () => ({ data: [{ worker_id: 'u-ana', faltas: 2, desistencias: 1 }], error: null }) }

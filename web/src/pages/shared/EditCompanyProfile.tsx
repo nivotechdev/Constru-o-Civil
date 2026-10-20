@@ -20,7 +20,8 @@ import { currentCompany } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
-import { CityPicker, LocationButton } from '../../components/CityPicker';
+import { CurrentLocationField } from '../../components/CurrentLocationField';
+import { knownCity } from '../../services/cities';
 
 function revoke(urls: (string | null | undefined)[]) {
   for (const u of urls) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
@@ -30,6 +31,7 @@ export default function EditCompanyProfile() {
   const company = currentCompany(useDb());
   const [draft, setDraft] = useState(() => ({
     name: company.name,
+    // U13: the saved place, changed only with "Usar minha localização atual".
     location: company.location,
     contactName: company.contactName ?? ''
   }));
@@ -41,7 +43,6 @@ export default function EditCompanyProfile() {
   }, [images]);
   useEffect(() => () => revoke(Object.values(picked.current)), []);
 
-  const [pickerOpen, setPickerOpen] = useState(false);
   // L11: only what changed is checked and sent; each field shows its own problem.
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
@@ -144,9 +145,17 @@ export default function EditCompanyProfile() {
               </span>
             </div>
           ) : null}
-          {/* L12: the city comes from the list, like everywhere else. */}
-          <LocationButton title="Onde ficam suas obras" location={draft.location} onClick={() => setPickerOpen(true)} />
-          {errors.location ? <FieldError message={errors.location} /> : null}
+          <CurrentLocationField
+            title="Onde ficam suas obras"
+            help="Suas vagas novas já começam nessa cidade."
+            value={knownCity(draft.location) ? { city: draft.location } : null}
+            error={errors.location}
+            stateKey="edit-company-city"
+            onChange={(location) => {
+              setDraft((d) => ({ ...d, location: location.city }));
+              setErrors((e) => ({ ...e, location: undefined }));
+            }}
+          />
           <WhatsAppRow label="WhatsApp de contato" />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-white shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
@@ -163,19 +172,6 @@ export default function EditCompanyProfile() {
           </div>
         </div>
       </form>
-      {/* Outside the form: Enter in its search box must not save the profile. */}
-      <CityPicker
-        open={pickerOpen}
-        title="Onde ficam suas obras"
-        value={draft.location}
-        stateKey="edit-company-city"
-        onChoose={(label) => {
-          setDraft((d) => ({ ...d, location: label }));
-          setErrors((e) => ({ ...e, location: undefined }));
-          setPickerOpen(false);
-        }}
-        onClose={() => setPickerOpen(false)}
-      />
     </div>
   );
 }

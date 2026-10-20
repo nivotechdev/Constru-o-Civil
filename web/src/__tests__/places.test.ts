@@ -256,6 +256,40 @@ describe('Y09/W03: total of the job', () => {
   });
 });
 
+describe('U13: the saved place', () => {
+  it('the mural opens on the place saved in the profile, for workers and companies alike', async () => {
+    const { homeCity } = await import('../pages/worker/feed/feedUI');
+    const store = await import('../services/store');
+    const db = store.getDb();
+    const worker = Object.values(db.workers)[0];
+    const company = Object.values(db.companies)[0];
+    const saved = {
+      ...db,
+      workers: { ...db.workers, [worker.id]: { ...worker, city: 'Caxias do Sul, RS' } },
+      companies: { ...db.companies, [company.id]: { ...company, location: 'Caxias do Sul, RS' } }
+    };
+    const as = (role: 'trabalhador' | 'recrutador', id: string) => {
+      store.setSessionAccount(Object.values(db.accounts).find((a) => a.workerId === id || a.companyId === id)!.id);
+      return homeCity(saved, role);
+    };
+    expect(as('trabalhador', worker.id)).toBe('Caxias do Sul, RS');
+    expect(as('recrutador', company.id)).toBe('Caxias do Sul, RS');
+    // Something that isn't a city (old demo data) falls back to the default city, never to a broken mural.
+    expect(
+      homeCity(
+        { ...saved, companies: { ...db.companies, [company.id]: { ...company, location: 'Zona Leste, SP' } } },
+        'recrutador'
+      )
+    ).toBe('São Paulo, SP');
+    store.setSessionAccount(null);
+  });
+
+  it("a new job starts in the given city (the company's saved place)", () => {
+    expect(emptyForm('Caxias do Sul, RS').city).toBe('Caxias do Sul, RS');
+    expect(emptyForm().city).toBe('São Paulo, SP');
+  });
+});
+
 describe('X19: what a distance is measured from', () => {
   it('"de você" only with the GPS; the neighbourhood of the profile; else the city centre', async () => {
     const { originText } = await import('../pages/worker/feed/feedUI');

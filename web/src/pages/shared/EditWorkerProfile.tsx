@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
-import { CityPicker, LocationButton } from '../../components/CityPicker';
+import { CurrentLocationField } from '../../components/CurrentLocationField';
+import type { SavedLocation } from '../../services/location';
 import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
 import { PhotoSlot } from '../../components/PhotoSlot';
@@ -28,7 +29,8 @@ export default function EditWorkerProfile() {
   const worker = currentWorker(useDb());
   const [draft, setDraft] = useState(() => ({
     name: worker.name,
-    city: worker.city,
+    // U13: the saved place (city + point), changed only with "Usar minha localização atual".
+    location: { city: worker.city, lat: worker.lat, lon: worker.lon } as SavedLocation,
     // F10: the professional profile (numbers as typed).
     availability: worker.availability ?? null,
     years: worker.yearsExperience != null ? String(worker.yearsExperience) : '',
@@ -38,7 +40,6 @@ export default function EditWorkerProfile() {
   }));
   const num = (v: string) => (v.trim() === '' ? null : Number(v));
   const [images, setImages] = useState<ProfileImages>({});
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const picked = useRef<ProfileImages>({});
   useEffect(() => {
@@ -51,7 +52,9 @@ export default function EditWorkerProfile() {
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
     ...(draft.name !== worker.name ? { name: draft.name } : {}),
-    ...(draft.city !== worker.city ? { city: draft.city } : {}),
+    ...(draft.location.city !== worker.city || draft.location.lat !== worker.lat || draft.location.lon !== worker.lon
+      ? { city: draft.location.city, point: { lat: draft.location.lat, lon: draft.location.lon } }
+      : {}),
     ...(draft.availability && draft.availability !== worker.availability ? { availability: draft.availability } : {}),
     ...(num(draft.years) !== (worker.yearsExperience ?? null) ? { yearsExperience: num(draft.years) } : {}),
     ...(num(draft.pay) !== (worker.desiredPay ?? null) ? { desiredPay: num(draft.pay) } : {}),
@@ -127,7 +130,17 @@ export default function EditWorkerProfile() {
               setErrors((e) => ({ ...e, name: undefined }));
             }}
           />
-          <LocationButton title="Onde você quer trabalhar" location={draft.city} onClick={() => setPickerOpen(true)} />
+          <CurrentLocationField
+            title="Sua localização"
+            help="O mural sempre abre com os bicos perto daqui."
+            value={draft.location}
+            error={errors.city}
+            stateKey="edit-worker-city"
+            onChange={(location) => {
+              setDraft((d) => ({ ...d, location }));
+              setErrors((e) => ({ ...e, city: undefined }));
+            }}
+          />
           <WhatsAppRow label="Seu WhatsApp" />
           <div className="flex flex-col gap-1.5">
             <label htmlFor="edit-worker-bio" className="text-sm font-semibold text-concrete-900">
@@ -208,18 +221,6 @@ export default function EditWorkerProfile() {
           </div>
         </div>
       </form>
-      {/* Outside the form: Enter in its search box must not save the profile. */}
-      <CityPicker
-        open={pickerOpen}
-        title="Onde você quer trabalhar"
-        value={draft.city}
-        stateKey="edit-worker-city"
-        onChoose={(city) => {
-          setDraft((d) => ({ ...d, city }));
-          setPickerOpen(false);
-        }}
-        onClose={() => setPickerOpen(false)}
-      />
     </div>
   );
 }

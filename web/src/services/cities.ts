@@ -61,6 +61,11 @@ export function nearestCity(lat: number, lon: number): City | null {
 }
 
 /** The municipality with that label ("São Paulo, SP"), if it exists. */
+/** U13: the label of a saved place when it is a real municipality ("Caxias do Sul, RS"), else null. */
+export function knownCity(label: string | null | undefined): string | null {
+  return label ? (cityByLabel(label)?.label ?? null) : null;
+}
+
 export function cityByLabel(label: string): City | null {
   const key = fold(label.replace(/,/g, ' ')).replace(/\s+/g, ' ').trim();
   return all().find((c) => c.key === key) ?? null;

@@ -4,8 +4,15 @@
 // mural is on their own city, or the centre of the chosen city.
 import type { IconName } from '../../../components/icons/Icon';
 import { jobTitle, oficioNome, oficioSearchText } from '../../../services/catalog';
-import { cityByLabel, DEFAULT_CITY } from '../../../services/cities';
-import { allCompanies, allWorkers, companyOf, currentWorker, isMine } from '../../../services/selectors';
+import { cityByLabel, DEFAULT_CITY, knownCity } from '../../../services/cities';
+import {
+  allCompanies,
+  allWorkers,
+  companyOf,
+  currentCompany,
+  currentWorker,
+  isMine
+} from '../../../services/selectors';
 import { setUI } from '../../../services/store';
 import type { Company, Database, GeoPoint, Job, Role, Worker } from '../../../types/models';
 import { addDays, todayISO } from '../../../utils/dates';
@@ -48,10 +55,14 @@ export const SORTS: { id: Sort; label: string }[] = [
   { id: 'cedo', label: 'Mais cedo' }
 ];
 
-/** The city the mural opens on: the worker's own city; for companies, the demo's default city. */
+/**
+ * U13: the city the mural opens on — the place saved in the profile ("Usar minha localização atual"), for
+ * workers and companies alike. The filters change it only while the app is open: every sign-in and every
+ * time the app opens, the mural is back here.
+ */
 export function homeCity(db: Database, role: Role): string {
-  if (role === 'trabalhador') return currentWorker(db)?.city || DEFAULT_CITY;
-  return DEFAULT_CITY;
+  const saved = role === 'trabalhador' ? currentWorker(db)?.city : currentCompany(db)?.location;
+  return knownCity(saved) ?? DEFAULT_CITY;
 }
 
 export function feedDefaults(db: Database, role: Role): FeedUI {
