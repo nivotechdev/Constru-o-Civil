@@ -160,19 +160,26 @@ describe('sharing a job (F09)', () => {
   });
 });
 
-describe('professional profile (F10)', () => {
-  it('the facts come from the fields', async () => {
-    const { workerFacts } = await import('../utils/workerInfo');
-    expect(
-      workerFacts({ availability: 'semana', yearsExperience: 12, desiredPay: 200, travelKm: 15, jobsDone: 1 })
-    ).toEqual([
-      '12 anos de experiência',
-      'Disponível: dias de semana',
-      'Diária a partir de R$ 200',
-      'Vai até 15 km de casa',
-      '1 bico concluído na Bicos'
+describe('profile texts (U32/U34)', () => {
+  it('experiences are tidied: one line each, no empty lines or repeats', async () => {
+    const { cleanExperiences } = await import('../utils/profileText');
+    expect(cleanExperiences(['  Reboco   de fachada ', '', 'reboco de fachada', 'Contrapiso\nnivelado'])).toEqual([
+      'Reboco de fachada',
+      'Contrapiso nivelado'
     ]);
-    expect(workerFacts({ jobsDone: 0 })).toEqual([]);
+  });
+
+  it('at most 10 experiences, 2 to 80 characters each; "Sobre" up to 500', async () => {
+    const { profileErrors } = await import('../services/profiles');
+    const many = Array.from({ length: 11 }, (_, i) => `Obra número ${i}`);
+    expect(profileErrors({ experiences: many }, 'trabalhador').experiences).toBe('Coloque até 10 experiências.');
+    expect(profileErrors({ experiences: ['x'.repeat(81)] }, 'trabalhador').experiences).toBe(
+      'Use até 80 caracteres em cada experiência.'
+    );
+    expect(profileErrors({ experiences: ['a'] }, 'trabalhador').experiences).toBeDefined();
+    expect(profileErrors({ experiences: many.slice(0, 10) }, 'trabalhador')).toEqual({});
+    expect(profileErrors({ bio: 'a'.repeat(501) }, 'trabalhador').bio).toBe('Use até 500 caracteres.');
+    expect(profileErrors({ about: 'a'.repeat(501) }, 'recrutador').about).toBe('Use até 500 caracteres.');
   });
 });
 

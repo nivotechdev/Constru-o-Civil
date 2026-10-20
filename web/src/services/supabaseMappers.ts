@@ -113,6 +113,7 @@ export function companyFromRow(row: TableRow<'companies'>, reviews: ReviewRow[] 
   setIf(company, 'paidCount', row.paid_count);
   setIf(company, 'logoUrl', row.logo_url);
   setIf(company, 'coverUrl', row.cover_url);
+  setIf(company, 'about', row.about);
   return company;
 }
 
@@ -134,7 +135,8 @@ export function companyToRow(company: Company): TableInsert<'companies'> {
     respond_time: company.respondTime ?? null,
     paid_count: company.paidCount ?? null,
     logo_url: company.logoUrl ?? null,
-    cover_url: company.coverUrl ?? null
+    cover_url: company.coverUrl ?? null,
+    about: company.about ?? null
   };
 }
 
@@ -161,11 +163,8 @@ export function workerFromRow(row: TableRow<'workers'>, reviews: ReviewRow[] = [
   setIf(worker, 'photoUrl', row.photo_url);
   setIf(worker, 'coverUrl', row.cover_url);
   if (row.identity_status && row.identity_status !== 'nao_enviado') worker.identity = row.identity_status;
-  setIf(worker, 'availability', row.availability);
-  setIf(worker, 'yearsExperience', row.years_experience);
-  setIf(worker, 'desiredPay', row.desired_pay);
-  setIf(worker, 'travelKm', row.travel_km);
   setIf(worker, 'bio', row.bio);
+  if (row.experiences?.length) worker.experiences = row.experiences;
   return worker;
 }
 
@@ -188,11 +187,8 @@ export function workerToRow(worker: Worker): TableInsert<'workers'> {
     photo_url: worker.photoUrl ?? null,
     cover_url: worker.coverUrl ?? null,
     identity_status: worker.identity ?? (worker.verified ? 'verificado' : 'nao_enviado'),
-    availability: worker.availability ?? null,
-    years_experience: worker.yearsExperience ?? null,
-    desired_pay: worker.desiredPay ?? null,
-    travel_km: worker.travelKm ?? null,
-    bio: worker.bio ?? null
+    bio: worker.bio ?? null,
+    experiences: worker.experiences ?? []
   };
 }
 

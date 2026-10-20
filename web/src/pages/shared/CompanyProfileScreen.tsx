@@ -36,6 +36,7 @@ import type { Company } from '../../types/models';
 import { checkMyCompany } from '../../services/profiles';
 import { FieldError } from '../../components/FieldError';
 import { SafetyMenu } from '../../components/SafetyMenu';
+import { AboutText, FillProfileCard, ProfileSection } from '../../components/ProfileSection';
 
 export default function CompanyProfileScreen({ params }: ScreenProps) {
   const db = useDb();
@@ -139,6 +140,17 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
             <Badge label="Verificada" tone="success" icon="shield-check" />
           ) : null}
         </div>
+
+        {company.about ? (
+          <ProfileSection title="Sobre a empresa">
+            <AboutText text={company.about} />
+          </ProfileSection>
+        ) : isOwn ? (
+          <FillProfileCard
+            text="Conte sobre a empresa: o que faz, há quanto tempo e como trata a equipe. Os trabalhadores leem antes de se candidatar."
+            onClick={() => navigate('/empresa/editar')}
+          />
+        ) : null}
 
         {isOwn ? (
           <Card padding="md">

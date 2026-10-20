@@ -615,6 +615,22 @@ na publicação `supabase_realtime`. Não mexe em dado existente.
 select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'account_prefs';  -- 1
 ```
 
+### 53. `20261021000200_u32_perfis.sql` (U32/U33/U34)
+
+Perfis: **apaga** do trabalhador as colunas `availability`, `years_experience`, `desired_pay` e `travel_km` (e o check
+`workers_professional_check`); cria `workers.experiences text[]` (até 10, de 2 a 80 caracteres cada, função
+`valid_experiences`), a bio vai a 500 caracteres e a construtora ganha `companies.about` (até 500). **Destrutivo**
+para aquelas quatro colunas: fazer o backup manual antes (§7.9 do CLAUDE.md).
+
+```sql
+select count(*) from information_schema.columns
+ where table_schema = 'public' and table_name = 'workers'
+   and column_name in ('availability', 'years_experience', 'desired_pay', 'travel_km');           -- 0
+select count(*) from information_schema.columns
+ where table_schema = 'public' and ((table_name = 'workers' and column_name = 'experiences')
+    or (table_name = 'companies' and column_name = 'about'));                                       -- 2
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

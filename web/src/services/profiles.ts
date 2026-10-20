@@ -13,6 +13,13 @@ import { isValidMobile, maskPhone } from '../utils/format';
 import { demoVerifiedPhones } from './auth';
 import { isValidCnpj } from '../utils/document';
 import { MAX_CAPTION } from '../utils/media';
+import {
+  cleanExperiences,
+  MAX_ABOUT,
+  MAX_EXPERIENCE_LENGTH,
+  MAX_EXPERIENCES,
+  MIN_EXPERIENCE_LENGTH
+} from '../utils/profileText';
 
 /** A worker's public profile (+ reviews, posts). Backend: select the worker by id. */
 export async function loadWorkerProfile(_workerId: string): Promise<void> {
@@ -27,18 +34,15 @@ export async function loadCompanyProfile(_companyId: string): Promise<void> {
 }
 
 export type WorkerProfilePatch = Partial<
-  Pick<Worker, 'name' | 'city' | 'availability' | 'bio'> & {
+  Pick<Worker, 'name' | 'city' | 'bio'> & {
     /** U13: a new place from "Usar minha localização atual" (city and point together). */
     point: { lat: number; lon: number };
-    /** `null` clears the field. */
-    yearsExperience: number | null;
-    desiredPay: number | null;
-    travelKm: number | null;
+    /** U34: the whole list (an empty one clears it). */
+    experiences: string[];
   }
 >;
 
-type ProfileField =
-  'name' | 'city' | 'location' | 'contactName' | 'yearsExperience' | 'desiredPay' | 'travelKm' | 'bio';
+type ProfileField = 'name' | 'city' | 'location' | 'contactName' | 'bio' | 'about' | 'experiences';
 
 /** L11: the problems of a profile edit, per field (the same in both modes; the database checks too). */
 export function profileErrors(
@@ -48,20 +52,23 @@ export function profileErrors(
     city?: string;
     location?: string;
     contactName?: string;
-    yearsExperience?: number | null;
-    desiredPay?: number | null;
-    travelKm?: number | null;
     bio?: string;
+    about?: string;
+    experiences?: string[];
   },
   role: 'trabalhador' | 'recrutador'
 ): Partial<Record<ProfileField, string>> {
   const e: Partial<Record<ProfileField, string>> = {};
-  // F10
-  if (patch.yearsExperience != null && (patch.yearsExperience < 0 || patch.yearsExperience > 60))
-    e.yearsExperience = 'De 0 a 60 anos.';
-  if (patch.desiredPay != null && (patch.desiredPay < 80 || patch.desiredPay > 2000))
-    e.desiredPay = 'De R$ 80 a R$ 2.000.';
-  if (patch.bio !== undefined && patch.bio.length > 280) e.bio = 'Use até 280 caracteres.';
+  if (patch.bio !== undefined && patch.bio.trim().length > MAX_ABOUT) e.bio = `Use até ${MAX_ABOUT} caracteres.`;
+  if (patch.about !== undefined && patch.about.trim().length > MAX_ABOUT) e.about = `Use até ${MAX_ABOUT} caracteres.`;
+  if (patch.experiences !== undefined) {
+    const list = cleanExperiences(patch.experiences);
+    if (list.length > MAX_EXPERIENCES) e.experiences = `Coloque até ${MAX_EXPERIENCES} experiências.`;
+    else if (list.some((x) => x.length < MIN_EXPERIENCE_LENGTH))
+      e.experiences = 'Escreva um pouco mais em cada experiência.';
+    else if (list.some((x) => x.length > MAX_EXPERIENCE_LENGTH))
+      e.experiences = `Use até ${MAX_EXPERIENCE_LENGTH} caracteres em cada experiência.`;
+  }
   if (patch.name !== undefined) {
     const name = patch.name.trim();
     if (name.length < 3) e.name = role === 'trabalhador' ? 'Informe seu nome completo.' : 'Informe o nome da empresa.';
@@ -89,29 +96,27 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   if (!IS_DEMO) return remote.updateMyWorkerProfile(patch);
   await mockLatency(600);
   const worker = store.getDb().workers[currentWorkerId()];
-  // null clears a number of the professional profile (F10).
-  const { yearsExperience, desiredPay, travelKm, point, ...rest } = patch;
-  const numbers: Partial<Worker> = {
-    ...(yearsExperience !== undefined ? { yearsExperience: yearsExperience ?? undefined } : {}),
-    ...(desiredPay !== undefined ? { desiredPay: desiredPay ?? undefined } : {}),
-    ...(travelKm !== undefined ? { travelKm: travelKm ?? undefined } : {})
+  const { experiences, bio, point, ...rest } = patch;
+  const text: Partial<Worker> = {
+    ...(experiences !== undefined ? { experiences: cleanExperiences(experiences) } : {}),
+    ...(bio !== undefined ? { bio: bio.trim() || undefined } : {})
   };
   // U13: the place from the location button (city and its point); the neighbourhood is no longer known.
   if (point && worker) {
-    store.updateWorker(worker.id, { ...rest, ...numbers, neighborhood: null, lat: point.lat, lon: point.lon });
+    store.updateWorker(worker.id, { ...rest, ...text, neighborhood: null, lat: point.lat, lon: point.lon });
     return;
   }
   // A new city alone moves the worker's base to its centre.
   if (patch.city !== undefined && worker && patch.city !== worker.city) {
     const center = cityByLabel(patch.city);
     if (!center) throw serviceError('validacao', 'Escolha a cidade na lista.');
-    store.updateWorker(worker.id, { ...rest, ...numbers, neighborhood: null, lat: center.lat, lon: center.lon });
+    store.updateWorker(worker.id, { ...rest, ...text, neighborhood: null, lat: center.lat, lon: center.lon });
     return;
   }
-  store.updateWorker(currentWorkerId(), { ...rest, ...numbers });
+  store.updateWorker(currentWorkerId(), { ...rest, ...text });
 }
 
-export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'location' | 'contactName'>>;
+export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'location' | 'contactName' | 'about'>>;
 
 /**
  * Y25: changes the account's WhatsApp (worker or company). A mobile with DDD (11 digits). The number
@@ -138,7 +143,11 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
   checkProfile(patch, 'recrutador');
   if (!IS_DEMO) return remote.updateMyCompanyProfile(patch);
   await mockLatency(600);
-  store.updateCompany(currentCompanyId(), patch);
+  const { about, ...rest } = patch;
+  store.updateCompany(currentCompanyId(), {
+    ...rest,
+    ...(about !== undefined ? { about: about.trim() || undefined } : {})
+  });
 }
 
 /**

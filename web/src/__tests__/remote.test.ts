@@ -669,23 +669,19 @@ describe('remote: data and actions', () => {
     ).toEqual([undefined, 'tok-senha', 'tok-email']);
   });
 
-  it('the professional profile is saved and the company sees no-shows and give-ups (F10)', async () => {
+  it('"Sobre você" and the experiences are saved; the company sees no-shows and give-ups (U32/U34)', async () => {
     let fake = server('ana');
     let m = await load(fake);
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
     const profiles = await import('../services/profiles');
     await profiles.updateMyWorkerProfile({
-      availability: 'semana',
-      yearsExperience: 12,
-      desiredPay: null,
-      bio: ' Oi '
+      bio: ' Oi ',
+      experiences: [' Reboco  de fachada', '', 'Contrapiso']
     });
     const update = fake.calls.find((c) => c.name === 'workers' && c.ops?.some((o) => o[0] === 'update'));
     expect(update?.ops?.find((o) => o[0] === 'update')?.[1]).toEqual({
-      availability: 'semana',
-      years_experience: 12,
-      desired_pay: null,
-      bio: 'Oi'
+      bio: 'Oi',
+      experiences: ['Reboco de fachada', 'Contrapiso']
     });
     // U13: the place from "Usar minha localização atual" goes with its own point (not the city centre).
     await profiles.updateMyWorkerProfile({ city: 'Caxias do Sul, RS', point: { lat: -29.17, lon: -51.18 } });

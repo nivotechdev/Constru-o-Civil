@@ -23,7 +23,8 @@ import {
 } from '../../services/selectors';
 import { contactOpen } from '../../services/applicationMachine';
 import { CandidateActions } from '../recruiter/CandidateActions';
-import { workerFacts, workerPlace } from '../../utils/workerInfo';
+import { workerPlace } from '../../utils/workerInfo';
+import { AboutText, FillProfileCard, ProfileSection } from '../../components/ProfileSection';
 import { WorkerPosts } from './WorkerPosts';
 import { AccountMenuButton } from '../../components/AccountMenuSheet';
 import { AVATAR_FRAME, WorkerAvatar } from '../../components/Avatar';
@@ -61,7 +62,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
 
   const candidacy = jobId ? applicationFor(db, jobId, worker.id) : null;
   const contactOpenFor = Boolean(candidacy && contactOpen(candidacy.status));
-  const facts = workerFacts(worker);
+  const experiences = worker.experiences ?? [];
   // F10: companies (and the worker) see the no-shows and give-ups.
   const showTrack = isOwn || role === 'recrutador';
   const track = trackRecord(db, worker.id);
@@ -161,37 +162,46 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
 
         {isOwn ? <IdentityCard worker={worker} /> : null}
 
-        {worker.bio ? <p className="text-concrete-700 whitespace-pre-line">{worker.bio}</p> : null}
+        {worker.bio || experiences.length ? null : isOwn ? (
+          <FillProfileCard
+            text="Conte sobre você e suas experiências. As construtoras leem isso antes de escolher."
+            onClick={() => navigate('/perfil/editar')}
+          />
+        ) : null}
 
-        {facts.length || showTrack ? (
+        {worker.bio ? (
+          <ProfileSection title="Sobre">
+            <AboutText text={worker.bio} />
+          </ProfileSection>
+        ) : null}
+
+        {experiences.length ? (
+          <ProfileSection title="Experiências">
+            <Card padding="md">
+              <ul className="flex flex-col gap-3">
+                {experiences.map((e) => (
+                  <li key={e} className="flex gap-2.5 items-start">
+                    <span className="mt-0.5 shrink-0">
+                      <Icon name="circle-check" size={18} color="var(--text-brand)" />
+                    </span>
+                    <span className="text-sm text-concrete-700 break-words min-w-0">{e}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </ProfileSection>
+        ) : null}
+
+        {showTrack ? (
           <Card padding="md">
-            <div className="flex flex-col gap-3.5">
-              {facts.map((f) => (
-                <div key={f} className="flex gap-2.5 items-center">
-                  <Icon name="circle-check" size={18} color="var(--text-subtle)" />
-                  <span className="text-sm text-concrete-700">{f}</span>
-                </div>
-              ))}
-              {showTrack ? (
-                <div className="flex gap-2.5 items-center">
-                  <Icon
-                    name={track.faltas || track.desistencias ? 'calendar-x' : 'calendar-check'}
-                    size={18}
-                    color="var(--text-subtle)"
-                  />
-                  <span className="text-sm text-concrete-700">
-                    {`${track.faltas} ${track.faltas === 1 ? 'falta' : 'faltas'} · ${track.desistencias} ${track.desistencias === 1 ? 'desistência' : 'desistências'}`}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          </Card>
-        ) : isOwn ? (
-          <Card tone="sunken" padding="sm" onClick={() => navigate('/perfil/editar')}>
-            <div className="flex items-center gap-2.5">
-              <Icon name="pencil" size={18} color="var(--text-subtle)" />
-              <span className="flex-1 text-sm text-concrete-700">
-                Conte sua experiência, os dias que você pode e a diária que pede. As construtoras veem isso.
+            <div className="flex gap-2.5 items-center">
+              <Icon
+                name={track.faltas || track.desistencias ? 'calendar-x' : 'calendar-check'}
+                size={18}
+                color="var(--text-subtle)"
+              />
+              <span className="text-sm text-concrete-700">
+                {`${track.faltas} ${track.faltas === 1 ? 'falta' : 'faltas'} · ${track.desistencias} ${track.desistencias === 1 ? 'desistência' : 'desistências'}`}
               </span>
             </div>
           </Card>

@@ -42,6 +42,7 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       paid_count: null,
       logo_url: null,
       cover_url: null,
+      about: null,
       created_at: CREATED,
       ...r,
       id: r.id ?? ''
@@ -57,10 +58,6 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       photo_url: null,
       cover_url: null,
       identity_status: 'nao_enviado',
-      availability: null,
-      years_experience: null,
-      desired_pay: null,
-      travel_km: null,
       bio: null,
       created_at: CREATED,
       ...r,

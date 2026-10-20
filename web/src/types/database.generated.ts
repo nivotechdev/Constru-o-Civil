@@ -412,6 +412,7 @@ export type Database = {
           verified_at: string | null;
           contact_name: string | null;
           cnpj_check: Json | null;
+          about: string | null;
         };
         Insert: {
           id?: string;
@@ -433,6 +434,7 @@ export type Database = {
           verified_at?: string | null;
           contact_name?: string | null;
           cnpj_check?: Json | null;
+          about?: string | null;
         };
         Update: {
           id?: string;
@@ -454,6 +456,7 @@ export type Database = {
           verified_at?: string | null;
           contact_name?: string | null;
           cnpj_check?: Json | null;
+          about?: string | null;
         };
         Relationships: [];
       };
@@ -1368,14 +1371,11 @@ export type Database = {
           photo_url: string | null;
           cover_url: string | null;
           created_at: string;
-          availability: string | null;
-          years_experience: number | null;
-          desired_pay: number | null;
-          travel_km: number | null;
           bio: string | null;
           identity_status: string;
           identity_reason: string | null;
           identity_submitted_at: string | null;
+          experiences: string[];
         };
         Insert: {
           id?: string;
@@ -1395,14 +1395,11 @@ export type Database = {
           photo_url?: string | null;
           cover_url?: string | null;
           created_at?: string;
-          availability?: string | null;
-          years_experience?: number | null;
-          desired_pay?: number | null;
-          travel_km?: number | null;
           bio?: string | null;
           identity_status?: string;
           identity_reason?: string | null;
           identity_submitted_at?: string | null;
+          experiences?: string[];
         };
         Update: {
           id?: string;
@@ -1422,14 +1419,11 @@ export type Database = {
           photo_url?: string | null;
           cover_url?: string | null;
           created_at?: string;
-          availability?: string | null;
-          years_experience?: number | null;
-          desired_pay?: number | null;
-          travel_km?: number | null;
           bio?: string | null;
           identity_status?: string;
           identity_reason?: string | null;
           identity_submitted_at?: string | null;
+          experiences?: string[];
         };
         Relationships: [];
       };
@@ -1839,6 +1833,7 @@ export type Database = {
       unblock_account: { Args: { p_account: string }; Returns: undefined };
       undo_reject: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
       update_job: { Args: { p_job_id: string; p: Json }; Returns: undefined };
+      valid_experiences: { Args: { p: string[] }; Returns: boolean };
       whatsapp_recently_verified: { Args: { p_phone: string }; Returns: boolean };
       whatsapp_valid: { Args: { p_phone: string }; Returns: boolean };
       withdraw_application: { Args: { p_job_id: string }; Returns: undefined };

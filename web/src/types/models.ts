@@ -100,6 +100,8 @@ export interface Company {
   /** Logo and cover picture, in the app's Storage (Z12); absent = none chosen. */
   logoUrl?: string | null;
   coverUrl?: string | null;
+  /** U32: "Sobre a empresa" (up to 500 characters). */
+  about?: string;
   reviews: Review[];
 }
 
@@ -131,14 +133,10 @@ export interface Worker {
   identity?: IdentityStatus;
   /** F07: why it was refused (only the worker's own). */
   identityReason?: string;
-  /** F10: the professional profile. */
-  availability?: WorkerAvailability;
-  yearsExperience?: number;
-  /** The diária the worker asks for (R$). */
-  desiredPay?: number;
-  /** How far the worker goes (km). */
-  travelKm?: number;
+  /** "Sobre você": what the worker tells about themselves (up to 500 characters). */
   bio?: string;
+  /** U34: the worker's experiences, one short line each (up to 10). */
+  experiences?: string[];
   /** Profile photo and cover picture, in the app's Storage (Z12); absent = none chosen. */
   photoUrl?: string | null;
   coverUrl?: string | null;
@@ -299,7 +297,6 @@ export interface JobInvite {
 export type IdentityStatus = 'nao_enviado' | 'em_analise' | 'verificado' | 'recusado';
 
 /** F10: the days a worker takes jobs. */
-export type WorkerAvailability = 'semana' | 'fimdesemana' | 'qualquer';
 
 /** L18: how the company pays the diária. */
 export type WagePayment = 'pix_dia' | 'pix_fim' | 'dinheiro' | 'outro';

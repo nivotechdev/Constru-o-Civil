@@ -18,9 +18,9 @@ import { currentWorker } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
-import { TextArea } from '../../components/TextArea';
-import { AVAILABILITY_OPTIONS } from '../../utils/workerInfo';
-import { Tag } from '../../components/Tag';
+import { AboutField } from '../../components/AboutField';
+import { cleanExperiences } from '../../utils/profileText';
+import { ExperiencesField, type ExperienceDraft } from './ExperiencesField';
 
 /** Frees the local copies of pictures that were picked and then dropped. */
 function revoke(urls: (string | null | undefined)[]) {
@@ -33,14 +33,14 @@ export default function EditWorkerProfile() {
     name: worker.name,
     // U13/U22: the saved place (city + point): any city from the list, or the phone's location.
     location: { city: worker.city, lat: worker.lat, lon: worker.lon } as SavedLocation,
-    // F10: the professional profile (numbers as typed).
-    availability: worker.availability ?? null,
-    years: worker.yearsExperience != null ? String(worker.yearsExperience) : '',
-    pay: worker.desiredPay != null ? String(worker.desiredPay) : '',
-    travelKm: worker.travelKm ?? null,
-    bio: worker.bio ?? ''
+    bio: worker.bio ?? '',
+    // U34: one field per experience; a new profile starts with one empty line to fill.
+    experiences: (worker.experiences?.length ? worker.experiences : ['']).map((text, i): ExperienceDraft => ({
+      key: i + 1,
+      text
+    }))
   }));
-  const num = (v: string) => (v.trim() === '' ? null : Number(v));
+  const experiences = cleanExperiences(draft.experiences.map((e) => e.text));
   const [images, setImages] = useState<ProfileImages>({});
   const [progress, setProgress] = useState<number | null>(null);
   const picked = useRef<ProfileImages>({});
@@ -57,11 +57,8 @@ export default function EditWorkerProfile() {
     ...(draft.location.city !== worker.city || draft.location.lat !== worker.lat || draft.location.lon !== worker.lon
       ? { city: draft.location.city, point: { lat: draft.location.lat, lon: draft.location.lon } }
       : {}),
-    ...(draft.availability && draft.availability !== worker.availability ? { availability: draft.availability } : {}),
-    ...(num(draft.years) !== (worker.yearsExperience ?? null) ? { yearsExperience: num(draft.years) } : {}),
-    ...(num(draft.pay) !== (worker.desiredPay ?? null) ? { desiredPay: num(draft.pay) } : {}),
-    ...(draft.travelKm !== (worker.travelKm ?? null) ? { travelKm: draft.travelKm } : {}),
-    ...(draft.bio !== (worker.bio ?? '') ? { bio: draft.bio } : {})
+    ...(draft.bio.trim() !== (worker.bio ?? '') ? { bio: draft.bio } : {}),
+    ...(experiences.join('\n') !== (worker.experiences ?? []).join('\n') ? { experiences } : {})
   };
   const save = useAction(
     async () => {
@@ -146,70 +143,26 @@ export default function EditWorkerProfile() {
             }}
           />
           <WhatsAppRow label="Seu WhatsApp" />
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="edit-worker-bio" className="text-sm font-semibold text-concrete-900">
-              Sobre você
-            </label>
-            <TextArea
-              id="edit-worker-bio"
-              rows={3}
-              placeholder="Ex.: Faço reboco, contrapiso e acabamento há 12 anos. Tenho ferramenta própria."
-              value={draft.bio}
-              className="w-full px-3 py-2.5 bg-concrete-0 rounded-control border border-concrete-300 outline-none text-base text-concrete-900 placeholder:text-concrete-400 resize-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
-              onInput={(v) => setDraft((d) => ({ ...d, bio: v.slice(0, 280) }))}
-            />
-            <span className="text-xs text-concrete-500 self-end">{`${draft.bio.length}/280`}</span>
-            {errors.bio ? <FieldError message={errors.bio} /> : null}
-          </div>
-          <div className="flex flex-col gap-2.5">
-            <span className="text-sm font-semibold text-concrete-900">Dias que você pode</span>
-            <div className="flex flex-wrap gap-2">
-              {AVAILABILITY_OPTIONS.map((o) => (
-                <Tag
-                  key={o.id}
-                  label={o.label}
-                  selected={draft.availability === o.id}
-                  onClick={() => setDraft((d) => ({ ...d, availability: o.id }))}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-1 min-w-0">
-              <Input
-                id="edit-worker-years"
-                label="Anos de experiência"
-                inputMode="numeric"
-                value={draft.years}
-                error={errors.yearsExperience}
-                onInput={(v) => setDraft((d) => ({ ...d, years: v.replace(/\D/g, '').slice(0, 2) }))}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Input
-                id="edit-worker-pay"
-                label="Diária que você pede"
-                suffix="reais"
-                inputMode="numeric"
-                value={draft.pay}
-                error={errors.desiredPay}
-                onInput={(v) => setDraft((d) => ({ ...d, pay: v.replace(/\D/g, '').slice(0, 4) }))}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2.5">
-            <span className="text-sm font-semibold text-concrete-900">Até onde você vai</span>
-            <div className="flex flex-wrap gap-2">
-              {[5, 10, 20, 50].map((km) => (
-                <Tag
-                  key={km}
-                  label={`Até ${km} km`}
-                  selected={draft.travelKm === km}
-                  onClick={() => setDraft((d) => ({ ...d, travelKm: d.travelKm === km ? null : km }))}
-                />
-              ))}
-            </div>
-          </div>
+          <AboutField
+            id="edit-worker-bio"
+            label="Sobre você"
+            hint="Conte quem você é e como trabalha. É a primeira coisa que a construtora lê."
+            placeholder="Ex.: Sou pedreiro de acabamento, caprichoso e pontual. Tenho ferramenta própria e moro perto do centro."
+            value={draft.bio}
+            error={errors.bio}
+            onInput={(v) => {
+              setDraft((d) => ({ ...d, bio: v }));
+              setErrors((e) => ({ ...e, bio: undefined }));
+            }}
+          />
+          <ExperiencesField
+            value={draft.experiences}
+            error={errors.experiences}
+            onChange={(list) => {
+              setDraft((d) => ({ ...d, experiences: list }));
+              setErrors((e) => ({ ...e, experiences: undefined }));
+            }}
+          />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">
           {save.error ? <FieldError message={save.error} /> : null}

@@ -156,6 +156,8 @@ export const COMPANIES: Record<string, Company> = {
     sinceLabel: 'Na Bicos desde março de 2025',
     respondTime: 'Responde em 1h20, em média',
     paidCount: 128,
+    about:
+      'Construtora da Zona Leste com obras residenciais e reformas. Pagamos a diária no fim do dia e fornecemos EPI e almoço.',
     reviews: [
       {
         id: 'r1',
@@ -313,11 +315,12 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 23,
     verified: true,
     identity: 'verificado',
-    availability: 'qualquer',
-    yearsExperience: 12,
-    desiredPay: 200,
-    travelKm: 20,
     bio: 'Pedreiro de acabamento há 12 anos. Reboco, massa corrida e assentamento de piso. Tenho ferramenta própria.',
+    experiences: [
+      'Reboco de fachada em prédio de 4 andares',
+      'Contrapiso e assentamento de porcelanato',
+      'Massa corrida e acabamento de apartamentos'
+    ],
     facts: [
       '23 diárias pagas pela plataforma',
       'RG e CPF conferidos em 12 ago',

@@ -27,7 +27,6 @@ import type {
   CompanyVerification,
   NotificationKind,
   WagePayment,
-  WorkerAvailability,
   IdentityStatus,
   ReportTarget,
   ReportReason,
@@ -85,6 +84,8 @@ type CompanyRow = {
   paid_count: number | null;
   logo_url: string | null;
   cover_url: string | null;
+  /** U32: "Sobre a empresa" (up to 500 characters). */
+  about: string | null;
   created_at: string;
 };
 
@@ -108,12 +109,10 @@ type WorkerRow = {
   cover_url: string | null;
   /** F07 */
   identity_status: IdentityStatus;
-  /** F10: the professional profile. */
-  availability: WorkerAvailability | null;
-  years_experience: number | null;
-  desired_pay: number | null;
-  travel_km: number | null;
+  /** "Sobre você" (up to 500 characters). */
   bio: string | null;
+  /** U34: up to 10 short experiences (2–80 characters each). */
+  experiences: string[];
   created_at: string;
 };
 
@@ -370,7 +369,7 @@ export interface SupabaseDatabase {
       companies: Table<
         CompanyRow,
         'id' | 'rating' | 'review_count' | 'verified' | 'verification_status' | 'verified_at' | 'created_at',
-        'name' | 'location' | 'logo_url' | 'cover_url' | 'contact_name'
+        'name' | 'location' | 'logo_url' | 'cover_url' | 'contact_name' | 'about'
       >;
       workers: Table<
         WorkerRow,
@@ -383,18 +382,7 @@ export interface SupabaseDatabase {
         | 'facts'
         | 'created_at'
         | 'identity_status',
-        | 'name'
-        | 'city'
-        | 'neighborhood'
-        | 'lat'
-        | 'lon'
-        | 'photo_url'
-        | 'cover_url'
-        | 'availability'
-        | 'years_experience'
-        | 'desired_pay'
-        | 'travel_km'
-        | 'bio'
+        'name' | 'city' | 'neighborhood' | 'lat' | 'lon' | 'photo_url' | 'cover_url' | 'bio' | 'experiences'
       >;
       jobs: Table<
         JobRow,

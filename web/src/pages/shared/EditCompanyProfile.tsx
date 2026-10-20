@@ -24,6 +24,7 @@ import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
 import { ProfileLocationField } from '../../components/ProfileLocationField';
 import { knownCity } from '../../services/cities';
+import { AboutField } from '../../components/AboutField';
 
 function revoke(urls: (string | null | undefined)[]) {
   for (const u of urls) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
@@ -35,7 +36,8 @@ export default function EditCompanyProfile() {
     name: company.name,
     // U13/U22: the saved place: any city from the list, or the phone's location.
     location: company.location,
-    contactName: company.contactName ?? ''
+    contactName: company.contactName ?? '',
+    about: company.about ?? ''
   }));
   const [images, setImages] = useState<ProfileImages>({});
   const [progress, setProgress] = useState<number | null>(null);
@@ -50,7 +52,8 @@ export default function EditCompanyProfile() {
   const changes = {
     ...(draft.name !== company.name ? { name: draft.name } : {}),
     ...(draft.location !== company.location ? { location: draft.location } : {}),
-    ...(draft.contactName !== (company.contactName ?? '') ? { contactName: draft.contactName } : {})
+    ...(draft.contactName !== (company.contactName ?? '') ? { contactName: draft.contactName } : {}),
+    ...(draft.about.trim() !== (company.about ?? '') ? { about: draft.about } : {})
   };
   const save = useAction(
     async () => {
@@ -122,6 +125,18 @@ export default function EditCompanyProfile() {
             onInput={(v) => {
               setDraft((d) => ({ ...d, name: v }));
               setErrors((e) => ({ ...e, name: undefined }));
+            }}
+          />
+          <AboutField
+            id="edit-company-about"
+            label="Sobre a empresa"
+            hint="Conte o que a empresa faz, há quanto tempo e como trata a equipe. Os trabalhadores leem antes de se candidatar."
+            placeholder="Ex.: Construtora de Caxias do Sul desde 2010. Obras residenciais e reformas. Pagamos a diária em dia e fornecemos EPI."
+            value={draft.about}
+            error={errors.about}
+            onInput={(v) => {
+              setDraft((d) => ({ ...d, about: v }));
+              setErrors((e) => ({ ...e, about: undefined }));
             }}
           />
           <Input

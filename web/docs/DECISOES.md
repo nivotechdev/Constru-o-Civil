@@ -1915,3 +1915,21 @@ notificações e, se o canal tiver caído, ao voltar para a tela. A escolha anti
 apagada. Continua valendo da U26: escuro só dentro do app; login e cadastro sempre no tema original. A exclusão da
 conta leva a linha junto (cascade). Por que tabela própria e não coluna em `accounts`: `accounts` tem permissão por
 coluna e não está no Realtime; uma tabela pequena só de preferências entra no Realtime sem expor nada da conta.
+
+## U32/U33/U34 — Descrição nos dois perfis, experiências no lugar dos números
+
+Pedido do responsável: os dois perfis com uma descrição escrita pela própria pessoa; tirar do trabalhador "dias que
+você pode", "anos de experiência", "diária que você pede" e "até onde você vai" — da tela **e do banco** — e pôr no
+lugar uma lista de experiências (até 10, com limite de caracteres em cada uma, sem textão colado).
+**Feito**: migration `u32_perfis` apaga as quatro colunas (e o check delas), cria `workers.experiences` (até 10 itens
+de 2 a 80 caracteres, sem espaço nas pontas — regra numa função `valid_experiences` usada no check) e
+`companies.about` (até 500); a bio do trabalhador sobe de 280 para 500. As regras ficam em `utils/profileText.ts`
+(as mesmas nos dois modos) e o banco confere de novo. No app: "Sobre você" e "Sobre a empresa" com contador
+(`AboutField`, o campo corta o que passar de 500, inclusive colado); "Suas experiências" com uma linha por
+experiência (o campo corta em 80, quebra de linha vira espaço, Enter abre a próxima linha, lixeira em cada uma, aviso
+ao chegar em 10; linhas vazias e repetidas somem ao salvar). Os perfis mostram "Sobre"/"Sobre a empresa" e
+"Experiências" em blocos com título; o próprio dono vê um convite para preencher enquanto estiver vazio. Faltas e
+desistências continuam visíveis para construtoras e para a própria pessoa. **Por que 80 e 10**: uma linha cabe na
+tela do celular e lê-se de relance; 10 é o bastante para mostrar a trajetória sem virar currículo. **Por que apagar
+as colunas** (e não só esconder): pedido explícito; na produção só há 1 trabalhador e ele não preencheu esses campos
+— mesmo assim, backup manual antes (APLICAR #53).

@@ -2,6 +2,7 @@
 // each account update its own row, and only the columns the app edits (the rest — rating, counts,
 // verification — is the server's).
 import type { CompanyProfilePatch, ProfileImages, WorkerProfilePatch } from '../profiles';
+import { cleanExperiences } from '../../utils/profileText';
 import type { WorkerPost } from '../../types/models';
 import type { TableUpdate } from '../../types/supabase';
 import { serviceError } from '../errors';
@@ -22,11 +23,8 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
   const worker = store.getDb().workers[s.workerId];
   const update: TableUpdate<'workers'> = {};
   if (patch.name !== undefined) update.name = patch.name.trim();
-  if (patch.availability !== undefined) update.availability = patch.availability;
-  if (patch.yearsExperience !== undefined) update.years_experience = patch.yearsExperience;
-  if (patch.desiredPay !== undefined) update.desired_pay = patch.desiredPay;
-  if (patch.travelKm !== undefined) update.travel_km = patch.travelKm;
   if (patch.bio !== undefined) update.bio = patch.bio.trim() || null;
+  if (patch.experiences !== undefined) update.experiences = cleanExperiences(patch.experiences);
   if (patch.point && patch.city !== undefined) {
     // U13: the place from "Usar minha localização atual" (the point already rounded to ~1 km).
     Object.assign(update, { city: patch.city, neighborhood: null, lat: patch.point.lat, lon: patch.point.lon });
@@ -57,6 +55,7 @@ export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promis
   if (patch.name !== undefined) update.name = patch.name.trim();
   if (patch.location !== undefined) update.location = patch.location;
   if (patch.contactName !== undefined) update.contact_name = patch.contactName.trim() || null;
+  if (patch.about !== undefined) update.about = patch.about.trim() || null;
   if (!Object.keys(update).length) return;
   const client = await db();
   const row = await request(() =>
