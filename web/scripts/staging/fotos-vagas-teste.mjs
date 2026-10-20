@@ -13,19 +13,26 @@ if (url.includes('ppnxdajiihsjaojxokzh')) throw new Error('Isto é só para o st
 
 const COMPANY = 'b1c05000-0000-4000-8000-00000000c0de';
 const PER_JOB = 2;
-// Palavras do título → busca no Commons (em inglês, onde o acervo é maior).
+// Palavras do título → buscas no Commons (em inglês, onde o acervo é maior), da mais certeira à mais geral.
 const SEARCHES = [
-  [/mestre de obras/i, 'construction site workers'],
-  [/contrapiso/i, 'concrete floor construction worker'],
-  [/pintor de fachada|pintor/i, 'house painter painting wall'],
-  [/eletricista/i, 'electrician wiring'],
-  [/limpeza/i, 'construction site cleaning'],
-  [/telhadista|telha/i, 'roofer roof tiles'],
-  [/azulejista/i, 'tiler laying tiles'],
-  [/armador|funda/i, 'rebar reinforcement construction'],
-  [/encanador/i, 'plumber pipes'],
-  [/ajudante de pedreiro|pedreiro/i, 'bricklayer brick wall']
+  [/mestre de obras/i, ['construction foreman', 'construction workers helmet site']],
+  [/contrapiso/i, ['concrete floor screed', 'pouring concrete floor worker']],
+  [/pintor/i, ['painter painting wall roller', 'house painter wall']],
+  [/eletricista/i, ['electrician working', 'electrical wiring installation']],
+  [/limpeza/i, ['cleaning construction site', 'renovation cleaning floor']],
+  [/telhadista|telha/i, ['roofer working roof', 'roof tiles installation']],
+  [/azulejista/i, ['tiler laying tiles', 'ceramic tiles installation']],
+  [/armador|funda/i, ['rebar worker', 'steel reinforcement concrete construction']],
+  [/encanador/i, ['plumber working', 'plumbing pipes installation']],
+  [/ajudante de pedreiro|pedreiro/i, ['bricklayer laying bricks', 'mason building brick wall']]
 ];
+const FALLBACK = ['construction worker', 'construction site workers'];
+// U36 (2ª rodada): a 1ª trouxe pintura de museu, foto do século passado, ferramenta solta e paisagem. Agora vêm
+// primeiro as fotos de banco de imagem livre (Pexels/Unsplash/Pixabay antigos, CC0) e as recentes; pintura,
+// desenho, acervo histórico, militar e objeto quebrado ficam de fora.
+const STOCK = /pexels|unsplash|pixabay|stocksnap|burst|rawpixel/i;
+const REJECT =
+  /paint(ing)? by|painting|fresco|munch|drawing|illustration|engraving|lithograph|poster|museum|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|broken|wrench|mountain|landscape|map\b|diagram|logo/i;
 
 const rest = (path, init = {}) =>
   fetch(`${url}${path}`, {
@@ -35,41 +42,69 @@ const rest = (path, init = {}) =>
 
 const UA = 'BicosStaging/1.0 (https://github.com/nivotechdev/Constru-o-Civil)';
 const FREE = /^(public domain|pd|cc0|cc-zero|cc0 1\.0)/i;
+const strip = (html) =>
+  (html ?? '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-async function candidates(query) {
+async function search(text) {
   const q = new URLSearchParams({
     action: 'query',
     format: 'json',
     generator: 'search',
     gsrnamespace: '6',
-    gsrsearch: `${query} filetype:bitmap`,
+    gsrsearch: `${text} filetype:bitmap`,
     gsrlimit: '50',
     prop: 'imageinfo',
     iiprop: 'url|size|mime|extmetadata',
     iiurlwidth: '1280'
   });
   const res = await fetch(`https://commons.wikimedia.org/w/api.php?${q}`, { headers: { 'User-Agent': UA } });
-  if (!res.ok) throw new Error(`Commons ${res.status} para "${query}"`);
-  const pages = Object.values((await res.json()).query?.pages ?? {}).sort((x, y) => x.index - y.index);
+  if (!res.ok) throw new Error(`Commons ${res.status} para "${text}"`);
+  return Object.values((await res.json()).query?.pages ?? {}).sort((x, y) => x.index - y.index);
+}
+
+/** As fotos livres e boas de uma busca, com nota: banco de imagem e recentes primeiro. */
+async function candidates(query) {
+  const pages = [
+    ...(await search(`${query} pexels`)),
+    ...(await search(`${query} unsplash`)),
+    ...(await search(`${query} pixabay`)),
+    ...(await search(query))
+  ];
+  const seen = new Set();
   return pages
-    .map((p) => ({ id: p.pageid, title: p.title, info: p.imageinfo?.[0] }))
-    .filter(({ info }) => {
-      const license = info?.extmetadata?.LicenseShortName?.value ?? '';
-      return (
+    .filter((p) => !seen.has(p.pageid) && seen.add(p.pageid))
+    .map((p) => {
+      const info = p.imageinfo?.[0];
+      const meta = info?.extmetadata ?? {};
+      const about = [p.title, strip(meta.Artist?.value), strip(meta.Credit?.value), strip(meta.Categories?.value)].join(
+        ' '
+      );
+      const year = Number((strip(meta.DateTimeOriginal?.value).match(/(19|20)\d{2}/) ?? [])[0]) || null;
+      return { id: p.pageid, title: p.title, info, about, year, license: meta.LicenseShortName?.value ?? '' };
+    })
+    .filter(
+      ({ info, about, year, license }) =>
         info?.mime === 'image/jpeg' &&
         FREE.test(license) &&
         info.width >= 1000 &&
         info.width >= info.height &&
         info.width <= info.height * 2.2 &&
-        info.thumburl
-      );
-    })
-    .map(({ id, title, info }) => ({
+        info.thumburl &&
+        !REJECT.test(about) &&
+        !(year && year < 1995)
+    )
+    .map((c) => ({ ...c, score: (STOCK.test(c.about) ? 4 : 0) + (c.year && c.year >= 2010 ? 2 : 0) }))
+    .sort((a, b) => b.score - a.score)
+    .map(({ id, title, info, about, license, score }) => ({
       id,
       title,
       thumb: info.thumburl,
-      license: info.extmetadata?.LicenseShortName?.value,
-      creator: (info.extmetadata?.Artist?.value ?? '').replace(/<[^>]+>/g, '').trim(),
+      license,
+      score,
+      creator: strip(info.extmetadata?.Artist?.value).slice(0, 80) || (STOCK.exec(about)?.[0] ?? ''),
       page: info.descriptionurl
     }));
 }
@@ -86,19 +121,26 @@ if (!jobsRes.ok) throw new Error(`jobs ${jobsRes.status}`);
 const jobs = await jobsRes.json();
 console.log(`${jobs.length} vagas da conta de teste.`);
 const used = new Set();
+const STAMP = Date.now().toString(36);
 const credits = [];
 
 for (const job of jobs) {
-  const query = SEARCHES.find(([re]) => re.test(job.title))?.[1] ?? 'construction worker';
+  const queries = SEARCHES.find(([re]) => re.test(job.title))?.[1] ?? FALLBACK;
   const photos = [];
-  // A busca da vaga e, se faltar foto boa, uma mais geral.
-  const pool = [...(await candidates(query)), ...(await candidates('construction worker building site'))];
+  // As buscas da vaga e, se faltar foto boa, as gerais.
+  const pool = [];
+  for (const q of [...queries, ...FALLBACK]) {
+    pool.push(...(await candidates(q)));
+    if (pool.filter((c) => !used.has(c.id)).length >= 6) break;
+  }
   for (const image of pool) {
     if (photos.length >= PER_JOB) break;
     if (used.has(image.id)) continue;
     const bytes = await download(image);
     if (!bytes) continue;
-    const path = `vagas/${COMPANY}/${job.id}-${photos.length + 1}.jpg`;
+    // Nome novo a cada rodada: o navegador não mostra a foto antiga do cache (as antigas viram órfãs e o
+    // limpar-arquivos apaga).
+    const path = `vagas/${COMPANY}/${job.id}-${STAMP}-${photos.length + 1}.jpg`;
     const up = await rest(`/storage/v1/object/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' },
@@ -108,11 +150,11 @@ for (const job of jobs) {
     used.add(image.id);
     photos.push(`${url}/storage/v1/object/public/${path}`);
     credits.push(
-      `${job.id} · ${image.title ?? 'sem título'} — ${image.creator ?? 'autor desconhecido'} (${image.license}) ${image.foreign_landing_url ?? ''}`
+      `${job.id} · [${image.score}] ${image.title} — ${image.creator || 'autor desconhecido'} (${image.license}) ${image.page ?? ''}`
     );
   }
   if (!photos.length) {
-    console.log(`✗ ${job.id} ${job.title}: nenhuma foto boa para "${query}"`);
+    console.log(`✗ ${job.id} ${job.title}: nenhuma foto boa para "${queries.join('", "')}"`);
     continue;
   }
   const upd = await rest(`/rest/v1/jobs?id=eq.${job.id}`, {
