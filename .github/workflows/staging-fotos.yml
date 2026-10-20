@@ -1,0 +1,34 @@
+# U36 — Põe fotos reais (domínio público/CC0, do Openverse) nas vagas da conta de TESTE do staging.
+# Só manual (Actions › staging-fotos › Run workflow): não roda a cada envio ao master.
+name: staging-fotos
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fotos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      STAGING_REF: setyxomsbfrkneqqfoam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Chave do staging (lida na hora, nunca gravada)
+        run: |
+          keys="$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$STAGING_REF/api-keys?reveal=true")"
+          svc="$(echo "$keys" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).find(k=>k.name==="service_role").api_key))')"
+          echo "::add-mask::$svc"
+          echo "SERVICE_ROLE_KEY=$svc" >> "$GITHUB_ENV"
+          echo "SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
+      - name: Fotos nas vagas de teste
+        run: node scripts/staging/fotos-vagas-teste.mjs | tee -a "$GITHUB_STEP_SUMMARY"
