@@ -45,6 +45,11 @@ async function publicKeys(fetcher: typeof fetch, now: number): Promise<Jwk[]> {
   return keys;
 }
 
+/** U46: busca as chaves antes do primeiro token (o app "acorda" a função quando abre a tela do Google). */
+export async function warmFirebaseKeys(fetcher: typeof fetch = fetch, now = Date.now()): Promise<void> {
+  await publicKeys(fetcher, now).catch(() => undefined);
+}
+
 /** Só para os testes. */
 export function forgetFirebaseKeys(): void {
   cache = null;

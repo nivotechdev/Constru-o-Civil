@@ -4,6 +4,7 @@
 // where the accounts live). Firebase keeps no session of its own: it signs out right after.
 // U29: the SDK is loaded when a screen with the buttons opens (prepareFirebase), NOT on the tap: a browser only lets a
 // page open a window (the Google one) right inside the tap, and loading the SDK first used to make it block the window.
+import type { FirebaseApp } from '@firebase/app';
 import type { Auth, ConfirmationResult, RecaptchaVerifier } from '@firebase/auth';
 import { FIREBASE_CONFIG } from '../features';
 import { serviceError, ServiceError } from '../errors';
@@ -20,18 +21,63 @@ let verifier: RecaptchaVerifier | null = null;
 
 /** Loads and starts Firebase (once). The screens with the buttons call it as they open. */
 export function prepareFirebase(): Promise<{ auth: Auth; sdk: Sdk }> {
+  warmUpSignIn();
   loading ??= (async () => {
     const [{ initializeApp, getApps }, sdk] = await Promise.all([import('@firebase/app'), import('@firebase/auth')]);
     const app = getApps()[0] ?? initializeApp(FIREBASE_CONFIG);
-    const auth = sdk.getAuth(app);
+    const auth = startAuth(sdk, app);
     sdk.useDeviceLanguage(auth); // the SMS and the Google window in Portuguese
     ready = { auth, sdk };
+    preloadGoogleFrame(auth);
     return ready;
   })();
   loading.catch(() => {
     loading = null; // offline when the screen opened: try again on the tap
   });
   return loading;
+}
+
+/**
+ * U46: Firebase keeps nothing on the device (it signs out right after handing the token over), so it starts in
+ * memory — no IndexedDB to open and read before the first tap.
+ */
+function startAuth(sdk: Sdk, app: FirebaseApp): Auth {
+  try {
+    return sdk.initializeAuth(app, {
+      persistence: sdk.inMemoryPersistence,
+      popupRedirectResolver: sdk.browserPopupRedirectResolver
+    });
+  } catch {
+    return sdk.getAuth(app); // already started (a hot reload in development)
+  }
+}
+
+/**
+ * U46: on a computer Firebase loads Google's helper frame only on the first tap, and the window waits for it (phones
+ * and Safari load it right away): load it now, as the screen opens. Firebase's own internal step, guarded — if it
+ * isn't there, the tap just waits as before.
+ */
+function preloadGoogleFrame(auth: Auth): void {
+  type Resolver = { _initialize?: (auth: Auth) => Promise<unknown> };
+  void Promise.resolve()
+    .then(() => auth.authStateReady())
+    .then(() => (auth as unknown as { _popupRedirectResolver?: Resolver })._popupRedirectResolver?._initialize?.(auth))
+    .catch(() => undefined);
+}
+
+/** U46: when the last wake-up was sent (one every few minutes is enough to keep the function up). */
+let warmedAt = 0;
+const WARM_EVERY_MS = 3 * 60_000;
+
+/**
+ * U46: wakes the Edge Function up as a screen with the Google button opens (it answers at once, reads nothing), so the
+ * tap doesn't wait for it to start — and the browser keeps the CORS permission for the real call.
+ */
+function warmUpSignIn(): void {
+  const now = Date.now();
+  if (now - warmedAt < WARM_EVERY_MS) return;
+  warmedAt = now;
+  void invokeFunction('entrar-com-firebase', { aquecer: true }).catch(() => undefined);
 }
 
 /** Firebase's errors in the person's words. */
@@ -64,12 +110,15 @@ function firebaseError(e: unknown): ServiceError {
  */
 async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'sem-conta' | GoogleIdentity> {
   try {
-    const answer = await invokeFunction<{ token_hash: string }>('entrar-com-firebase', { idToken });
+    const answer = await invokeFunction<{ token_hash: string; conta?: boolean }>('entrar-com-firebase', { idToken });
     const client = await db();
     const { data, error } = await client.auth.verifyOtp({ token_hash: answer.token_hash, type: 'magiclink' });
     if (error) throw toServiceError(error);
     const user = data.user ?? data.session?.user;
     if (!user) throw serviceError('falha_demo');
+    // U46: the function already knows there is no account: straight to the sign-up, without the reads that would
+    // only answer "no account" (the session's own check still runs on its side, as always).
+    if (answer.conta === false) return googleIdentityOf(user);
     try {
       await enterSession(user);
     } catch (e) {
@@ -81,7 +130,8 @@ async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'se
     if (e instanceof ServiceError && e.reason === 'sem-conta') return 'sem-conta';
     throw e;
   } finally {
-    await sdk.signOut(auth).catch(() => undefined);
+    // U46: not waited for — Firebase's session is only in memory and nothing depends on it.
+    void sdk.signOut(auth).catch(() => undefined);
   }
 }
 

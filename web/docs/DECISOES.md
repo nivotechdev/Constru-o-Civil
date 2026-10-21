@@ -2073,3 +2073,26 @@ nenhuma tecla e nenhum "voltar" do celular chegam ao app.
 - **Google sem conta**: de "Como você vai usar o Bicos?" o cadastro abre por cima (a seta volta para a escolha do lado,
   como no cadastro normal); voltar até o login pelo botão do celular também desfaz o login do Google pendente, como a
   seta do app já fazia (U40).
+
+## U46 — Entrar com o Google mais rápido
+
+Pedido do responsável: o carregamento do Google demorava muito. Para onde ia o tempo, depois de escolher a conta:
+a função `entrar-com-firebase` "fria" (subindo do zero: 1,1–2,5 s medidos no staging), uma ida e volta a mais em toda
+chamada de função (o navegador repetia a permissão de CORS — o "preflight" — porque ela não dizia por quanto tempo
+vale), e, numa conta nova, três leituras que só respondiam "não tem conta". Antes de a janela abrir, no computador, o
+Firebase ainda carregava o quadro auxiliar do Google só no primeiro toque. **Agora**:
+
+- **Acordar a função**: quando abre uma tela com o botão do Google, o app manda `{ aquecer: true }` (no máximo uma vez a
+  cada 3 minutos). A função responde 204 na hora, sem ler nem criar nada (não conta no limite de tentativas), e já
+  busca as chaves públicas do Firebase. O toque de verdade encontra a função de pé.
+- **Permissão de CORS guardada por 2 horas** (`Access-Control-Max-Age: 7200`, o máximo do Chrome) em todas as funções
+  chamadas pelo navegador: some o OPTIONS antes de cada chamada — também em cada passo conferido do cadastro (CPF,
+  e-mail, WhatsApp).
+- **Na função**: o limite de tentativas e a conferência do token rodam ao mesmo tempo (as respostas continuam na mesma
+  ordem), e a resposta diz se o e-mail já tem conta (`conta`). Sem conta, o app vai direto para o cadastro, sem as
+  leituras inúteis. A checagem da sessão continua rodando por trás, então uma conta antiga do app legado ainda entra.
+- **No app**: o Firebase começa só na memória (`initializeAuth` com `inMemoryPersistence` — ele não guarda nada, a
+  sessão é a da Bicos), sem abrir o IndexedDB; a saída do Firebase não é mais esperada; no computador, o quadro do
+  Google carrega quando a tela abre (o celular e o Safari já faziam isso), então a janela abre sem essa espera; e, ao
+  entrar, o tema e o perfil são lidos juntos (uma ida e volta a menos para qualquer login).
+- **Produção** (ação com "pode"): as funções da produção só ganham isso quando forem republicadas.

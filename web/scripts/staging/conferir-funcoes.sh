@@ -37,6 +37,14 @@ echo "CORS (verificar-cnpj):"
 pf() { curl -s -m 30 -i -X OPTIONS -H "Origin: $1" -H "Access-Control-Request-Method: POST" "$FUNCTIONS_URL/functions/v1/verificar-cnpj" | tr -d '\r' | grep -i '^access-control-allow-origin' | awk '{print $2}'; }
 a="$(pf "$ALLOWED_ORIGIN")"; [ "$a" = "$ALLOWED_ORIGIN" ] && ok "origem do app → $a" || ruim "origem do app devolveu '$a'"
 e="$(pf https://evil.example)"; [ "$e" != "https://evil.example" ] && ok "origem estranha não é ecoada ('$e')" || ruim "origem estranha foi liberada"
+# U46: o navegador guarda a permissão por 2 horas (sem repetir o OPTIONS a cada passo).
+m="$(curl -s -m 30 -i -X OPTIONS -H "Origin: $ALLOWED_ORIGIN" -H "Access-Control-Request-Method: POST" "$FUNCTIONS_URL/functions/v1/verificar-cnpj" | tr -d '\r' | grep -i '^access-control-max-age' | awk '{print $2}')"
+[ "$m" = "7200" ] && ok "permissão guardada por 2 h (max-age $m)" || ruim "sem Access-Control-Max-Age 7200 ('$m')"
+
+echo "Acordar o login do Google (U46):"
+w="$(curl -s -m 30 -o /tmp/fn.out -w "%{http_code}" -X POST -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d '{"aquecer":true}' "$FUNCTIONS_URL/functions/v1/entrar-com-firebase")"
+[[ "$w" == "204" || "$w" == "503" ]] && ok "entrar-com-firebase { aquecer } → $w" || ruim "entrar-com-firebase { aquecer } → $w (esperado 204|503)"
 
 echo "Authentication:"
 s="$(curl -s -m 30 -H "apikey: $ANON_KEY" "$FUNCTIONS_URL/auth/v1/settings")"

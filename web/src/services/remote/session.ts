@@ -243,29 +243,35 @@ async function loadSession(user: User): Promise<Role> {
     ...row,
     email_confirmed_at: user.email_confirmed_at ?? row.email_confirmed_at
   };
-  // U30: the theme the account chose (no row = never chose = light).
-  const theme = await readMyTheme(account.id);
+  // U30: the theme the account chose (no row = never chose = light). U46: read together with the own profile.
+  const theme = readMyTheme(account.id);
 
   if (account.worker_id) {
-    const worker = await request(() =>
-      client
-        .from('workers')
-        .select(WORKER_COLUMNS)
-        .eq('id', account.worker_id as string)
-        .single()
-    );
-    apply(putAccount(account, theme), putWorkers([worker], undefined, account.id));
-    saveCache({ account, worker, theme });
+    const [worker, chosen] = await Promise.all([
+      request(() =>
+        client
+          .from('workers')
+          .select(WORKER_COLUMNS)
+          .eq('id', account.worker_id as string)
+          .single()
+      ),
+      theme
+    ]);
+    apply(putAccount(account, chosen), putWorkers([worker], undefined, account.id));
+    saveCache({ account, worker, theme: chosen });
   } else {
-    const company = await request(() =>
-      client
-        .from('companies')
-        .select(COMPANY_COLUMNS)
-        .eq('id', account.company_id as string)
-        .single()
-    );
-    apply(putAccount(account, theme), putCompanies([company], undefined, account.id));
-    saveCache({ account, company, theme });
+    const [company, chosen] = await Promise.all([
+      request(() =>
+        client
+          .from('companies')
+          .select(COMPANY_COLUMNS)
+          .eq('id', account.company_id as string)
+          .single()
+      ),
+      theme
+    ]);
+    apply(putAccount(account, chosen), putCompanies([company], undefined, account.id));
+    saveCache({ account, company, theme: chosen });
   }
   if (getSession()?.accountId !== account.id) setSessionAccount(account.id);
   void startRealtime(account);

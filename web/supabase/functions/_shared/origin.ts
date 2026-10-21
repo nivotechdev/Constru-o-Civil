@@ -39,6 +39,9 @@ export function corsHeaders(origins: string[], requestOrigin: string | null): Re
     'Access-Control-Allow-Origin': allowedOrigin(origins, requestOrigin),
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    // U46: o navegador guarda a resposta do "preflight" por 2 horas (o máximo do Chrome) — sem isso ele repete o
+    // OPTIONS a cada chamada (o padrão é 5 segundos), uma ida e volta a mais em cada passo do cadastro e no Google.
+    'Access-Control-Max-Age': '7200',
     Vary: 'Origin'
   };
 }

@@ -8,12 +8,16 @@
 //     oferece criar a conta com esse número.
 // A sessão sai de um link de acesso gerado aqui (nada é enviado por e-mail): o app troca o `token_hash` pela sessão
 // com verifyOtp. Limite de 20 tentativas por IP a cada 15 minutos.
+// U46: `conta` diz se o e-mail já tem conta na Bicos — sem ela, o app vai direto para o cadastro, sem ler a conta
+// que não existe. E `{ aquecer: true }` (mandado quando abre uma tela com o botão do Google) só "acorda" a função e
+// busca as chaves do Firebase, para o toque de verdade não esperar a função subir.
 //
-// Pedido: { idToken }. Respostas: 200 { token_hash, novo } · 400 { erro: 'token' } · 401 { erro: 'token-invalido' }
-// · 404 { erro: 'sem-conta' } · 429 { erro: 'muitas-tentativas' } · 503 { erro: 'desligado' } · 405/502 { erro }.
+// Pedido: { idToken } (ou { aquecer: true } → 204). Respostas: 200 { token_hash, novo, conta } · 400 { erro: 'token' }
+// · 401 { erro: 'token-invalido' } · 404 { erro: 'sem-conta' } · 429 { erro: 'muitas-tentativas' }
+// · 503 { erro: 'desligado' } · 405/502 { erro }.
 // Segredo: FIREBASE_PROJECT_ID (o "projectId" do Firebase; sem ele a função responde 503).
 // Publicar: supabase functions deploy entrar-com-firebase (ver web/docs/SUPABASE.md).
-import { brazilianMobile, verifyFirebaseToken } from '../_shared/firebase.ts';
+import { brazilianMobile, verifyFirebaseToken, warmFirebaseKeys } from '../_shared/firebase.ts';
 import { adminClient, clientIp, json, preflight, requireAppOrigin } from '../_shared/http.ts';
 import { monitored } from '../_shared/monitoring.ts';
 
@@ -28,34 +32,42 @@ Deno.serve(
     if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
     if (!PROJECT) return json({ erro: 'desligado' }, 503);
 
-    let body: { idToken?: unknown };
+    let body: { idToken?: unknown; aquecer?: unknown };
     try {
       body = await req.json();
     } catch {
       return json({ erro: 'token' }, 400);
     }
+    // U46: só acordar (não conta no limite: não lê nem cria nada).
+    if (body.aquecer === true) {
+      await warmFirebaseKeys();
+      return new Response(null, { status: 204 });
+    }
     const token = typeof body.idToken === 'string' ? body.idToken : '';
     if (!token || token.length > 4096) return json({ erro: 'token' }, 400);
 
+    // U46: o limite e a conferência do token ao mesmo tempo (a resposta continua na mesma ordem).
     const admin = adminClient();
-    const limit = await admin.rpc('rate_limit_hit', {
-      p_key: 'firebase-ip:' + clientIp(req),
-      p_max: 20,
-      p_window: '15 minutes'
-    });
+    const [limit, checked] = await Promise.all([
+      admin.rpc('rate_limit_hit', {
+        p_key: 'firebase-ip:' + clientIp(req),
+        p_max: 20,
+        p_window: '15 minutes'
+      }),
+      verifyFirebaseToken(token, PROJECT).then(
+        (who) => ({ who }),
+        () => null
+      )
+    ]);
     if (limit.error) return json({ erro: 'falha' }, 502);
     if (limit.data === true) return json({ erro: 'muitas-tentativas' }, 429);
-
-    let who;
-    try {
-      who = await verifyFirebaseToken(token, PROJECT);
-    } catch {
-      return json({ erro: 'falha' }, 502);
-    }
+    if (!checked) return json({ erro: 'falha' }, 502);
+    const { who } = checked;
     if (!who) return json({ erro: 'token-invalido' }, 401);
 
     let email: string;
     let novo = false;
+    let conta = true;
     if (who.provider === 'phone') {
       const phone = brazilianMobile(who.phone);
       if (!phone) return json({ erro: 'sem-conta' }, 404);
@@ -74,6 +86,7 @@ Deno.serve(
       email = who.email;
       const { data, error } = await admin.from('accounts').select('id').eq('email', email).maybeSingle();
       if (error) return json({ erro: 'falha' }, 502);
+      conta = Boolean(data);
       if (!data) {
         // Sem conta na Bicos: o login nasce como conta do Google (o app pede o resto em "Completar cadastro").
         const created = await admin.auth.admin.createUser({
@@ -93,6 +106,6 @@ Deno.serve(
     const link = await admin.auth.admin.generateLink({ type: 'magiclink', email });
     const hash = link.data?.properties?.hashed_token;
     if (link.error || !hash) return json({ erro: 'falha' }, 502);
-    return json({ token_hash: hash, novo });
+    return json({ token_hash: hash, novo, conta });
   })
 );

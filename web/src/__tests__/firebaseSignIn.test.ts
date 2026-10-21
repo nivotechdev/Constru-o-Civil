@@ -9,7 +9,10 @@ const holder = vi.hoisted(() => ({
   signedOut: 0,
   popup: 0,
   /** U45: while set, the Google window stays open (the person is choosing the account). */
-  gate: null as Promise<void> | null
+  gate: null as Promise<void> | null,
+  /** U46: how Firebase was started, and whether Google's helper frame was loaded ahead. */
+  started: [] as unknown[],
+  framePreloaded: 0
 }));
 
 vi.mock('../services/supabase', () => ({
@@ -23,6 +26,15 @@ vi.mock('../services/features', async (original) => {
   return { ...m, FEATURES: { ...m.FEATURES, firebase: true, googleLogin: true } };
 });
 vi.mock('@firebase/auth', () => ({
+  inMemoryPersistence: 'memória',
+  browserPopupRedirectResolver: 'janela',
+  initializeAuth: (_app: unknown, deps: unknown) => {
+    holder.started.push(deps);
+    return {
+      authStateReady: async () => undefined,
+      _popupRedirectResolver: { _initialize: async () => void holder.framePreloaded++ }
+    };
+  },
   getAuth: () => ({}),
   useDeviceLanguage: () => undefined,
   signOut: async () => void holder.signedOut++,
@@ -47,17 +59,23 @@ vi.mock('@firebase/auth', () => ({
 
 const box = new Map<string, string>();
 
-function server(answer: 'ok' | 'sem-conta') {
+/** The token exchanges sent to entrar-com-firebase (U46: the wake-up calls left out). */
+const exchanges = (fake: ReturnType<typeof fakeSupabase>) =>
+  fake.calls.filter((c) => c.kind === 'function' && !(c.args as { aquecer?: boolean }).aquecer).map((c) => c.args);
+
+function server(answer: 'ok' | 'sem-conta', conta?: boolean) {
   return fakeSupabase({
     tables: { accounts: [], workers: [], companies: [], jobs: [], applications: [], notifications: [] },
     functions: {
-      'entrar-com-firebase': () =>
-        answer === 'ok'
-          ? { data: { token_hash: 'hash-1', novo: false }, error: null }
-          : {
-              data: null,
-              error: { context: new Response(JSON.stringify({ erro: 'sem-conta' }), { status: 404 }) }
-            }
+      'entrar-com-firebase': (body) =>
+        (body as { aquecer?: boolean }).aquecer
+          ? { data: null, error: null }
+          : answer === 'ok'
+            ? { data: { token_hash: 'hash-1', novo: false, ...(conta === undefined ? {} : { conta }) }, error: null }
+            : {
+                data: null,
+                error: { context: new Response(JSON.stringify({ erro: 'sem-conta' }), { status: 404 }) }
+              }
     },
     auth: {
       verifyOtp: () => ({ data: { user: authUser('u-ana', 'ana@exemplo.com') }, error: null })
@@ -80,7 +98,7 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     await expect(firebase.confirmPhoneCode('000000')).rejects.toMatchObject({ code: 'validacao' });
     await firebase.sendPhoneCode('(54) 99173-0426', {} as HTMLElement);
     expect(await firebase.confirmPhoneCode('123456')).toBe('ok');
-    expect(fake.calls.find((c) => c.kind === 'function')?.args).toEqual({ idToken: 'firebase-token-+5554991730426' });
+    expect(exchanges(fake)).toEqual([{ idToken: 'firebase-token-+5554991730426' }]);
     expect(fake.calls.find((c) => c.name === 'verifyOtp')?.args).toEqual({ token_hash: 'hash-1', type: 'magiclink' });
     expect(holder.signedOut).toBeGreaterThan(0);
   });
@@ -121,7 +139,7 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     // U37: a Google login without a Bicos account answers its e-mail and name — the sign-up continues with them.
     expect(await firebase.signInWithFirebaseGoogle()).toEqual({ email: 'ana@exemplo.com', name: '' });
     expect(holder.popup).toBeGreaterThan(0);
-    expect(fake.calls.find((c) => c.kind === 'function')?.args).toEqual({ idToken: 'firebase-token-google' });
+    expect(exchanges(fake)).toEqual([{ idToken: 'firebase-token-google' }]);
   });
 
   it('U45: from the tap to the next screen the app is locked, says what is happening and can give up', async () => {
@@ -179,5 +197,25 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     expect(fake.calls.length).toBe(calls); // no exchange for a session
     expect(loc.pathname).toBe('/login');
     holder.gate = null;
+  });
+
+  it('U46: faster — the function is woken as the screen opens, Firebase starts in memory with the frame loaded', async () => {
+    const fake = server('ok', false);
+    holder.client = fake.client;
+    holder.started = [];
+    holder.framePreloaded = 0;
+    const firebase = await import('../services/remote/firebase');
+    await firebase.prepareFirebase();
+    await firebase.prepareFirebase(); // another screen opening soon after: no second wake-up
+    await vi.waitFor(() => expect(holder.framePreloaded).toBe(1));
+    expect(holder.started).toEqual([{ persistence: 'memória', popupRedirectResolver: 'janela' }]);
+    const wakeUps = fake.calls.filter((c) => c.kind === 'function' && (c.args as { aquecer?: boolean }).aquecer);
+    expect(wakeUps).toHaveLength(1);
+    // No account (the function says so): straight to the sign-up, without reading the account that isn't there.
+    const before = fake.calls.length;
+    expect(await firebase.signInWithFirebaseGoogle()).toEqual({ email: 'ana@exemplo.com', name: '' });
+    const after = fake.calls.slice(before);
+    expect(after.some((c) => c.name === 'ensure_my_account')).toBe(false);
+    expect(after.some((c) => c.kind === 'from' && c.name === 'accounts')).toBe(false);
   });
 });

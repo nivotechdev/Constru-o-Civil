@@ -63,6 +63,7 @@ describe('APP_ORIGIN só nas funções do navegador (R02)', () => {
       'Access-Control-Allow-Origin': 'https://bicos.nivotech.com.br',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Max-Age': '7200',
       Vary: 'Origin'
     });
   });
