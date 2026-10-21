@@ -74,7 +74,7 @@ const COMUM_CODIGO: SignupField = {
   id: 'codigo',
   label: 'Código',
   question: 'Confirme seu WhatsApp',
-  help: 'Mandamos uma mensagem no WhatsApp com um código de 6 números. Digite o código abaixo.',
+  help: 'Digite o código de 6 números que mandamos no seu WhatsApp.',
   placeholder: '',
   isCode: true
 };

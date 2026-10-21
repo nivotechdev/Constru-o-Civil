@@ -176,6 +176,11 @@ jobs:
           VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
           VITE_SENTRY_DSN: https://e2e@sentry.invalid/1
           VITE_SUPORTE_WHATSAPP: "54994731661"
+          # U42: o botão do Google, como no site de teste (identificadores públicos do Firebase, os mesmos do site.yml).
+          VITE_FIREBASE_API_KEY: AIzaSyAptCXjxVGbunIaQMFN7b_uXuSA7iC-a64
+          VITE_FIREBASE_AUTH_DOMAIN: bicoapp-6cc68.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: bicoapp-6cc68
+          VITE_FIREBASE_APP_ID: "1:125261137238:web:a7961decdcc3d1e6b4c2f7"
       - name: E2E (Playwright)
         if: steps.cfg.outputs.ok == 'true'
         run: |

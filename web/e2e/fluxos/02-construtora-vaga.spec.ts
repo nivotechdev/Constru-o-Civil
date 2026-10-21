@@ -33,7 +33,7 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
 
   await page.goto('/cadastro/recrutador');
   const k = '#cadastro-recrutador-';
-  const seguir = () => page.getByRole('button', { name: 'Continuar' }).click();
+  const seguir = () => page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.fill(k + 'razao', nome);
   await seguir();
   await page.fill(k + 'responsavel', 'Ana Responsável');
@@ -80,14 +80,14 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await page.goto('/criar-vaga');
   await page.locator('input[type=file]').first().setInputFiles(FOTO);
   // O título é obrigatório: sem ele, não passa do passo 1.
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(page.getByText('Dê um título para a vaga')).toBeVisible();
   await page.fill('#create-job-titulo', 'Reboco de parede E2E');
   await page.fill('#create-job-cep', '03307000');
   await expect(page.getByText('Endereço encontrado')).toBeVisible();
   await page.getByRole('radio', { name: /Qualquer dia/ }).click();
   await print(page, 'f2', 'publicar vaga passo 1');
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   // U02: diárias, horário e pessoas ficam no passo 2 (valor e pessoas).
   await page.fill('#create-job-valor', '250');
   await page.fill('#create-job-diarias', '2');

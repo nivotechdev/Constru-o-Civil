@@ -3,15 +3,16 @@
 Playwright (celular Pixel 7, pt-BR) contra um Supabase de verdade: Auth, banco com todas as migrations, Storage e
 as Edge Functions. Sete arquivos em `fluxos/`, rodados em ordem (cada um usa o que o anterior criou):
 
-| Arquivo                   | O que prova                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------- |
-| `01-cadastro-trabalhador` | cadastro (CPF válido, 18+) → link de confirmação (Admin API) → completar perfil → mural     |
-| `02-construtora-vaga`     | cadastro com CNPJ → vaga com foto → mural do trabalhador por cidade e por raio              |
-| `03-candidatura`          | candidatar → construtora vê → aprova → WhatsApp dos dois lados → recusa outro → desfaz      |
-| `04-diaria-avaliacao`     | contratar → presença → `conclude_finished_jobs()` → avaliações → notas nos perfis           |
-| `05-seguranca-conta`      | denúncia e bloqueio → exportar dados → excluir conta (some do Auth e do Storage)            |
-| `06-login`                | login por CPF e CNPJ → 6ª tentativa errada = 429 → recuperação de senha                     |
-| `07-equipe`               | `/admin` (L06): conta comum barrada; identidade, construtora, denúncia, suspensão, registro |
+| Arquivo                   | O que prova                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `01-cadastro-trabalhador` | cadastro (CPF válido, 18+) → link de confirmação (Admin API) → completar perfil → mural                                   |
+| `02-construtora-vaga`     | cadastro com CNPJ → vaga com foto → mural do trabalhador por cidade e por raio                                            |
+| `03-candidatura`          | candidatar → construtora vê → aprova → WhatsApp dos dois lados → recusa outro → desfaz                                    |
+| `04-diaria-avaliacao`     | contratar → presença → `conclude_finished_jobs()` → avaliações → notas nos perfis                                         |
+| `05-seguranca-conta`      | denúncia e bloqueio → exportar dados → excluir conta (some do Auth e do Storage)                                          |
+| `06-login`                | login por CPF e CNPJ → 6ª tentativa errada = 429 → recuperação de senha                                                   |
+| `07-equipe`               | `/admin` (L06): conta comum barrada; identidade, construtora, denúncia, suspensão, registro                               |
+| `08-cadastro-google`      | Google sem conta (U40): o mesmo cadastro sem o passo do e-mail, conta com e-mail confirmado; nenhuma tela de entrada rola |
 
 As contas de teste usam `E2E_EMAIL_BASE` com `+e2e-<execução>` (o Gmail entrega com "+", nada rebate) e são
 **apagadas no fim** pela função `excluir-conta` (`limpeza.ts`), passe ou falhe. `E2E_MANTER_CONTAS=1` mantém, para

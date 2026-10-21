@@ -2011,3 +2011,16 @@ entrar com outra conta" virou um "Sair" no topo da confirmação do e-mail e do 
 com "Esqueci minha senha" junto da senha e "Não tem conta? Criar minha conta" no pé. O meio só rola como último
 recurso (aparelho menor que 360×600 ou letra gigante), para nenhum campo ficar inalcançável. De quebra: o aviso
 "Demonstração: qualquer código confirma" do código do WhatsApp aparecia também fora da demonstração.
+
+## U42 — Testes do cadastro: sem rolagem no CI e o Google de ponta a ponta no staging
+
+Para o U40/U41 não voltarem atrás sem ninguém ver: `scripts/sem-rolagem.mjs` roda no CI (junto da acessibilidade) e
+percorre o cadastro inteiro da demonstração — escolha do lado, todos os passos do trabalhador e da construtora,
+código do WhatsApp, senha e aceites, confirmação do e-mail e completar perfil, mais os estados de erro que aumentam a
+tela — a 360×600, 390×664 e no computador; falha se qualquer tela rolar (78 telas hoje). E o E2E do staging ganhou o
+fluxo 8 (`08-cadastro-google`): a janela do Google não abre em robô, então o teste começa logo depois dela — um login
+com o e-mail confirmado pelo Google e sem conta, o que `entrar-com-firebase` cria — e confere a escolha do lado sem o
+botão do Google, o nome já preenchido, "Passo 1 de 4" sem o passo do e-mail, a conta criada no banco com o e-mail
+confirmado, "Completar perfil" e o mural, a senha entrando sozinha, e que login, escolha do lado e cada passo não rolam
+no celular do teste e a 360×600. O build do E2E passou a ter os identificadores públicos do Firebase (os mesmos do site
+de teste), para o botão do Google aparecer como no site.

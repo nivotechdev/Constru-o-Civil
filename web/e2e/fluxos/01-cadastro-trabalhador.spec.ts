@@ -26,13 +26,13 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   await page.goto('/cadastro/trabalhador');
   const k = '#cadastro-trabalhador-';
   await page.fill(k + 'nome', nome);
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.fill(k + 'doc', cpf);
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.fill(k + 'email', email);
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.fill(k + 'whatsapp', whatsapp);
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.fill(k + 'senha', ENV.password);
   await page.getByText('Tenho 18 anos ou mais').click();
   await page.getByRole('checkbox', { name: /Li e aceito/ }).check({ force: true });
