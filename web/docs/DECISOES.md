@@ -2182,3 +2182,44 @@ conta de trabalhador a pílula de "Candidaturas" ficava colada nas letras. **Ago
 - **Folga do nome**: cada aba tem a largura do seu nome mais uma parte igual do espaço que sobra, então "Candidaturas"
   ganha a mesma folga das abas curtas (28 px de cada lado a 360 px, antes 13 px). Vale para as duas contas (na de empresa
   os nomes são parecidos e quase nada muda).
+
+## U51 — Endereço com CEP inteligente e distância de verdade até cada bico
+
+Pedido do responsável: no cadastro (trabalhador e empresa) uma tela de endereço — CEP, rua, bairro e cidade —, com o
+CEP se preenchendo sozinho quando a pessoa não sabe, sugestões reais enquanto digita (para não errar a rua) e, em todo
+bico, a distância em metros ou km da casa do trabalhador, "o mais preciso possível", com o melhor provedor gratuito;
+editar em Editar perfil; tirar o "Usar minha localização atual" do cadastro e do perfil dos dois lados. **Agora**:
+
+- **Cadastro**: "Completar perfil" tem dois passos — primeiro **"Seu endereço"** ("Endereço da empresa"), depois capa e
+  foto. Campos: CEP e cidade lado a lado, rua, bairro (só esses). O CEP preenche o resto; sem CEP, a cidade vem da lista
+  do IBGE (no aparelho, na hora), a rua vem da lista dos Correios — cada sugestão com o bairro e o CEP —, e escolher a
+  rua preenche o CEP. Digitar sem escolher também vale: no "Continuar" o app confere tudo e acha o CEP pela rua e pelo
+  bairro. Cabe sem rolar num celular pequeno, inclusive com todos os campos apontando erro.
+- **Editar perfil** (os dois lados): o mesmo bloco de endereço no lugar do botão de localização; só é conferido e salvo
+  se mudou. O botão "Usar minha localização atual" e a tela de cidades por GPS saíram do cadastro e do perfil (o mural
+  ainda tem o seu, para ver bicos perto de onde a pessoa está agora).
+- **Provedores (todos gratuitos, sem chave, direto do celular)**: CEP → BrasilAPI (que muitas vezes traz o ponto do
+  CEP) e ViaCEP; ruas → **ViaCEP, a busca por endereço com os dados dos Correios** (o CEP certo de cada rua e trecho;
+  Photon/OpenStreetMap se o ViaCEP cair); bairros → Photon (OpenStreetMap) + os bairros das ruas sugeridas; o ponto no
+  mapa → **Nominatim (OpenStreetMap)**, escolhendo o trecho da rua no bairro digitado (ruas longas têm vários), depois
+  Photon, depois o ponto do CEP, depois o centro da cidade — e guardamos até onde chegou (`precision`: número, rua, CEP,
+  bairro ou cidade). Por que esses: são os únicos bons de verdade que não pedem cartão nem chave; Google Maps seria o
+  mais preciso por casa, mas exige conta com cartão (fica como troca futura, num arquivo só:
+  `services/remote/address.ts`). Testados ao vivo em Caxias: o Nominatim acha a Rua Sinimbu em cada bairro com CEP e
+  bairro certos; o AwesomeAPI (CEP com ponto) recusou por cota e ficou de fora. O Nominatim é chamado **uma vez por
+  endereço salvo**, nunca enquanto digita (é a regra de uso dele); o que chega fica guardado na sessão. O mapa do
+  OpenStreetMap é creditado na lista de sugestões que vem dele.
+- **Privacidade**: o endereço fica numa tabela nova, `addresses`, que **só a própria conta lê**; ninguém escreve nela
+  direto (só `set_my_address` e `finish_sign_up`). O perfil continua mostrando só a cidade (e, do trabalhador, o ponto de
+  ~1 km que a empresa já via). Sai em "baixar meus dados" e vai embora com a exclusão da conta. A política de privacidade
+  diz o que é guardado e quais serviços recebem o endereço digitado (sem nome nem conta).
+- **Distância**: medida do endereço do trabalhador (o ponto da rua) até o ponto público da vaga. Antes esse ponto era o
+  exato **arredondado a 2 casas** (erro de até ~800 m); agora é o exato **deslocado de 100 a 200 m numa direção
+  sorteada uma vez** (gatilho no banco; muda só se o endereço da vaga mudar) — a distância erra no máximo ~200 m e o
+  endereço da vaga continua escondido até a aprovação (ninguém consegue "tirar a média" porque o ponto não muda a cada
+  leitura). Quem foi aprovado vê o endereço exato e a distância exata. Cada card do mural mostra a distância num selo
+  na foto ("📍 1,2 km"); a vaga diz "A 1,2 km da sua casa". Conta antiga sem endereço: a distância sai da cidade do
+  perfil, como antes, até ela completar o endereço.
+- **Banco** (migration `u51`, **produção só com "pode"**): `addresses` + `set_my_address`; `finish_sign_up` aceita
+  `p.address` (o formato antigo segue valendo); `jobs.area_lat/area_lon` deixam de ser colunas calculadas e `area_geog`
+  passa a vir deles (`SET EXPRESSION` do Postgres 17 — apagar e recriar a coluna travava o painel do Supabase).

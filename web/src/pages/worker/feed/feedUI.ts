@@ -5,7 +5,7 @@
 import type { IconName } from '../../../components/icons/Icon';
 import { jobTitle, oficioNome, oficioSearchText } from '../../../services/catalog';
 import { cityByLabel, DEFAULT_CITY, knownCity } from '../../../services/cities';
-import { currentCompany, currentWorker, isMine } from '../../../services/selectors';
+import { currentCompany, currentWorker, isMine, myAddress } from '../../../services/selectors';
 import { setUI } from '../../../services/store';
 import type { Database, GeoPoint, Job, Role } from '../../../types/models';
 import { addDays, todayISO } from '../../../utils/dates';
@@ -85,6 +85,9 @@ const SAO_PAULO: GeoPoint = { lat: -23.5505, lon: -46.6333 };
 /** Where distances are measured from (see the top of this file). */
 export function feedOrigin(ui: Pick<FeedUI, 'location' | 'origin'>, db: Database, role: Role): GeoPoint {
   if (ui.origin) return ui.origin;
+  // U51: the account's own address, when the mural is on its city.
+  const home = myAddress(db);
+  if (home && `${home.city}, ${home.uf}` === ui.location) return { lat: home.lat, lon: home.lon };
   if (role === 'trabalhador') {
     const w = currentWorker(db);
     if (w && w.city === ui.location) return { lat: w.lat, lon: w.lon };
@@ -100,6 +103,8 @@ export const jobDistance = (job: Job, from: GeoPoint) => distanceKm(from, job.ad
  */
 export function originText(ui: Pick<FeedUI, 'location' | 'origin'>, db: Database, role: Role): string {
   if (ui.origin) return 'de você';
+  const home = myAddress(db);
+  if (home && `${home.city}, ${home.uf}` === ui.location) return role === 'trabalhador' ? 'da sua casa' : 'da empresa';
   if (role === 'trabalhador') {
     const w = currentWorker(db);
     if (w && w.city === ui.location && w.neighborhood) return 'do seu bairro';

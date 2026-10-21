@@ -1,22 +1,31 @@
-// "Completar perfil" (U12): one screen, the same for both sides — the cover, the profile photo (logo, for a
-// company) and the place, saved with "Usar minha localização atual". The place is where the mural opens and the
-// city a new job starts in (U13); it changes later only in "Editar perfil".
+// "Completar perfil" (U12, U51): two steps, the same for both sides — first the address (CEP, city, street and
+// neighbourhood: the CEP fills the rest, or fills itself from the street), then the cover and the profile photo (logo,
+// for a company). The address stays the account's own: the profile shows only the city. It is where distances to the
+// jobs are measured from, where the mural opens and the city a new job starts in (U13); it changes later only in
+// "Editar perfil".
+import { AddressFields } from '../../components/AddressFields';
+import { AVATAR_FRAME } from '../../components/Avatar';
 import { Button } from '../../components/Button';
-import { CurrentLocationField } from '../../components/CurrentLocationField';
 import { FieldError } from '../../components/FieldError';
 import { FlowBar, FlowHeading, FlowLayout, FlowSignOut } from '../../components/FlowLayout';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { useBusyWhile } from '../../hooks/useBusy';
+import { useInnerBack } from '../../hooks/useInnerBack';
 import { useUI } from '../../hooks/useStore';
+import {
+  emptyAddress,
+  resolveAddress,
+  type AddressDraft,
+  type AddressErrors,
+  type ResolvedAddress
+} from '../../services/address';
 import { finishSignUp } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
-import type { SavedLocation } from '../../services/location';
 import { checkMyCompany, saveMyProfileImages } from '../../services/profiles';
 import { navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
 import { showToast } from '../../services/toast';
 import type { ScreenProps } from '../../types/screen';
-import { AVATAR_FRAME } from '../../components/Avatar';
 import { cx } from '../../utils/cx';
 
 /**
@@ -32,22 +41,29 @@ async function savePictures(pictures: { foto?: string | null; capa?: string | nu
 }
 
 interface CompleteProfileUI {
+  step: 'endereco' | 'fotos';
+  address: AddressDraft;
+  addressErrors: AddressErrors;
+  /** The address as found on the map (step 1's "Continuar"); saved with "Concluir perfil". */
+  resolved: ResolvedAddress | null;
+  checking: boolean;
   capa: string | null;
   photo: string | null;
-  location: SavedLocation | null;
-  locationError: string | null;
   saving: boolean;
-  saveError: string | null;
+  error: string | null;
 }
 
-const DEFAULTS: CompleteProfileUI = {
+const DEFAULTS = (): CompleteProfileUI => ({
+  step: 'endereco',
+  address: emptyAddress(),
+  addressErrors: {},
+  resolved: null,
+  checking: false,
   capa: null,
   photo: null,
-  location: null,
-  locationError: null,
   saving: false,
-  saveError: null
-};
+  error: null
+});
 
 export default function CompleteProfile({ params }: ScreenProps) {
   const company = params.role === 'recrutador';
@@ -55,17 +71,26 @@ export default function CompleteProfile({ params }: ScreenProps) {
     'completar-perfil-' + (company ? 'recrutador' : 'trabalhador'),
     DEFAULTS
   );
-  // U45: while the profile is saved, nothing else takes a tap.
-  useBusyWhile(ui.saving);
+  // U45: while the address is checked or the profile saved, nothing else takes a tap.
+  useBusyWhile(ui.checking || ui.saving);
+  // The phone's back button on the photos goes back to the address.
+  useInnerBack(ui.step === 'fotos', () => setUi({ step: 'endereco', error: null }), ui.step);
+
+  function checkAddress() {
+    if (ui.checking) return;
+    setUi({ checking: true, error: null });
+    resolveAddress(ui.address)
+      .then((r) => {
+        if (r.ok) setUi({ checking: false, resolved: r.address, address: r.draft, addressErrors: {}, step: 'fotos' });
+        else setUi({ checking: false, addressErrors: r.errors });
+      })
+      .catch((e: unknown) => setUi({ checking: false, error: errorMessage(e) }));
+  }
 
   function finish() {
-    if (ui.saving) return;
-    if (!ui.location) {
-      setUi({ locationError: 'Toque em "Usar minha localização atual" para continuar.' });
-      return;
-    }
-    setUi({ saving: true, saveError: null });
-    finishSignUp(ui.location)
+    if (ui.saving || !ui.resolved) return;
+    setUi({ saving: true, error: null });
+    finishSignUp(ui.resolved)
       .then(() => savePictures(company ? { logo: ui.photo, capa: ui.capa } : { foto: ui.photo, capa: ui.capa }))
       .then(() => {
         setUi({ saving: false });
@@ -73,16 +98,55 @@ export default function CompleteProfile({ params }: ScreenProps) {
         if (company) void checkMyCompany().catch(() => undefined);
         navigate('/mural', { replace: true });
       })
-      .catch((e: unknown) => setUi({ saving: false, saveError: errorMessage(e) }));
+      .catch((e: unknown) => setUi({ saving: false, error: errorMessage(e) }));
   }
+
+  const header = (
+    <FlowBar
+      title="Criar minha conta"
+      onBack={ui.step === 'fotos' ? () => setUi({ step: 'endereco', error: null }) : undefined}
+      // Y26/U41: the way out for whoever entered the wrong account, on top ("Sair").
+      action={<FlowSignOut onClick={askSignOut} />}
+    />
+  );
+
+  if (ui.step === 'endereco')
+    return (
+      <FlowLayout
+        header={header}
+        footer={
+          <>
+            {ui.error ? <FieldError message={ui.error} /> : null}
+            <Button label="Continuar" size="lg" fullWidth loading={ui.checking} onClick={checkAddress} />
+          </>
+        }
+      >
+        <FlowHeading
+          overline="Completar perfil"
+          title={company ? 'Endereço da empresa' : 'Seu endereço'}
+          help={company ? 'No perfil aparece só a cidade da empresa.' : 'Só você vê. Mostra a distância até cada bico.'}
+        />
+        <AddressFields
+          idPrefix="completar-endereco"
+          value={ui.address}
+          errors={ui.addressErrors}
+          onChange={(patch, clear) =>
+            setUi((s) => ({
+              address: { ...s.address, ...patch },
+              addressErrors: { ...s.addressErrors, ...Object.fromEntries(clear.map((k) => [k, null])) },
+              error: null
+            }))
+          }
+        />
+      </FlowLayout>
+    );
 
   return (
     <FlowLayout
-      // Y26/U41: the way out for whoever entered the wrong account, on top ("Sair").
-      header={<FlowBar title="Criar minha conta" action={<FlowSignOut onClick={askSignOut} />} />}
+      header={header}
       footer={
         <>
-          {ui.saveError ? <FieldError message={ui.saveError} /> : null}
+          {ui.error ? <FieldError message={ui.error} /> : null}
           <Button label="Concluir perfil" size="lg" fullWidth loading={ui.saving} onClick={finish} />
         </>
       }
@@ -124,15 +188,6 @@ export default function CompleteProfile({ params }: ScreenProps) {
             : 'Toque na capa ou no círculo para escolher. Rosto bem visível passa mais confiança.'}
         </span>
       </div>
-
-      <CurrentLocationField
-        title={company ? 'Onde fica sua empresa' : 'Onde você está'}
-        help={company ? 'Suas vagas novas já começam nessa cidade.' : 'O mural sempre abre com os bicos perto daqui.'}
-        value={ui.location}
-        error={ui.locationError}
-        stateKey="completar-perfil-cidade"
-        onChange={(location) => setUi({ location, locationError: null, saveError: null })}
-      />
     </FlowLayout>
   );
 }

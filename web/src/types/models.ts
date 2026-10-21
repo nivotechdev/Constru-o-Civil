@@ -149,6 +149,26 @@ export interface GeoPoint {
   lon: number;
 }
 
+/** U51: how far a saved point reaches — the house number, the street, the CEP, the neighbourhood or the city's centre. */
+export type PlacePrecision = 'numero' | 'rua' | 'cep' | 'bairro' | 'cidade';
+
+/**
+ * U51: the account's own address (worker: home; company: where it is). Private — only the account itself reads it;
+ * distances "da sua casa" are measured from its point. Others still see only the city (and, of a worker, a point
+ * rounded to ~1 km).
+ */
+export interface HomeAddress extends GeoPoint {
+  /** "95020-000" */
+  cep: string;
+  street: string;
+  neighborhood: string;
+  /** The municipality's name ("Caxias do Sul"). */
+  city: string;
+  /** "RS" */
+  uf: string;
+  precision: PlacePrecision;
+}
+
 /** Where the job is. Before approval the worker sees only the neighbourhood and city (L19). */
 export interface JobAddress extends GeoPoint {
   /** "03307-000" */
@@ -161,10 +181,12 @@ export interface JobAddress extends GeoPoint {
   /** "SP" */
   uf: string;
   /**
-   * `false`: only the area is known — street, number, complement and CEP are empty and the point is the
-   * neighbourhood's, rounded (real mode, for anyone but the company and the picked/hired worker; Z06).
+   * `false`: only the area is known — street, number, complement and CEP are empty and the point is the public one,
+   * 100–200 m from the address (real mode, for anyone but the company and the picked/hired worker; Z06, U51).
    */
   exact?: boolean;
+  /** U51: the public point as the server sent it (kept when the exact address is loaded over it). */
+  area?: GeoPoint;
 }
 
 export interface Job {
@@ -425,6 +447,8 @@ export interface Database {
   jobAlerts?: Record<string, JobAlert>;
   /** X03: the session's unread notices as the server counts them (more than the 100 loaded). */
   unreadTotal?: number;
+  /** U51: saved addresses, per account id (the real backend loads only the session's own). */
+  addresses?: Record<string, HomeAddress>;
 }
 
 /** A worker's alert for new jobs (Y28): a city — or a radius around a point — and an optional trade. */

@@ -9,7 +9,7 @@ import {
   emailDeTeste,
   ENV,
   idDaConta,
-  liberarLocalizacao,
+  preencherEndereco,
   nomeDeTeste,
   prepararPagina,
   print,
@@ -49,13 +49,12 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   const codigo = await codigoDeConfirmacao(email);
   await page.fill('#verificar-codigo', codigo);
   await expect(page).toHaveURL(/\/completar-perfil\/trabalhador/);
-  // U12: uma tela só — capa e foto opcionais, e a localização atual (obrigatória).
-  await page.getByRole('button', { name: 'Concluir perfil' }).click();
-  await expect(page.getByText('Toque em "Usar minha localização atual" para continuar.')).toBeVisible();
-  await liberarLocalizacao(page);
-  await page.getByRole('button', { name: 'Usar minha localização atual' }).click();
-  await expect(page.getByText('São Paulo, SP')).toBeVisible();
-  await print(page, 'f1', 'completar perfil com a localização');
+  // U51: primeiro o endereço (obrigatório) — sem nada, o "Continuar" aponta os campos; depois capa e foto (opcionais).
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByText('Informe a rua.')).toBeVisible();
+  await print(page, 'f1', 'endereco sem preencher');
+  await preencherEndereco(page);
+  await print(page, 'f1', 'completar perfil depois do endereco');
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).toHaveURL(/\/mural/);
   await print(page, 'f1', 'mural do trabalhador');

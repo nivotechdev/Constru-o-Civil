@@ -1,9 +1,10 @@
 // U41/U42: no sign-up screen scrolls. Walks the whole sign-up of the demo build — choosing the side, every step of the
 // worker and the company (with the WhatsApp code the demo simulates), the password and agreements, the e-mail code
-// and completing the profile — plus the states that make a screen taller (a CNPJ that already has an account, a wrong
-// code, a weak password, the agreements left unticked, changing the e-mail on the code screen — U43 — with an address
-// that already has an account and then the code sent to the new one), on a small Android with the browser bars (360×600),
-// an iPhone in Safari (390×664) and a computer. Fails when any of them scrolls.
+// and completing the profile (address, then photos — U51) — plus the states that make a screen taller (a CNPJ that
+// already has an account, a wrong code, a weak password, the agreements left unticked, changing the e-mail on the code
+// screen — U43 — with an address that already has an account and then the code sent to the new one, the address step
+// with its fields missing), on a small Android with the browser bars (360×600), an iPhone in Safari (390×664) and a
+// computer. Fails when any of them scrolls.
 // Needs `npx vite preview --port 4173` with the demo build (the CI runs it for the accessibility check).
 // The login is checked by the E2E on the staging build (e2e/fluxos/08-cadastro-google.spec.ts): the demo's login has
 // the list of demo accounts, which only exists there.
@@ -109,7 +110,16 @@ async function walk(width, height, role) {
   await check('código enviado para o novo e-mail');
   await type('123456');
   await page.waitForTimeout(2000);
-  await check('completar perfil');
+  // U51: completing the profile is two steps — the address (also with every field marked as missing), then the photos.
+  await check('endereço');
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await page.waitForTimeout(400);
+  await check('endereço com os campos faltando');
+  await page.getByRole('textbox', { name: 'CEP' }).fill('95020-000');
+  await page.waitForTimeout(900);
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await page.waitForTimeout(1500);
+  await check('fotos do perfil');
   await page.close();
 }
 

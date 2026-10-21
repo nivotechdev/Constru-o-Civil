@@ -15,7 +15,7 @@ import {
   idDaConta,
   linkDeConfirmacao,
   nomeDeTeste,
-  liberarLocalizacao,
+  preencherEndereco,
   prepararPagina,
   print,
   whatsappDeTeste
@@ -68,10 +68,8 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
 
   await page.goto(await linkDeConfirmacao(email));
   await expect(page).toHaveURL(/\/completar-perfil\/recrutador/);
-  await liberarLocalizacao(page);
-  await page.getByRole('button', { name: 'Usar minha localização atual' }).click();
-  await expect(page.getByText('São Paulo, SP')).toBeVisible();
-  await print(page, 'f2', 'construtora completa o perfil');
+  await preencherEndereco(page);
+  await print(page, 'f2', 'empresa completa o perfil');
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).not.toHaveURL(/completar-perfil/);
 

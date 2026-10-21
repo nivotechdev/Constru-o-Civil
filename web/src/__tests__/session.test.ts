@@ -131,8 +131,20 @@ describe('accounts (mock auth)', () => {
     expect(auth.canChangePendingEmail()).toBe(false);
     expect(homeFor(store.getSession()!)).toBe('/completar-perfil/trabalhador');
 
-    // U12: completing the profile saves only the place (from "Usar minha localização atual").
-    await run(auth.finishSignUp({ city: 'Caxias do Sul, RS', lat: -29.17, lon: -51.18 }));
+    // U12/U51: completing the profile saves the address: the account keeps it, the profile shows only the city and a
+    // point rounded to ~1 km.
+    const address = {
+      cep: '95020-000',
+      street: 'Rua Sinimbu',
+      neighborhood: 'Centro',
+      city: 'Caxias do Sul',
+      uf: 'RS',
+      cityLabel: 'Caxias do Sul, RS',
+      lat: -29.168123,
+      lon: -51.179456,
+      precision: 'rua' as const
+    };
+    await run(auth.finishSignUp(address));
     expect(homeFor(store.getSession()!)).toBe('/mural');
     expect(sel.currentWorker(store.getDb())).toMatchObject({
       city: 'Caxias do Sul, RS',
@@ -140,6 +152,7 @@ describe('accounts (mock auth)', () => {
       lat: -29.17,
       lon: -51.18
     });
+    expect(sel.myAddress(store.getDb())).toMatchObject({ street: 'Rua Sinimbu', lat: -29.168123, precision: 'rua' });
 
     // The same e-mail can't sign up twice.
     const again = await run(

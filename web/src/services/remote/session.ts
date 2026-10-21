@@ -17,10 +17,12 @@ import { showToast } from '../toast';
 import { db, request, SESSION_ENDED, setSessionEndedHandler } from './client';
 import {
   ACCOUNT_COLUMNS,
+  ADDRESS_COLUMNS,
   addNotification,
   apply,
   COMPANY_COLUMNS,
   putAccount,
+  putAddress,
   putCompanies,
   putWorkers,
   updateNotification,
@@ -222,6 +224,21 @@ async function readMyTheme(accountId: string): Promise<'claro' | 'escuro' | unde
   return data?.theme === 'escuro' ? 'escuro' : 'claro';
 }
 
+/**
+ * U51: the account's own address (only it can read it). `undefined` on a failure — the one already known stays, and an
+ * account without one (from before the address step) simply has none: distances then use the profile's city.
+ */
+async function readMyAddress(accountId: string): Promise<TableRow<'addresses'> | null | undefined> {
+  const client = await db();
+  const { data, error } = await client
+    .from('addresses')
+    .select(ADDRESS_COLUMNS)
+    .eq('account_id', accountId)
+    .maybeSingle();
+  if (error) return undefined;
+  return data;
+}
+
 /** U30: another device changed the theme (or this one came back to the screen): the store follows. */
 function applyTheme(accountId: string, theme: 'claro' | 'escuro' | undefined): void {
   if (theme && getDb().accounts[accountId]?.theme !== theme) updateAccount(accountId, { theme });
@@ -245,9 +262,10 @@ async function loadSession(user: User): Promise<Role> {
   };
   // U30: the theme the account chose (no row = never chose = light). U46: read together with the own profile.
   const theme = readMyTheme(account.id);
+  const address = readMyAddress(account.id);
 
   if (account.worker_id) {
-    const [worker, chosen] = await Promise.all([
+    const [worker, chosen, home] = await Promise.all([
       request(() =>
         client
           .from('workers')
@@ -255,12 +273,17 @@ async function loadSession(user: User): Promise<Role> {
           .eq('id', account.worker_id as string)
           .single()
       ),
-      theme
+      theme,
+      address
     ]);
-    apply(putAccount(account, chosen), putWorkers([worker], undefined, account.id));
+    apply(
+      putAccount(account, chosen),
+      putWorkers([worker], undefined, account.id),
+      ...(home !== undefined ? [putAddress(account.id, home)] : [])
+    );
     saveCache({ account, worker, theme: chosen });
   } else {
-    const [company, chosen] = await Promise.all([
+    const [company, chosen, home] = await Promise.all([
       request(() =>
         client
           .from('companies')
@@ -268,9 +291,14 @@ async function loadSession(user: User): Promise<Role> {
           .eq('id', account.company_id as string)
           .single()
       ),
-      theme
+      theme,
+      address
     ]);
-    apply(putAccount(account, chosen), putCompanies([company], undefined, account.id));
+    apply(
+      putAccount(account, chosen),
+      putCompanies([company], undefined, account.id),
+      ...(home !== undefined ? [putAddress(account.id, home)] : [])
+    );
     saveCache({ account, company, theme: chosen });
   }
   if (getSession()?.accountId !== account.id) setSessionAccount(account.id);

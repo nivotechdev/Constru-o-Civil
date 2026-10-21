@@ -1,6 +1,7 @@
 // Worker and company profiles: reading them and the logged-in account editing its own. Each function
 // says what the real backend does there (docs/CONTRATO-BACKEND.md).
 import type { Company, CompanyVerification, Worker, WorkerPost } from '../types/models';
+import { homeFromResolved, type ResolvedAddress } from './address';
 import { cityByLabel } from './cities';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
@@ -114,6 +115,36 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
     return;
   }
   store.updateWorker(currentWorkerId(), { ...rest, ...text });
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * U51: the session's address in the demo store — the address itself (only the account reads it) and what others see:
+ * the city, and for a worker the point rounded to ~1 km (as the server does in save_address).
+ */
+export function keepAddressInDemo(a: ResolvedAddress): void {
+  const session = store.getSession();
+  if (!session) throw serviceError('nao_autorizado');
+  store.setAddress(session.accountId, homeFromResolved(a));
+  if (session.workerId)
+    store.updateWorker(session.workerId, {
+      city: a.cityLabel,
+      neighborhood: null,
+      lat: round2(a.lat),
+      lon: round2(a.lon)
+    });
+  else if (session.companyId) store.updateCompany(session.companyId, { location: a.cityLabel });
+}
+
+/**
+ * U51: changes the account's address ("Editar perfil"; sign-up saves the first one with finishSignUp). The address
+ * stays the account's own; the profile shows only the city. Backend: RPC set_my_address.
+ */
+export async function saveMyAddress(address: ResolvedAddress): Promise<void> {
+  if (!IS_DEMO) return remote.saveMyAddress(address);
+  await mockLatency(500);
+  keepAddressInDemo(address);
 }
 
 export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'location' | 'contactName' | 'about'>>;

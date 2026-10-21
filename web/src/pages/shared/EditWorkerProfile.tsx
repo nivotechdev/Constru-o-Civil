@@ -3,18 +3,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
-import { ProfileLocationField } from '../../components/ProfileLocationField';
-import type { SavedLocation } from '../../services/location';
+import { ProfileAddressField } from '../../components/ProfileAddressField';
+import { useAddressEditor } from '../../hooks/useAddressEditor';
+import { draftFromAddress } from '../../services/address';
 import { FieldError } from '../../components/FieldError';
 import { Input } from '../../components/Input';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
-import { profileErrors, saveMyProfileImages, updateMyWorkerProfile, type ProfileImages } from '../../services/profiles';
+import {
+  profileErrors,
+  saveMyAddress,
+  saveMyProfileImages,
+  updateMyWorkerProfile,
+  type ProfileImages
+} from '../../services/profiles';
 import { goBack, navigate } from '../../services/router';
 import { FEED_KEY } from '../worker/feed/feedUI';
 import { resetUI } from '../../services/store';
-import { currentWorker } from '../../services/selectors';
+import { currentWorker, myAddress } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
@@ -28,11 +35,12 @@ function revoke(urls: (string | null | undefined)[]) {
 }
 
 export default function EditWorkerProfile() {
-  const worker = currentWorker(useDb());
+  const db = useDb();
+  const worker = currentWorker(db);
+  // U51: the address (only the worker sees it); an account from before it starts with its city.
+  const address = useAddressEditor(draftFromAddress(myAddress(db), worker.city));
   const [draft, setDraft] = useState(() => ({
     name: worker.name,
-    // U13/U22: the saved place (city + point): any city from the list, or the phone's location.
-    location: { city: worker.city, lat: worker.lat, lon: worker.lon } as SavedLocation,
     bio: worker.bio ?? '',
     // U38: the experiences as pills.
     experiences: worker.experiences ?? []
@@ -51,9 +59,6 @@ export default function EditWorkerProfile() {
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
     ...(draft.name !== worker.name ? { name: draft.name } : {}),
-    ...(draft.location.city !== worker.city || draft.location.lat !== worker.lat || draft.location.lon !== worker.lon
-      ? { city: draft.location.city, point: { lat: draft.location.lat, lon: draft.location.lon } }
-      : {}),
     ...(draft.bio.trim() !== (worker.bio ?? '') ? { bio: draft.bio } : {}),
     ...(experiences.join('\n') !== (worker.experiences ?? []).join('\n') ? { experiences } : {})
   };
@@ -61,8 +66,10 @@ export default function EditWorkerProfile() {
     async () => {
       const found = profileErrors(changes, 'trabalhador');
       setErrors(found);
-      if (Object.keys(found).length) throw serviceError('validacao', 'Confira os campos marcados.');
+      const place = await address.check();
+      if (Object.keys(found).length || place === false) throw serviceError('validacao', 'Confira os campos marcados.');
       await updateMyWorkerProfile(changes);
+      if (place) await saveMyAddress(place);
       setProgress(Object.keys(images).length ? 0 : null);
       try {
         await saveMyProfileImages(images, setProgress);
@@ -128,16 +135,11 @@ export default function EditWorkerProfile() {
               setErrors((e) => ({ ...e, name: undefined }));
             }}
           />
-          <ProfileLocationField
-            title="Sua cidade"
-            help="O mural sempre abre com os bicos dessa cidade."
-            city={draft.location.city}
-            error={errors.city}
-            stateKey="edit-worker-city"
-            onChange={(location) => {
-              setDraft((d) => ({ ...d, location }));
-              setErrors((e) => ({ ...e, city: undefined }));
-            }}
+          <ProfileAddressField
+            title="Seu endereço"
+            help="Fica só com você: no perfil aparece só a cidade. Os bicos mostram a distância daqui."
+            idPrefix="edit-worker-endereco"
+            editor={address}
           />
           <WhatsAppRow label="Seu WhatsApp" />
           <AboutField

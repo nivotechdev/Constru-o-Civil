@@ -8,6 +8,9 @@ import { diasInfo, whenText } from '../utils/jobInfo';
 import { PhotoCarousel } from './PhotoCarousel';
 import { jobTitle } from '../services/catalog';
 import { SaveFlag } from './SaveFlag';
+import { useDb } from '../hooks/useStore';
+import { homeDistanceKm } from '../services/selectors';
+import { formatKm } from '../utils/geo';
 
 // U35: the icon colour of the status badge on the photo, by tone (theme-aware tokens).
 const TONE_COLOR: Record<Tone, string> = {
@@ -24,7 +27,9 @@ const TONE_COLOR: Record<Tone, string> = {
 type TileJob = Pick<
   Job,
   'id' | 'oficioId' | 'title' | 'pay' | 'photos' | 'dateToArrange' | 'startDate' | 'endDate' | 'startTime' | 'endTime'
-> & { address: Pick<Job['address'], 'neighborhood'> } & Partial<Pick<Job, 'dias'>>;
+> & { address: Pick<Job['address'], 'neighborhood'> & Partial<Pick<Job['address'], 'lat' | 'lon'>> } & Partial<
+    Pick<Job, 'dias'>
+  >;
 
 interface JobTileProps {
   job: TileJob;
@@ -60,11 +65,23 @@ export function JobTile({
   footer = null,
   badge = null
 }: JobTileProps) {
+  // U51: how far it is from the worker's home, on the photo ("1,2 km").
+  const km = homeDistanceKm(useDb(), job);
   const bairro = job.address.neighborhood;
   const dias = diasInfo(job);
   const where = [bairro, dias && dias.short].filter(Boolean).join(' · ');
   const when = whenText(job);
-  const label = [jobTitle(job), badge && badge.label, company && company.name, where, when].filter(Boolean).join(', ');
+  const distance = km === null ? null : formatKm(km);
+  const label = [
+    jobTitle(job),
+    badge && badge.label,
+    company && company.name,
+    where,
+    distance && `a ${distance} da sua casa`,
+    when
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     // X05: the whole card opens the job with the mouse or a tap; for keyboard and screen readers the title is
@@ -86,6 +103,15 @@ export function JobTile({
           >
             <Icon name={badge.icon} size={12} color={TONE_COLOR[badge.tone]} />
             <span className="truncate min-w-0">{badge.label}</span>
+          </span>
+        ) : null}
+        {distance ? (
+          <span
+            aria-hidden="true"
+            className="absolute bottom-2 left-2 z-10 inline-flex items-center gap-1 h-6 sm:h-7 px-2 sm:px-2.5 rounded-full bg-concrete-0 text-[0.6875rem] sm:text-xs font-semibold text-concrete-900 shadow-[0_1px_3px_rgba(16,20,24,0.18)] whitespace-nowrap"
+          >
+            <Icon name="map-pin" size={12} color="var(--text-brand)" />
+            {distance}
           </span>
         ) : null}
         {corner ? (

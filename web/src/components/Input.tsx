@@ -33,6 +33,8 @@ interface InputProps {
   autoComplete?: string;
   /** Form field name (helps password managers). */
   name?: string;
+  /** The id of a message shown elsewhere that belongs to this field (with `invalid`, its problem). */
+  describedBy?: string;
 }
 
 // Enter (outside an IME composition) runs `onEnter`.
@@ -68,7 +70,8 @@ export function Input({
   max,
   maxLength,
   autoComplete,
-  name
+  name,
+  describedBy
 }: InputProps) {
   const autoId = useId();
   const fieldId = id || autoId;
@@ -110,7 +113,7 @@ export function Input({
           autoComplete={autoComplete}
           name={name}
           aria-invalid={error || invalid ? 'true' : undefined}
-          aria-describedby={error || hint ? messageId : undefined}
+          aria-describedby={error || hint ? messageId : describedBy}
           onChange={handleChange}
           onKeyDown={enterHandler(onEnter)}
         />

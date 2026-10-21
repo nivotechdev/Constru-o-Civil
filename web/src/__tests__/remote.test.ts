@@ -608,6 +608,100 @@ describe('remote: data and actions', () => {
     expect(m.store.getDb().accounts['u-ana'].theme).toBe('escuro');
   });
 
+  it('U51: the account reads its own address with the session, and saves a new one by set_my_address', async () => {
+    const saved = {
+      account_id: 'u-ana',
+      cep: '95020-000',
+      street: 'Rua Sinimbu',
+      neighborhood: 'Centro',
+      city: 'Caxias do Sul',
+      uf: 'RS',
+      lat: -29.168796,
+      lon: -51.178701,
+      precision: 'rua',
+      updated_at: NOW
+    };
+    const fake = server('ana', {
+      tables: { addresses: [saved] },
+      rpc: { set_my_address: () => ({ data: null, error: null }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    expect(m.selectors.myAddress(m.store.getDb())).toEqual({
+      cep: '95020-000',
+      street: 'Rua Sinimbu',
+      neighborhood: 'Centro',
+      city: 'Caxias do Sul',
+      uf: 'RS',
+      lat: -29.168796,
+      lon: -51.178701,
+      precision: 'rua'
+    });
+    // Distances are measured from the address (not from the profile's rounded point).
+    expect(m.selectors.workerHome(m.store.getDb())).toEqual({ lat: -29.168796, lon: -51.178701 });
+
+    const profiles = await import('../services/profiles');
+    const next = {
+      cep: '95084-470',
+      street: 'Rua Os 18 do Forte',
+      neighborhood: 'São Pelegrino',
+      city: 'Caxias do Sul',
+      uf: 'RS',
+      cityLabel: 'Caxias do Sul, RS',
+      lat: -29.1622,
+      lon: -51.1866,
+      precision: 'rua' as const
+    };
+    await profiles.saveMyAddress(next);
+    expect(fake.calls.find((c) => c.name === 'set_my_address')?.args).toEqual({
+      p: {
+        cep: '95084-470',
+        street: 'Rua Os 18 do Forte',
+        neighborhood: 'São Pelegrino',
+        city: 'Caxias do Sul',
+        uf: 'RS',
+        lat: -29.1622,
+        lon: -51.1866,
+        precision: 'rua'
+      }
+    });
+    expect(m.selectors.myAddress(m.store.getDb())?.street).toBe('Rua Os 18 do Forte');
+  });
+
+  it('U51: completing the profile sends the address (and the city and rounded point an older server takes)', async () => {
+    const fake = server('ana', { rpc: { finish_sign_up: () => ({ data: null, error: null }) } });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await m.auth.finishSignUp({
+      cep: '95020-000',
+      street: 'Rua Sinimbu',
+      neighborhood: 'Centro',
+      city: 'Caxias do Sul',
+      uf: 'RS',
+      cityLabel: 'Caxias do Sul, RS',
+      lat: -29.168796,
+      lon: -51.178701,
+      precision: 'rua'
+    });
+    expect(fake.calls.find((c) => c.name === 'finish_sign_up')?.args).toEqual({
+      p: {
+        address: {
+          cep: '95020-000',
+          street: 'Rua Sinimbu',
+          neighborhood: 'Centro',
+          city: 'Caxias do Sul',
+          uf: 'RS',
+          lat: -29.168796,
+          lon: -51.178701,
+          precision: 'rua'
+        },
+        city: 'Caxias do Sul, RS',
+        lat: -29.17,
+        lon: -51.18
+      }
+    });
+  });
+
   it('U16: an account made with Google (no password) deletes itself with the code from its e-mail', async () => {
     let codeOk = false;
     const google = { ...authUser(workerAccount.id, workerAccount.email), app_metadata: { providers: ['google'] } };
@@ -1163,6 +1257,17 @@ describe('remote: data and actions', () => {
     expect(m.selectors.canSeeExactAddress(m.store.getDb(), job)).toBe(true);
     await m.jobs.loadFeed();
     expect(m.store.getDb().jobs['BC-5001'].address.street).toBe('Avenida Paulista');
+    // U51: the public point is the exact one moved 100–200 m (no longer rounded): while it is the same, the address
+    // stays; a new one (the company moved the job) drops the old street until it is read again.
+    expect(m.store.getDb().jobs['BC-5001'].address.area).toEqual({ lat: -23.56, lon: -46.65 });
+    const { putJobs } = await import('../services/remote/merge');
+    const moved = putJobs([{ ...jobRow('BC-5001', 'u-obra', 1), area_lat: -23.5619 }])(m.store.getDb());
+    expect(moved.jobs['BC-5001'].address).toMatchObject({ street: '', exact: false, lat: -23.5619 });
+    const same = putJobs([jobRow('BC-5001', 'u-obra', 1)])(m.store.getDb());
+    expect(same.jobs['BC-5001'].address).toMatchObject({
+      street: 'Avenida Paulista',
+      area: { lat: -23.56, lon: -46.65 }
+    });
   });
 
   it('Z12: profile pictures go to Storage (own folder) and are saved on the profile; the old file is removed', async () => {

@@ -12,8 +12,10 @@ import type {
   BoostPayment,
   Company,
   Database,
+  HomeAddress,
   Job,
   Oficio,
+  PlacePrecision,
   Review,
   Worker,
   WorkerPost
@@ -267,6 +269,22 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
 /** A job as anyone may read it (Z06): no street, number, complement or CEP; the point is the area's. */
 export type JobRowRead = Omit<TableRow<'jobs'>, 'cep' | 'street' | 'number' | 'complement' | 'lat' | 'lon'>;
 
+const PRECISIONS: PlacePrecision[] = ['numero', 'rua', 'cep', 'bairro', 'cidade'];
+
+/** U51: the account's own address. */
+export function addressFromRow(row: TableRow<'addresses'>): HomeAddress {
+  return {
+    cep: row.cep,
+    street: row.street,
+    neighborhood: row.neighborhood,
+    city: row.city,
+    uf: row.uf,
+    lat: row.lat,
+    lon: row.lon,
+    precision: PRECISIONS.find((p) => p === row.precision) ?? 'rua'
+  };
+}
+
 export function jobFromReadRow(row: JobRowRead): Job {
   const job = jobFromRow({
     ...row,
@@ -277,7 +295,8 @@ export function jobFromReadRow(row: JobRowRead): Job {
     lat: row.area_lat ?? 0,
     lon: row.area_lon ?? 0
   } as TableRow<'jobs'>);
-  return { ...job, address: { ...job.address, exact: false } };
+  const area = row.area_lat != null && row.area_lon != null ? { area: { lat: row.area_lat, lon: row.area_lon } } : {};
+  return { ...job, address: { ...job.address, exact: false, ...area } };
 }
 
 /** `deletedAt`: when the company deleted the post (Database.deletedJobIds). */

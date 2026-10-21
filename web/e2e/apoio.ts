@@ -1,7 +1,7 @@
 // L03 (lançamento): utilitários do E2E — variáveis, cliente de administração (só no processo do teste, nunca no
 // navegador), contas de teste com documento válido, estado entre os fluxos, prints e limpeza.
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -162,12 +162,15 @@ export async function linkDeConfirmacao(email: string): Promise<string> {
 }
 
 /**
- * U12: "Usar minha localização atual" no teste — o navegador libera a localização e diz que está em São Paulo
- * (os CEPs das vagas de teste são de lá, então o mural do trabalhador abre com elas).
+ * U51: o passo "Seu endereço" do cadastro — o CEP preenche cidade, rua e bairro (BrasilAPI/ViaCEP de verdade) e o
+ * "Continuar" acha o ponto no mapa; depois vêm as fotos (opcionais).
  */
-export async function liberarLocalizacao(page: Page, lat = -23.5505, lon = -46.6333): Promise<void> {
-  await page.context().grantPermissions(['geolocation']);
-  await page.context().setGeolocation({ latitude: lat, longitude: lon });
+export async function preencherEndereco(page: Page, cep = '95020-000'): Promise<void> {
+  await page.getByRole('textbox', { name: 'CEP' }).fill(cep);
+  await expect(page.getByText('Endereço encontrado. Confira a rua e o bairro.')).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('combobox', { name: 'Cidade' })).toHaveValue('Caxias do Sul, RS');
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByRole('button', { name: 'Concluir perfil' })).toBeVisible({ timeout: 30000 });
 }
 
 /** U11: o código de 6 números que confirma o e-mail (o mesmo efeito do código do e-mail), pela Admin API. */
@@ -290,8 +293,22 @@ export async function contaPorApi(tag: string, papel: 'trabalhador' | 'recrutado
   if (error || !data.user) throw new Error(`createUser ${tag}: ${error?.message}`);
   criada(data.user.id, email);
   const c = await comoConta(email);
-  // U12: o perfil se completa só com a localização.
-  const p = { city: 'São Paulo, SP', lat: -23.55, lon: -46.63 };
+  // U51: o perfil se completa com o endereço (o ponto já achado, como o app manda).
+  const p = {
+    address: {
+      cep: '95020-000',
+      street: 'Rua Sinimbu',
+      neighborhood: 'Centro',
+      city: 'Caxias do Sul',
+      uf: 'RS',
+      lat: -29.168796,
+      lon: -51.178701,
+      precision: 'rua'
+    },
+    city: 'Caxias do Sul, RS',
+    lat: -29.17,
+    lon: -51.18
+  };
   const { error: e2 } = await c.rpc('finish_sign_up', { p });
   if (e2) throw new Error(`finish_sign_up ${tag}: ${e2.message}`);
   const conta = { id: data.user.id, email, documento, nome, whatsapp };

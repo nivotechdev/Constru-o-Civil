@@ -9,6 +9,7 @@ import type {
   BoostPayment,
   Company,
   DiasKey,
+  HomeAddress,
   Job,
   JobAddress,
   Worker,
@@ -27,6 +28,30 @@ export const CURRENT_WORKER_ID = 'jorge';
 
 /** Password of both demo accounts. Only the mock auth knows it; a real backend keeps passwords in Auth. */
 export const DEMO_PASSWORD = 'bicos123';
+
+/** U51: the demo accounts' own addresses (each account sees only its own). */
+export const ADDRESSES: Record<string, HomeAddress> = {
+  'conta-jorge': {
+    cep: '03081-000',
+    street: 'Rua Tuiuti',
+    neighborhood: 'Tatuapé',
+    city: 'São Paulo',
+    uf: 'SP',
+    lat: -23.5394,
+    lon: -46.5747,
+    precision: 'rua'
+  },
+  'conta-meridiano': {
+    cep: '03104-000',
+    street: 'Rua da Mooca',
+    neighborhood: 'Mooca',
+    city: 'São Paulo',
+    uf: 'SP',
+    lat: -23.5598,
+    lon: -46.6012,
+    precision: 'rua'
+  }
+};
 
 export const ACCOUNTS: Record<string, Account> = {
   'conta-jorge': {

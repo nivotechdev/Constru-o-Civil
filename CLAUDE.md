@@ -107,7 +107,8 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
   `jobs` (id `BC-<seq>`), `applications`, `application_events`, `application_attempts`, `saved_jobs`, `reviews`,
   `worker_posts`, `notifications`, `notification_prefs`, `push_subscriptions`, `boost_payments`,
   `payment_webhook_events`, `job_alerts`, `job_invites`, `reports`, `blocks`, `whatsapp_verifications`,
-  `identity_submissions`, `app_config`, `auth_attempts`.
+  `identity_submissions`, `app_config`, `auth_attempts`, `account_prefs` (U30, tema), `addresses` (U51, o endereço de
+  cada conta — só ela lê; o perfil mostra só a cidade).
 - **Tabelas legadas** (app antigo, desligado no Z08, RLS sem política = fechadas): `profiles` (4 linhas, com CPF
   cifrado), `vagas` (3), `candidaturas`, `avaliacoes`, `vagas_salvas`, `publicacoes_trabalhador`, `consentimentos`.
   Não apagar sem autorização.

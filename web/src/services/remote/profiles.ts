@@ -1,6 +1,7 @@
 // The logged-in account editing its own profile and portfolio, with the real backend. RLS only lets
 // each account update its own row, and only the columns the app edits (the rest — rating, counts,
 // verification — is the server's).
+import { homeFromResolved, type ResolvedAddress } from '../address';
 import type { CompanyProfilePatch, ProfileImages, WorkerProfilePatch } from '../profiles';
 import { cleanExperiences } from '../../utils/profileText';
 import type { WorkerPost } from '../../types/models';
@@ -8,7 +9,8 @@ import type { TableUpdate } from '../../types/supabase';
 import { serviceError } from '../errors';
 import * as store from '../store';
 import { db, invokeFunction, request } from './client';
-import { apply, COMPANY_COLUMNS, putCompanies, putPosts, putWorkers, WORKER_COLUMNS } from './merge';
+import { addressPayload } from './address';
+import { apply, COMPANY_COLUMNS, putAddress, putCompanies, putPosts, putWorkers, WORKER_COLUMNS } from './merge';
 import { removeMedia, uploadMedia, type Progress } from './storage';
 
 function session() {
@@ -46,6 +48,32 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
       .single()
   );
   apply(putWorkers([row], undefined, s.accountId));
+}
+
+/** U51: the account's address (set_my_address), then its profile again — the city shown there changed with it. */
+export async function saveMyAddress(address: ResolvedAddress): Promise<void> {
+  const s = session();
+  const client = await db();
+  await request(() => client.rpc('set_my_address', { p: addressPayload(address) }));
+  if (s.workerId) {
+    const row = await request(() =>
+      client
+        .from('workers')
+        .select(WORKER_COLUMNS)
+        .eq('id', s.workerId as string)
+        .single()
+    );
+    apply(putAddress(s.accountId, homeFromResolved(address)), putWorkers([row], undefined, s.accountId));
+  } else if (s.companyId) {
+    const row = await request(() =>
+      client
+        .from('companies')
+        .select(COMPANY_COLUMNS)
+        .eq('id', s.companyId as string)
+        .single()
+    );
+    apply(putAddress(s.accountId, homeFromResolved(address)), putCompanies([row], undefined, s.accountId));
+  }
 }
 
 export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promise<void> {

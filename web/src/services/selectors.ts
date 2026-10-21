@@ -1,10 +1,11 @@
 // Read-only queries over the mock database — the same queries the legacy store exposed, as pure
 // functions of a Database snapshot (so components can memoize on it).
 import { CURRENT_COMPANY_ID, CURRENT_WORKER_ID } from '../data/seed';
-import type { Application, Company, Database, Job, Worker, WorkerPost } from '../types/models';
+import type { Application, Company, Database, GeoPoint, HomeAddress, Job, Worker, WorkerPost } from '../types/models';
 import { getSession } from './store';
 import { occupiesSlot } from './applicationMachine';
 import { isExpired } from '../utils/jobInfo';
+import { distanceKm } from '../utils/geo';
 
 // ---- companies & workers ----
 export const getCompany = (db: Database, id: string): Company | undefined => db.companies[id];
@@ -18,6 +19,33 @@ export const getWorker = (db: Database, id: string): Worker | undefined => db.wo
 export const allWorkers = (db: Database): Worker[] => Object.values(db.workers);
 export const currentWorkerId = (): string => getSession()?.workerId ?? CURRENT_WORKER_ID;
 export const currentWorker = (db: Database): Worker => db.workers[currentWorkerId()];
+
+/** U51: the session's own address; `null` when it has none yet (an account from before the address step). */
+export function myAddress(db: Database): HomeAddress | null {
+  const id = getSession()?.accountId;
+  return (id && db.addresses?.[id]) || null;
+}
+
+/**
+ * U51: where a worker's distances are measured from — their address (the street, ~200 m), or for an account from
+ * before it, the profile's point (the city, ~1 km). `null` for a company or outside a session.
+ */
+export function workerHome(db: Database): GeoPoint | null {
+  const session = getSession();
+  if (!session?.workerId) return null;
+  const home = myAddress(db);
+  if (home) return { lat: home.lat, lon: home.lon };
+  const w = db.workers[session.workerId];
+  return w && (w.lat || w.lon) ? { lat: w.lat, lon: w.lon } : null;
+}
+
+/** U51: how far the job is from the worker's home, in km (`null` when either point is unknown). */
+export function homeDistanceKm(db: Database, job: { address: Partial<GeoPoint> }): number | null {
+  const from = workerHome(db);
+  const { lat, lon } = job.address;
+  if (!from || typeof lat !== 'number' || typeof lon !== 'number' || (!lat && !lon)) return null;
+  return distanceKm(from, { lat, lon });
+}
 
 // ---- jobs ----
 export const allJobs = (db: Database): Job[] => Object.values(db.jobs);

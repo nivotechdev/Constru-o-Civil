@@ -2,10 +2,11 @@
 // candidacies…), so these merge that slice into what is already there instead of replacing the whole
 // snapshot. Pure functions of a Database (tested in src/__tests__/remoteMerge.test.ts); `apply` swaps
 // the result into the store in one change.
-import type { Account, Application, Database, JobStats } from '../../types/models';
+import type { Account, Application, Database, HomeAddress, JobStats } from '../../types/models';
 import type { JobAddressRow, JobStatsRow, TableRow } from '../../types/supabase';
 import {
   accountFromRow,
+  addressFromRow,
   applicationFromRow,
   boostPaymentFromRow,
   companyFromRow,
@@ -25,6 +26,8 @@ export const WORKER_COLUMNS =
 /** What anyone may read of a job (Z06): the exact address comes from get_job_addresses. */
 export const JOB_COLUMNS =
   'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, payment_method, payment_note, public_slug, created_at, updated_at, deleted_at';
+/** U51: the session's own address (RLS: only its own row). */
+export const ADDRESS_COLUMNS = 'account_id, cep, street, neighborhood, city, uf, lat, lon, precision, updated_at';
 export const COMPANY_COLUMNS =
   'id, name, cnpj, location, rating, review_count, verified, verified_since, verification_status, verified_at, contact_name, since_label, respond_time, paid_count, logo_url, cover_url, about, created_at';
 
@@ -88,6 +91,16 @@ export const putCompanies =
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/** U51: the session's own address (`null`: it has none yet — an account from before the address step). */
+export const putAddress =
+  (accountId: string, row: TableRow<'addresses'> | HomeAddress | null): Recipe =>
+  (db) => {
+    const addresses = { ...db.addresses };
+    if (row) addresses[accountId] = 'account_id' in row ? addressFromRow(row) : row;
+    else delete addresses[accountId];
+    return { ...db, addresses };
+  };
+
 /**
  * Jobs, as anyone may read them; a deleted one (deleted_at) is kept for its candidates' history and listed
  * as deleted. An exact address already in the store (from get_job_addresses) stays while the job's area is
@@ -102,14 +115,17 @@ export const putJobs =
     for (const row of rows) {
       const fresh = jobFromReadRow(row);
       const old = db.jobs[row.id]?.address;
+      // U51: the public point is the exact one moved 100–200 m (no longer rounded): the one known with the exact
+      // address tells whether the address is still the same.
       const sameArea =
         old &&
         old.exact !== false &&
         old.neighborhood === row.neighborhood &&
         old.city === row.city &&
         old.uf === row.uf &&
-        round2(old.lat) === row.area_lat &&
-        round2(old.lon) === row.area_lon;
+        (old.area
+          ? old.area.lat === row.area_lat && old.area.lon === row.area_lon
+          : round2(old.lat) === row.area_lat && round2(old.lon) === row.area_lon);
       // The mural (feed_jobs) doesn't bring the payment (L18): keep what the job's own read brought.
       const prev = db.jobs[row.id];
       const payment =
@@ -118,7 +134,11 @@ export const putJobs =
           : {};
       // L10: a read without the public link's slug keeps the one already known (the share button uses it).
       const slug = !fresh.publicSlug && prev?.publicSlug ? { publicSlug: prev.publicSlug } : {};
-      jobs[row.id] = { ...(sameArea ? { ...fresh, address: old } : fresh), ...payment, ...slug };
+      jobs[row.id] = {
+        ...(sameArea ? { ...fresh, address: { ...old, area: fresh.address.area } } : fresh),
+        ...payment,
+        ...slug
+      };
       if (row.deleted_at) deleted.add(row.id);
       else deleted.delete(row.id);
     }
@@ -146,7 +166,8 @@ export const putJobAddresses =
           uf: r.uf,
           lat: r.lat,
           lon: r.lon,
-          exact: true
+          exact: true,
+          ...(job.address.area ? { area: job.address.area } : {})
         }
       };
     }

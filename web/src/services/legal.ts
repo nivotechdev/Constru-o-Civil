@@ -116,7 +116,8 @@ export const PRIVACY: LegalDocument = {
         'Vagas: endereço do serviço, datas, horário, valor, fotos e requisitos.',
         'Uso: candidaturas e o histórico de cada uma, presença confirmada, diárias concluídas, avaliações, vagas salvas, convites, alertas de vaga, notificações, denúncias e bloqueios.',
         'Pagamentos do impulso: valor, plano e situação do pagamento. Os dados do cartão vão direto para o Mercado Pago; não ficam com a gente.',
-        'Localização: só se você permitir, para achar a cidade mais perto. Guardamos a cidade e um ponto aproximado, não o seu caminho.',
+        'Endereço: CEP, rua, bairro e cidade (sem o número da casa), para mostrar a distância até cada bico e abrir o mural na sua cidade. Fica só com você: no perfil aparece só a cidade, e as empresas veem só um ponto aproximado (cerca de 1 km).',
+        'Localização do aparelho: só se você tocar em "Usar minha localização" no mural, para mostrar os bicos perto de onde você está. Não guardamos o seu caminho.',
         'Dados técnicos: endereço IP nas tentativas de login (para barrar robôs), registro do aparelho para notificações (se você ligar) e relatórios de erro sem nome, e-mail, documento ou telefone.'
       ]
     },
@@ -143,7 +144,7 @@ export const PRIVACY: LegalDocument = {
       title: '5. Com quem compartilhamos',
       body: [
         'Com a outra parte da diária, só o necessário: o perfil e, depois da aprovação, o WhatsApp; o endereço exato só para quem foi escolhido.',
-        'Com empresas que operam o serviço para nós (operadores), sob contrato e só para isso: Supabase (banco de dados, arquivos e login; servidores em São Paulo, empresa nos EUA), Cloudflare (hospedagem do site e captcha; rede mundial), Mercado Pago (pagamentos; Brasil), Twilio (código por WhatsApp ou SMS; EUA), Sentry (relatórios de erro sem dados pessoais; EUA), Brevo (envio de e-mails; França) e Google (login, se você escolher; EUA). A consulta do CNPJ usa a BrasilAPI (dados públicos da Receita).',
+        'Com empresas que operam o serviço para nós (operadores), sob contrato e só para isso: Supabase (banco de dados, arquivos e login; servidores em São Paulo, empresa nos EUA), Cloudflare (hospedagem do site e captcha; rede mundial), Mercado Pago (pagamentos; Brasil), Twilio (código por WhatsApp ou SMS; EUA), Sentry (relatórios de erro sem dados pessoais; EUA), Brevo (envio de e-mails; França) e Google (login, se você escolher; EUA). A consulta do CNPJ usa a BrasilAPI (dados públicos da Receita). Para achar um endereço, o que você digita (CEP, rua, bairro, cidade) é consultado na BrasilAPI e no ViaCEP (Correios) e no OpenStreetMap (Nominatim e Photon), sem o seu nome nem a sua conta.',
         'Alguns desses operadores ficam fora do Brasil. A transferência segue o art. 33 da LGPD ({{BASE_TRANSFERENCIA_INTERNACIONAL}}).',
         'Com autoridades, quando a lei ou uma ordem judicial exigir.'
       ]

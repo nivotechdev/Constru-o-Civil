@@ -26,7 +26,9 @@ import {
   companyOf,
   currentWorker,
   getJob,
+  homeDistanceKm,
   jobState,
+  myAddress,
   unavailableText
 } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
@@ -84,10 +86,14 @@ export default function JobDetail({ params }: ScreenProps) {
   // Y07: a job that doesn't take candidates says why, with no "Quero esse bico".
   const unavailable = unavailableText(jobState(db, job));
   const dias = diasInfo(job);
+  // U51: from the worker's home (their address); an account without one measures from the mural's place, as before.
+  const fromHome = role === 'trabalhador' && myAddress(db) ? homeDistanceKm(db, job) : null;
   const distance =
-    role === 'trabalhador'
-      ? `${formatKm(jobDistance(job, feedOrigin(feed, db, role)))} ${originText(feed, db, role)}`
-      : null;
+    role !== 'trabalhador'
+      ? null
+      : fromHome !== null
+        ? `A ${formatKm(fromHome)} da sua casa`
+        : `${formatKm(jobDistance(job, feedOrigin(feed, db, role)))} ${originText(feed, db, role)}`;
   // Z06: the street and number only for the company and the worker it picked or hired.
   const exact = canSeeExactAddress(db, job) && Boolean(job.address.street);
 

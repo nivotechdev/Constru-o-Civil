@@ -95,6 +95,53 @@ export type Database = {
           }
         ];
       };
+      addresses: {
+        Row: {
+          account_id: string;
+          cep: string;
+          street: string;
+          neighborhood: string;
+          city: string;
+          uf: string;
+          lat: number;
+          lon: number;
+          precision: string;
+          updated_at: string;
+        };
+        Insert: {
+          account_id: string;
+          cep: string;
+          street: string;
+          neighborhood: string;
+          city: string;
+          uf: string;
+          lat: number;
+          lon: number;
+          precision?: string;
+          updated_at?: string;
+        };
+        Update: {
+          account_id?: string;
+          cep?: string;
+          street?: string;
+          neighborhood?: string;
+          city?: string;
+          uf?: string;
+          lat?: number;
+          lon?: number;
+          precision?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'addresses_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: true;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       app_config: {
         Row: { key: string; value: string };
         Insert: { key: string; value: string };
@@ -733,8 +780,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
-          area_lat?: never;
-          area_lon?: never;
+          area_lat?: number | null;
+          area_lon?: number | null;
           payment_method?: string | null;
           payment_note?: string | null;
           area_geog?: never;
@@ -776,8 +823,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
-          area_lat?: never;
-          area_lon?: never;
+          area_lat?: number | null;
+          area_lon?: number | null;
           payment_method?: string | null;
           payment_note?: string | null;
           area_geog?: never;
@@ -1784,6 +1831,7 @@ export type Database = {
         Returns: Json;
       };
       salvar_documento: { Args: { documento_texto: string }; Returns: undefined };
+      save_address: { Args: { p_account: string; p: Json }; Returns: undefined };
       save_job_alert: {
         Args: { p_city: string; p_uf: string; p_lat: number; p_lon: number; p_radius_km: number; p_oficio: string };
         Returns: undefined;
@@ -1802,6 +1850,7 @@ export type Database = {
       };
       set_identity_status: { Args: { p_worker: string; p_status: string; p_reason?: string }; Returns: undefined };
       set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
+      set_my_address: { Args: { p: Json }; Returns: undefined };
       set_my_theme: { Args: { p_theme: string }; Returns: undefined };
       short_datetime_br: { Args: { p_at: string }; Returns: string };
       signup_taken: { Args: { p_kind: string; p_value: string }; Returns: boolean };

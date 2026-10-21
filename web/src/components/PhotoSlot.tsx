@@ -62,7 +62,7 @@ export function PhotoSlot({
       {value ? (
         <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover" />
       ) : (
-        <span className="flex flex-col items-center gap-1.5 text-concrete-500 px-3 text-center">
+        <span className="flex flex-col items-center gap-1.5 text-concrete-600 px-3 text-center">
           <Icon name="camera" size={isCircle ? 20 : 24} />
           <span className="text-xs font-semibold">{placeholder}</span>
         </span>

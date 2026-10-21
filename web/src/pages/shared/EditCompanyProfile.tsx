@@ -11,6 +11,7 @@ import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
 import {
   profileErrors,
+  saveMyAddress,
   saveMyProfileImages,
   updateMyCompanyProfile,
   type ProfileImages
@@ -18,12 +19,13 @@ import {
 import { goBack, navigate } from '../../services/router';
 import { FEED_KEY } from '../worker/feed/feedUI';
 import { resetUI } from '../../services/store';
-import { currentCompany } from '../../services/selectors';
+import { currentCompany, myAddress } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
-import { ProfileLocationField } from '../../components/ProfileLocationField';
-import { knownCity } from '../../services/cities';
+import { ProfileAddressField } from '../../components/ProfileAddressField';
+import { useAddressEditor } from '../../hooks/useAddressEditor';
+import { draftFromAddress, knownCityLabel } from '../../services/address';
 import { AboutField } from '../../components/AboutField';
 
 function revoke(urls: (string | null | undefined)[]) {
@@ -31,11 +33,12 @@ function revoke(urls: (string | null | undefined)[]) {
 }
 
 export default function EditCompanyProfile() {
-  const company = currentCompany(useDb());
+  const db = useDb();
+  const company = currentCompany(db);
+  // U51: the company's address (only the account sees it; the profile shows the city).
+  const address = useAddressEditor(draftFromAddress(myAddress(db), knownCityLabel(company.location) ?? ''));
   const [draft, setDraft] = useState(() => ({
     name: company.name,
-    // U13/U22: the saved place: any city from the list, or the phone's location.
-    location: company.location,
     contactName: company.contactName ?? '',
     about: company.about ?? ''
   }));
@@ -51,7 +54,6 @@ export default function EditCompanyProfile() {
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
     ...(draft.name !== company.name ? { name: draft.name } : {}),
-    ...(draft.location !== company.location ? { location: draft.location } : {}),
     ...(draft.contactName !== (company.contactName ?? '') ? { contactName: draft.contactName } : {}),
     ...(draft.about.trim() !== (company.about ?? '') ? { about: draft.about } : {})
   };
@@ -59,8 +61,10 @@ export default function EditCompanyProfile() {
     async () => {
       const found = profileErrors(changes, 'recrutador');
       setErrors(found);
-      if (Object.keys(found).length) throw serviceError('validacao', 'Confira os campos marcados.');
+      const place = await address.check();
+      if (Object.keys(found).length || place === false) throw serviceError('validacao', 'Confira os campos marcados.');
       await updateMyCompanyProfile(changes);
+      if (place) await saveMyAddress(place);
       setProgress(Object.keys(images).length ? 0 : null);
       try {
         await saveMyProfileImages(images, setProgress);
@@ -164,16 +168,11 @@ export default function EditCompanyProfile() {
               </span>
             </div>
           ) : null}
-          <ProfileLocationField
-            title="Onde fica sua empresa"
-            help="O mural abre nessa cidade e suas vagas novas já começam nela."
-            city={knownCity(draft.location) ?? ''}
-            error={errors.location}
-            stateKey="edit-company-city"
-            onChange={(location) => {
-              setDraft((d) => ({ ...d, location: location.city }));
-              setErrors((e) => ({ ...e, location: undefined }));
-            }}
+          <ProfileAddressField
+            title="Endereço da empresa"
+            help="No perfil aparece só a cidade. O mural abre nela e suas vagas novas já começam nela."
+            idPrefix="edit-company-endereco"
+            editor={address}
           />
           <WhatsAppRow label="WhatsApp de contato" />
         </div>

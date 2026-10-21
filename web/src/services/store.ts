@@ -6,7 +6,7 @@
 // re-render only when that slice changes.
 import { TERMS_VERSION } from './legal';
 import * as seed from '../data/seed';
-import type { Account, Database, Job, Role, Session, WorkerPost } from '../types/models';
+import type { Account, Database, HomeAddress, Job, Role, Session, WorkerPost } from '../types/models';
 import { IS_DEMO } from './mode';
 
 function clone<T>(x: T): T {
@@ -70,7 +70,8 @@ function demoDatabase(): Database {
     deletedJobIds: [],
     workerPosts: clone(seed.WORKER_POSTS),
     notifications: clone(seed.NOTIFICATIONS),
-    boostPayments: clone(seed.BOOST_PAYMENTS)
+    boostPayments: clone(seed.BOOST_PAYMENTS),
+    addresses: clone(seed.ADDRESSES)
   };
 }
 
@@ -227,6 +228,11 @@ export function upsertWorker(worker: Database['workers'][string]): void {
 export function updateCompany(companyId: string, patch: Partial<Database['companies'][string]>): void {
   const company = state.db.companies[companyId];
   if (company) updateDb((db) => ({ ...db, companies: { ...db.companies, [companyId]: { ...company, ...patch } } }));
+}
+
+/** U51: the account's own address. */
+export function setAddress(accountId: string, address: HomeAddress): void {
+  updateDb((db) => ({ ...db, addresses: { ...db.addresses, [accountId]: address } }));
 }
 
 export function updateWorker(workerId: string, patch: Partial<Database['workers'][string]>): void {

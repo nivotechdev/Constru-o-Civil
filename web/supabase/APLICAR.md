@@ -662,6 +662,23 @@ select count(*) from pg_proc where pronamespace = 'public'::regnamespace and pro
 select prosrc like '%Local seguro%' from pg_proc where proname = 'submit_review';                                    -- true
 ```
 
+### 57. `20261021000600_u51_endereco.sql` (U51)
+
+O endereço de cada conta (CEP, rua, bairro, cidade e o ponto no mapa) numa tabela nova, `addresses`, que **só a própria
+conta lê** (RLS) e só as RPCs gravam: `set_my_address(p)` (Editar perfil) e `finish_sign_up(p)`, que passa a aceitar
+`p.address` (o formato antigo, cidade e ponto, continua aceito). O perfil público continua com a cidade (e o ponto de
+~1 km do trabalhador). O ponto público das vagas (`jobs.area_lat/area_lon`) deixa de ser o exato arredondado (erro até
+~800 m) e passa a ser o exato deslocado 100–200 m numa direção sorteada (gatilho `jobs_area_point`); as vagas que já
+existem ganham o ponto novo (sem mexer em `updated_at`) e `area_geog` passa a vir dele (`ALTER COLUMN … SET EXPRESSION`,
+Postgres 17). `export_my_data` leva o endereço. Nada é apagado.
+
+```sql
+select count(*) from pg_policies where tablename = 'addresses';                                        -- 1
+select attgenerated from pg_attribute where attrelid = 'public.jobs'::regclass and attname = 'area_lat'; -- '' (não gerada)
+select bool_and(st_distance(area_geog, st_setsrid(st_makepoint(lon, lat), 4326)::geography) between 95 and 205)
+  from public.jobs;                                                                                     -- true (ou null sem vagas)
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

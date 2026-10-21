@@ -15,8 +15,6 @@ import {
   getSession,
   setSessionAccount,
   updateAccount,
-  updateCompany,
-  updateWorker,
   upsertAccount,
   upsertCompany,
   upsertWorker
@@ -30,7 +28,7 @@ import { FEATURES } from './features';
 import { serviceError } from './errors';
 import { isValidEmail } from '../utils/format';
 import { TERMS_VERSION } from './legal';
-import type { SavedLocation } from './location';
+import type { ResolvedAddress } from './address';
 import {
   endGoogleSignUp,
   googleIdentity,
@@ -338,18 +336,18 @@ export const SAME_EMAIL = 'Esse é o mesmo e-mail. Digite o e-mail certo.';
 const CANNOT_CHANGE_EMAIL = 'Não deu para trocar o e-mail aqui. Toque em Sair e faça o cadastro com o e-mail certo.';
 
 /**
- * Last step of sign-up (U12): the profile's place, from "Usar minha localização atual" (the photos are saved
- * apart, by profiles.saveMyProfileImages), and the account goes into the app. It is the place the mural opens
- * on and the city a new job starts in (U13). Backend: RPC finish_sign_up.
+ * Last step of sign-up (U12, U51): the account's address (found and checked by address.resolveAddress; the photos are
+ * saved apart, by profiles.saveMyProfileImages), and the account goes into the app. The address stays the account's
+ * own: others see only the city. Its city is where the mural opens and where a new job starts (U13); distances to
+ * the jobs are measured from it. Backend: RPC finish_sign_up.
  */
-export async function finishSignUp(location: SavedLocation): Promise<void> {
-  if (!IS_DEMO) return remote.finishSignUp(location);
+export async function finishSignUp(address: ResolvedAddress): Promise<void> {
+  if (!IS_DEMO) return remote.finishSignUp(address);
   await mockLatency(500);
   const session = getSession();
   if (!session) return;
-  if (session.workerId)
-    updateWorker(session.workerId, { city: location.city, neighborhood: null, lat: location.lat, lon: location.lon });
-  else if (session.companyId) updateCompany(session.companyId, { location: location.city });
+  const { keepAddressInDemo } = await import('./profiles');
+  keepAddressInDemo(address);
   updateAccount(session.accountId, { profileCompletedAt: new Date().toISOString() });
 }
 

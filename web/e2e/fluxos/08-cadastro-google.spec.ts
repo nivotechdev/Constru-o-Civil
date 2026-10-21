@@ -10,7 +10,7 @@ import {
   criada,
   emailDeTeste,
   ENV,
-  liberarLocalizacao,
+  preencherEndereco,
   linkDeConfirmacao,
   nomeDeTeste,
   prepararPagina,
@@ -117,9 +117,8 @@ test('Google sem conta: o mesmo cadastro, sem o e-mail, e a conta nasce com o e-
   expect(conta?.email_confirmed_at).toBeTruthy();
   expect(conta?.worker_id).toBe(id);
 
-  await liberarLocalizacao(page);
-  await page.getByRole('button', { name: 'Usar minha localização atual' }).click();
-  await expect(page.getByText('São Paulo, SP')).toBeVisible();
+  await preencherEndereco(page);
+  await semRolagem(page, 'fotos do perfil (Google)');
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).toHaveURL(/\/mural/);
   await print(page, 'f8', 'google mural');

@@ -22,9 +22,22 @@ for (const [who, email, pages] of [
   [
     'w',
     'trabalhador@bicos.demo',
-    ['/mural', '/vaga/BC-4821', '/candidaturas', '/perfil', '/configuracoes', '/configuracoes/avisos', '/salvas']
+    [
+      '/mural',
+      '/vaga/BC-4821',
+      '/candidaturas',
+      '/perfil',
+      '/perfil/editar',
+      '/configuracoes',
+      '/configuracoes/avisos',
+      '/salvas'
+    ]
   ],
-  ['r', 'empresa@bicos.demo', ['/minhas-vagas', '/publicar', '/pagamentos', '/empresa', '/configuracoes']]
+  [
+    'r',
+    'empresa@bicos.demo',
+    ['/minhas-vagas', '/publicar', '/pagamentos', '/empresa', '/empresa/editar', '/configuracoes']
+  ]
 ]) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
   // U21/U30: A11Y_TEMA=escuro checks the same screens in the dark theme. The demo keeps no database, so the dark
