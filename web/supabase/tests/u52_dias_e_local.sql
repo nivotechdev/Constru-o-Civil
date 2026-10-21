@@ -14,6 +14,11 @@ insert into t_draft select jsonb_build_object(
   'description', 'Servir as mesas numa festa de aniversário', 'requirements', '[]'::jsonb);
 create temp table t_ids (k text primary key, v text);
 grant all on t_ids to authenticated;
+-- As datas da próxima segunda e do próximo sábado (calculadas aqui: a conta logada não chama bicos_today).
+create temp table t_dias as
+  select public.bicos_today() + (8 - extract(isodow from public.bicos_today())::int) as segunda,
+         public.bicos_today() + (13 - extract(isodow from public.bicos_today())::int) as sabado;
+grant all on t_dias to authenticated;
 
 select pg_temp.login('96000000-0000-0000-0000-0000000006c1');
 insert into t_ids values ('fds', public.publish_job((select p from t_draft)));
@@ -26,14 +31,10 @@ select pg_temp.fails($$select public.publish_job((select p || '{"weekdays": []}'
 select pg_temp.fails($$select public.publish_job((select p || '{"weekdays": ["seg"]}' from t_draft))$$, 'BC422');
 select pg_temp.fails($$select public.publish_job((select p || '{"place_type": "castelo"}' from t_draft))$$, 'BC422');
 -- Com a data marcada: o primeiro dia tem que ser um dos dias escolhidos (aqui, sábado ou domingo).
-select pg_temp.fails(format($f$select public.publish_job((select p || jsonb_build_object(
-  'date_to_arrange', false, 'start_date', %L, 'end_date', %L) from t_draft))$f$,
-  public.bicos_today() + (8 - extract(isodow from public.bicos_today())::int),          -- a próxima segunda
-  public.bicos_today() + (8 - extract(isodow from public.bicos_today())::int) + 6), 'BC422');
+select pg_temp.fails($$select public.publish_job((select p || jsonb_build_object(
+  'date_to_arrange', false, 'start_date', d.segunda, 'end_date', d.segunda + 6) from t_draft, t_dias d))$$, 'BC422');
 insert into t_ids values ('sabado', public.publish_job((select p || jsonb_build_object(
-  'date_to_arrange', false,
-  'start_date', public.bicos_today() + (13 - extract(isodow from public.bicos_today())::int),   -- o próximo sábado
-  'end_date', public.bicos_today() + (14 - extract(isodow from public.bicos_today())::int)) from t_draft)));
+  'date_to_arrange', false, 'start_date', d.sabado, 'end_date', d.sabado + 1) from t_draft, t_dias d)));
 select pg_temp.logout();
 
 select pg_temp.ok((select dias = 'fimdesemana' and weekdays = '{6,7}' and place_type = 'casa'
