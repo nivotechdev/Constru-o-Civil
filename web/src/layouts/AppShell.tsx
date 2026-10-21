@@ -4,7 +4,6 @@ import { currentCompany, currentWorker } from '../services/selectors';
 import type { Role } from '../types/models';
 import { cx } from '../utils/cx';
 import { AppNav, type AccountSummary } from './AppNav';
-import { tabIndex } from './navItems';
 
 const TAB_ROOTS: Record<Role, Set<string>> = {
   trabalhador: new Set(['/mural', '/minhas-candidaturas', '/perfil']),
@@ -56,24 +55,16 @@ function tabIdForPath(path: string, role: Role): string | null {
 }
 
 /**
- * U47: how a screen comes in. Between the tabs of the bottom bar it slides in from the side of the tab (left or
- * right), with the bar's pill; any other screen fades in. Only a fade there: a slide moves the screen, and a bar fixed
- * to the bottom of it (e.g. "Quero esse bico") would be dragged along while it lasts. Never on the first screen of a
- * visit (nothing to come from, and it would only delay the first paint).
+ * U47/U50: a new screen fades in (no sliding: a moving screen widened the page for a moment on phones and the bottom
+ * bar could be left out of place). Never on the first screen of a visit (nothing to come from, and it would only
+ * delay the first paint).
  */
-let lastTab: { role: Role; index: number } | null = null;
 let shownBefore = false;
 
-function screenEntrance(role: Role, active: string | null): string {
-  const index = tabIndex(role, active);
-  const from = lastTab;
+function screenEntrance(): string {
   const first = !shownBefore;
   shownBefore = true;
-  lastTab = index >= 0 ? { role, index } : null;
-  if (first) return '';
-  if (index >= 0 && from && from.role === role && from.index !== index)
-    return from.index < index ? 'animate-screen-from-right' : 'animate-screen-from-left';
-  return 'animate-screen-in';
+  return first ? '' : 'animate-screen-in';
 }
 
 interface AppShellProps {
@@ -92,7 +83,7 @@ export function AppShell({ path, pattern, children }: AppShellProps) {
   const showMobileNav = TAB_ROOTS[role] && TAB_ROOTS[role].has(path);
   const active = tabIdForPath(path, role);
   // Decided once per screen (the shell is mounted afresh on every navigation).
-  const [entrance] = useState(() => screenEntrance(role, active));
+  const [entrance] = useState(screenEntrance);
 
   let account: AccountSummary;
   if (role === 'recrutador') {
@@ -104,7 +95,8 @@ export function AppShell({ path, pattern, children }: AppShellProps) {
   }
 
   return (
-    <div className={cx('lg:flex lg:flex-col lg:min-h-screen', isMural ? 'bg-concrete-0' : '')}>
+    // U50: nothing on a screen can widen the page sideways (the fixed bottom bar stays centred).
+    <div className={cx('overflow-x-clip lg:flex lg:flex-col lg:min-h-screen', isMural ? 'bg-concrete-0' : '')}>
       {/* X05: not remounted on every data change (that dropped the keyboard focus in the bar). */}
       <AppNav role={role} active={active} showMobilePill={showMobileNav} account={account} />
       <main

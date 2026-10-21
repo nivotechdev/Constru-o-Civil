@@ -23,8 +23,3 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { id: 'empresa', icon: 'building-2', label: 'Perfil', path: '/empresa' }
   ]
 };
-
-/** U47: the tab the screen belongs to, by position — the screen slides in from that side (layouts/AppShell.tsx). */
-export function tabIndex(role: Role, id: string | null): number {
-  return id ? (NAV_ITEMS[role] || NAV_ITEMS.trabalhador).findIndex((it) => it.id === id) : -1;
-}

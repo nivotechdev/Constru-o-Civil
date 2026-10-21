@@ -2164,3 +2164,21 @@ nenhuma palavra ou ícone do nicho de construção. **Agora**:
 - **O que não mudou** (não aparece para ninguém, e mudar quebraria dados e links): os nomes internos — papel
   `recrutador`, lado `construtora` da candidatura, `para_construtora`, `cancelado_pela_construtora` — e o endereço
   `/construtora/<id>` do perfil da empresa (links já compartilhados continuam abrindo).
+
+## U50 — Menu de baixo simples, sem brilho e sem sair do lugar
+
+Pedido do responsável: o menu de baixo do celular estava "brilhando" e feio, saía da posição ao trocar de tela, e na
+conta de trabalhador a pílula de "Candidaturas" ficava colada nas letras. **Agora**:
+
+- **Simples**: uma barra na cor normal da superfície (branca no tema claro, a do cartão no escuro), borda fina e uma
+  sombra leve — sem vidro, sem desfoque, sem brilho e sem gradiente. A aba aberta fica numa pílula azul-clara com o ícone
+  e o nome em azul; as outras em cinza. O nome tem sempre o mesmo peso (negrito na aba aberta deixava o nome mais largo
+  e empurrava as abas a cada troca).
+- **Não sai do lugar**: a causa era a tela nova entrar deslizando de lado — no celular isso alargava a página por um
+  instante e a barra fixa no pé acompanhava; e a pílula que deslizava de onde estava podia ficar no lugar velho. A tela
+  nova agora só esmaece (180 ms, nada se move), a página nunca fica mais larga que a tela (`overflow-x: clip` na moldura
+  do app), a barra é centralizada por margem (sem `translate` de meio pixel) e a pílula é desenhada na própria aba. Medido
+  em 360, 390 e 412 px, trocando de aba duas voltas e abrindo/voltando de uma vaga: mesma posição em todas as telas.
+- **Folga do nome**: cada aba tem a largura do seu nome mais uma parte igual do espaço que sobra, então "Candidaturas"
+  ganha a mesma folga das abas curtas (28 px de cada lado a 360 px, antes 13 px). Vale para as duas contas (na de empresa
+  os nomes são parecidos e quase nada muda).

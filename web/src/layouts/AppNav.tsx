@@ -15,40 +15,6 @@ import { NAV_ITEMS as ITEMS, type NavItem } from './navItems';
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Phone tab bar (U47): where the blue pill last sat (position and width), so a newly mounted tab bar slides it from
-// there to the newly active tab.
-let lastPillDot: { x: number; w: number } | null = null;
-
-function placePillDot(animate: boolean) {
-  const dot = document.querySelector<HTMLElement>('.nav-pill-dot');
-  if (!dot || !dot.parentElement || !dot.parentElement.getClientRects().length) return; // tab bar hidden (desktop)
-  const tab = dot.parentElement.querySelector<HTMLElement>('[aria-current="page"]');
-  if (!tab) {
-    dot.style.opacity = '0';
-    lastPillDot = null;
-    return;
-  }
-  const target = { x: tab.offsetLeft, w: tab.offsetWidth };
-  const slide =
-    animate && lastPillDot != null && (lastPillDot.x !== target.x || lastPillDot.w !== target.w) && !reducedMotion();
-  dot.style.transition = 'none';
-  if (slide && lastPillDot) {
-    dot.style.transform = `translateX(${lastPillDot.x}px)`;
-    dot.style.width = `${lastPillDot.w}px`;
-    // The icon and the name turn white as the pill arrives under them, not before.
-    tab.style.transition = 'none';
-    tab.style.color = 'var(--gray-600)';
-    void dot.offsetWidth;
-    dot.style.transition = `transform 440ms ${EASE}, width 440ms ${EASE}`;
-    tab.style.transition = 'color 200ms ease 200ms';
-    tab.style.color = '';
-  }
-  dot.style.transform = `translateX(${target.x}px)`;
-  dot.style.width = `${target.w}px`;
-  dot.style.opacity = '1';
-  lastPillDot = target;
-}
-
 // Where the active-tab underline was last drawn, so a newly mounted header slides it from there.
 let lastIndicator: { x: number; w: number } | null = null;
 
@@ -97,10 +63,7 @@ function installGlobalListeners() {
     if (menus.menuOpen || menus.notificationsOpen)
       setUI<MenuUI>(MENU_KEY, { menuOpen: false, notificationsOpen: false });
   });
-  window.addEventListener('resize', () => {
-    placeIndicator(false);
-    placePillDot(false);
-  });
+  window.addEventListener('resize', () => placeIndicator(false));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => placeIndicator(false));
 }
 
@@ -126,41 +89,26 @@ interface AppNavProps {
 export function AppNav({ role, active, showMobilePill = true, account = {} }: AppNavProps) {
   const items = ITEMS[role] || ITEMS.trabalhador;
 
-  // Starting position, captured at mount; from then on placePillDot()/placeIndicator() own the style.
-  const [dotStyle] = useState(() =>
-    lastPillDot != null
-      ? { transform: `translateX(${lastPillDot.x}px)`, width: `${lastPillDot.w}px` }
-      : { opacity: '0' }
-  );
-
   useLayoutEffect(() => {
     installGlobalListeners();
-    if (showMobilePill) placePillDot(true);
     placeIndicator(true);
   });
 
   return (
     <div className="contents">
       {showMobilePill ? (
-        // U47: a fuller pill — each tab is its icon with its name underneath, and one blue pill behind the open tab
-        // slides to the tab you open. The bar keeps the app's look: the surface colour, translucent and blurred.
+        // U50: simple and steady — a plain bar in the surface colour (no glass, no glow), each tab its icon with its
+        // name underneath, and the open tab on a light blue pill drawn in its own place (nothing slides from where it
+        // was, so nothing can be left out of place). Centred with auto margins, never with a half-pixel transform.
         <nav
           aria-label="Navegação principal"
-          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-30 flex items-stretch p-1.5 rounded-full shadow-raised border border-concrete-0/60"
+          className="lg:hidden fixed inset-x-0 mx-auto z-30 flex items-stretch gap-1 p-1.5 rounded-full bg-concrete-0 border border-concrete-200 shadow-[0_4px_14px_rgba(16,24,40,0.08)]"
           style={{
             bottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))',
-            width: `min(calc(100vw - 1.5rem), ${items.length * 5.75 + 0.75}rem)`,
-            // U21: the surface colour (white in the light theme), translucent.
-            backgroundColor: 'rgb(var(--c-concrete-0) / 0.72)',
-            backdropFilter: 'blur(16px) saturate(1.6)',
-            WebkitBackdropFilter: 'blur(16px) saturate(1.6)'
+            // Three tabs get a little more room than four; both fit a 360 px phone.
+            width: `min(calc(100vw - 1.5rem), ${items.length <= 3 ? 21 : 23}rem)`
           }}
         >
-          <span
-            aria-hidden="true"
-            className="nav-pill-dot pointer-events-none absolute left-0 top-1.5 bottom-1.5 rounded-full bg-brand-500 shadow-[0_6px_16px_rgba(29,75,237,0.32)]"
-            style={dotStyle}
-          />
           {items.map((it) => {
             const isActive = active === it.id;
             return (
@@ -168,22 +116,18 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
                 key={it.id}
                 type="button"
                 aria-current={isActive ? 'page' : undefined}
+                // Each tab as wide as its name plus an equal share of the rest, so a long name ("Candidaturas") keeps
+                // the same air around it as a short one instead of touching the edge of its pill.
                 className={cx(
-                  'relative z-10 flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 h-[3.375rem] px-1 rounded-full',
-                  'outline-none focus-visible:ring-4 focus-visible:ring-brand-100 active:scale-[0.96] transition-transform duration-150',
-                  isActive ? 'text-white' : 'text-concrete-600'
+                  'flex-auto min-w-0 flex flex-col items-center justify-center gap-0.5 h-[3.375rem] px-3 rounded-full',
+                  'outline-none focus-visible:ring-4 focus-visible:ring-brand-100 transition-colors duration-150',
+                  isActive ? 'bg-brand-50 text-brand-600' : 'text-concrete-600 active:bg-concrete-100'
                 )}
                 onClick={() => navigate(it.path)}
               >
                 <Icon name={it.icon} size={22} />
-                <span
-                  className={cx(
-                    'max-w-full truncate text-[0.75rem] leading-4',
-                    isActive ? 'font-bold' : 'font-semibold'
-                  )}
-                >
-                  {it.label}
-                </span>
+                {/* Same weight open or not: a bolder name is wider and would nudge the tabs on every change. */}
+                <span className="max-w-full truncate text-[0.75rem] leading-4 font-semibold">{it.label}</span>
               </button>
             );
           })}
