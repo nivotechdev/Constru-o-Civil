@@ -1,5 +1,5 @@
 // "Abrir no mapa": the job's exact address in Google Maps or Waze (Z06 / L04). Only rendered where the
-// person may see the address (selectors.canSeeExactAddress).
+// person may see the address (selectors.canSeeExactAddress; since U53, everyone signed in).
 import type { Job } from '../types/models';
 import { mapLinks } from '../utils/jobInfo';
 import { Icon } from './icons/Icon';

@@ -2253,3 +2253,27 @@ dias pode ser" com todos os dias da semana, compacto e fácil de editar, e no ca
   `dias` antigo vira o resumo dos dias marcados, calculado no servidor — os filtros "Durante a semana"/"Fim de semana"
   do mural e as vagas antigas seguem iguais. Hoje/Amanhã e o lembrete de presença olham os dias marcados; mudar os dias
   ou o tipo do local avisa os candidatos.
+
+## U53 — Endereço completo para todos, mapa do Google na vaga e o menu de baixo com "Inscrições"
+
+Pedido do responsável: tirar a regra de só ver o endereço completo depois que a empresa aprova (Z06) — qualquer pessoa
+vê onde é o bico; em toda vaga, abaixo da descrição, um mapa do Google (como o "Onde você estará" do Airbnb) com o local
+do bico e onde o trabalhador está, para comparar a distância, que dá para mexer e abrir no Google Maps; no menu de
+baixo do celular, "Candidaturas" vira "Inscrições", a pílula do item aberto do mesmo tamanho dos outros e no azul
+principal do app, nos dois temas. **Agora**:
+
+- **Endereço**: `grant select (cep, street, number, complement, lat, lon)` em `jobs` para `authenticated`, e o
+  `feed_jobs` manda esses campos. "Qualquer usuário" = quem entrou na conta: o link público da vaga (sem conta,
+  `public_job_card`) continua só com bairro e cidade, para o endereço não ficar aberto para robôs (os IDs das vagas são
+  sequenciais, L10). O WhatsApp continua só depois da aprovação (`get_contact`). `get_job_addresses` fica (a tela
+  "Selecionado" ainda usa) mas deixa de ser o único caminho. Textos de Ajuda, link público, criar vaga e a política de
+  privacidade atualizados.
+- **Mapa** (`components/JobMap.tsx`): o embed do Google Maps sem chave (`maps.google.com/maps?…&output=embed`) — não
+  precisa de conta no Google Cloud nem de cobrança, e dá para arrastar e dar zoom. Com a localização da pessoa, o
+  mapa mostra o caminho de onde ela está até o bico; se ela não liberou o GPS, a partir da casa salva no cadastro
+  (U51); o texto diz a distância em linha reta. A localização só é pedida quando a pessoa toca em "Mostrar onde
+  estou" (ou já tinha liberado antes); nada é guardado. O mapa só carrega quando a seção chega perto da tela (pesa na
+  internet fraca). "Abrir no Google Maps" abre a rota no app ou no site. CSP: `frame-src` ganhou
+  `https://maps.google.com`.
+- **Menu**: o item "Inscrições", a pílula ativa em `bg-brand-500` com texto branco (o mesmo azul nos dois temas) e
+  todas as abas com a mesma altura e o mesmo espaçamento.

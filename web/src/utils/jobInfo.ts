@@ -247,13 +247,14 @@ export function cityLabel(job: Place): string {
 /** "Rua Serra de Bragança, 1240 · casa 2" — the full street address. */
 export function streetText(job: Place): string {
   const a = job.address;
-  return [`${a.street}, ${a.number}`, a.complement].filter(Boolean).join(' · ');
+  // U52: the number is optional ("Rua Sinimbu" alone, never "Rua Sinimbu, ").
+  return [a.number ? `${a.street}, ${a.number}` : a.street, a.complement].filter(Boolean).join(' · ');
 }
 
 /** "Rua Serra de Bragança, 1240, Tatuapé, São Paulo - SP, 03307-000" — for the map apps. */
 export function fullAddressText(job: Place): string {
   const a = job.address;
-  return `${a.street}, ${a.number}, ${a.neighborhood}, ${a.city} - ${a.uf}, ${a.cep}`;
+  return [a.street, a.number, a.neighborhood, `${a.city} - ${a.uf}`, a.cep].filter(Boolean).join(', ');
 }
 
 /** Links that open the address in Google Maps and in Waze (Z06 / L04). */

@@ -22,8 +22,8 @@ Fluxo central (não mudar sem pedir):
 2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros — sem filtro de ofício desde o U01;
    impulsionadas → urgentes → recentes).
 3. Trabalhador se candidata; a empresa vê os candidatos e os perfis (os dois lados veem o perfil do outro).
-4. Empresa aprova → **o WhatsApp é liberado para os dois lados** (`get_contact`). O endereço exato do serviço
-   só aparece para quem está no bico (`get_job_addresses`).
+4. Empresa aprova → **o WhatsApp é liberado para os dois lados** (`get_contact`). Desde o U53 o endereço
+   completo e o mapa aparecem para qualquer conta logada (o link público sem conta mostra só bairro e cidade).
 5. Presença confirmada → diária concluída (cron) → **avaliação dos dois lados** → notas e histórico nos perfis.
 6. Vaga paga ("impulsionar", Mercado Pago PIX/cartão) sobe no mural.
 

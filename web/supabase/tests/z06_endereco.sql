@@ -8,11 +8,8 @@ create temp table t_ids (k text primary key, v text);
 grant all on t_ids to authenticated;
 insert into t_ids values ('vaga', pg_temp.new_job('60000000-0000-0000-0000-0000000000c1', 2, 2));
 
--- Qualquer conta logada: bairro, cidade e ponto aproximado; rua e CEP não.
+-- Qualquer conta logada: bairro, cidade e ponto aproximado (e, desde o U53, também rua, CEP e ponto exato).
 select pg_temp.login('60000000-0000-0000-0000-0000000000a2');
-select pg_temp.fails('select street from public.jobs', '42501');
-select pg_temp.fails('select number, complement, cep from public.jobs', '42501');
-select pg_temp.fails('select lat, lon from public.jobs', '42501');
 select pg_temp.fails('select * from public.jobs', '42501');
 -- U51: o ponto aproximado é o exato (-23.54, -46.57) deslocado 100–200 m (~0,001–0,002°).
 select pg_temp.ok((select neighborhood = 'Tatuapé' and abs(area_lat + 23.54) < 0.0025 and abs(area_lon + 46.57) < 0.0025

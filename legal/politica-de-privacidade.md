@@ -41,7 +41,7 @@ Prazo: apagadas 30 dias depois da decisão (aprovada ou recusada). Você pode re
 
 ## 4. Para que usamos e com qual base legal
 
-Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar empresas e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço do serviço a quem foi escolhido, avaliações e avisos.
+Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar empresas e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço e o mapa do serviço na vaga, avaliações e avisos.
 
 Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da empresa pelo CNPJ (dado público).
 
@@ -53,7 +53,7 @@ Para entender o uso sem identificar ninguém: contamos cadastros, vagas e contra
 
 ## 5. Com quem compartilhamos
 
-Com a outra parte da diária, só o necessário: o perfil e, depois da aprovação, o WhatsApp; o endereço exato só para quem foi escolhido.
+Com a outra parte da diária, só o necessário: o perfil e, depois da aprovação, o WhatsApp. O endereço do serviço que a empresa publica fica visível na vaga para quem tem conta.
 
 Com empresas que operam o serviço para nós (operadores), sob contrato e só para isso: Supabase (banco de dados, arquivos e login; servidores em São Paulo, empresa nos EUA), Cloudflare (hospedagem do site e captcha; rede mundial), Mercado Pago (pagamentos; Brasil), Twilio (código por WhatsApp ou SMS; EUA), Sentry (relatórios de erro sem dados pessoais; EUA), Brevo (envio de e-mails; França) e Google (login, se você escolher; EUA). A consulta do CNPJ usa a BrasilAPI (dados públicos da Receita). Para achar um endereço, o que você digita (CEP, rua, bairro, cidade) é consultado na BrasilAPI e no ViaCEP (Correios) e no OpenStreetMap (Nominatim e Photon), sem o seu nome nem a sua conta.
 

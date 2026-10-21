@@ -61,10 +61,9 @@ select pg_temp.login('96000000-0000-0000-0000-0000000006c1');
 select public.update_job((select v from t_ids where k = 'fds'), (select p || '{"weekdays": [1], "place_type": "apartamento"}' from t_draft));
 select pg_temp.ok((select weekdays = '{1}' and dias = 'semana' and place_type = 'apartamento'
                      from public.jobs where id = (select v from t_ids where k = 'fds')), 'editar troca os dias e o tipo do local');
--- Quem lê a vaga vê os dias e o tipo (não o número).
+-- Quem lê a vaga vê os dias e o tipo.
 select pg_temp.ok((select weekdays = '{2,6}' and place_type = 'casa' from public.jobs where id = (select v from t_ids where k = 'misto')),
                   'os dias e o tipo saem por select');
-select pg_temp.fails($$select number from public.jobs limit 1$$, '42501');
 select pg_temp.ok(exists (select 1 from public.feed_jobs('Caxias do Sul', 'RS', -29.17, -51.18) f
                            where f->>'id' = (select v from t_ids where k = 'misto')
                              and f->'weekdays' = '[2, 6]'::jsonb and f->>'place_type' = 'casa'), 'o mural manda os dias e o tipo');

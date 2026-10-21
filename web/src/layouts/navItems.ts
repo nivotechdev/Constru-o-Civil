@@ -13,7 +13,7 @@ export interface NavItem {
 export const NAV_ITEMS: Record<Role, NavItem[]> = {
   trabalhador: [
     { id: 'mural', icon: 'briefcase', label: 'Vagas', path: '/mural' },
-    { id: 'minhas-candidaturas', icon: 'file-check', label: 'Candidaturas', path: '/minhas-candidaturas' },
+    { id: 'minhas-candidaturas', icon: 'file-check', label: 'Inscrições', path: '/minhas-candidaturas' },
     { id: 'perfil', icon: 'user', label: 'Perfil', path: '/perfil' }
   ],
   recrutador: [

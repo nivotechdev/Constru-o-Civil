@@ -5,7 +5,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon, type IconName } from '../../components/icons/Icon';
 import { InfoRow } from '../../components/InfoRow';
-import { MapLinks } from '../../components/MapLinks';
+import { JobMap } from '../../components/JobMap';
 import { Dialog } from '../../components/Modal';
 import { NotFound } from '../../components/NotFound';
 import { PhotoCarousel } from '../../components/PhotoCarousel';
@@ -30,7 +30,8 @@ import {
   homeDistanceKm,
   jobState,
   myAddress,
-  unavailableText
+  unavailableText,
+  workerHome
 } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
@@ -38,6 +39,7 @@ import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, originText, type FeedU
 import { formatKm } from '../../utils/geo';
 import {
   daysListText,
+  fullAddressText,
   daysText,
   durationText,
   hoursText,
@@ -254,18 +256,12 @@ export default function JobDetail({ params }: ScreenProps) {
           <Section title="Onde e como">
             <Card padding="md">
               <div className="flex flex-col gap-3.5">
+                {/* U53: the full address for everyone signed in (no longer only after the company's approval). */}
                 <InfoRow
                   icon="map-pin"
                   main={exact ? streetText(job) : placeText(job)}
-                  sub={
-                    exact
-                      ? [placeText(job), distance].filter(Boolean).join(' · ')
-                      : [distance, 'O endereço completo aparece quando a empresa aprovar você']
-                          .filter(Boolean)
-                          .join(' · ')
-                  }
+                  sub={[exact ? placeText(job) : null, distance].filter(Boolean).join(' · ') || undefined}
                 />
-                {exact ? <MapLinks job={job} /> : null}
                 {placeType ? <InfoRow icon="house" main={placeType} sub="Tipo do local" /> : null}
                 {days ? (
                   <InfoRow
@@ -278,6 +274,15 @@ export default function JobDetail({ params }: ScreenProps) {
                 <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com a empresa" />
               </div>
             </Card>
+          </Section>
+
+          {/* U53: the map — the job's place and where the worker is, with the route; opens in Google Maps. */}
+          <Section title="Onde vai ser">
+            <JobMap
+              job={{ lat: job.address.lat, lon: job.address.lon }}
+              place={exact ? fullAddressText(job) : placeText(job)}
+              home={role === 'trabalhador' ? workerHome(db) : null}
+            />
           </Section>
 
           {/* W04: nothing to bring, no empty section. */}

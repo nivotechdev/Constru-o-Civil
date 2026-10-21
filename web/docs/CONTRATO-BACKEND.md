@@ -42,20 +42,20 @@ dessas funções, mantendo **assinatura, retorno e erros**. Nenhuma tela precisa
 
 ## Tabelas
 
-| tabela               | domínio                | observações                                                                       |
-| -------------------- | ---------------------- | --------------------------------------------------------------------------------- |
-| `accounts`           | `Account`              | `id` = `auth.users.id`; e-mail, documento, WhatsApp, confirmações, termos aceitos |
-| `oficios`            | `Oficio`               | catálogo único (id, nome, sinônimos)                                              |
-| `workers`            | `Worker`               | `oficio_id`, cidade/bairro/lat/lon, `rating`, `review_count`, `whatsapp` privado  |
-| `companies`          | `Company`              | `whatsapp` privado                                                                |
-| `jobs`               | `Job`                  | endereço completo + lat/lon, datas/horários reais, `boost_ends_at`, `deleted_at`  |
-| `applications`       | `Application`          | status só muda pela tabela de transições; `auto_rejected`, `*_reviewed`           |
-| `application_events` | `Application.events`   | histórico (status, quando, quem, motivo)                                          |
-| `reviews`            | `Review`               | `application_id`, `direction`, nota, pontos (`tags`), comentário                  |
-| `saved_jobs`         | `Database.savedJobIds` | por trabalhador                                                                   |
-| `worker_posts`       | `WorkerPost`           | portfólio                                                                         |
-| `notifications`      | `AppNotification`      | de um trabalhador **ou** de uma construtora; `target` = rota que abre             |
-| `boost_payments`     | `BoostPayment`         | PIX/cartão; só `confirmado` define `jobs.boost_ends_at`                           |
+| tabela               | domínio                | observações                                                                                                            |
+| -------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `accounts`           | `Account`              | `id` = `auth.users.id`; e-mail, documento, WhatsApp, confirmações, termos aceitos                                      |
+| `oficios`            | `Oficio`               | catálogo único (id, nome, sinônimos)                                                                                   |
+| `workers`            | `Worker`               | `oficio_id`, cidade/bairro/lat/lon, `rating`, `review_count`, `whatsapp` privado                                       |
+| `companies`          | `Company`              | `whatsapp` privado                                                                                                     |
+| `jobs`               | `Job`                  | endereço completo + lat/lon (U53: lido por qualquer conta logada), datas/horários reais, `boost_ends_at`, `deleted_at` |
+| `applications`       | `Application`          | status só muda pela tabela de transições; `auto_rejected`, `*_reviewed`                                                |
+| `application_events` | `Application.events`   | histórico (status, quando, quem, motivo)                                                                               |
+| `reviews`            | `Review`               | `application_id`, `direction`, nota, pontos (`tags`), comentário                                                       |
+| `saved_jobs`         | `Database.savedJobIds` | por trabalhador                                                                                                        |
+| `worker_posts`       | `WorkerPost`           | portfólio                                                                                                              |
+| `notifications`      | `AppNotification`      | de um trabalhador **ou** de uma construtora; `target` = rota que abre                                                  |
+| `boost_payments`     | `BoostPayment`         | PIX/cartão; só `confirmado` define `jobs.boost_ends_at`                                                                |
 
 As tabelas reais estão nas migrations de `web/supabase/migrations/` (as três de 2026-10-09 e as da rodada 2,
 2026-10-10 a 2026-10-14); `types/database.generated.ts` é gerado delas e o `typecheck` confere `types/supabase.ts`

@@ -53,7 +53,7 @@ export const TERMS: LegalDocument = {
       body: [
         'Quem contrata publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.',
         'O trabalhador se candidata só a vagas que pode cumprir e avisa pela Bicos se não puder ir.',
-        'O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço exato do serviço aparece só para quem foi escolhido.'
+        'O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço do serviço aparece na vaga para quem tem conta, com o mapa.'
       ]
     },
     {
@@ -133,7 +133,7 @@ export const PRIVACY: LegalDocument = {
     {
       title: '4. Para que usamos e com qual base legal',
       body: [
-        'Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar empresas e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço do serviço a quem foi escolhido, avaliações e avisos.',
+        'Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar empresas e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço e o mapa do serviço na vaga, avaliações e avisos.',
         'Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da empresa pelo CNPJ (dado público).',
         'Para cumprir a lei (art. 7º, II): registros de pagamento e de acesso pelo tempo que a lei exigir.',
         'Com o seu consentimento (art. 7º, I e art. 11, I): selfie e documento, notificações no celular e localização do aparelho.',
@@ -143,7 +143,7 @@ export const PRIVACY: LegalDocument = {
     {
       title: '5. Com quem compartilhamos',
       body: [
-        'Com a outra parte da diária, só o necessário: o perfil e, depois da aprovação, o WhatsApp; o endereço exato só para quem foi escolhido.',
+        'Com a outra parte da diária, só o necessário: o perfil e, depois da aprovação, o WhatsApp. O endereço do serviço que a empresa publica fica visível na vaga para quem tem conta.',
         'Com empresas que operam o serviço para nós (operadores), sob contrato e só para isso: Supabase (banco de dados, arquivos e login; servidores em São Paulo, empresa nos EUA), Cloudflare (hospedagem do site e captcha; rede mundial), Mercado Pago (pagamentos; Brasil), Twilio (código por WhatsApp ou SMS; EUA), Sentry (relatórios de erro sem dados pessoais; EUA), Brevo (envio de e-mails; França) e Google (login, se você escolher; EUA). A consulta do CNPJ usa a BrasilAPI (dados públicos da Receita). Para achar um endereço, o que você digita (CEP, rua, bairro, cidade) é consultado na BrasilAPI e no ViaCEP (Correios) e no OpenStreetMap (Nominatim e Photon), sem o seu nome nem a sua conta.',
         'Alguns desses operadores ficam fora do Brasil. A transferência segue o art. 33 da LGPD ({{BASE_TRANSFERENCIA_INTERNACIONAL}}).',
         'Com autoridades, quando a lei ou uma ordem judicial exigir.'

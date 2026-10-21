@@ -694,6 +694,20 @@ select count(*) from information_schema.columns
 select prosrc like '%weekdays%' from pg_proc where proname = 'job_runs_on';  -- true
 ```
 
+### 59. `20261021000800_u53_endereco_publico.sql` (U53)
+
+O endereço completo da vaga (CEP, rua, número, complemento e o ponto exato) passa a sair por `select` para qualquer
+conta logada — não só para a empresa e quem ela aprovou. `feed_jobs` também manda esses campos (o mapa da vaga e a
+distância usam o ponto exato). Quem não entrou (link público, `public_job_card`) continua vendo só bairro e cidade.
+O WhatsApp continua só depois da aprovação. **Aplicar antes de publicar o front novo**: o app passa a pedir essas
+colunas ao ler a vaga (sem a migration, a leitura falha). Não apaga nada.
+
+```sql
+select has_column_privilege('authenticated', 'public.jobs', 'street', 'select');  -- true
+select has_column_privilege('anon', 'public.jobs', 'street', 'select');           -- false
+select prosrc like '%''street''%' from pg_proc where proname = 'feed_jobs';         -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

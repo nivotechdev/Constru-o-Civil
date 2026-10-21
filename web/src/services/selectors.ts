@@ -144,16 +144,11 @@ export const isJobClosed = (db: Database, job: Job, now: Date = new Date()): boo
   jobState(db, job, now) !== 'aberta';
 
 /**
- * Whether the session may see the job's street, number and CEP (Z06): the company that owns it, or the
- * worker picked or hired for it. Everyone else sees the neighbourhood, the city and the distance. In real
- * mode the server only sends the address to them (get_job_addresses); in the demo this is what hides it.
+ * Whether the session sees the job's street, number and CEP. U53: everyone signed in does (before, Z06, only the
+ * company and the worker it picked or hired); the public link, without a session, shows only the area.
  */
-export function canSeeExactAddress(db: Database, job: Job): boolean {
-  const session = getSession();
-  if (!session) return false;
-  if (session.companyId && job.companyId === session.companyId) return true;
-  const app = session.workerId ? applicationFor(db, job.id, session.workerId) : null;
-  return Boolean(app && (app.status === 'pre_selecionado' || app.status === 'contratado'));
+export function canSeeExactAddress(_db: Database, _job: Job): boolean {
+  return Boolean(getSession());
 }
 
 // ---- saved jobs ----

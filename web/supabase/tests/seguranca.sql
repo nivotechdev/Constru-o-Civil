@@ -18,7 +18,7 @@ select public.transition_application((select v from t_ids), '7d000000-0000-0000-
 select pg_temp.login('7d000000-0000-0000-0000-0000000000d3');
 select pg_temp.fails($$select whatsapp from public.workers$$, '42501');
 select pg_temp.fails($$select whatsapp from public.companies$$, '42501');
-select pg_temp.fails($$select street, number, lat, lon from public.jobs$$, '42501');
+select pg_temp.fails($$select hidden_reason from public.jobs$$, '42501');  -- U53: o endereço é público; a moderação não
 select pg_temp.ok((select count(*) from public.get_job_addresses(array[(select v from t_ids)])) = 0, 'sem endereço exato');
 select pg_temp.fails($$select * from public.get_contact((select id from public.applications limit 1))$$, 'BC404');
 select pg_temp.ok((select count(*) from public.accounts where id <> auth.uid()) = 0, 'não vê conta de ninguém');

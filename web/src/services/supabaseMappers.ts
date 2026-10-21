@@ -268,8 +268,9 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
   return job;
 }
 
-/** A job as anyone may read it (Z06): no street, number, complement or CEP; the point is the area's. */
-export type JobRowRead = Omit<TableRow<'jobs'>, 'cep' | 'street' | 'number' | 'complement' | 'lat' | 'lon'>;
+/** A job as read: since U53 with the full address (cep, street, number, complement, lat, lon) for signed-in accounts. */
+export type JobRowRead = Omit<TableRow<'jobs'>, 'cep' | 'street' | 'number' | 'complement' | 'lat' | 'lon'> &
+  Partial<Pick<TableRow<'jobs'>, 'cep' | 'street' | 'number' | 'complement' | 'lat' | 'lon'>>;
 
 const PRECISIONS: PlacePrecision[] = ['numero', 'rua', 'cep', 'bairro', 'cidade'];
 
@@ -288,6 +289,14 @@ export function addressFromRow(row: TableRow<'addresses'>): HomeAddress {
 }
 
 export function jobFromReadRow(row: JobRowRead): Job {
+  const area = row.area_lat != null && row.area_lon != null ? { area: { lat: row.area_lat, lon: row.area_lon } } : {};
+  // U53: the full address is public to signed-in accounts (it comes with the row); a row without it (the public link,
+  // a database from before U53) has only the area.
+  const full = row as Partial<TableRow<'jobs'>>;
+  if (typeof full.street === 'string' && full.street && typeof full.lat === 'number' && typeof full.lon === 'number') {
+    const job = jobFromRow(full as TableRow<'jobs'>);
+    return { ...job, address: { ...job.address, exact: true, ...area } };
+  }
   const job = jobFromRow({
     ...row,
     cep: '',
@@ -297,7 +306,6 @@ export function jobFromReadRow(row: JobRowRead): Job {
     lat: row.area_lat ?? 0,
     lon: row.area_lon ?? 0
   } as TableRow<'jobs'>);
-  const area = row.area_lat != null && row.area_lon != null ? { area: { lat: row.area_lat, lon: row.area_lon } } : {};
   return { ...job, address: { ...job.address, exact: false, ...area } };
 }
 

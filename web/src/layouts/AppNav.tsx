@@ -98,8 +98,9 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
     <div className="contents">
       {showMobilePill ? (
         // U50: simple and steady — a plain bar in the surface colour (no glass, no glow), each tab its icon with its
-        // name underneath, and the open tab on a light blue pill drawn in its own place (nothing slides from where it
-        // was, so nothing can be left out of place). Centred with auto margins, never with a half-pixel transform.
+        // name underneath, and the open tab on a pill drawn in its own place (nothing slides from where it was, so
+        // nothing can be left out of place). U53: the pill is the app's blue (brand-500, both themes), the same size
+        // on every tab. Centred with auto margins, never with a half-pixel transform.
         <nav
           aria-label="Navegação principal"
           className="lg:hidden fixed inset-x-0 mx-auto z-30 flex items-stretch gap-1 p-1.5 rounded-full bg-concrete-0 border border-concrete-200 shadow-[0_4px_14px_rgba(16,24,40,0.08)]"
@@ -116,12 +117,12 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
                 key={it.id}
                 type="button"
                 aria-current={isActive ? 'page' : undefined}
-                // Each tab as wide as its name plus an equal share of the rest, so a long name ("Candidaturas") keeps
-                // the same air around it as a short one instead of touching the edge of its pill.
+                // U53: every tab the same width (the open one's pill no bigger than the others), and the open tab in the
+                // app's main blue, the same in the light and the dark theme.
                 className={cx(
-                  'flex-auto min-w-0 flex flex-col items-center justify-center gap-0.5 h-[3.375rem] px-3 rounded-full',
+                  'flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 h-[3.375rem] px-2 rounded-full',
                   'outline-none focus-visible:ring-4 focus-visible:ring-brand-100 transition-colors duration-150',
-                  isActive ? 'bg-brand-50 text-brand-600' : 'text-concrete-600 active:bg-concrete-100'
+                  isActive ? 'bg-brand-500 text-white' : 'text-concrete-600 active:bg-concrete-100'
                 )}
                 onClick={() => navigate(it.path)}
               >
