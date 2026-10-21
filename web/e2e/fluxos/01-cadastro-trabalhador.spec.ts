@@ -34,9 +34,8 @@ test('trabalhador se cadastra, confirma o e-mail e completa o perfil', async ({ 
   await page.fill(k + 'whatsapp', whatsapp);
   await page.getByRole('button', { name: 'Continuar' }).click();
   await page.fill(k + 'senha', ENV.password);
-  await page.fill(k + 'confirm', ENV.password);
   await page.getByText('Tenho 18 anos ou mais').click();
-  await page.getByText('Li e aceito os Termos de uso e a Política de privacidade').click();
+  await page.getByRole('checkbox', { name: /Li e aceito/ }).check({ force: true });
   await print(page, 'f1', 'cadastro senha e aceites');
   await page.getByRole('button', { name: 'Criar minha conta' }).click();
 

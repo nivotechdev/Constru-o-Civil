@@ -109,90 +109,111 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-concrete-0">
-      <div className="max-w-app mx-auto px-6 sm:px-8 pt-14 pb-10 flex flex-col gap-8">
-        <div className="flex flex-col items-center gap-5 text-center">
-          <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-brand-500">
-            <Icon name="hammer" size={22} color="#fff" />
-          </span>
-          <h1 className="font-display font-bold text-3xl text-concrete-900">Olá de novo</h1>
-        </div>
-        {/* X04: a real <form>, so password managers recognize the sign-in (Enter is handled by the fields). */}
-        <form
-          className="flex flex-col gap-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit();
-          }}
-        >
-          {ui.notice ? (
-            <Card tone="sunken" padding="sm">
-              <div className="flex gap-2.5 items-center" role="status">
-                <Icon name="info" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">{ui.notice}</span>
-              </div>
-            </Card>
-          ) : null}
-          <Input
-            id="login-identifier"
-            label="E-mail, CPF ou CNPJ"
-            placeholder="voce@email.com"
-            icon="mail"
-            inputMode="email"
-            autoComplete="username"
-            value={ui.identifier}
-            error={ui.identifierError}
-            onInput={(v) => setUi({ identifier: v, identifierError: null, error: null })}
-            onEnter={submit}
-          />
-          <PasswordInput
-            id="login-password"
-            value={password}
-            error={ui.passwordError}
-            visible={ui.visible}
-            onToggleVisible={() => setUi({ visible: !ui.visible })}
-            onInput={(v) => {
-              setPassword(v);
-              setUi({ passwordError: null, error: null });
-            }}
-            onEnter={submit}
-          />
-          {captcha.widget}
-          {ui.error ? <FieldError message={ui.error} /> : null}
-          {ui.unconfirmed ? <Unconfirmed ui={ui} setUi={setUi} /> : null}
-          <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
-          {FEATURES.googleLogin ? <OrDivider /> : null}
-          {FEATURES.googleLogin ? (
-            <GoogleButton onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))} />
-          ) : null}
-        </form>
-        <div className="flex flex-col items-center gap-1">
-          <Button label="Esqueci minha senha" variant="ghost" onClick={() => navigate('/esqueci-senha')} />
-          <Button label="Criar minha conta" variant="ghost" onClick={() => navigate('/escolha-perfil')} />
-        </div>
-        {DEMO_ACCOUNTS.length ? (
-          <div className="flex flex-col gap-2 p-4 rounded-card bg-concrete-50 border border-concrete-200 text-sm text-concrete-600">
-            <span className="font-semibold text-concrete-800">Contas de demonstração</span>
-            {DEMO_ACCOUNTS.map((a) => (
-              <button
-                key={a.email}
-                type="button"
-                className="flex flex-wrap items-baseline gap-x-2 text-left hover:text-brand-600"
-                onClick={() => {
-                  setPassword(a.password);
-                  setUi({ identifier: a.email, identifierError: null, passwordError: null, error: null });
-                }}
-              >
-                <span className="font-semibold">{a.role === 'recrutador' ? 'Construtora:' : 'Trabalhador:'}</span>
-                <span className="font-mono">{a.email}</span>
-              </button>
-            ))}
-            <span>
-              Senha das duas: <span className="font-mono">{DEMO_ACCOUNTS[0]?.password}</span>. Toque numa conta para
-              preencher.
+    // U41: a fixed screen, like the sign-up — exactly the visible height, nothing to scroll on a small phone. Only a
+    // rare state (the e-mail code right here, the demo accounts) can make it scroll, as a last resort.
+    <div className="flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] bg-concrete-0">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-none">
+        <div className="max-w-app mx-auto min-h-full px-6 sm:px-8 pt-12 pb-[max(1rem,env(safe-area-inset-bottom))] short:pt-6 flex flex-col gap-7 short:gap-4">
+          <div className="flex flex-col items-center gap-4 short:gap-2.5 text-center">
+            <span className="inline-flex items-center justify-center w-11 h-11 short:w-10 short:h-10 rounded-xl bg-brand-500">
+              <Icon name="hammer" size={22} color="#fff" />
             </span>
+            <h1 className="font-display font-bold text-3xl short:text-[1.625rem] text-concrete-900">Olá de novo</h1>
           </div>
-        ) : null}
+          {/* X04: a real <form>, so password managers recognize the sign-in (Enter is handled by the fields). */}
+          <form
+            className="flex flex-col gap-5 short:gap-3.5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submit();
+            }}
+          >
+            {ui.notice ? (
+              <Card tone="sunken" padding="sm">
+                <div className="flex gap-2.5 items-center" role="status">
+                  <Icon name="info" size={20} color="var(--text-subtle)" />
+                  <span className="text-sm text-concrete-700">{ui.notice}</span>
+                </div>
+              </Card>
+            ) : null}
+            <Input
+              id="login-identifier"
+              label="E-mail, CPF ou CNPJ"
+              placeholder="voce@email.com"
+              icon="mail"
+              inputMode="email"
+              autoComplete="username"
+              value={ui.identifier}
+              error={ui.identifierError}
+              onInput={(v) => setUi({ identifier: v, identifierError: null, error: null })}
+              onEnter={submit}
+            />
+            <PasswordInput
+              id="login-password"
+              value={password}
+              error={ui.passwordError}
+              visible={ui.visible}
+              onToggleVisible={() => setUi({ visible: !ui.visible })}
+              onInput={(v) => {
+                setPassword(v);
+                setUi({ passwordError: null, error: null });
+              }}
+              onEnter={submit}
+            />
+            <div className="flex justify-end -mt-2 short:-mt-1.5">
+              <button
+                type="button"
+                className="h-9 px-1 text-sm font-semibold text-brand-600 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+                onClick={() => navigate('/esqueci-senha')}
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+            {captcha.widget}
+            {ui.error ? <FieldError message={ui.error} /> : null}
+            {ui.unconfirmed ? <Unconfirmed ui={ui} setUi={setUi} /> : null}
+            <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
+            {FEATURES.googleLogin ? <OrDivider /> : null}
+            {FEATURES.googleLogin ? (
+              <GoogleButton
+                onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))}
+              />
+            ) : null}
+          </form>
+          <p className="mt-auto flex flex-wrap items-center justify-center gap-x-1 text-sm text-concrete-600">
+            Não tem conta?
+            <button
+              type="button"
+              className="h-10 px-1 font-semibold text-brand-600 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+              onClick={() => navigate('/escolha-perfil')}
+            >
+              Criar minha conta
+            </button>
+          </p>
+          {DEMO_ACCOUNTS.length ? (
+            <div className="flex flex-col gap-2 p-4 rounded-card bg-concrete-50 border border-concrete-200 text-sm text-concrete-600">
+              <span className="font-semibold text-concrete-800">Contas de demonstração</span>
+              {DEMO_ACCOUNTS.map((a) => (
+                <button
+                  key={a.email}
+                  type="button"
+                  className="flex flex-wrap items-baseline gap-x-2 text-left hover:text-brand-600"
+                  onClick={() => {
+                    setPassword(a.password);
+                    setUi({ identifier: a.email, identifierError: null, passwordError: null, error: null });
+                  }}
+                >
+                  <span className="font-semibold">{a.role === 'recrutador' ? 'Construtora:' : 'Trabalhador:'}</span>
+                  <span className="font-mono">{a.email}</span>
+                </button>
+              ))}
+              <span>
+                Senha das duas: <span className="font-mono">{DEMO_ACCOUNTS[0]?.password}</span>. Toque numa conta para
+                preencher.
+              </span>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

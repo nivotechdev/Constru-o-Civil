@@ -46,7 +46,7 @@ export function GoogleButton({
 /** The "ou" line between the e-mail way and the Google button. */
 export function OrDivider() {
   return (
-    <div className="flex items-center gap-3 py-1" aria-hidden="true">
+    <div className="flex items-center gap-3 py-1 short:py-0" aria-hidden="true">
       <span className="flex-1 h-px bg-concrete-200" />
       <span className="text-xs text-concrete-500">ou</span>
       <span className="flex-1 h-px bg-concrete-200" />

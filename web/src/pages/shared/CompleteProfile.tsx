@@ -4,7 +4,7 @@
 import { Button } from '../../components/Button';
 import { CurrentLocationField } from '../../components/CurrentLocationField';
 import { FieldError } from '../../components/FieldError';
-import { FlowHeading, FlowLayout } from '../../components/FlowLayout';
+import { FlowBar, FlowHeading, FlowLayout, FlowSignOut } from '../../components/FlowLayout';
 import { PhotoSlot } from '../../components/PhotoSlot';
 import { useUI } from '../../hooks/useStore';
 import { finishSignUp } from '../../services/auth';
@@ -75,12 +75,12 @@ export default function CompleteProfile({ params }: ScreenProps) {
 
   return (
     <FlowLayout
+      // Y26/U41: the way out for whoever entered the wrong account, on top ("Sair").
+      header={<FlowBar title="Criar minha conta" action={<FlowSignOut onClick={askSignOut} />} />}
       footer={
         <>
           {ui.saveError ? <FieldError message={ui.saveError} /> : null}
           <Button label="Concluir perfil" size="lg" fullWidth loading={ui.saving} onClick={finish} />
-          {/* Y26: a way out for whoever entered the wrong account. */}
-          <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
         </>
       }
     >
@@ -96,15 +96,16 @@ export default function CompleteProfile({ params }: ScreenProps) {
 
       {/* The cover with the photo over its corner, the way the profile shows them. */}
       <div className="flex flex-col gap-2">
-        <div className="relative pb-12">
+        <div className="relative pb-12 short:pb-10">
           <PhotoSlot
             shape="rect"
             value={ui.capa}
             onChange={(v) => setUi({ capa: v })}
-            height="8.5rem"
+            height="var(--capa-altura)"
+            className="[--capa-altura:8.5rem] short:[--capa-altura:6rem]"
             placeholder="Escolher capa"
           />
-          <div className={cx('absolute left-4 bottom-0 w-24 h-24 shadow-raised', AVATAR_FRAME)}>
+          <div className={cx('absolute left-4 bottom-0 w-24 h-24 short:w-20 short:h-20 shadow-raised', AVATAR_FRAME)}>
             <PhotoSlot
               shape="circle"
               value={ui.photo}

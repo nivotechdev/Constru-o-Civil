@@ -164,10 +164,8 @@ interface SignupUI {
   step: number;
   values: Values;
   errors: Partial<Record<FieldId, string | null>>;
-  generalError: boolean;
   submitting: boolean;
   passwordVisible: boolean;
-  confirmError: string | null;
   accepted: boolean;
   acceptError: boolean;
   /** L14: the terms require 18+. */
@@ -251,10 +249,8 @@ export default function Signup({ params }: ScreenProps) {
     // U28: a number confirmed by SMS that had no account comes filled in.
     values: ((phone) => (phone ? { whatsapp: maskPhone(phone) } : {}))(takeSignUpPhone()),
     errors: {},
-    generalError: false,
     submitting: false,
     passwordVisible: false,
-    confirmError: null,
     accepted: false,
     acceptError: false,
     adult: false,
@@ -268,7 +264,6 @@ export default function Signup({ params }: ScreenProps) {
   // Y22: the password only lives in this screen (never in the shared store), and the draft (name,
   // document, e-mail…) is forgotten when the flow is left — except for a look at the terms.
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const values: Values = { ...ui.values, senha: password };
   // U37: the name comes from Google (the person's: the worker's full name, the company's contact), still editable.
   const googleName = google?.name ?? '';
@@ -318,7 +313,7 @@ export default function Signup({ params }: ScreenProps) {
   }
 
   function goBack() {
-    if (step > 0) setUi({ step: step - 1, generalError: false, submitError: null });
+    if (step > 0) setUi({ step: step - 1, submitError: null });
     else routerGoBack('/escolha-perfil');
   }
 
@@ -330,13 +325,12 @@ export default function Signup({ params }: ScreenProps) {
     if (field.mask === 'phone') value = maskPhone(v);
     if (field.id === 'senha') {
       setPassword(value);
-      setUi((s) => ({ errors: { ...s.errors, senha: null }, generalError: false, submitError: null }));
+      setUi((s) => ({ errors: { ...s.errors, senha: null }, submitError: null }));
       return;
     }
     setUi((s) => ({
       values: { ...s.values, [field.id]: value },
       errors: { ...s.errors, [field.id]: null },
-      generalError: false,
       submitError: null,
       taken: null
     }));
@@ -411,10 +405,6 @@ export default function Signup({ params }: ScreenProps) {
       setUi({ step: step + 1 });
       return;
     }
-    if (confirmPassword !== password) {
-      setUi({ confirmError: 'As senhas não são iguais. Confira os dois campos.' });
-      return;
-    }
     if (!ui.adult || !ui.accepted) {
       setUi({ adultError: !ui.adult, acceptError: !ui.accepted });
       return;
@@ -449,10 +439,7 @@ export default function Signup({ params }: ScreenProps) {
           return;
         }
         if (!result.ok) {
-          // Refused without a reason (it would reveal whether the CPF/CNPJ has an account): back to the
-          // document step, with the general error.
-          const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
-          setUi({ submitting: false, step: docStep, generalError: true });
+          refused();
           return;
         }
         // The account now exists and is logged in; the route guard takes it to "Confirme seu e-mail".
@@ -482,12 +469,29 @@ export default function Signup({ params }: ScreenProps) {
       })
       .catch((e: unknown) => {
         if (e instanceof ServiceError && e.code === 'conflito') {
-          // Refused without saying why (it would reveal whose the CPF/CNPJ is): back to the document step.
-          setUi({ submitting: false, step: cfg.fields.findIndex((f) => f.id === 'doc'), generalError: true });
+          refused();
           return;
         }
         setUi({ submitting: false, submitError: errorMessage(e) });
       });
+  }
+
+  /**
+   * The server refused the account without saying why (it would reveal whose the CPF/CNPJ is): back to the document
+   * step, with the message under the field and "Entrar na conta" / "Recuperar senha" (U41: no big red card).
+   */
+  function refused() {
+    const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
+    const doc = role === 'recrutador' ? 'esse CNPJ ou CPF' : 'esse CPF';
+    setUi((s) => ({
+      submitting: false,
+      step: docStep,
+      taken: 'doc',
+      errors: {
+        ...s.errors,
+        doc: `Não deu para criar a conta com ${doc}. Se você já tem conta na Bicos, entre ou recupere a senha.`
+      }
+    }));
   }
 
   /** U40: "Entrar na conta" / "Recuperar senha" from the middle of a Google sign-up end the pending Google login. */
@@ -530,35 +534,6 @@ export default function Signup({ params }: ScreenProps) {
         </>
       }
     >
-      {ui.generalError ? (
-        <div className="flex flex-col gap-3.5 p-4 bg-danger-50 border border-danger-500 rounded-card">
-          <div className="flex gap-2.5 items-start">
-            <span className="shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-1">
-              <span className="font-semibold text-danger-500">Não deu para criar a conta com esses dados.</span>
-              <span className="text-sm text-concrete-700">
-                {`Confira o ${role === 'recrutador' ? 'CNPJ ou CPF' : 'CPF'}${google ? '' : ' e o e-mail'}. Se você já tem conta na Bicos, entre ou recupere a senha. Se não foi você quem criou, fale com a gente pelo WhatsApp.`}
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              label="Entrar na conta"
-              variant="secondary"
-              size="sm"
-              className="flex-1"
-              onClick={() => leaveTo('/login')}
-            />
-            <Button
-              label="Recuperar senha"
-              variant="ghost"
-              size="sm"
-              className="flex-1"
-              onClick={() => leaveTo('/esqueci-senha')}
-            />
-          </div>
-        </div>
-      ) : null}
       <FlowHeading overline={cfg.overline} title={field.question} help={field.help} />
       {field.isCode ? (
         <WhatsAppCode
@@ -575,72 +550,46 @@ export default function Signup({ params }: ScreenProps) {
           onEditNumber={goBack}
         />
       ) : field.isPassword ? (
-        <div className="flex flex-col gap-5">
-          <PasswordInput
-            id={key + '-senha'}
-            label={field.label}
-            placeholder={field.placeholder}
-            value={password}
-            error={ui.errors.senha}
-            visible={ui.passwordVisible}
-            onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
-            autoComplete="new-password"
-            onInput={setValue}
-            onEnter={continueByEnter}
-          />
-          <PasswordInput
-            id={key + '-confirm'}
-            autoComplete="new-password"
-            label="Confirme a senha"
-            placeholder="Repita a senha"
-            value={confirmPassword}
-            error={ui.confirmError}
-            visible={ui.passwordVisible}
-            onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
-            onInput={(v) => {
-              setConfirmPassword(v);
-              setUi({ confirmError: null });
-            }}
-            onEnter={continueByEnter}
-          />
-          <div className="flex flex-col gap-5">
+        // U41: one password field with the eye (no "repeat the password"), its strength in one line and the two
+        // agreements with the links inside their own text — the whole step fits the screen.
+        <div className="flex flex-col gap-4 short:gap-3">
+          <div className="flex flex-col gap-2">
+            <PasswordInput
+              id={key + '-senha'}
+              label={field.label}
+              placeholder={field.placeholder}
+              value={password}
+              error={ui.errors.senha}
+              visible={ui.passwordVisible}
+              onToggleVisible={() => setUi({ passwordVisible: !ui.passwordVisible })}
+              autoComplete="new-password"
+              onInput={setValue}
+              onEnter={continueByEnter}
+            />
             <PasswordStrength password={password} />
-            <div className="flex flex-col gap-1 pt-1 border-t border-concrete-200">
-              <Checkbox
-                label="Tenho 18 anos ou mais"
-                checked={ui.adult}
-                onChange={(v) => setUi({ adult: v, adultError: false })}
-              />
-              {ui.adultError ? (
-                <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
-                  A Bicos é só para maiores de 18 anos.
-                </span>
-              ) : null}
-            </div>
-            <div className="flex flex-col gap-1">
-              <Checkbox
-                label="Li e aceito os Termos de uso e a Política de privacidade"
-                checked={ui.accepted}
-                onChange={(v) => setUi({ accepted: v, acceptError: false })}
-              />
-              <div className="flex gap-4 pl-9">
-                <button type="button" className="text-sm text-brand-600 underline" onClick={() => navigate('/termos')}>
-                  Termos de uso
-                </button>
-                <button
-                  type="button"
-                  className="text-sm text-brand-600 underline"
-                  onClick={() => navigate('/privacidade')}
-                >
-                  Política de privacidade
-                </button>
-              </div>
-              {ui.acceptError ? (
-                <span className="flex items-center gap-2 pl-9 text-sm text-danger-500">
-                  Aceite as condições para criar sua conta.
-                </span>
-              ) : null}
-            </div>
+          </div>
+          <div className="flex flex-col pt-1 border-t border-concrete-200">
+            <Checkbox
+              label="Tenho 18 anos ou mais"
+              checked={ui.adult}
+              onChange={(v) => setUi({ adult: v, adultError: false })}
+            />
+            {ui.adultError ? (
+              <span className="pl-9 -mt-1 text-sm text-danger-500">A Bicos é só para maiores de 18 anos.</span>
+            ) : null}
+            <Checkbox
+              label={
+                <>
+                  Li e aceito os <DocLink path="/termos">Termos de uso</DocLink> e a{' '}
+                  <DocLink path="/privacidade">Política de privacidade</DocLink>
+                </>
+              }
+              checked={ui.accepted}
+              onChange={(v) => setUi({ accepted: v, acceptError: false })}
+            />
+            {ui.acceptError ? (
+              <span className="pl-9 -mt-1 text-sm text-danger-500">Aceite as condições para criar sua conta.</span>
+            ) : null}
           </div>
         </div>
       ) : (
@@ -664,7 +613,7 @@ export default function Signup({ params }: ScreenProps) {
         />
       )}
       {ui.taken === field.id ? (
-        <div className="flex gap-2 -mt-3">
+        <div className="flex gap-2 -mt-2 short:-mt-1">
           <Button
             label="Entrar na conta"
             variant="secondary"
@@ -693,4 +642,21 @@ function fieldAutoComplete(field: SignupField, role: Role): string | undefined {
   if (field.id === 'nome') return role === 'recrutador' ? 'organization' : 'name';
   if (field.id === 'responsavel') return 'name';
   return undefined;
+}
+
+/** A link to the terms or the privacy policy inside an agreement's text: opens it without ticking the box. */
+function DocLink({ path, children }: { path: string; children: string }) {
+  return (
+    <button
+      type="button"
+      className="font-semibold text-brand-600 underline underline-offset-2"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigate(path);
+      }}
+    >
+      {children}
+    </button>
+  );
 }

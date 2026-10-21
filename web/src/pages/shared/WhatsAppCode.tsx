@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { CodeInput } from '../../components/CodeInput';
 import { Icon } from '../../components/icons/Icon';
 import { WHATSAPP_RESEND_SECONDS } from '../../services/auth';
+import { IS_DEMO } from '../../services/mode';
 
 interface WhatsAppCodeProps {
   /** id of the (visually hidden) input, so the step can focus it. */
@@ -49,14 +50,14 @@ export function WhatsAppCode({
   const seconds = useCountdown(sentAt);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3 p-3.5 rounded-card bg-concrete-0 border border-concrete-200">
+    <div className="flex flex-col gap-6 short:gap-3.5">
+      <div className="flex items-center gap-3 p-3.5 short:p-3 rounded-card bg-concrete-0 border border-concrete-200">
         <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#128C4A]/10 shrink-0">
           <Icon name="message-circle" size={20} color="#128C4A" />
         </span>
         <span className="flex-1 min-w-0 flex flex-col">
           <span className="text-xs text-concrete-500">Código enviado para</span>
-          <span className="font-mono font-bold text-concrete-900 truncate">{phone}</span>
+          <span className="font-mono font-bold text-sm sm:text-base text-concrete-900 truncate">{phone}</span>
         </span>
         <button
           type="button"
@@ -93,7 +94,9 @@ export function WhatsAppCode({
             {resending ? 'Reenviando…' : 'Reenviar código pelo WhatsApp'}
           </button>
         )}
-        <span className="text-xs text-concrete-500">Demonstração: qualquer código de 6 números confirma.</span>
+        {IS_DEMO ? (
+          <span className="text-xs text-concrete-500">Demonstração: qualquer código de 6 números confirma.</span>
+        ) : null}
       </div>
     </div>
   );

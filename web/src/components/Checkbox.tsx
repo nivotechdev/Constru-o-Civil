@@ -11,7 +11,10 @@ interface CheckboxProps {
 export function Checkbox({ label, checked = false, onChange }: CheckboxProps) {
   const fieldId = useId();
   return (
-    <label htmlFor={fieldId} className="flex items-center gap-3 min-h-12 py-2 cursor-pointer select-none">
+    <label
+      htmlFor={fieldId}
+      className="flex items-center gap-3 min-h-12 py-2 cursor-pointer select-none short:min-h-10 short:py-1"
+    >
       <input
         id={fieldId}
         type="checkbox"

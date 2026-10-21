@@ -18,7 +18,7 @@ export function RadioCard({ name, icon, label, description, checked = false, onC
     <label
       htmlFor={fieldId}
       className={cx(
-        'flex items-center gap-3.5 min-h-[5.5rem] p-4 rounded-card border cursor-pointer transition-colors',
+        'flex items-center gap-3.5 min-h-[5.5rem] p-4 rounded-card border cursor-pointer transition-colors short:min-h-0 short:py-3',
         checked ? 'bg-brand-50 border-brand-500' : 'bg-concrete-0 border-concrete-300 hover:bg-concrete-50'
       )}
     >

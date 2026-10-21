@@ -10,8 +10,9 @@ export default {
   darkMode: ['selector', '[data-theme="dark"]'],
   content: ['./index.html', './src/**/*.{ts,tsx}', '!./src/services/**', '!./src/types/**', '!./src/__tests__/**'],
   theme: {
-    // `lg` is the desktop/tablet layout (top navbar, rails); below it is the phone layout.
-    screens: { sm: '640px', lg: '770px', xl: '1280px', '2xl': '1536px' },
+    // `lg` is the desktop/tablet layout (top navbar, rails); below it is the phone layout. U41: `short` is a short
+    // screen (a small phone with the browser bars): the sign-up screens tighten there so they never scroll.
+    screens: { sm: '640px', lg: '770px', xl: '1280px', '2xl': '1536px', short: { raw: '(max-height: 719px)' } },
     extend: {
       // U21: every colour is a CSS variable (src/styles/tokens.css) so the dark theme only swaps the values; in the
       // light theme they are exactly the old hex values.

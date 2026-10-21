@@ -58,9 +58,8 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await page.fill(k + 'whatsapp', whatsapp);
   await seguir();
   await page.fill(k + 'senha', ENV.password);
-  await page.fill(k + 'confirm', ENV.password);
   await page.getByText('Tenho 18 anos ou mais').click();
-  await page.getByText('Li e aceito os Termos de uso e a Política de privacidade').click();
+  await page.getByRole('checkbox', { name: /Li e aceito/ }).check({ force: true });
   await page.getByRole('button', { name: 'Criar minha conta' }).click();
   await expect(page).toHaveURL(/\/verificar-email/);
   const id = await idDaConta(email);

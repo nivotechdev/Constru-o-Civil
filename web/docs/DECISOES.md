@@ -1986,3 +1986,28 @@ pílulas. Arrastar para reordenar ficou de fora: a ordem é a de inclusão, e o 
 Pedido do responsável: tirar o botão de entrar com o telefone do login. Saiu do login e também de "Criar minha conta"
 e do 1º passo do cadastro, para não ficar um jeito de entrar numa tela e não na outra (o envio de SMS ainda depende de
 liberar o Brasil no Firebase). A tela `/entrar-celular` continua no código, sem botão, para quando o SMS for ligado.
+
+## U40 — Cadastro com o Google igual ao cadastro normal
+
+Pedido do responsável: a tela de cadastro com o Google "não deve ser diferente da tela de cadastro normal". O registro
+do staging mostrou que o fluxo do U37 funcionava, mas o cartão "E-mail confirmado pelo Google" com o "Trocar" deixava
+a tela diferente e, tocado, desfazia o login do Google (aconteceu nas duas tentativas). **Agora** as telas são as
+mesmas, na mesma ordem: só saem o passo do e-mail, a confirmação dele e o botão do Google; o nome do Google já vem no
+campo. Voltar até o login (ou "Entrar na conta" com o CPF/WhatsApp de outra conta) encerra o login do Google pendente,
+para nada ficar preso. No fim, a sessão da conta nova espera qualquer leitura anterior terminar — o evento da senha
+gravada dispara uma leitura que podia responder "sem conta" antes de a conta existir. Plano: `docs/PLANO-CADASTRO.md`.
+
+## U41 — Telas de cadastro sem rolagem
+
+Pedido do responsável: nenhuma tela de cadastro pode rolar. Medição antes: a escolha do lado, a senha (até 146 px a
+mais), o código do WhatsApp, a confirmação do e-mail, o completar perfil e o login rolavam num Android pequeno
+(360×600, com a barra do navegador) e alguns também num iPhone (390×664). **Agora** todas cabem, de 360×600 ao
+computador, inclusive com as mensagens de erro: a estrutura fixa (`FlowLayout`) ganhou a variante `short:` do
+Tailwind (tela até 719 px de altura), que aperta espaços, título e ajuda sem tirar nada; a senha virou um campo só,
+com o olho para ver o que foi digitado ("repita a senha" saiu — com o olho ela não evita erro nenhum e era o que mais
+ocupava), com a força numa linha e os dois aceites com os links dentro do próprio texto; o CPF/CNPJ recusado pelo
+servidor virou a mensagem do campo com "Entrar na conta"/"Recuperar senha" (sem o cartão vermelho grande); "Sair e
+entrar com outra conta" virou um "Sair" no topo da confirmação do e-mail e do completar perfil; o login ficou fixo,
+com "Esqueci minha senha" junto da senha e "Não tem conta? Criar minha conta" no pé. O meio só rola como último
+recurso (aparelho menor que 360×600 ou letra gigante), para nenhum campo ficar inalcançável. De quebra: o aviso
+"Demonstração: qualquer código confirma" do código do WhatsApp aparecia também fora da demonstração.

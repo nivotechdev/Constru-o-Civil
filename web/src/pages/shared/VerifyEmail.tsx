@@ -7,7 +7,7 @@ import { Button } from '../../components/Button';
 import { useCaptcha } from '../../components/Captcha';
 import { CodeInput } from '../../components/CodeInput';
 import { FieldError } from '../../components/FieldError';
-import { FlowHeading, FlowLayout } from '../../components/FlowLayout';
+import { FlowBar, FlowHeading, FlowLayout, FlowSignOut } from '../../components/FlowLayout';
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { useSession, useScreenUI } from '../../hooks/useStore';
@@ -146,6 +146,8 @@ export default function VerifyEmail() {
 
   return (
     <FlowLayout
+      // U41: the way out ("Sair") on top, so the bottom holds only the main button and the screen never scrolls.
+      header={<FlowBar title="Criar minha conta" action={<FlowSignOut onClick={askSignOut} />} />}
       footer={
         <>
           {captcha.widget}
@@ -162,7 +164,6 @@ export default function VerifyEmail() {
           ) : (
             <Button label="Confirmar e-mail" size="lg" fullWidth loading={ui.confirming} onClick={() => confirm()} />
           )}
-          <Button label="Sair e entrar com outra conta" variant="ghost" fullWidth onClick={askSignOut} />
         </>
       }
     >
@@ -198,7 +199,7 @@ export default function VerifyEmail() {
           />
         </div>
       ) : (
-        <div className="flex items-center gap-3 p-3.5 rounded-card bg-concrete-0 border border-concrete-200">
+        <div className="flex items-center gap-3 p-3.5 short:p-3 rounded-card bg-concrete-0 border border-concrete-200">
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-50 shrink-0">
             <Icon name="mail" size={20} color="var(--brand)" />
           </span>
