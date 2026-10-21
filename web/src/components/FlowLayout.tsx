@@ -83,7 +83,7 @@ export function FlowSignOut({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="tap-target shrink-0 h-10 px-3 rounded-full text-sm font-semibold text-brand-600 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+      className="relative tap-target shrink-0 h-10 px-3 rounded-full text-sm font-semibold text-brand-600 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
     >
       Sair
     </button>

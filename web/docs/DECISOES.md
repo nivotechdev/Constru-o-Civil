@@ -2024,3 +2024,17 @@ botão do Google, o nome já preenchido, "Passo 1 de 4" sem o passo do e-mail, a
 confirmado, "Completar perfil" e o mural, a senha entrando sozinha, e que login, escolha do lado e cada passo não rolam
 no celular do teste e a 360×600. O build do E2E passou a ter os identificadores públicos do Firebase (os mesmos do site
 de teste), para o botão do Google aparecer como no site.
+
+## U43 — Trocar o e-mail na própria tela do código
+
+Problema relatado: na tela "Confirme seu e-mail", tocar em "Corrigir" para arrumar um e-mail digitado errado levava
+de volta ao login. A causa era o "Sair" do topo (U41): a área de toque maior (`tap-target`, um `::after` invisível)
+não tinha um elemento posicionado por perto e cresceu até cobrir a tela — o toque em "Corrigir" caía no "Sair". E,
+quando o cadastro não estava mais na memória, "Corrigir" mandava refazer o cadastro. **Agora** o "Sair" e o botão de
+experiências têm `relative` (e um teste varre o código: todo `tap-target` precisa estar posicionado), e "Trocar"
+abre o e-mail ali mesmo, já preenchido com o cursor no fim; "Enviar código para esse e-mail" refaz o cadastro com o
+endereço novo (os mesmos dados, guardados só na memória) e o código vai para ele na mesma hora — sem sair da tela e
+sem perguntar nada de novo. O cartão passa a dizer "Enviado agora para <novo e-mail>", o tempo para pedir outro
+código recomeça e o campo do código ganha o foco. Erros (e-mail inválido, o mesmo de antes, já tem conta, muitas
+tentativas) aparecem embaixo do campo; nunca há navegação. A checagem de rolagem do CI passou a cobrir a troca (com um
+e-mail que já tem conta e depois o código no novo).

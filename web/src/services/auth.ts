@@ -306,28 +306,35 @@ export async function resendConfirmationEmail(email?: string): Promise<void> {
 }
 
 /**
- * U11: "Corrigir e-mail" on the code screen — the sign-up is done again with the new address (same data, kept
- * in memory) and the code goes there; the account with the wrong address, never confirmed, gives up the
- * CPF/CNPJ and the WhatsApp to the new one. `email-taken`: the new address already has an account.
+ * U11/U43: "Trocar" on the code screen — the e-mail is changed right there and the new code goes to the new address
+ * at once. Real backend: the sign-up is done again with the new address (same data, kept in memory) and the
+ * account with the wrong address, never confirmed, gives up the CPF/CNPJ and the WhatsApp to the new one.
+ * `email-taken`: the new address already has an account.
  */
 export async function changePendingEmail(email: string, captcha: CaptchaSource = noCaptcha): Promise<SignUpResult> {
   const clean = email.trim().toLowerCase();
   if (!isValidEmail(clean)) throw serviceError('validacao', 'E-mail inválido. Confira se tem @ e o domínio.');
   const pending = pendingSignUp;
-  if (!pending) throw serviceError('validacao', 'Para trocar o e-mail, faça o cadastro de novo.');
-  if (clean === pending.email.trim().toLowerCase()) throw serviceError('validacao', 'Esse já é o e-mail do cadastro.');
+  const current = (pending?.email ?? getSession()?.email ?? '').trim().toLowerCase();
+  if (clean === current) throw serviceError('validacao', SAME_EMAIL);
+  if (!pending && !IS_DEMO) throw serviceError('validacao', CANNOT_CHANGE_EMAIL);
   if (!(await isFreeForSignUp('email', clean))) return { ok: false, reason: 'email-taken' };
-  if (IS_DEMO) {
+  if (IS_DEMO || !pending) {
     await mockLatency(500);
     const session = getSession();
     if (session) updateAccount(session.accountId, { email: clean });
-    pendingSignUp = { ...pending, email: clean };
+    if (pending) pendingSignUp = { ...pending, email: clean };
     return { ok: true };
   }
   const result = await remote.signUp({ ...pending, email: clean }, captcha);
   if (result.ok) pendingSignUp = { ...pending, email: clean };
   return result;
 }
+
+/** U43: what "Trocar" says when the address typed is the one the code already went to. */
+export const SAME_EMAIL = 'Esse é o mesmo e-mail. Digite o e-mail certo.';
+/** U43: the sign-up isn't in memory any more (never on a normal visit: it lives as long as the code screen). */
+const CANNOT_CHANGE_EMAIL = 'Não deu para trocar o e-mail aqui. Toque em Sair e faça o cadastro com o e-mail certo.';
 
 /**
  * Last step of sign-up (U12): the profile's place, from "Usar minha localização atual" (the photos are saved

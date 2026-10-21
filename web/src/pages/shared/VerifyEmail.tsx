@@ -1,7 +1,7 @@
 // "Confirme seu e-mail" (U11): the 6-number code sent to the e-mail of the new account. The code is typed or
 // pasted in one go ("Colar código", or the phone's own paste/autofill) and checks itself when the sixth
-// number is in; then the account goes on to completing the profile. A wrong address is fixed right here:
-// the new one gets the code and the sign-up doesn't start over.
+// number is in; then the account goes on to completing the profile. U43: a wrong address is changed right
+// here ("Trocar") — the new one gets a code at once, and the screen never leaves nor starts the sign-up over.
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/Button';
 import { useCaptcha } from '../../components/Captcha';
@@ -11,13 +11,7 @@ import { FlowBar, FlowHeading, FlowLayout, FlowSignOut } from '../../components/
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { useSession, useScreenUI } from '../../hooks/useStore';
-import {
-  canChangePendingEmail,
-  changePendingEmail,
-  resendConfirmationEmail,
-  signOut,
-  verifyEmailCode
-} from '../../services/auth';
+import { changePendingEmail, resendConfirmationEmail, SAME_EMAIL, verifyEmailCode } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
 import { homeFor } from '../../services/guards';
 import { IS_DEMO } from '../../services/mode';
@@ -25,6 +19,7 @@ import { navigate } from '../../services/router';
 import { askSignOut } from '../../services/sharedUI';
 import { getSession, resetUI } from '../../services/store';
 import { CODE_LENGTH } from '../../utils/code';
+import { cx } from '../../utils/cx';
 import { isValidEmail } from '../../utils/format';
 
 interface VerifyEmailUI {
@@ -38,7 +33,7 @@ interface VerifyEmailUI {
   resentTo: string | null;
   /** When the last code was sent (ms): "Reenviar" unlocks 60 s later. */
   sentAt: number;
-  /** "Corrigir e-mail" open, with what is being typed. */
+  /** "Trocar" open, with what is being typed. */
   editing: boolean;
   newEmail: string;
   newEmailError: string | null;
@@ -61,6 +56,19 @@ const DEFAULTS: VerifyEmailUI = {
   error: null
 };
 const RESEND_SECONDS = 60;
+const NEW_EMAIL_FIELD = 'verificar-novo-email';
+
+/** Focuses the new-address field with the caret at the end (an e-mail field has no setSelectionRange). */
+function focusNewEmail() {
+  requestAnimationFrame(() => {
+    const field = document.getElementById(NEW_EMAIL_FIELD);
+    if (!(field instanceof HTMLInputElement)) return;
+    field.focus();
+    const value = field.value;
+    field.value = '';
+    field.value = value;
+  });
+}
 
 export default function VerifyEmail() {
   const session = useSession();
@@ -103,19 +111,26 @@ export default function VerifyEmail() {
       .catch((e: unknown) => setUi({ resending: false, error: errorMessage(e) }));
   }
 
-  /** Without the sign-up in memory (the page was reloaded), fixing the address means signing up again. */
-  function startOver() {
-    const role = session?.role ?? 'trabalhador';
-    void signOut()
-      .catch(() => undefined)
-      .then(() => navigate('/cadastro/' + role, { replace: true }));
+  function startEditing() {
+    setUi({ editing: true, newEmail: email, newEmailError: null, error: null });
   }
 
+  function stopEditing() {
+    if (!ui.changing) setUi({ editing: false, newEmail: '', newEmailError: null });
+  }
+
+  /** U43: the new address replaces the old one and gets a new code in the same tap. */
   function changeEmail() {
     if (ui.changing) return;
-    const next = ui.newEmail.trim();
-    if (!isValidEmail(next)) {
-      setUi({ newEmailError: 'E-mail inválido. Confira se tem @ e o domínio.' });
+    const next = ui.newEmail.trim().toLowerCase();
+    const problem = !isValidEmail(next)
+      ? 'E-mail inválido. Confira se tem @ e o domínio.'
+      : next === email.toLowerCase()
+        ? SAME_EMAIL
+        : null;
+    if (problem) {
+      setUi({ newEmailError: problem });
+      focusNewEmail();
       return;
     }
     setUi({ changing: true, newEmailError: null, error: null });
@@ -126,23 +141,34 @@ export default function VerifyEmail() {
             changing: false,
             newEmailError:
               result.reason === 'email-taken'
-                ? 'Esse e-mail já tem conta na Bicos. Use outro ou entre na conta.'
+                ? 'Esse e-mail já tem conta na Bicos. Digite outro e-mail.'
                 : 'Não deu para usar esse e-mail. Confira e tente de novo.'
           });
+          focusNewEmail();
           return;
         }
+        // Back to the code, counted from now, with the new address on the card.
         setUi({
           changing: false,
           editing: false,
           newEmail: '',
           code: '',
           codeError: null,
-          resentTo: next.toLowerCase(),
+          resentTo: next,
           sentAt: Date.now()
         });
       })
-      .catch((e: unknown) => setUi({ changing: false, newEmailError: errorMessage(e) }));
+      .catch((e: unknown) => {
+        setUi({ changing: false, newEmailError: errorMessage(e) });
+        focusNewEmail();
+      });
   }
+
+  // Opening "Trocar" puts the caret at the end of the address, ready to fix it (the app's autofocus works
+  // only on the first field a page ever shows, so it is done here).
+  useEffect(() => {
+    if (ui.editing) focusNewEmail();
+  }, [ui.editing]);
 
   return (
     <FlowLayout
@@ -154,7 +180,7 @@ export default function VerifyEmail() {
           {ui.error ? <FieldError message={ui.error} /> : null}
           {ui.editing ? (
             <Button
-              label="Enviar código para o novo e-mail"
+              label="Enviar código para esse e-mail"
               size="lg"
               fullWidth
               iconLeft="mail"
@@ -167,17 +193,28 @@ export default function VerifyEmail() {
         </>
       }
     >
-      <FlowHeading
-        overline="Falta pouco"
-        title="Confirme seu e-mail"
-        help="Digite o código de 6 números que enviamos para o seu e-mail."
-      />
+      <span className="sr-only" role="status">
+        {ui.resentTo && !ui.editing ? `Pronto! Enviamos um código novo para ${ui.resentTo}.` : ''}
+      </span>
+      {ui.editing ? (
+        <FlowHeading
+          overline="Trocar e-mail"
+          title="Qual é o e-mail certo?"
+          help="Mandamos um código novo para ele na hora. O código anterior deixa de valer."
+        />
+      ) : (
+        <FlowHeading
+          overline="Falta pouco"
+          title="Confirme seu e-mail"
+          help="Digite o código de 6 números que enviamos para o seu e-mail."
+        />
+      )}
 
       {ui.editing ? (
-        <div className="flex flex-col gap-3 p-4 rounded-card bg-concrete-0 border border-concrete-200">
+        <div className="flex flex-col gap-2">
           <Input
-            id="verificar-novo-email"
-            label="E-mail certo"
+            id={NEW_EMAIL_FIELD}
+            label="E-mail"
             type="email"
             inputMode="email"
             autoComplete="email"
@@ -185,8 +222,6 @@ export default function VerifyEmail() {
             placeholder="voce@email.com"
             value={ui.newEmail}
             error={ui.newEmailError}
-            hint="O código vai para esse e-mail. O anterior deixa de valer."
-            autoFocus
             onInput={(v) => setUi({ newEmail: v, newEmailError: null })}
             onEnter={changeEmail}
           />
@@ -194,28 +229,45 @@ export default function VerifyEmail() {
             label="Cancelar"
             variant="ghost"
             size="sm"
-            className="self-start"
-            onClick={() => setUi({ editing: false, newEmail: '', newEmailError: null })}
+            className="self-center"
+            disabled={ui.changing}
+            onClick={stopEditing}
           />
         </div>
       ) : (
         <div className="flex items-center gap-3 p-3.5 short:p-3 rounded-card bg-concrete-0 border border-concrete-200">
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-50 shrink-0">
-            <Icon name="mail" size={20} color="var(--brand)" />
+          {/* A new code (after "Trocar" or "Reenviar") shows right on the card: no extra line to make it taller. */}
+          <span
+            className={cx(
+              'inline-flex items-center justify-center w-10 h-10 rounded-full shrink-0',
+              ui.resentTo ? 'bg-success-50' : 'bg-brand-50'
+            )}
+          >
+            <Icon
+              name={ui.resentTo ? 'circle-check' : 'mail'}
+              size={20}
+              color={ui.resentTo ? 'rgb(var(--c-success-500))' : 'var(--brand)'}
+            />
           </span>
           <span className="flex-1 min-w-0 flex flex-col">
-            <span className="text-xs text-concrete-500">Código enviado para</span>
+            <span
+              className={
+                ui.resentTo ? 'text-xs font-semibold text-success-600 truncate' : 'text-xs text-concrete-500 truncate'
+              }
+            >
+              {ui.resentTo ? 'Enviado agora para' : 'Código enviado para'}
+            </span>
             <span className="font-semibold text-concrete-900 truncate">{email}</span>
           </span>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold text-brand-600 hover:bg-brand-50 shrink-0"
-            onClick={() =>
-              canChangePendingEmail() ? setUi({ editing: true, newEmail: email, newEmailError: null }) : startOver()
-            }
+            aria-label="Trocar e-mail"
+            disabled={ui.confirming}
+            className="relative tap-target inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:opacity-60 shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+            onClick={startEditing}
           >
             <Icon name="pencil" size={15} />
-            Corrigir
+            Trocar
           </button>
         </div>
       )}
@@ -234,12 +286,6 @@ export default function VerifyEmail() {
             onEnter={() => confirm()}
           />
           <div className="flex flex-col items-center gap-1.5 text-center">
-            {ui.resentTo ? (
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success-500" role="status">
-                <Icon name="circle-check" size={16} />
-                {`Enviamos um novo código para ${ui.resentTo}.`}
-              </span>
-            ) : null}
             {wait > 0 ? (
               <span className="text-sm text-concrete-500">
                 Não chegou? Você pode pedir outro código em{' '}

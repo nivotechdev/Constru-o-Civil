@@ -381,6 +381,39 @@ describe('remote: sign-in and sign-up', () => {
     expect(m.guards.homeFor(m.store.getSession()!)).toBe('/verificar-email');
   });
 
+  it('U43: "Trocar" on the code screen signs up again with the new e-mail, so the code goes there at once', async () => {
+    const fake = fakeSupabase({
+      auth: {
+        signUp: (args) => ({
+          data: { user: authUser('u-novo', (args as { email: string }).email, false), session: null },
+          error: null
+        })
+      },
+      functions: { 'verificar-cadastro': () => ({ data: { disponivel: true }, error: null }) }
+    });
+    const m = await load(fake);
+    const data = {
+      role: 'trabalhador' as const,
+      name: 'Novo Silva',
+      doc: '123.456.789-09',
+      email: 'novo@gmial.com',
+      whatsapp: '(11) 98888-7777',
+      password: 'segredo123',
+      acceptedTermsVersion: '1.0',
+      adult: true
+    };
+    expect(await m.auth.signUp(data)).toEqual({ ok: true });
+    await expect(m.auth.changePendingEmail('Novo@Gmial.com')).rejects.toMatchObject({ message: m.auth.SAME_EMAIL });
+    expect(await m.auth.changePendingEmail(' Novo@Gmail.com ')).toEqual({ ok: true });
+    const sent = fake.calls
+      .filter((c) => c.name === 'signUp')
+      .map((c) => c.args as { email: string; password: string });
+    expect(sent.map((s) => s.email)).toEqual(['novo@gmial.com', 'novo@gmail.com']);
+    expect(sent[1]?.password).toBe('segredo123'); // nothing is asked again
+    expect(m.store.getSession()?.email).toBe('novo@gmail.com');
+    expect(m.guards.homeFor(m.store.getSession()!)).toBe('/verificar-email');
+  });
+
   it('a refused document comes back without the reason; an e-mail already confirmed is told', async () => {
     let m = await load(
       fakeSupabase({

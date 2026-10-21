@@ -1,7 +1,8 @@
 // U41/U42: no sign-up screen scrolls. Walks the whole sign-up of the demo build — choosing the side, every step of the
 // worker and the company (with the WhatsApp code the demo simulates), the password and agreements, the e-mail code
-// and completing the profile — plus the error states that make a screen taller (a CNPJ that already has an account,
-// a wrong code, a weak password, the agreements left unticked), on a small Android with the browser bars (360×600),
+// and completing the profile — plus the states that make a screen taller (a CNPJ that already has an account, a wrong
+// code, a weak password, the agreements left unticked, changing the e-mail on the code screen — U43 — with an address
+// that already has an account and then the code sent to the new one), on a small Android with the browser bars (360×600),
 // an iPhone in Safari (390×664) and a computer. Fails when any of them scrolls.
 // Needs `npx vite preview --port 4173` with the demo build (the CI runs it for the accessibility check).
 // The login is checked by the E2E on the staging build (e2e/fluxos/08-cadastro-google.spec.ts): the demo's login has
@@ -92,6 +93,20 @@ async function walk(width, height, role) {
   await next();
   await page.waitForTimeout(1200);
   await check('confirmar e-mail');
+  await page.getByRole('button', { name: 'Trocar e-mail' }).click();
+  await page.waitForTimeout(400);
+  await check('trocar e-mail');
+  const send = () => page.getByRole('button', { name: 'Enviar código para esse e-mail' }).click();
+  await type('trabalhador@bicos.demo');
+  await send();
+  await page.waitForTimeout(900);
+  await check('trocar para um e-mail que já tem conta');
+  await type(`sem.rolagem.novo.${role}.${width}.${Date.now()}@exemplo.com`);
+  await send();
+  await page.waitForTimeout(900);
+  if (!new URL(page.url()).pathname.startsWith('/verificar-email'))
+    problems.push(`${width}×${height} ${role} · trocar e-mail saiu da tela do código`);
+  await check('código enviado para o novo e-mail');
   await type('123456');
   await page.waitForTimeout(2000);
   await check('completar perfil');

@@ -170,7 +170,7 @@ export function ExperiencesField({ value, error, onChange }: ExperiencesFieldPro
             disabled={!clean}
             aria-label={editing !== null ? 'Salvar experiência' : 'Adicionar experiência'}
             className={cx(
-              'tap-target shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors duration-150',
+              'relative tap-target shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors duration-150',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
               clean ? 'bg-brand-500 text-white hover:bg-brand-hover' : 'bg-concrete-100 text-concrete-400'
             )}
