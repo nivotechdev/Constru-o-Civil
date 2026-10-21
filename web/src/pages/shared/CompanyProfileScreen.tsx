@@ -28,7 +28,7 @@ import {
   jobState,
   successfulJobsForCompany
 } from '../../services/selectors';
-import { AccountMenuButton } from '../../components/AccountMenuSheet';
+import { SettingsButton } from '../../components/SettingsButton';
 import { AVATAR_FRAME, CompanyAvatar } from '../../components/Avatar';
 import { cx } from '../../utils/cx';
 import { holdsSlot } from '../../services/applicationMachine';
@@ -97,7 +97,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           </>
         ) : (
           <div className="absolute top-2 right-2">
-            <AccountMenuButton role="recrutador" />
+            <SettingsButton />
           </div>
         )}
         <div className={cx('absolute left-4 sm:left-6 -bottom-10 w-24 h-24 shadow-raised', AVATAR_FRAME)}>

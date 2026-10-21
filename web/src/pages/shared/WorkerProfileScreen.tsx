@@ -26,7 +26,7 @@ import { CandidateActions } from '../recruiter/CandidateActions';
 import { workerPlace } from '../../utils/workerInfo';
 import { AboutText, ExperiencePills, FillProfileCard, ProfileSection } from '../../components/ProfileSection';
 import { WorkerPosts } from './WorkerPosts';
-import { AccountMenuButton } from '../../components/AccountMenuSheet';
+import { SettingsButton } from '../../components/SettingsButton';
 import { AVATAR_FRAME, WorkerAvatar } from '../../components/Avatar';
 import { cx } from '../../utils/cx';
 import { InviteSheet } from '../recruiter/InviteSheet';
@@ -105,7 +105,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
           </div>
         ) : (
           <div className="absolute top-2 right-2">
-            <AccountMenuButton role="trabalhador" />
+            <SettingsButton />
           </div>
         )}
         <div className={cx('absolute left-4 sm:left-6 -bottom-10 w-24 h-24 shadow-raised', AVATAR_FRAME)}>

@@ -2038,3 +2038,10 @@ sem perguntar nada de novo. O cartão passa a dizer "Enviado agora para <novo e-
 código recomeça e o campo do código ganha o foco. Erros (e-mail inválido, o mesmo de antes, já tem conta, muitas
 tentativas) aparecem embaixo do campo; nunca há navegação. A checagem de rolagem do CI passou a cobrir a troca (com um
 e-mail que já tem conta e depois o código no novo).
+
+## U44 — A engrenagem do perfil abre Configurações direto
+
+Pedido do responsável: tocar na engrenagem do perfil (no celular) abria uma janelinha com o menu da conta; agora abre
+a página Configurações de uma vez, e a seta de voltar de lá volta ao perfil. Nada se perdeu com a janelinha: o sino
+das notificações fica no topo do mural, as vagas salvas em Minhas candidaturas, os bicos fechados na aba Encerradas
+de Minhas vagas, e Ajuda e "Sair da conta" em Configurações. No computador continua o menu da conta no topo.

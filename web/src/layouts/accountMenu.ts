@@ -1,5 +1,5 @@
-// The account menu's entries, the same on every screen size: the desktop dropdown (AppNav) and the
-// phone's sheet opened by the gear on the profile (components/AccountMenuSheet.tsx, Z05).
+// The account menu's entries, the same on every screen size: the desktop dropdown (AppNav). On phones the
+// profile's gear opens Configurações (components/SettingsButton.tsx, U44).
 import type { IconName } from '../components/icons/Icon';
 import type { Role } from '../types/models';
 
