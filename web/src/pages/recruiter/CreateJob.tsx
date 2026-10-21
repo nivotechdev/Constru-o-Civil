@@ -223,7 +223,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       <Input
         id="create-job-titulo"
         label="Título da vaga"
-        placeholder="Ex.: Pedreiro para reboco de fachada"
+        placeholder="Ex.: Garçom para evento de sábado"
         icon="pencil"
         value={f.titulo}
         error={ui.errors.titulo}
@@ -233,7 +233,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
 
       <fieldset className="flex flex-col gap-4">
         <legend className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500 pb-3">
-          Endereço da obra
+          Endereço do serviço
         </legend>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-end gap-2 max-w-[22rem]">
@@ -281,7 +281,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           error={ui.errors.neighborhood}
           onInput={(v) => set({ neighborhood: v }, 'neighborhood')}
         />
-        <LocationButton title="Cidade da obra" location={f.city} onClick={() => setUi({ pickerOpen: true })} />
+        <LocationButton title="Cidade do serviço" location={f.city} onClick={() => setUi({ pickerOpen: true })} />
         {ui.errors.city ? <FieldError message={ui.errors.city} /> : null}
       </fieldset>
 
@@ -382,7 +382,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
         <TextArea
           id="create-job-detalhe"
           rows={3}
-          placeholder="Ex.: reboco de duas paredes internas, argamassa e areia já estão no local."
+          placeholder="Ex.: servir as mesas num aniversário de 80 pessoas. Uniforme preto, almoço incluso."
           value={f.detalhe}
           className={cx(
             'w-full px-3 py-2.5 bg-concrete-0 rounded-control border outline-none text-base text-concrete-900 placeholder:text-concrete-500 resize-none transition-colors duration-150',
@@ -482,7 +482,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       </div>
       <CityPicker
         open={ui.pickerOpen}
-        title="Cidade da obra"
+        title="Cidade do serviço"
         value={f.city}
         stateKey={KEY + '-city'}
         onChoose={(city) => {

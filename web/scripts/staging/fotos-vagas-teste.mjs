@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // U36 — Fotos reais nas vagas de TESTE do staging (conta recrutador.teste@bicos.test). Busca no Wikimedia Commons só
 // fotos de domínio público ou CC0 — uso livre, sem obrigação de crédito —, duas por vaga, sem repetir, já reduzidas a
-// 1280 px pelo próprio Commons, envia ao bucket `vagas` na pasta da construtora (a mesma regra do app) e grava em
+// 1280 px pelo próprio Commons, envia ao bucket `vagas` na pasta da empresa (a mesma regra do app) e grava em
 // jobs.photos. Roda pelo workflow "staging-fotos" (aqui a rede de fora não alcança os bancos de imagens).
 //
 //   SUPABASE_URL=https://<ref>.supabase.co SERVICE_ROLE_KEY=… node scripts/staging/fotos-vagas-teste.mjs
@@ -14,62 +14,37 @@ if (url.includes('ppnxdajiihsjaojxokzh')) throw new Error('Isto é só para o st
 const COMPANY = 'b1c05000-0000-4000-8000-00000000c0de';
 const PER_JOB = 2;
 // Palavras do título → buscas no Commons (em inglês, onde o acervo é maior) e o que o NOME do arquivo precisa ter
-// (a busca do Commons acha o termo em qualquer lugar da página — astronauta "Foreman", adaptador de videogame…).
+// (a busca do Commons acha o termo em qualquer lugar da página). U48: as vagas de teste são de serviços para o público
+// geral (garçom, cozinha, faxina, recepção, mudança, mercado, jardim, cuidadora, panfletos, loja) — nada de obra.
 const SEARCHES = [
+  [/gar[cç]om|gar[cç]onete/i, ['waiter serving guests', 'waiter restaurant tray'], /waiter|waitress|catering|banquet/i],
+  [/cozinha/i, ['restaurant kitchen cook', 'kitchen staff preparing food'], /kitchen|cook|chef/i],
+  [/faxina|limpeza/i, ['house cleaning mop floor', 'cleaning apartment'], /clean|mop|housekeep/i],
   [
-    /mestre de obras/i,
-    ['construction site workers', 'construction workers helmet'],
-    /construction (site|worker)|building site|workers? on site/i
+    /recepcion/i,
+    ['receptionist trade fair stand', 'event hostess welcome'],
+    /recep|hostess|trade fair|exhibition|conference/i
   ],
-  [/contrapiso/i, ['concrete floor screed', 'pouring concrete floor'], /concrete|screed/i],
+  [/mudan[cç]a/i, ['movers carrying furniture', 'moving boxes house move'], /mov(ing|ers)|removal|boxes/i],
   [
-    /pintor/i,
-    ['house painter painting wall', 'painting wall roller'],
-    /(painter|painting|paint roller).*(wall|house|room|interior|facade)|house ?painter|paint roller/i
+    /repositor|mercado/i,
+    ['supermarket shelves stocking', 'grocery store shelves'],
+    /supermarket|grocery|shelves|shelf/i
   ],
-  [/eletricista/i, ['electrician working', 'electrician wiring'], /electrician|electrical (work|wiring|installation)/i],
-  [/limpeza/i, ['cleaning floor construction', 'cleaning renovation'], /clean/i],
-  [/telhadista|telha/i, ['roofer working roof', 'roofing workers'], /roof/i],
-  [/azulejista/i, ['tiler laying tiles', 'tiling floor worker'], /tiler|tiling|laying tiles?|fliesen/i],
-  [/armador|funda/i, ['rebar worker construction', 'steel reinforcement concrete'], /rebar|reinforc/i],
-  [/encanador/i, ['plumber working', 'plumbing pipes installation'], /plumb/i],
-  [/ajudante de pedreiro|pedreiro/i, ['bricklayer laying bricks', 'mason brick wall'], /brick|mason/i]
+  [/jardin/i, ['gardener mowing lawn', 'gardening hedge trimming'], /garden|lawn|mow|hedge/i],
+  [/cuidador/i, ['caregiver elderly woman home', 'elderly care companion'], /care|elderly|senior|grandmother/i],
+  [/panflet|entregador/i, ['handing out flyers street', 'leaflet distribution'], /flyer|leaflet|pamphlet/i],
+  [/loja|ajudante geral/i, ['clothing store shop assistant', 'retail store employee'], /store|shop|retail|boutique/i]
 ];
-const FALLBACK = [['construction worker', 'construction site workers'], /construction (site|worker)|building site/i];
+const FALLBACK = [['people working smiling', 'service worker'], /work|worker|staff|employee/i];
 // Escolhidas à mão entre as candidatas do ensaio (todas CC0 ou domínio público). A busca só entra se uma delas
-// sumir do Commons ou mudar de licença.
-const PICKS = [
-  [
-    /mestre de obras/i,
-    ['Construction worker and ad (Unsplash).jpg', 'Moscow, Zhukov Lane, Dubinin-Sky construction site, May 2025 19.jpg']
-  ],
-  [/contrapiso/i, ['Now the Concrete for the New Office is Done (5105188241).jpg', 'Rotary Polisher On Concrete.jpg']],
-  [/pintor/i, ['Construction workers in Iran 09.jpg', 'Construction workers in Iran 06.jpg']],
-  [/eletricista/i, ['Electricians fixing electricity meter 5.jpg']],
-  [
-    /limpeza/i,
-    [
-      'Construction workers in Iran 14.jpg',
-      'A break for the construction workers at the Rokin at the building site of the future metro station underground; free photo of Amsterdam streets by Fons Heijnsbroek, 2007.jpg'
-    ]
-  ],
-  [/telhadista|telha/i, ['Men working on roof.jpg', 'Roofing workers fall prevention (9253637735).jpg']],
-  [/azulejista/i, ['Verlegen von Fliesen mit einem Nivelliersystem.jpg', 'Construction workers in Iran 13.jpg']],
-  [/armador|funda/i, ['Rebar Tying in Beijing.jpg', 'Counting Rebar? (2885736243).jpg']],
-  [
-    /encanador/i,
-    [
-      'A construction worker is working underground during the renovation of Central station Amsterdam; free photo Amsterdam by Fons Heijnsbroek, 2012.jpg',
-      'Construction workers in Iran 11.jpg'
-    ]
-  ],
-  [/ajudante de pedreiro|pedreiro/i, ['Construction workers in Iran 02.jpg', 'Sabbiee-labor-2665057.jpg']]
-];
+// sumir do Commons ou mudar de licença. U48: as de obra saíram; a lista nova sai do ensaio das vagas novas.
+const PICKS = [];
 // U36: primeiro as fotos de banco de imagem livre (Pexels/Unsplash/Pixabay antigos, CC0), as "Quality images" e as
 // recentes; pintura, desenho, acervo de museu, militar, espaço e objeto solto ficam de fora.
 const STOCK = /pexels|unsplash|pixabay|stocksnap|burst|rawpixel/i;
 const REJECT =
-  /paint(ing)? by|fresco|munch|canaletto|stonemason's yard|\(1[5-8]\d\d[-–]1[6-9]\d\d\)|drawing|illustration|engraving|lithograph|poster|museum|louvre|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|nasa|\beva\b|sts-|xbox|toy|mascot|broken|wrench|mountain|landscape|fountain|map\b|diagram|logo|recycl|demolition|ruin/i;
+  /paint(ing)? by|fresco|munch|canaletto|stonemason's yard|\(1[5-8]\d\d[-–]1[6-9]\d\d\)|drawing|illustration|engraving|lithograph|poster|museum|louvre|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|nasa|\beva\b|sts-|xbox|toy|mascot|broken|wrench|mountain|landscape|fountain|map\b|diagram|logo|recycl|demolition|ruin|construction|building site|bricklay|scaffold|rebar|hard hat/i;
 // ENSAIO=1: só lista as melhores candidatas de cada vaga, sem enviar nada.
 const DRY = process.env.ENSAIO === '1';
 

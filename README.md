@@ -1,15 +1,15 @@
 # Bicos
 
-Marketplace de **diárias de obra** da [NivoTech](https://nivotech.com.br): construtoras publicam vagas de trabalho
-temporário na construção civil e encontram profissionais verificados; pedreiros, eletricistas, pintores e outros
-ofícios têm um canal único de oportunidades perto de casa.
+Marketplace de **bicos e diárias** da [NivoTech](https://nivotech.com.br), para o público geral: empresas e pessoas
+que precisam de alguém para um serviço publicam a vaga e encontram trabalhadores verificados; quem procura bico tem
+um canal único de oportunidades perto de casa (garçom, faxina, eventos, mudança, loja, cuidados e o que mais aparecer).
 
 ## Para quem
 
 - **Trabalhador** (pessoa física, CPF, 18+): vê o mural de bicos da cidade ou do raio escolhido, se candidata e,
-  quando a construtora aprova, fala com ela pelo WhatsApp. Depois da diária, os dois lados se avaliam.
-- **Construtora / empreiteiro** (CNPJ, ou CPF): publica a vaga (ofício, valor da diária, datas, bairro, fotos),
-  escolhe os candidatos pelo perfil e pelas notas, e pode impulsionar a vaga no mural.
+  quando a empresa aprova, fala com ela pelo WhatsApp. Depois da diária, os dois lados se avaliam.
+- **Empresa ou pessoa que contrata** (CNPJ, ou CPF): publica a vaga (serviço, valor da diária, dias, bairro,
+  fotos), escolhe os candidatos pelo perfil e pelas notas, e pode impulsionar a vaga no mural.
 
 O público usa celular simples e internet ruim: o app é um **web app instalável (PWA)**, leve, em português direto.
 

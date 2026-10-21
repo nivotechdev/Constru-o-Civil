@@ -31,7 +31,7 @@ export function InviteSheet({ worker, open, onClose }: { worker: Worker; open: b
         {() =>
           mine.length === 0 ? (
             <EmptyState
-              icon="hard-hat"
+              icon="briefcase"
               title="Nenhuma vaga aberta"
               description="Publique uma vaga para convidar quem você encontrou."
               actionLabel="Publicar vaga"

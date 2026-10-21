@@ -119,7 +119,7 @@ export default function VerifyIdentity() {
                   </Card>
                 ) : null}
                 <p className="text-concrete-700">
-                  Com o selo <strong>Verificado</strong>, as construtoras sabem que você é quem diz ser. As fotos vão só
+                  Com o selo <strong>Verificado</strong>, as empresas sabem que você é quem diz ser. As fotos vão só
                   para a nossa equipe e não aparecem para ninguém.
                 </p>
                 <PhotoInput

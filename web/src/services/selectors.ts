@@ -33,7 +33,7 @@ export function successfulJobsForCompany(db: Database, companyId: string): numbe
 // an existing worker. These accessors put that in the types (and fail loudly if it is ever broken).
 export function companyOf(db: Database, job: Pick<Job, 'id' | 'companyId'>): Company {
   const company = getCompany(db, job.companyId);
-  if (!company) throw new Error(`Vaga ${job.id}: construtora ${job.companyId} não existe`);
+  if (!company) throw new Error(`Vaga ${job.id}: empresa ${job.companyId} não existe`);
   return company;
 }
 export function workerOf(db: Database, app: Application): Worker {
@@ -103,11 +103,11 @@ export function unavailableText(state: JobState): { title: string; text: string 
     case 'cheia':
       return { title: 'Vaga preenchida', text: 'Todas as vagas desse bico já foram preenchidas.' };
     case 'encerrada':
-      return { title: 'Vaga encerrada', text: 'A construtora encerrou essa vaga. Tem outros bicos no mural.' };
+      return { title: 'Vaga encerrada', text: 'A empresa encerrou essa vaga. Tem outros bicos no mural.' };
     case 'vencida':
       return { title: 'Vaga vencida', text: 'O prazo dessa vaga já passou. Tem outros bicos no mural.' };
     case 'excluida':
-      return { title: 'Removida pela construtora', text: 'A construtora tirou essa vaga do ar.' };
+      return { title: 'Removida pela empresa', text: 'A empresa tirou essa vaga do ar.' };
   }
 }
 

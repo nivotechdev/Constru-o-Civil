@@ -198,8 +198,8 @@ export async function loadStaffActions(): Promise<void> {
 export const ACTION_LABELS: Record<string, string> = {
   aprovar_identidade: 'Aprovou identidade',
   recusar_identidade: 'Recusou identidade',
-  aprovar_construtora: 'Aprovou construtora',
-  recusar_construtora: 'Recusou construtora',
+  aprovar_construtora: 'Aprovou empresa',
+  recusar_construtora: 'Recusou empresa',
   arquivar_denuncia: 'Arquivou denúncia',
   ocultar_vaga: 'Ocultou vaga',
   mostrar_vaga: 'Mostrou vaga de novo',

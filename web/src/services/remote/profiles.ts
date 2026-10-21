@@ -50,7 +50,7 @@ export async function updateMyWorkerProfile(patch: WorkerProfilePatch): Promise<
 
 export async function updateMyCompanyProfile(patch: CompanyProfilePatch): Promise<void> {
   const s = session();
-  if (!s.companyId) throw serviceError('nao_autorizado', 'Essa conta não é de construtora.');
+  if (!s.companyId) throw serviceError('nao_autorizado', 'Essa conta não é de empresa.');
   const update: TableUpdate<'companies'> = {};
   if (patch.name !== undefined) update.name = patch.name.trim();
   if (patch.location !== undefined) update.location = patch.location;

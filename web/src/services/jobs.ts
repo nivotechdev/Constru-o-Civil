@@ -102,7 +102,7 @@ function ownJob(jobId: string): Job {
   const job = getJob(store.getDb(), jobId);
   if (!job) throw serviceError('nao_encontrado', 'Essa vaga não existe mais.');
   if (job.companyId !== currentCompanyId())
-    throw serviceError('nao_autorizado', 'Só a construtora da vaga pode fazer isso.');
+    throw serviceError('nao_autorizado', 'Só a empresa da vaga pode fazer isso.');
   return job;
 }
 

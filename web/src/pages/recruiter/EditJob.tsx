@@ -22,7 +22,7 @@ export default function EditJob({ params }: ScreenProps) {
   const blocked = !job
     ? { title: 'Vaga não encontrada', text: 'Essa vaga não existe mais.' }
     : job.companyId !== currentCompanyId()
-      ? { title: 'Essa vaga não é sua', text: 'Só a construtora que publicou o bico pode editar.' }
+      ? { title: 'Essa vaga não é sua', text: 'Só a empresa que publicou o bico pode editar.' }
       : job.closed || db.deletedJobIds.includes(job.id)
         ? { title: 'Essa vaga já foi encerrada', text: 'Vaga encerrada ou excluída não pode mais ser editada.' }
         : null;

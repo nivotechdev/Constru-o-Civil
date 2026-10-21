@@ -15,9 +15,9 @@ Encarregado pelo tratamento de dados (DPO): {{DPO_NOME}}. Canal só para assunto
 
 Cadastro: nome ou razão social, CPF ou CNPJ (guardado cifrado), e-mail, WhatsApp, senha (guardada de forma irreversível), data e versão do aceite destes textos. Se entrar com o Google: nome, e-mail e foto da conta Google.
 
-Perfil: cidade, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Construtora: nome, logo, cidade, CNPJ e o que a Receita Federal informa sobre ele.
+Perfil: cidade, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Empresa: nome, logo, cidade, CNPJ e o que a Receita Federal informa sobre ele.
 
-Vagas: endereço da obra, datas, horário, valor, fotos e requisitos.
+Vagas: endereço do serviço, datas, horário, valor, fotos e requisitos.
 
 Uso: candidaturas e o histórico de cada uma, presença confirmada, diárias concluídas, avaliações, vagas salvas, convites, alertas de vaga, notificações, denúncias e bloqueios.
 
@@ -39,9 +39,9 @@ Prazo: apagadas 30 dias depois da decisão (aprovada ou recusada). Você pode re
 
 ## 4. Para que usamos e com qual base legal
 
-Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar construtoras e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço da obra a quem foi escolhido, avaliações e avisos.
+Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar empresas e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço do serviço a quem foi escolhido, avaliações e avisos.
 
-Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da construtora pelo CNPJ (dado público).
+Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da empresa pelo CNPJ (dado público).
 
 Para cumprir a lei (art. 7º, II): registros de pagamento e de acesso pelo tempo que a lei exigir.
 

@@ -95,7 +95,7 @@ export default function JobManage({ params }: ScreenProps) {
         <EmptyState
           icon="lock"
           title="Essa vaga não é sua"
-          description="Só a construtora que publicou o bico pode ver os candidatos e a quantidade de vagas."
+          description="Só a empresa que publicou o bico pode ver os candidatos e a quantidade de vagas."
         />
       </div>
     );

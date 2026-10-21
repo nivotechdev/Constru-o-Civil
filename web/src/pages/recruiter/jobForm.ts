@@ -151,12 +151,12 @@ export interface EditLimits {
 export function validateStep1(f: JobForm, now: Date = new Date(), limits: EditLimits = {}, original?: Job): FormErrors {
   const e: FormErrors = {};
   const titulo = f.titulo.trim();
-  if (!titulo) e.titulo = 'Dê um título para a vaga. Ex.: Pedreiro para reboco.';
+  if (!titulo) e.titulo = 'Dê um título para a vaga. Ex.: Garçom para evento.';
   else if (titulo.length > MAX_TITLE) e.titulo = `Use até ${MAX_TITLE} letras no título.`;
-  if (onlyDigits(f.cep).length !== 8) e.cep = 'Digite o CEP da obra (8 números).';
-  if (!f.street.trim()) e.street = 'Informe a rua da obra.';
+  if (onlyDigits(f.cep).length !== 8) e.cep = 'Digite o CEP do local do serviço (8 números).';
+  if (!f.street.trim()) e.street = 'Informe a rua do local do serviço.';
   if (!f.neighborhood.trim()) e.neighborhood = 'Informe o bairro.';
-  if (!f.city.trim()) e.city = 'Escolha a cidade da obra.';
+  if (!f.city.trim()) e.city = 'Escolha a cidade do serviço.';
   // W08: the CEP and the city must be the same place.
   else if (!e.cep && cepCity(f.cep) && cepCity(f.cep) !== f.city)
     e.cep = `Esse CEP é de ${cepCity(f.cep)}. Confira o CEP ou a cidade.`;

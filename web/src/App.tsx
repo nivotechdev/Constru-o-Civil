@@ -35,12 +35,12 @@ function WrongArea({ area }: { area: Role }) {
       <ResultIcon icon="lock" tone="brand" />
       <div className="flex flex-col gap-2 max-w-sm">
         <h1 className="font-display font-bold text-2xl text-concrete-900">
-          {area === 'recrutador' ? 'Essa área é da conta de construtora' : 'Essa área é da conta de trabalhador'}
+          {area === 'recrutador' ? 'Essa área é da conta de empresa' : 'Essa área é da conta de trabalhador'}
         </h1>
         <p className="text-concrete-500">
           {area === 'recrutador'
             ? 'Você entrou com uma conta de trabalhador. Essa tela é só para quem publica vagas.'
-            : 'Você entrou com uma conta de construtora. Essa tela é só para quem procura bico.'}
+            : 'Você entrou com uma conta de empresa. Essa tela é só para quem procura bico.'}
         </p>
       </div>
       <Button label="Voltar ao início" iconLeft="house" onClick={() => navigate('/mural', { replace: true })} />

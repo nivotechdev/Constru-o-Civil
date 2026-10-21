@@ -139,7 +139,7 @@ export function ExperiencesField({ value, error, onChange }: ExperiencesFieldPro
             value={text}
             maxLength={MAX_EXPERIENCE_LENGTH}
             enterKeyHint={editing !== null ? 'done' : 'enter'}
-            placeholder={value.length ? 'Adicionar outra' : 'Ex.: Reboco de fachada'}
+            placeholder={value.length ? 'Adicionar outra' : 'Ex.: Atendimento em eventos'}
             aria-invalid={problem || error ? 'true' : undefined}
             aria-describedby={INPUT_ID + '-msg'}
             className="flex-1 min-w-0 h-11 bg-transparent outline-none text-base text-concrete-900 placeholder:text-concrete-400"
@@ -188,7 +188,7 @@ export function ExperiencesField({ value, error, onChange }: ExperiencesFieldPro
             ? 'Corrija e toque no ✓ (ou Enter).'
             : value.length
               ? 'Toque numa experiência para corrigir, ou no × para tirar.'
-              : 'Uma por vez, em poucas palavras. As construtoras veem no seu perfil.'}
+              : 'Uma por vez, em poucas palavras. As empresas veem no seu perfil.'}
         </span>
       )}
     </div>

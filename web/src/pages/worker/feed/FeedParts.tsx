@@ -57,7 +57,7 @@ export function NoJobsState({ location, home }: { location: string; home: string
       <EmptyState
         icon="map-pin"
         title={`Ainda não tem bico em ${location.split(',')[0]}`}
-        description="Assim que uma construtora publicar uma vaga nessa cidade, ela aparece aqui."
+        description="Assim que alguém publicar uma vaga nessa cidade, ela aparece aqui."
         actionLabel={`Ver bicos em ${home.split(',')[0]}`}
         onAction={() => setFeed({ location: home, origin: null })}
       />

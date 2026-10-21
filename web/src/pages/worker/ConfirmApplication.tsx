@@ -95,8 +95,8 @@ export default function ConfirmApplication({ params }: ScreenProps) {
           </div>
         </Card>
         <span className="text-sm text-concrete-500">
-          A construtora vai ver seu perfil, suas especialidades e suas avaliações. O contato por WhatsApp só abre se ela
-          te escolher.
+          A empresa vai ver seu perfil, suas especialidades e suas avaliações. O contato por WhatsApp só abre se ela te
+          escolher.
         </span>
       </div>
       <div className="px-4 sm:px-0 py-3 flex flex-col gap-2">

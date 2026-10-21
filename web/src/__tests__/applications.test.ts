@@ -110,7 +110,7 @@ describe('status machine in the services', () => {
   const status = (jobId: string, workerId: string) =>
     m.sel.applicationFor(m.store.getDb(), jobId, workerId)?.status ?? null;
   const noticesFor = (workerId: string) => m.store.getDb().notifications.filter((n) => n.workerId === workerId);
-  const asCompany = () => run(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
+  const asCompany = () => run(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
   const asWorker = () => run(m.auth.signIn('trabalhador@bicos.demo', 'bicos123'));
 
   it('filling the last slot turns the pending candidates down; undoing brings them back', async () => {
@@ -322,7 +322,7 @@ describe('status machine in the services', () => {
     await run(m.apps.approve('BC-4998', 'bruno'));
     await run(m.apps.cancelHire('BC-4998', 'bruno', 'A obra foi adiada'));
     expect(status('BC-4998', 'bruno')).toBe('cancelado_pela_construtora');
-    await expect(run(m.apps.approve('BC-4855', 'jorge'))).rejects.toThrow(/Só a construtora/);
+    await expect(run(m.apps.approve('BC-4855', 'jorge'))).rejects.toThrow(/Só a empresa/);
   });
 
   it('the worker withdraws only while pending, and gives up a picked job with a reason', async () => {

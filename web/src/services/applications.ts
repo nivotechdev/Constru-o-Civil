@@ -152,7 +152,7 @@ function companyJob(db: Database, jobId: string): Job {
   const job = getJob(db, jobId);
   if (!job) throw serviceError('nao_encontrado', 'Essa vaga não existe mais.');
   if (job.companyId !== currentCompanyId())
-    throw serviceError('nao_autorizado', 'Só a construtora da vaga pode decidir os candidatos.');
+    throw serviceError('nao_autorizado', 'Só a empresa da vaga pode decidir os candidatos.');
   return job;
 }
 
@@ -292,7 +292,7 @@ export async function submitApplication(jobId: string): Promise<'enviada' | 'ja_
   if (!job) throw serviceError('nao_encontrado', 'Essa vaga não existe mais.');
   const workerId = currentWorkerId();
   const state = jobState(db, job);
-  if (state === 'excluida') throw serviceError('conflito', 'Essa vaga foi removida pela construtora.');
+  if (state === 'excluida') throw serviceError('conflito', 'Essa vaga foi removida pela empresa.');
   if (applicationFor(db, jobId, workerId)) return 'ja_enviada';
   // Y07: the same checks as the server's submit_application.
   if (state === 'encerrada') throw serviceError('conflito', 'Essa vaga foi encerrada.');
@@ -321,7 +321,7 @@ export async function withdrawApplication(jobId: string): Promise<void> {
   await mockLatency(500);
   const app = findApp(store.getDb(), jobId, currentWorkerId());
   if (!isPending(app.status))
-    throw serviceError('conflito', 'A construtora já decidiu sobre essa candidatura. Atualize a tela.');
+    throw serviceError('conflito', 'A empresa já decidiu sobre essa candidatura. Atualize a tela.');
   store.transact((db) => ({ ...db, applications: db.applications.filter((a) => a.id !== app.id) }));
 }
 
@@ -641,7 +641,7 @@ export async function markNoShow(jobId: string, workerId: string): Promise<void>
       toWorker(app, {
         kind: 'nao_compareceu',
         title: 'Falta registrada',
-        text: `${companyOf(db, job).name} registrou que você não foi em ${jobTitle(job)}. Fale com a construtora se foi um engano.`,
+        text: `${companyOf(db, job).name} registrou que você não foi em ${jobTitle(job)}. Fale com a empresa se foi um engano.`,
         target: '/vaga/' + jobId
       }),
       at

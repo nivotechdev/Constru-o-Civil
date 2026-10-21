@@ -108,7 +108,7 @@ async function novaSessao(vp, papel) {
   const page = await ctx.newPage();
   if (papel !== 'nenhuma') {
     await page.goto(base + '/login');
-    await page.getByRole('button', { name: papel === 'construtora' ? /Construtora:/ : /Trabalhador:/ }).click();
+    await page.getByRole('button', { name: papel === 'construtora' ? /Empresa:/ : /Trabalhador:/ }).click();
     await page.getByRole('button', { name: 'Entrar', exact: true }).click();
     await page.waitForURL(/\/mural/, { timeout: 15000 });
   }

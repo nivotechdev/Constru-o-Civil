@@ -174,7 +174,7 @@ export async function deleteAccount(
           {
             kind: 'contratacao_cancelada',
             title: 'Contratação cancelada',
-            text: `A construtora de ${jobTitle(job)} saiu da Bicos e o bico foi cancelado.`,
+            text: `A empresa de ${jobTitle(job)} saiu da Bicos e o bico foi cancelado.`,
             workerId: app.workerId,
             companyId: null,
             target: '/minhas-candidaturas'

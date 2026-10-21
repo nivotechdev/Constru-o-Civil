@@ -133,7 +133,7 @@ export default function ChangeWhatsApp() {
             <span className="text-sm text-concrete-500">
               {session?.role === 'recrutador'
                 ? 'É por ele que os candidatos falam com a empresa.'
-                : 'É por ele que as construtoras falam com você.'}{' '}
+                : 'É por ele que as empresas falam com você.'}{' '}
               {WHATSAPP_CODE_AVAILABLE
                 ? 'Vamos mandar um código para confirmar o número.'
                 : 'Por enquanto o número fica sem confirmação por código.'}

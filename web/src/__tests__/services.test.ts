@@ -50,7 +50,7 @@ describe('simulated backend calls keep the legacy delays', () => {
 
   it('signs in after 500 ms, into the side of the account', async () => {
     expect(s.store.getSession()).toBeNull();
-    const result = await settlesAfter(s.auth.signIn('construtora@bicos.demo', 'bicos123'), 500);
+    const result = await settlesAfter(s.auth.signIn('empresa@bicos.demo', 'bicos123'), 500);
     expect(result).toEqual({ ok: true, role: 'recrutador' });
     expect(s.store.getRole()).toBe('recrutador');
     expect(s.sel.currentCompanyId()).toBe(seed.CURRENT_COMPANY_ID);
@@ -117,7 +117,7 @@ describe('simulated backend calls keep the legacy delays', () => {
     const { store, sel, jobs } = s;
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const draft = {
-      oficioId: 'pintor',
+      oficioId: 'limpeza',
       title: null,
       pay: 180,
       address: {
@@ -154,7 +154,7 @@ describe('simulated backend calls keep the legacy delays', () => {
           lat: -23.54,
           lon: -46.57,
           radiusKm: 5,
-          oficioId: 'pintor'
+          oficioId: 'limpeza'
         },
         outro: {
           workerId: 'outro',
@@ -162,11 +162,11 @@ describe('simulated backend calls keep the legacy delays', () => {
           lat: -23.54,
           lon: -46.57,
           radiusKm: null,
-          oficioId: 'eletricista'
+          oficioId: 'garcom'
         }
       }
     }));
-    expect(alerts.alertSummary(store.getDb().jobAlerts!['w-alerta'])).toBe('Pintor · São Paulo, SP · até 5 km');
+    expect(alerts.alertSummary(store.getDb().jobAlerts!['w-alerta'])).toBe('Limpeza · São Paulo, SP · até 5 km');
     // W09: the next code after the highest one used (existing or deleted).
     const used = [...Object.keys(store.getDb().jobs), ...store.getDb().deletedJobIds].map(
       (k) => Number(k.slice(3)) || 0
@@ -276,7 +276,7 @@ describe('Y25: changing the WhatsApp (demo)', () => {
       await vi.runAllTimersAsync();
       return r;
     };
-    await run(auth.signIn('construtora@bicos.demo', 'bicos123'));
+    await run(auth.signIn('empresa@bicos.demo', 'bicos123'));
     const session = store.getSession()!;
     expect((await run(profiles.changeWhatsApp('1188887777'))).ok).toBe(false);
 
@@ -316,7 +316,7 @@ describe('L15/F08: password and e-mail from Configurações (demo)', () => {
     expect((await run(auth.changePassword('bicos123', 'novasenha1'))).ok).toBe(true);
     expect(await run(auth.checkPassword('novasenha1'))).toEqual({ ok: true, v: true });
 
-    expect(await run(auth.changeEmail('construtora@bicos.demo', 'novasenha1'))).toMatchObject({ ok: false });
+    expect(await run(auth.changeEmail('empresa@bicos.demo', 'novasenha1'))).toMatchObject({ ok: false });
     expect(await run(auth.changeEmail('jorge.novo@x.com', 'errada'))).toMatchObject({ ok: false });
     expect((await run(auth.changeEmail('Jorge.Novo@x.com', 'novasenha1'))).ok).toBe(true);
     expect(store.getSession()?.email).toBe('jorge.novo@x.com');
@@ -373,7 +373,7 @@ describe('F09: the public job page (demo)', () => {
     };
     const card = await run(jobs.loadPublicJob('BC-4821'));
     expect(card?.job.address).toMatchObject({ street: '', number: '', cep: '', exact: false });
-    expect(card?.company.name).toBe('Construtora Meridiano');
+    expect(card?.company.name).toBe('Eventos Meridiano');
     store.deleteJobPost('BC-4821');
     expect(await run(jobs.loadPublicJob('BC-4821'))).toBeNull();
   });

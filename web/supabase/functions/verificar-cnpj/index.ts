@@ -31,7 +31,7 @@ Deno.serve(
       .select('id, verification_status')
       .eq('id', user.id)
       .maybeSingle();
-    if (!company) return json({ erro: 'BC401', mensagem: 'Essa conta não é de construtora.' }, 401);
+    if (!company) return json({ erro: 'BC401', mensagem: 'Essa conta não é de empresa.' }, 401);
     if (company.verification_status !== 'pendente') return json({ status: company.verification_status });
 
     const limit = await admin.rpc('rate_limit_hit', { p_key: 'cnpj:' + user.id, p_max: 5, p_window: '1 day' });

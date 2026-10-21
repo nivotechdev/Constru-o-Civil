@@ -94,7 +94,7 @@ export default function PublicJob({ params }: ScreenProps) {
           <EmptyState
             icon="search-x"
             title="Essa vaga não existe mais"
-            description="A construtora pode ter removido. Entre para ver outros bicos perto de você."
+            description="A empresa pode ter removido. Entre para ver outros bicos perto de você."
             actionLabel="Ver bicos"
             onAction={elsewhere}
           />
@@ -167,7 +167,7 @@ function JobSummary({ card, onApply, onSignUp }: { card: PublicJobCard; onApply:
           <Button label="Entrar para me candidatar" size="lg" fullWidth onClick={onApply} />
           <Button label="Criar minha conta" variant="secondary" fullWidth onClick={onSignUp} />
           <span className="text-xs text-center text-concrete-500">
-            O endereço exato e o contato aparecem só para quem a construtora aprovar.
+            O endereço exato e o contato aparecem só para quem a empresa aprovar.
           </span>
         </div>
       ) : (

@@ -85,7 +85,7 @@ select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'j3'), '93000
                   'contratada na construtora suspensa: cancelado pela equipe');
 select pg_temp.ok(exists (select 1 from public.notifications where worker_id = '93000000-0000-0000-0000-0000000000a3'
                             and kind = 'contratacao_cancelada' and title = 'Bico cancelado pela equipe'
-                            and body like '%Não vá até a obra.%'), 'trabalhadora avisada');
+                            and body like '%Não vá até o local.%'), 'trabalhadora avisada');
 
 -- 3. get_contact com um dos lados suspenso (sem passar pela suspensão, que já cancelaria o bico).
 select pg_temp.login('93000000-0000-0000-0000-0000000000a4');

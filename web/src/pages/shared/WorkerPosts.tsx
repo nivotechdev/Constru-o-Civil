@@ -66,7 +66,7 @@ export function WorkerPosts({ worker, isOwn }: { worker: Worker; isOwn: boolean 
           title={isOwn ? 'Mostre o seu trabalho' : 'Nenhum post ainda'}
           description={
             isOwn
-              ? 'Publique fotos ou vídeos dos seus bicos para as construtoras verem a qualidade do seu serviço.'
+              ? 'Publique fotos ou vídeos dos seus bicos para as empresas verem a qualidade do seu serviço.'
               : `${firstName} ainda não publicou fotos ou vídeos do trabalho.`
           }
           actionLabel={isOwn ? 'Publicar primeiro post' : null}

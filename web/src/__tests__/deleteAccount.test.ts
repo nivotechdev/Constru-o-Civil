@@ -70,7 +70,7 @@ describe('deleting the account', () => {
   });
 
   it('company: every job and candidacy deleted, the hired worker told (U24)', async () => {
-    await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
+    await settle(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
     const impact = m.account.deletionImpact();
     expect(impact.jobs.map((j) => j.id)).toContain('BC-4998');
     expect((await settle(m.account.deleteAccount({ password: 'bicos123' }, true))).ok).toBe(true);

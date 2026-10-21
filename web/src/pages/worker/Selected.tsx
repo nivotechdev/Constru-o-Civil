@@ -34,10 +34,10 @@ export default function Selected({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('my-applications', loadMyApplications);
   const [asking, setAsking] = useState(false);
-  const confirm = useAction(confirmPresence, () => showToast('Presença confirmada. Avisamos a construtora.'));
+  const confirm = useAction(confirmPresence, () => showToast('Presença confirmada. Avisamos a empresa.'));
   const quit = useAction(giveUp, () => {
     setAsking(false);
-    showToast('Avisamos a construtora. Obrigado por avisar com antecedência.');
+    showToast('Avisamos a empresa. Obrigado por avisar com antecedência.');
     navigate('/minhas-candidaturas');
   });
   if (query.status !== 'ready')
@@ -61,7 +61,7 @@ export default function Selected({ params }: ScreenProps) {
         <EmptyState
           icon="lock"
           title="Essa tela não está disponível"
-          description="O contato com a construtora aparece aqui quando ela aprova sua candidatura."
+          description="O contato com a empresa aparece aqui quando ela aprova sua candidatura."
           actionLabel="Ver minhas candidaturas"
           onAction={() => navigate('/minhas-candidaturas')}
         />
@@ -97,8 +97,8 @@ export default function Selected({ params }: ScreenProps) {
               label={company.contactName ? `Falar com ${company.contactName.split(' ')[0]}` : undefined}
             />
             <span className="text-sm text-concrete-700">
-              Combine ponto de encontro, horário e pagamento direto com a construtora. A Bicos não cobra taxa e não
-              entra na negociação.
+              Combine ponto de encontro, horário e pagamento direto com a empresa. A Bicos não cobra taxa e não entra na
+              negociação.
             </span>
           </div>
         </Card>
@@ -123,7 +123,7 @@ export default function Selected({ params }: ScreenProps) {
             <Card tone="sunken" padding="sm">
               <div className="flex items-center gap-2.5">
                 <Icon name="calendar-check" size={20} color="var(--green-500)" />
-                <span className="flex-1 text-sm text-concrete-700">Você confirmou que vai. A construtora já sabe.</span>
+                <span className="flex-1 text-sm text-concrete-700">Você confirmou que vai. A empresa já sabe.</span>
               </div>
             </Card>
           ) : (
@@ -131,7 +131,7 @@ export default function Selected({ params }: ScreenProps) {
               <div className="flex flex-col gap-3">
                 <span className="font-semibold text-concrete-900">Confirme que você vai</span>
                 <span className="text-sm text-concrete-700">
-                  A construtora vê quem confirmou. Se não puder ir, avise logo abaixo.
+                  A empresa vê quem confirmou. Se não puder ir, avise logo abaixo.
                 </span>
                 {confirm.error ? <FieldError message={confirm.error} /> : null}
                 <Button

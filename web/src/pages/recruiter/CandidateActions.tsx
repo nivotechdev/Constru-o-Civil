@@ -32,7 +32,7 @@ import { toastApproved, toastRejected } from './decisionToasts';
 
 type Confirm = 'contratar' | 'cancelar' | 'concluir' | 'falta' | null;
 
-const CANCEL_REASONS = ['A obra foi adiada', 'O serviço foi cancelado', 'Já resolvi com outra pessoa'];
+const CANCEL_REASONS = ['O serviço foi adiado', 'O serviço foi cancelado', 'Já resolvi com outra pessoa'];
 
 export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) {
   const db = useDb();

@@ -129,7 +129,7 @@ export default function Settings() {
             <Row
               icon="shield-check"
               label="Área da equipe"
-              description="Identidades, construtoras e denúncias"
+              description="Identidades, empresas e denúncias"
               onClick={() => navigate('/admin')}
             />
           </Section>

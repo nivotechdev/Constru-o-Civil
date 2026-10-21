@@ -151,12 +151,12 @@ describe('sharing a job (F09)', () => {
     expect(isLegacyJobLink('k7m2q9x4tbn3')).toBe(false);
     expect(
       jobShareText({
-        oficioId: 'pintor',
+        oficioId: 'limpeza',
         title: null,
         pay: 200,
         address: { neighborhood: 'Tatuapé', city: 'São Paulo' } as never
       })
-    ).toBe('Pintor em Tatuapé · R$ 200 por diária. Vi na Bicos:');
+    ).toBe('Limpeza em Tatuapé · R$ 200 por diária. Vi na Bicos:');
   });
 });
 

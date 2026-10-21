@@ -42,7 +42,7 @@ import { cx } from '../../utils/cx';
 type Tab = 'identidades' | 'construtoras' | 'denuncias' | 'registro';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'identidades', label: 'Identidades' },
-  { id: 'construtoras', label: 'Construtoras' },
+  { id: 'construtoras', label: 'Empresas' },
   { id: 'denuncias', label: 'Denúncias' },
   { id: 'registro', label: 'Registro' }
 ];
@@ -220,7 +220,7 @@ function CompanyQueue() {
     <QueryView query={query} skeleton={<ListSkeleton />}>
       {() =>
         data.companies.length === 0 ? (
-          <EmptyState icon="hard-hat" title="Nenhuma construtora pendente" description="Fila em dia." />
+          <EmptyState icon="building-2" title="Nenhuma empresa pendente" description="Fila em dia." />
         ) : (
           <div className="flex flex-col gap-3">
             {data.companies.map((item) => (
@@ -237,13 +237,13 @@ function CompanyCard({ item }: { item: CompanyItem }) {
   const [refusing, setRefusing] = useState(false);
   const approve = useAction(
     () => decideCompany(item.companyId, true),
-    () => showToast('Construtora aprovada')
+    () => showToast('Empresa aprovada')
   );
   const refuse = useAction(
     (reason: string) => decideCompany(item.companyId, false, reason),
     () => {
       setRefusing(false);
-      showToast('Construtora recusada');
+      showToast('Empresa recusada');
     }
   );
   const r = item.receita;
@@ -291,7 +291,7 @@ function CompanyCard({ item }: { item: CompanyItem }) {
       </div>
       <ReasonDialog
         open={refusing}
-        title="Recusar construtora"
+        title="Recusar empresa"
         description="A empresa não publica vagas até falar com a equipe."
         reasons={['CNPJ inativo na Receita', 'Dados não batem com a Receita', 'Empresa não encontrada']}
         confirmLabel="Recusar"
@@ -384,7 +384,7 @@ function ReportCard({ item }: { item: ReportItem }) {
         {acc ? (
           <div className="text-sm bg-concrete-50 rounded-lg p-3 flex flex-col gap-0.5">
             <span className="font-semibold text-concrete-900">
-              {acc.name ?? 'Conta'} · {acc.role === 'recrutador' ? 'construtora' : 'trabalhador'}
+              {acc.name ?? 'Conta'} · {acc.role === 'recrutador' ? 'empresa' : 'trabalhador'}
               {acc.suspended_at ? ' · SUSPENSA' : ''}
             </span>
             <span className="text-concrete-500">
@@ -426,7 +426,7 @@ function ReportCard({ item }: { item: ReportItem }) {
         title={asking === 'ocultar_vaga' ? 'Ocultar a vaga' : 'Suspender a conta'}
         description={
           asking === 'ocultar_vaga'
-            ? 'A vaga sai do mural e do link público. A construtora é avisada com o motivo.'
+            ? 'A vaga sai do mural e do link público. A empresa é avisada com o motivo.'
             : 'A conta não entra mais, não publica e não se candidata. Dá para reativar depois.'
         }
         reasons={[

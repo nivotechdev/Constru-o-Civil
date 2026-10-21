@@ -41,7 +41,7 @@ describe('reviews', () => {
   });
 
   it('the company reviews the worker once: stored, rating updated, side marked', async () => {
-    await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
+    await settle(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
     // a16: marcos, concluded on Meridiano's BC-4960, not reviewed by the company yet.
     const before = m.store.getDb().workers.marcos;
     expect(m.reviews.reviewableApplication('BC-4960', 'marcos', 'construtora')?.id).toBe('a16');
@@ -49,7 +49,7 @@ describe('reviews', () => {
       applicationId: 'a16',
       direction: 'para_trabalhador' as const,
       value: 3,
-      tags: ['Usou EPI'],
+      tags: ['Cuidadoso'],
       comment: '  Bom, mas chegou atrasado. '
     };
     expect((await settle(m.reviews.submitReview(input))).ok).toBe(true);
@@ -57,9 +57,9 @@ describe('reviews', () => {
     expect(after.reviewCount).toBe(before.reviewCount + 1);
     expect(after.rating).toBe(ratingWith(before, 3).rating);
     expect(after.reviews[0]).toMatchObject({
-      authorLabel: 'Construtora Meridiano',
+      authorLabel: 'Eventos Meridiano',
       value: 3,
-      tags: ['Usou EPI'],
+      tags: ['Cuidadoso'],
       comment: 'Bom, mas chegou atrasado.'
     });
     expect(m.store.getDb().applications.find((a) => a.id === 'a16')?.companyReviewed).toBe(true);
@@ -107,7 +107,7 @@ describe('reviews', () => {
     expect(m.store.getDb().companies.cangaiba.reviewCount).toBe(cangaiba.reviewCount + 1);
     expect(m.store.getDb().companies.cangaiba.reviews[0].authorLabel).toBe('Jorge M.');
 
-    await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
+    await settle(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
     const other = await settle(
       m.reviews.submitReview({ applicationId: 'a9', direction: 'para_trabalhador', value: 5, tags: [], comment: '' })
     );

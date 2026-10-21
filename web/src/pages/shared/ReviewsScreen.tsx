@@ -54,8 +54,8 @@ export default function ReviewsScreen({ params }: ScreenProps) {
           title="Essas avaliações não são suas para ver"
           description={
             type === 'trabalhador'
-              ? 'Só construtoras podem ver as avaliações de um trabalhador.'
-              : 'Só trabalhadores podem ver as avaliações de uma construtora.'
+              ? 'Só empresas podem ver as avaliações de um trabalhador.'
+              : 'Só trabalhadores podem ver as avaliações de uma empresa.'
           }
         />
       </div>

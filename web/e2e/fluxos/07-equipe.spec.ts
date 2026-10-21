@@ -54,15 +54,15 @@ test('equipe aprova identidade e construtora e trata a denúncia', async ({ brow
   const { data: wk } = await admin().from('workers').select('verified, identity_status').eq('id', quer.id).single();
   expect(wk).toEqual({ verified: true, identity_status: 'verificado' });
 
-  // Fila de construtoras: a do fluxo 2 está pendente; aprovar.
-  await e.getByRole('tab', { name: 'Construtoras' }).click();
+  // Fila de empresas: a do fluxo 2 está pendente; aprovar.
+  await e.getByRole('tab', { name: 'Empresas' }).click();
   await expect(e.getByText(contas.construtora.nome, { exact: true })).toBeVisible();
   await print(e, 'f7', 'fila de construtoras');
   const cc = e
     .getByText(contas.construtora.nome, { exact: true })
     .locator('xpath=ancestor::div[.//button[normalize-space()="Aprovar"]][1]');
   await cc.getByRole('button', { name: 'Aprovar' }).click();
-  await expect(e.getByText('Construtora aprovada')).toBeVisible();
+  await expect(e.getByText('Empresa aprovada')).toBeVisible();
   const { data: co } = await admin()
     .from('companies')
     .select('verification_status')
@@ -71,14 +71,14 @@ test('equipe aprova identidade e construtora e trata a denúncia', async ({ brow
   expect(co!.verification_status).toBe('verificada');
 
   // R03: uma trabalhadora contratada numa vaga da construtora que vai ser suspensa.
-  const contratada = await contaPorApi('contratada', 'trabalhador', 'Contratada Pela Obra E2E');
+  const contratada = await contaPorApi('contratada', 'trabalhador', 'Contratada Pela Empresa E2E');
   const hoje = new Date();
   const dia = (n: number) => new Date(hoje.getTime() + n * 86400000).toISOString().slice(0, 10);
   const { data: bico, error: eb } = await admin()
     .from('jobs')
     .insert({
       company_id: contas.construtora.id,
-      oficio_id: 'pedreiro',
+      title: 'Garçom para aniversário E2E',
       pay: 200,
       cep: '03307-000',
       street: 'Rua Tuiuti',
@@ -90,7 +90,7 @@ test('equipe aprova identidade e construtora e trata a denúncia', async ({ brow
       lon: -46.5765,
       start_date: dia(3),
       end_date: dia(3),
-      description: 'Reboco de uma parede do quintal (teste de suspensão).'
+      description: 'Atendimento num aniversário (teste de suspensão).'
     })
     .select('id')
     .single();
@@ -150,7 +150,7 @@ test('equipe aprova identidade e construtora e trata a denúncia', async ({ brow
   await e.getByRole('tab', { name: 'Registro' }).click();
   // Cada decisão desta execução, com quem decidiu.
   const minhas = e.getByRole('listitem').filter({ hasText: equipe.email });
-  for (const acao of ['Aprovou identidade', 'Aprovou construtora', 'Suspendeu conta', 'Reativou conta'])
+  for (const acao of ['Aprovou identidade', 'Aprovou empresa', 'Suspendeu conta', 'Reativou conta'])
     await expect(minhas.filter({ hasText: acao })).toHaveCount(1);
   await print(e, 'f7', 'registro de auditoria');
   for (const p of [w, e, s]) await p.close();

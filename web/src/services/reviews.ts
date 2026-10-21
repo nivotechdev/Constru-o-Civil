@@ -12,12 +12,12 @@ import * as remote from './remote/actions';
 export const MAX_COMMENT = 300;
 
 /** Ready-made points the worker can mark about the company. */
-export const COMPANY_TAGS = ['Pagou no dia', 'EPI no local', 'Horário combinado', 'Equipe respeitosa'];
+export const COMPANY_TAGS = ['Pagou no dia', 'Local seguro', 'Horário combinado', 'Equipe respeitosa'];
 /** Ready-made points the company can mark about the worker. */
 export const WORKER_TAGS = [
   'Chegou no horário',
   'Trabalho caprichado',
-  'Usou EPI',
+  'Cuidadoso',
   'Respeitou a equipe',
   'Deixou o local limpo'
 ];

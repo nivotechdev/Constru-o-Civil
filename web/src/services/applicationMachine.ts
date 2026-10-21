@@ -37,7 +37,7 @@ export const TRANSITIONS: Record<ApplicationAction, Transition> = {
     from: ['enviada'],
     to: 'em_analise',
     by: ['construtora', 'sistema'],
-    where: 'A construtora abre o perfil do candidato (automático)'
+    where: 'A empresa abre o perfil do candidato (automático)'
   },
   aprovar: {
     from: ['enviada', 'em_analise'],
@@ -103,7 +103,7 @@ export const TRANSITIONS: Record<ApplicationAction, Transition> = {
     from: ['pre_selecionado', 'contratado'],
     to: 'cancelado_pela_equipe',
     by: ['sistema'],
-    where: 'Automático: a equipe suspendeu a conta do trabalhador ou da construtora (R03)'
+    where: 'Automático: a equipe suspendeu a conta do trabalhador ou da empresa (R03)'
   }
 };
 

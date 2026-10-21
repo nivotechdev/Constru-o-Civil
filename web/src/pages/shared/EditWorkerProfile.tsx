@@ -143,8 +143,8 @@ export default function EditWorkerProfile() {
           <AboutField
             id="edit-worker-bio"
             label="Sobre você"
-            hint="Conte quem você é e como trabalha. É a primeira coisa que a construtora lê."
-            placeholder="Ex.: Sou pedreiro de acabamento, caprichoso e pontual. Tenho ferramenta própria e moro perto do centro."
+            hint="Conte quem você é e como trabalha. É a primeira coisa que a empresa lê."
+            placeholder="Ex.: Sou caprichoso e pontual, tenho experiência com atendimento e limpeza e moro perto do centro."
             value={draft.bio}
             error={errors.bio}
             onInput={(v) => {

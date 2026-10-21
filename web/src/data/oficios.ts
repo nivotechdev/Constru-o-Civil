@@ -1,37 +1,25 @@
 import type { Oficio } from '../types/models';
 
-// The one list of trades (ofícios) used everywhere: publishing a job, the mural's filter, the worker's
-// profile and the search. `id` is what is stored; `sinonimos` are other words people use for the trade
-// (the search finds a trade by any of them).
+// The one list of services (ofícios) used everywhere: publishing a job, the mural's filter, the worker's
+// profile and the search. U48: services for the general public (not only construction). `id` is what is
+// stored; `sinonimos` are other words people use for the service (the search finds it by any of them).
 export const OFICIOS: Oficio[] = [
-  { id: 'pedreiro', nome: 'Pedreiro', sinonimos: ['alvenaria', 'reboco', 'contrapiso', 'construtor'] },
+  { id: 'garcom', nome: 'Garçom', sinonimos: ['garçonete', 'copeiro', 'atendimento de mesa', 'servir'] },
+  { id: 'cozinha', nome: 'Auxiliar de cozinha', sinonimos: ['cozinheiro', 'cozinheira', 'chapeiro', 'salgadeira'] },
+  { id: 'limpeza', nome: 'Limpeza', sinonimos: ['faxina', 'diarista', 'faxineira', 'higienização'] },
+  { id: 'eventos', nome: 'Eventos', sinonimos: ['recepcionista', 'recepção', 'montagem de festa', 'hostess'] },
+  { id: 'mudanca', nome: 'Ajudante de mudança', sinonimos: ['mudança', 'carregador', 'carga e descarga', 'frete'] },
+  { id: 'entregas', nome: 'Entregas', sinonimos: ['entregador', 'motoboy', 'delivery', 'motorista'] },
+  { id: 'estoque', nome: 'Estoque', sinonimos: ['repositor', 'embalador', 'separador', 'conferente'] },
   {
-    id: 'pedreiro-acabamento',
-    nome: 'Pedreiro de acabamento',
-    sinonimos: ['acabamento', 'massa corrida', 'acabador', 'rodapé']
+    id: 'vendas',
+    nome: 'Vendas e atendimento',
+    sinonimos: ['vendedor', 'atendente', 'caixa', 'balconista', 'promotor']
   },
-  {
-    id: 'servente',
-    nome: 'Servente',
-    sinonimos: ['servente de obra', 'ajudante de pedreiro', 'auxiliar de obra', 'massa']
-  },
-  {
-    id: 'ajudante-geral',
-    nome: 'Ajudante geral',
-    sinonimos: ['ajudante', 'auxiliar', 'carga e descarga', 'limpeza de obra']
-  },
-  { id: 'pintor', nome: 'Pintor', sinonimos: ['pintura', 'textura', 'grafiato', 'fachada'] },
-  { id: 'eletricista', nome: 'Eletricista', sinonimos: ['elétrica', 'instalação elétrica', 'fiação', 'quadro de luz'] },
-  { id: 'encanador', nome: 'Encanador', sinonimos: ['hidráulica', 'bombeiro hidráulico', 'encanamento', 'vazamento'] },
-  {
-    id: 'azulejista',
-    nome: 'Azulejista',
-    sinonimos: ['revestimento', 'porcelanato', 'assentador', 'ladrilheiro', 'piso']
-  },
-  { id: 'armador', nome: 'Armador', sinonimos: ['ferragem', 'ferreiro armador', 'vergalhão', 'laje'] },
-  { id: 'carpinteiro', nome: 'Carpinteiro', sinonimos: ['fôrma', 'madeira', 'carpintaria', 'escoramento'] },
-  { id: 'gesseiro', nome: 'Gesseiro', sinonimos: ['gesso', 'drywall', 'forro', 'sanca'] },
-  { id: 'telhadista', nome: 'Telhadista', sinonimos: ['telhado', 'calha', 'cobertura', 'telha'] },
-  { id: 'serralheiro', nome: 'Serralheiro', sinonimos: ['solda', 'portão', 'estrutura metálica', 'grade'] },
-  { id: 'mestre-de-obras', nome: 'Mestre de obras', sinonimos: ['encarregado', 'mestre', 'líder de equipe'] }
+  { id: 'jardinagem', nome: 'Jardinagem', sinonimos: ['jardineiro', 'poda', 'roçada', 'grama'] },
+  { id: 'cuidador', nome: 'Cuidador', sinonimos: ['cuidadora', 'cuidador de idosos', 'acompanhante', 'idoso'] },
+  { id: 'baba', nome: 'Babá', sinonimos: ['babá', 'recreador', 'recreação', 'cuidar de criança'] },
+  { id: 'beleza', nome: 'Beleza', sinonimos: ['cabeleireiro', 'manicure', 'maquiadora', 'barbeiro'] },
+  { id: 'lavagem-de-carro', nome: 'Lavagem de carro', sinonimos: ['lava-rápido', 'lavador', 'polimento', 'carro'] },
+  { id: 'ajudante-geral', nome: 'Ajudante geral', sinonimos: ['ajudante', 'auxiliar', 'serviços gerais', 'apoio'] }
 ];

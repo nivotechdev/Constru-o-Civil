@@ -158,7 +158,7 @@ describe('accounts (mock auth)', () => {
   });
 
   it('signing out ends the session and forgets the screens', async () => {
-    await run(auth.signIn('construtora@bicos.demo', 'bicos123'));
+    await run(auth.signIn('empresa@bicos.demo', 'bicos123'));
     store.setUI('qualquer-tela', { aberto: true });
     await run(auth.signOut());
     expect(store.getSession()).toBeNull();

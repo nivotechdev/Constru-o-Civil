@@ -38,14 +38,14 @@ export function statusInfo(app: AppLike): StatusInfo {
     case 'concluida':
       return app.workerReviewed
         ? { label: 'Diária concluída', tone: 'neutral', icon: 'circle-check', hint: 'Ver o bico', to: '/vaga/' + jobId }
-        : { label: 'Avalie a diária', tone: 'accent', icon: 'star', hint: 'Avaliar a obra', to: '/avaliar/' + jobId };
+        : { label: 'Avalie a diária', tone: 'accent', icon: 'star', hint: 'Avaliar o bico', to: '/avaliar/' + jobId };
     case 'nao_selecionado':
       return { label: 'Não foi essa vez', tone: 'danger', icon: 'circle-x', hint: 'Ver a vaga', to: '/vaga/' + jobId };
     case 'desistiu':
       return { label: 'Você desistiu', tone: 'neutral', icon: 'user-x', hint: 'Ver a vaga', to: '/vaga/' + jobId };
     case 'cancelado_pela_construtora':
       return {
-        label: 'Cancelado pela construtora',
+        label: 'Cancelado pela empresa',
         tone: 'danger',
         icon: 'circle-x',
         hint: 'Ver a vaga',

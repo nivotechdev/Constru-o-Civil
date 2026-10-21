@@ -1,4 +1,4 @@
-// B07 — one catalog of trades: jobs, the mural's filter, worker profiles and the search all use its ids.
+// B07 — one catalog of services (U48: for the general public): jobs, the mural's filter, worker profiles and the search all use its ids.
 import { describe, expect, it } from 'vitest';
 import * as seed from '../data/seed';
 import { getOficio, jobTitle, OFICIOS, oficioNome, searchOficios } from '../services/catalog';
@@ -15,35 +15,35 @@ describe('ofícios catalog', () => {
   });
 
   it('names a job by its title, or by its trade', () => {
-    expect(jobTitle({ oficioId: 'pintor', title: null })).toBe('Pintor');
-    expect(jobTitle({ oficioId: 'pintor', title: '  Pintor de fachada ' })).toBe('Pintor de fachada');
+    expect(jobTitle({ oficioId: 'limpeza', title: null })).toBe('Limpeza');
+    expect(jobTitle({ oficioId: 'limpeza', title: '  Faxina de apartamento ' })).toBe('Faxina de apartamento');
     expect(oficioNome('nao-existe')).toBe('');
   });
 
   it('finds trades by name or synonym, ignoring accents and case', () => {
-    expect(searchOficios('hidraulica').map((o) => o.id)).toEqual(['encanador']);
-    expect(searchOficios('DRYWALL').map((o) => o.id)).toEqual(['gesseiro']);
-    expect(searchOficios('pedreiro').map((o) => o.id)).toEqual(['pedreiro', 'pedreiro-acabamento', 'servente']);
+    expect(searchOficios('faxina').map((o) => o.id)).toEqual(['limpeza']);
+    expect(searchOficios('RECEPCAO').map((o) => o.id)).toEqual(['eventos']);
+    expect(searchOficios('cuidador').map((o) => o.id)).toEqual(['cuidador']);
   });
 });
 
 describe('mural filter and search by trade', () => {
   const from = { lat: -23.55, lon: -46.63 };
-  const filters = { location: 'São Paulo, SP', oficio: 'eletricista', dist: 'Toda a cidade', quando: null, from };
+  const filters = { location: 'São Paulo, SP', oficio: 'garcom', dist: 'Toda a cidade', quando: null, from };
 
   it('filters by the trade id, not by the text shown', () => {
     const jobs = Object.values(db().jobs);
     const found = jobs.filter((j) => passesFilters(j, filters)).map((j) => j.id);
     expect(found.length).toBeGreaterThan(0);
-    expect(found.every((id) => db().jobs[id].oficioId === 'eletricista')).toBe(true);
+    expect(found.every((id) => db().jobs[id].oficioId === 'garcom')).toBe(true);
   });
 
   it('finds jobs by a synonym of their trade (U49: never companies or people)', () => {
     const d = db();
     const open = Object.values(d.jobs).filter((j) => !j.closed);
-    const r = searchMatches(open, 'Hidráulica', 'recrutador', from);
+    const r = searchMatches(open, 'Faxina', 'recrutador', from);
     expect(r.jobs.length).toBeGreaterThan(0);
-    expect(r.jobs.every((j) => j.oficioId === 'encanador')).toBe(true);
+    expect(r.jobs.every((j) => j.oficioId === 'limpeza')).toBe(true);
     expect(Object.keys(r)).toEqual(['jobs']);
   });
 });

@@ -50,7 +50,7 @@ async function readContact(applicationId: string): Promise<Contact> {
   const job = app ? db.jobs[app.jobId] : undefined;
   if (!app || !job) throw serviceError('nao_encontrado', 'Essa candidatura não existe mais.');
   if (!contactOpen(app.status))
-    throw serviceError('nao_autorizado', 'O contato abre quando a construtora aprova o candidato.');
+    throw serviceError('nao_autorizado', 'O contato abre quando a empresa aprova o candidato.');
   const company = db.companies[job.companyId];
   const worker = db.workers[app.workerId];
   const parts = {
@@ -62,7 +62,7 @@ async function readContact(applicationId: string): Promise<Contact> {
   };
   if (session?.role === 'trabalhador' && session.workerId === app.workerId) {
     const url = workerToCompanyUrl(company.whatsapp, parts);
-    if (!url) throw serviceError('nao_encontrado', 'A construtora ainda não cadastrou um WhatsApp.');
+    if (!url) throw serviceError('nao_encontrado', 'A empresa ainda não cadastrou um WhatsApp.');
     return { name: company.name, phone: company.whatsapp, url };
   }
   if (session?.role === 'recrutador' && session.companyId === job.companyId) {

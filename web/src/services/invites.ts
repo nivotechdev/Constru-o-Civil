@@ -72,7 +72,7 @@ export async function inviteWorker(jobId: string, workerId: string): Promise<voi
       },
       {
         kind: 'convite',
-        title: `${company?.name ?? 'Uma construtora'} convidou você`,
+        title: `${company?.name ?? 'Uma empresa'} convidou você`,
         text: `Para ${jobTitle(job)} em ${job.address.neighborhood || job.address.city}. Veja a vaga e responda.`,
         workerId,
         companyId: null,

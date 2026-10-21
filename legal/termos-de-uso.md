@@ -13,13 +13,13 @@ Ao criar uma conta você aceita estes termos e a Política de privacidade. Se n�
 
 ## 2. O que a Bicos faz
 
-A Bicos aproxima construtoras e obras que precisam de gente para diárias e trabalhadores da construção civil que procuram bico.
+A Bicos aproxima empresas e pessoas que precisam de alguém para um serviço ou uma diária e trabalhadores que procuram bico.
 
-A Bicos não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre a construtora e o trabalhador, que respondem por ele.
+A Bicos não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre quem contrata e o trabalhador, que respondem por ele.
 
 ## 3. Sua conta
 
-Cada conta é de uma pessoa ou empresa e de um lado só: trabalhador ou construtora.
+Cada conta é de uma pessoa ou empresa e de um lado só: trabalhador ou quem contrata (conta de empresa).
 
 Você é responsável pelos dados que informa (CPF, CNPJ, WhatsApp, e-mail) e por manter sua senha em segredo.
 
@@ -27,15 +27,15 @@ Para usar a Bicos você precisa ter 18 anos ou mais.
 
 ## 4. Vagas e candidaturas
 
-A construtora publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.
+Quem contrata publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.
 
 O trabalhador se candidata só a vagas que pode cumprir e avisa pela Bicos se não puder ir.
 
-O contato por WhatsApp é liberado para os dois lados quando a construtora aprova o candidato. O endereço exato da obra aparece só para quem foi escolhido.
+O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço exato do serviço aparece só para quem foi escolhido.
 
 ## 5. Verificação
 
-A construtora pode ser conferida pelo CNPJ na Receita Federal. O trabalhador pode pedir o selo "Verificado" enviando uma selfie e a foto do documento, com consentimento próprio (veja a Política de privacidade).
+A empresa pode ser conferida pelo CNPJ na Receita Federal. O trabalhador pode pedir o selo "Verificado" enviando uma selfie e a foto do documento, com consentimento próprio (veja a Política de privacidade).
 
 O selo indica que conferimos os documentos, não garante o trabalho de ninguém.
 
@@ -43,9 +43,9 @@ O selo indica que conferimos os documentos, não garante o trabalho de ninguém.
 
 Para o trabalhador, a Bicos é sempre grátis. Publicar vaga também é grátis.
 
-A construtora paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.
+Quem contrata paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.
 
-O pagamento da diária é feito direto pela construtora ao trabalhador, como combinado entre eles.
+O pagamento da diária é feito direto por quem contrata ao trabalhador, como combinado entre eles.
 
 ## 7. Avaliações, denúncias e conduta
 

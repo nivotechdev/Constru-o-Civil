@@ -2130,3 +2130,37 @@ nome de outra cidade não achava nada. **Agora** (a mesma regra no servidor, mig
 - Durante a busca, os filtros (distância, quando, ofício) não valem — a tela da busca não os mostra.
 - Nome de empresa ou de pessoa não acha nada. Sem vaga: "Nenhuma vaga para “…”", dizendo onde se buscou, e "Limpar
   busca". O campo diz "Buscar por serviço, bairro ou cidade" para os dois lados.
+
+## U48 — Público geral: nenhum texto ou ícone de construção
+
+Pedido do responsável: a Bicos deixa de ser só para construtoras e pedreiros — é para o público geral, quem procura
+bico e empresas ou pessoas que contratam qualquer serviço. Mudar **só textos e ícones**, no app inteiro, sem deixar
+nenhuma palavra ou ícone do nicho de construção. **Agora**:
+
+- **Vocabulário**: "construtora" → "empresa" (ou "quem contrata" nos termos, porque pessoa física também contrata);
+  "obra" → "serviço"/"local do serviço"; "diárias de obra" → "bicos e diárias"; exemplos e placeholders de serviços
+  gerais ("Garçom para evento de sábado"); "Quero pegar bico — Procuro bicos e diárias perto de mim" e "Quero contratar
+  — Tenho uma empresa ou preciso de alguém para um serviço"; "Qualquer serviço" nos alertas.
+- **Ícones**: a marca (logo, ícone do app, favicon e a imagem de prévia do link) trocou o martelo por uma **maleta**; as
+  abas e os estados vazios usam maleta/casa/prédio; as capas ilustradas das vagas sem foto são de serviços gerais
+  (limpeza, cozinha e garçom, eventos, entregas, estoque, jardim, cuidados, crianças, pets, beleza, roupa, carro,
+  informática, aulas, loja, ajudante; padrão: maleta). Os ícones de obra saíram do conjunto (martelo, capacete, tijolo,
+  pá, rolo de pintura, tomada, gotas, régua, cone) e entraram os novos, da mesma família Lucide.
+- **Servidor** (migration `u48`, **produção só com "pode"**): as mensagens de erro, os avisos e as etiquetas das
+  avaliações que o banco manda para a tela ("EPI no local" → "Local seguro", "Usou EPI" → "Cuidadoso") — 13 funções, só
+  o texto, conferidas uma a uma com o staging antes; e "Construtora (conta excluída)" → "Empresa (conta excluída)" nos
+  registros antigos. Edge Function `verificar-cnpj`, os 4 e-mails ("bicos e diárias"), título e descrição da página, o
+  manifesto do app e os textos legais (termos e política, que ainda são rascunho para o advogado — a versão não mudou,
+  então ninguém precisa aceitar de novo; quando o advogado revisar, decidir se sobe a versão).
+- **Lista de serviços** (`data/oficios.ts`, que dá nome às vagas sem título e os sinônimos da busca): garçom, cozinha,
+  limpeza, eventos, mudança, entregas, estoque, vendas, jardinagem, cuidador, babá, beleza, lavagem de carro, ajudante
+  geral. A tabela `oficios` do banco não mudou (só vagas antigas a usam; as novas não têm ofício desde o U01).
+- **Demonstração**: empresas, perfis, vagas, avaliações e avisos da demonstração viraram serviços gerais (ids, valores e
+  datas iguais); as fotos de obra da demonstração saíram (as vagas mostram a capa ilustrada) e o login de demonstração
+  da empresa é `empresa@bicos.demo`.
+- **Staging**: as 10 vagas de teste viraram serviços gerais nos mesmos bairros de Caxias (garçom, cozinha, faxina,
+  recepção, mudança, mercado, jardim, cuidadora, panfletos, loja) e a empresa de teste virou "Empresa Serra Gaúcha
+  (teste)"; as fotos novas saem do workflow `staging-fotos` (buscas de serviços gerais, foto de obra recusada).
+- **O que não mudou** (não aparece para ninguém, e mudar quebraria dados e links): os nomes internos — papel
+  `recrutador`, lado `construtora` da candidatura, `para_construtora`, `cancelado_pela_construtora` — e o endereço
+  `/construtora/<id>` do perfil da empresa (links já compartilhados continuam abrindo).

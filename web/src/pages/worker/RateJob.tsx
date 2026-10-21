@@ -47,9 +47,9 @@ export default function RateJob({ params }: ScreenProps) {
           <span className="text-sm text-concrete-500">{`${jobTitle(job)} · ${company.name} · ${dateText(job)}`}</span>
         </div>
         <ReviewForm
-          question="Sua nota para a construtora"
+          question="Sua nota para a empresa"
           tags={COMPANY_TAGS}
-          commentHint="Sua avaliação aparece no perfil da construtora."
+          commentHint="Sua avaliação aparece no perfil da empresa."
           maxComment={MAX_COMMENT}
           loading={send.loading}
           error={send.error}

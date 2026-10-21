@@ -27,7 +27,7 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await prepararPagina(page);
   const email = emailDeTeste('construtora');
   const cnpj = cnpjValido('construtora');
-  const nome = nomeDeTeste('Construtora Teste');
+  const nome = nomeDeTeste('Empresa Teste');
   const whatsapp = whatsappDeTeste('construtora');
   const trabalhador = estado().contas.trabalhador;
 
@@ -82,7 +82,7 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   // O título é obrigatório: sem ele, não passa do passo 1.
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(page.getByText('Dê um título para a vaga')).toBeVisible();
-  await page.fill('#create-job-titulo', 'Reboco de parede E2E');
+  await page.fill('#create-job-titulo', 'Garçom para evento E2E');
   await page.fill('#create-job-cep', '03307000');
   await expect(page.getByText('Endereço encontrado')).toBeVisible();
   await page.getByRole('radio', { name: /Qualquer dia/ }).click();
@@ -94,7 +94,7 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await page.fill('#create-job-hora-inicio', '07:00');
   await page.fill('#create-job-hora-fim', '17:00');
   await page.fill('#create-job-vagas', '2');
-  await page.fill('#create-job-detalhe', 'Reboco de duas paredes internas. Material no local.');
+  await page.fill('#create-job-detalhe', 'Servir as mesas de um aniversário. Uniforme preto.');
   await print(page, 'f2', 'publicar vaga passo 2');
   await page.getByRole('button', { name: 'Publicar vaga' }).click();
   await expect(page).toHaveURL(/\/vaga-publicada\/BC-\d+/);
@@ -124,7 +124,7 @@ test('a vaga aparece no mural do trabalhador (por cidade e por raio)', async ({ 
   const { contas, vaga } = estado();
   await entrar(page, contas.trabalhador.email);
   await expect(page).toHaveURL(/\/mural/);
-  await expect(page.getByText('Reboco de parede E2E').first()).toBeVisible();
+  await expect(page.getByText('Garçom para evento E2E').first()).toBeVisible();
   await print(page, 'f2', 'mural por cidade mostra a vaga');
 
   // Raio: a mesma vaga pelo filtro "Até X km" (feed_jobs com p_radius_km), como o app chama.

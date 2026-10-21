@@ -55,7 +55,7 @@ export default function JobClosed({ params }: ScreenProps) {
     return (
       <div className="flex flex-col">
         <BackBar title="Resumo do bico" onBack={() => goBack('/mural')} />
-        <EmptyState icon="lock" title="Essa vaga não é sua" description="Só a construtora que publicou vê o resumo." />
+        <EmptyState icon="lock" title="Essa vaga não é sua" description="Só a empresa que publicou vê o resumo." />
       </div>
     );
   const team = applicationsForJob(db, job.id)

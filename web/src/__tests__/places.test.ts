@@ -23,7 +23,7 @@ const TODAY = todayISO(NOW);
 const baseJob = (patch: Partial<Job> = {}): Job => ({
   id: 'BC-1',
   companyId: 'meridiano',
-  oficioId: 'pedreiro',
+  oficioId: 'limpeza',
   title: null,
   pay: 200,
   address: {
@@ -145,8 +145,8 @@ describe('publish form', () => {
   // An older job being edited: with a trade, a street number and dates (U01 keeps them when editing).
   const valid = (): JobForm => ({
     ...emptyForm(),
-    oficioId: 'pedreiro',
-    titulo: 'Pedreiro para reboco',
+    oficioId: 'limpeza',
+    titulo: 'Faxina de apartamento',
     cep: '03307-000',
     street: 'Rua Serra de Bragança',
     number: '1240',
@@ -200,7 +200,7 @@ describe('publish form', () => {
     expect(draft.payment).toBeUndefined();
     // Editing an older job keeps its trade and payment.
     expect(draftFromForm({ ...valid(), pagamento: 'dinheiro' })).toMatchObject({
-      oficioId: 'pedreiro',
+      oficioId: 'limpeza',
       payment: 'dinheiro'
     });
   });

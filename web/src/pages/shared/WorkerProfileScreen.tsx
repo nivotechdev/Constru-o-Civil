@@ -125,7 +125,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
             <span className="font-display font-bold text-2xl text-concrete-900">{worker.name}</span>
             <span className="text-sm text-concrete-700">{workerPlace(worker)}</span>
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-concrete-700">
-              <Icon name="hammer" size={15} color="var(--text-subtle)" />
+              <Icon name="briefcase" size={15} color="var(--text-subtle)" />
               {`${worker.jobsDone} ${worker.jobsDone === 1 ? 'bico realizado' : 'bicos realizados'}`}
             </span>
             <div className="flex items-center gap-3">
@@ -164,7 +164,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
 
         {worker.bio || experiences.length ? null : isOwn ? (
           <FillProfileCard
-            text="Conte sobre você e suas experiências. As construtoras leem isso antes de escolher."
+            text="Conte sobre você e suas experiências. As empresas leem isso antes de escolher."
             onClick={() => navigate('/perfil/editar')}
           />
         ) : null}
@@ -227,7 +227,7 @@ function IdentityCard({ worker }: { worker: Worker }) {
       ? 'Sua identidade está em análise. Avisamos quando terminar.'
       : status === 'recusado'
         ? 'A verificação não foi aprovada. Veja o motivo e envie de novo.'
-        : 'Verifique sua identidade e ganhe o selo "Verificado". As construtoras confiam mais.';
+        : 'Verifique sua identidade e ganhe o selo "Verificado". As empresas confiam mais.';
   return (
     <Card tone="sunken" padding="sm" onClick={() => navigate('/perfil/verificar')}>
       <div className="flex items-center gap-2.5">

@@ -87,7 +87,7 @@ export default function MyJobs({ params }: ScreenProps) {
           {() =>
             list.length === 0 && !(tab === 'todas' && paging.hasMore) ? (
               <EmptyState
-                icon="hard-hat"
+                icon="briefcase"
                 title={
                   tab === 'abertas'
                     ? 'Nenhuma vaga aberta'

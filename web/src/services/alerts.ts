@@ -27,7 +27,7 @@ export function myJobAlert(database: Database, session: Session | null): JobAler
 /** "Pintor · São Paulo, SP · até 10 km" */
 export function alertSummary(alert: JobAlertInput): string {
   return [
-    alert.oficioId ? oficioNome(alert.oficioId) : 'Qualquer ofício',
+    alert.oficioId ? oficioNome(alert.oficioId) : 'Qualquer serviço',
     alert.city,
     alert.radiusKm ? `até ${alert.radiusKm} km` : 'toda a cidade'
   ].join(' · ');

@@ -168,7 +168,7 @@ export default function JobDetail({ params }: ScreenProps) {
                     onClick={() =>
                       void answer
                         .run(job.id, false)
-                        .then((ok) => ok && showToast('Convite recusado. Avisamos a construtora.'))
+                        .then((ok) => ok && showToast('Convite recusado. Avisamos a empresa.'))
                     }
                   />
                   <Button
@@ -256,7 +256,7 @@ export default function JobDetail({ params }: ScreenProps) {
                   sub={
                     exact
                       ? [placeText(job), distance].filter(Boolean).join(' · ')
-                      : [distance, 'O endereço completo aparece quando a construtora aprovar você']
+                      : [distance, 'O endereço completo aparece quando a empresa aprovar você']
                           .filter(Boolean)
                           .join(' · ')
                   }
@@ -264,7 +264,7 @@ export default function JobDetail({ params }: ScreenProps) {
                 {exact ? <MapLinks job={job} /> : null}
                 {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
                 <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
-                <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com a construtora" />
+                <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com a empresa" />
               </div>
             </Card>
           </Section>
@@ -305,7 +305,7 @@ export default function JobDetail({ params }: ScreenProps) {
             {actions()}
             <div className="flex items-start gap-2 text-sm text-concrete-500">
               <Icon name="hand-coins" size={18} color="var(--text-subtle)" />
-              <span>{`${paymentText(job)}, combinado direto com a construtora.`}</span>
+              <span>{`${paymentText(job)}, combinado direto com a empresa.`}</span>
             </div>
           </div>
         </aside>

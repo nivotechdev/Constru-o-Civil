@@ -11,7 +11,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
           compact ? 'w-9 h-9 rounded-[0.625rem]' : 'w-10 h-10 rounded-xl'
         )}
       >
-        <Icon name="hammer" size={compact ? 19 : 21} color="#fff" />
+        <Icon name="briefcase" size={compact ? 19 : 21} color="#fff" />
       </span>
       <span
         className={cx(

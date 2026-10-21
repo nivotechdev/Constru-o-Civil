@@ -98,7 +98,7 @@ export default function EditCompanyProfile() {
             <PhotoSlot
               shape="rect"
               height="9rem"
-              placeholder="Capa da construtora"
+              placeholder="Capa da empresa"
               value={images.capa !== undefined ? images.capa : company.coverUrl}
               progress={images.capa ? progress : null}
               onChange={(v) => setImage('capa', v)}
@@ -131,7 +131,7 @@ export default function EditCompanyProfile() {
             id="edit-company-about"
             label="Sobre a empresa"
             hint="Conte o que a empresa faz, há quanto tempo e como trata a equipe. Os trabalhadores leem antes de se candidatar."
-            placeholder="Ex.: Construtora de Caxias do Sul desde 2010. Obras residenciais e reformas. Pagamos a diária em dia e fornecemos EPI."
+            placeholder="Ex.: Empresa de eventos de Caxias do Sul desde 2010. Pagamos a diária em dia e oferecemos almoço."
             value={draft.about}
             error={errors.about}
             onInput={(v) => {
@@ -165,7 +165,7 @@ export default function EditCompanyProfile() {
             </div>
           ) : null}
           <ProfileLocationField
-            title="Onde ficam suas obras"
+            title="Onde fica sua empresa"
             help="O mural abre nessa cidade e suas vagas novas já começam nela."
             city={knownCity(draft.location) ?? ''}
             error={errors.location}

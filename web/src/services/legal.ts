@@ -36,14 +36,14 @@ export const TERMS: LegalDocument = {
     {
       title: '2. O que a Bicos faz',
       body: [
-        'A Bicos aproxima construtoras e obras que precisam de gente para diárias e trabalhadores da construção civil que procuram bico.',
-        'A Bicos não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre a construtora e o trabalhador, que respondem por ele.'
+        'A Bicos aproxima empresas e pessoas que precisam de alguém para um serviço ou uma diária e trabalhadores que procuram bico.',
+        'A Bicos não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre quem contrata e o trabalhador, que respondem por ele.'
       ]
     },
     {
       title: '3. Sua conta',
       body: [
-        'Cada conta é de uma pessoa ou empresa e de um lado só: trabalhador ou construtora.',
+        'Cada conta é de uma pessoa ou empresa e de um lado só: trabalhador ou quem contrata (conta de empresa).',
         'Você é responsável pelos dados que informa (CPF, CNPJ, WhatsApp, e-mail) e por manter sua senha em segredo.',
         'Para usar a Bicos você precisa ter 18 anos ou mais.'
       ]
@@ -51,15 +51,15 @@ export const TERMS: LegalDocument = {
     {
       title: '4. Vagas e candidaturas',
       body: [
-        'A construtora publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.',
+        'Quem contrata publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.',
         'O trabalhador se candidata só a vagas que pode cumprir e avisa pela Bicos se não puder ir.',
-        'O contato por WhatsApp é liberado para os dois lados quando a construtora aprova o candidato. O endereço exato da obra aparece só para quem foi escolhido.'
+        'O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço exato do serviço aparece só para quem foi escolhido.'
       ]
     },
     {
       title: '5. Verificação',
       body: [
-        'A construtora pode ser conferida pelo CNPJ na Receita Federal. O trabalhador pode pedir o selo "Verificado" enviando uma selfie e a foto do documento, com consentimento próprio (veja a Política de privacidade).',
+        'A empresa pode ser conferida pelo CNPJ na Receita Federal. O trabalhador pode pedir o selo "Verificado" enviando uma selfie e a foto do documento, com consentimento próprio (veja a Política de privacidade).',
         'O selo indica que conferimos os documentos, não garante o trabalho de ninguém.'
       ]
     },
@@ -67,8 +67,8 @@ export const TERMS: LegalDocument = {
       title: '6. Pagamentos',
       body: [
         'Para o trabalhador, a Bicos é sempre grátis. Publicar vaga também é grátis.',
-        'A construtora paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.',
-        'O pagamento da diária é feito direto pela construtora ao trabalhador, como combinado entre eles.'
+        'Quem contrata paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.',
+        'O pagamento da diária é feito direto por quem contrata ao trabalhador, como combinado entre eles.'
       ]
     },
     {
@@ -112,8 +112,8 @@ export const PRIVACY: LegalDocument = {
       title: '2. Dados que coletamos',
       body: [
         'Cadastro: nome ou razão social, CPF ou CNPJ (guardado cifrado), e-mail, WhatsApp, senha (guardada de forma irreversível), data e versão do aceite destes textos. Se entrar com o Google: nome, e-mail e foto da conta Google.',
-        'Perfil: cidade, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Construtora: nome, logo, cidade, CNPJ e o que a Receita Federal informa sobre ele.',
-        'Vagas: endereço da obra, datas, horário, valor, fotos e requisitos.',
+        'Perfil: cidade, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Empresa: nome, logo, cidade, CNPJ e o que a Receita Federal informa sobre ele.',
+        'Vagas: endereço do serviço, datas, horário, valor, fotos e requisitos.',
         'Uso: candidaturas e o histórico de cada uma, presença confirmada, diárias concluídas, avaliações, vagas salvas, convites, alertas de vaga, notificações, denúncias e bloqueios.',
         'Pagamentos do impulso: valor, plano e situação do pagamento. Os dados do cartão vão direto para o Mercado Pago; não ficam com a gente.',
         'Localização: só se você permitir, para achar a cidade mais perto. Guardamos a cidade e um ponto aproximado, não o seu caminho.',
@@ -132,8 +132,8 @@ export const PRIVACY: LegalDocument = {
     {
       title: '4. Para que usamos e com qual base legal',
       body: [
-        'Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar construtoras e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço da obra a quem foi escolhido, avaliações e avisos.',
-        'Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da construtora pelo CNPJ (dado público).',
+        'Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar empresas e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço do serviço a quem foi escolhido, avaliações e avisos.',
+        'Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da empresa pelo CNPJ (dado público).',
         'Para cumprir a lei (art. 7º, II): registros de pagamento e de acesso pelo tempo que a lei exigir.',
         'Com o seu consentimento (art. 7º, I e art. 11, I): selfie e documento, notificações no celular e localização do aparelho.',
         'Para entender o uso sem identificar ninguém: contamos cadastros, vagas e contratações por dia, só em números totais. Não vendemos seus dados e não usamos para publicidade.'
@@ -194,7 +194,7 @@ export const IDENTITY_CONSENT = {
   title: 'Uso da sua selfie e do documento',
   points: [
     'Para que serve: só para conferir que você é você e dar o selo "Verificado".',
-    'Quem vê: só a equipe de verificação da Bicos. Ninguém mais, nem as construtoras.',
+    'Quem vê: só a equipe de verificação da Bicos. Ninguém mais, nem as empresas.',
     'Por quanto tempo: apagamos as fotos 30 dias depois da decisão.',
     'Você pode desistir quando quiser, pela Ajuda ou pelo e-mail de privacidade.'
   ],

@@ -650,6 +650,18 @@ busca os filtros (distância, quando, ofício) não valem. Só troca a função 
 select prosrc like '%terms as%' from pg_proc where proname = 'feed_jobs';  -- true
 ```
 
+### 56. `20261021000500_u48_publico_geral.sql` (U48)
+
+A Bicos passa a ser para o público geral: as mensagens de erro, os avisos e as etiquetas das avaliações que o banco
+manda para a tela deixam de falar de construtora, obra e EPI ("Só a empresa da vaga…", "Local seguro", "Cuidadoso").
+Troca o texto de 13 funções (mesma assinatura e grants) e renomeia "Construtora (conta excluída)" para "Empresa (conta
+excluída)" nas empresas e avaliações antigas. Não muda regra nenhuma.
+
+```sql
+select count(*) from pg_proc where pronamespace = 'public'::regnamespace and prosrc like '%Só a construtora da vaga%';  -- 0
+select prosrc like '%Local seguro%' from pg_proc where proname = 'submit_review';                                    -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

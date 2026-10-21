@@ -42,7 +42,7 @@ function plan(id: BoostPlanId) {
 
 /** Why this job can't be boosted now, or `null` when it can. */
 export function boostBlocker(db: Database, job: Job, now: Date = new Date()): string | null {
-  if (job.companyId !== currentCompanyId()) return 'Só a construtora da vaga pode impulsionar.';
+  if (job.companyId !== currentCompanyId()) return 'Só a empresa da vaga pode impulsionar.';
   if (db.deletedJobIds.includes(job.id) || isJobClosed(db, job) || isExpired(job, now))
     return 'Só dá para impulsionar uma vaga aberta.';
   if (isBoosted(job, now)) return 'Essa vaga já está impulsionada.';
@@ -272,7 +272,7 @@ export function receiptText(payment: BoostPayment, job: Job | undefined, company
     'BICOS — RECIBO DE IMPULSIONAMENTO',
     '',
     `Pagamento: ${payment.id}`,
-    `Construtora: ${companyName}`,
+    `Empresa: ${companyName}`,
     `Vaga: ${job ? `${jobTitle(job)} (${job.id})` : payment.jobId}`,
     `Plano: ${plan?.label ?? payment.plan}`,
     `Valor: R$ ${(payment.amountCents / 100).toFixed(2).replace('.', ',')}`,

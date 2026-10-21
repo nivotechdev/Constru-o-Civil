@@ -55,7 +55,7 @@ async function walk(width, height, role) {
           ['CPF', '390.533.447-05']
         ]
       : [
-          ['nome da empresa', 'Construtora Serra Gaúcha'],
+          ['nome da empresa', 'Eventos Serra Gaúcha'],
           ['responsável', 'Ana Souza'],
           ['CNPJ', FREE_CNPJ]
         ];

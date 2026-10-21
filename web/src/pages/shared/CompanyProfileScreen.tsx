@@ -53,14 +53,14 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
   if (query.status !== 'ready')
     return (
       <ScreenLoading
-        title={isOwn ? 'Sua empresa' : 'Construtora'}
+        title={isOwn ? 'Sua empresa' : 'Empresa'}
         onBack={() => goBack('/mural')}
         query={query}
         skeleton={<PageSkeleton />}
       />
     );
   const company = isOwn ? currentCompany(db) : getCompany(db, params.id);
-  if (!company) return <NotFound message="Construtora não encontrada." />;
+  if (!company) return <NotFound message="Empresa não encontrada." />;
 
   const mine = activeJobs(db).filter((j) => j.companyId === company.id);
   // Workers see the jobs taking candidates; the company sees its open and full ones (W05/Y01).
@@ -170,7 +170,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
           <Card padding="md">
             <div className="flex flex-col gap-3.5">
               <div className="flex gap-2.5 items-center">
-                <Icon name="hammer" size={20} color="var(--text-subtle)" />
+                <Icon name="briefcase" size={20} color="var(--text-subtle)" />
                 <span className="text-sm text-concrete-700">
                   {openJobs.length === 1 ? '1 vaga aberta agora' : `${openJobs.length} vagas abertas agora`}
                 </span>
@@ -197,7 +197,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
             </div>
             {ownJobs.length === 0 ? (
               <EmptyState
-                icon="hammer"
+                icon="briefcase"
                 title="Nenhuma vaga aberta agora"
                 description={
                   // W05: a company with past jobs isn't told to publish its "first" one.
@@ -238,7 +238,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
             <span className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Vagas publicadas</span>
             {openJobs.length === 0 ? (
               <EmptyState
-                icon="hammer"
+                icon="briefcase"
                 title="Nenhuma vaga aberta no momento"
                 description={`${company.name} não tem bicos publicados agora. Volte mais tarde para ver novidades.`}
               />

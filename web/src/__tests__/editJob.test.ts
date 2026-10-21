@@ -45,7 +45,7 @@ describe('editing a job', () => {
   });
 
   it('a change of pay tells every active candidate; a description change tells nobody', async () => {
-    await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
+    await settle(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
     const job = m.store.getDb().jobs['BC-4821']; // jorge pre-selected, 4 em análise
     const quiet = draftFromForm({ ...formFromJob(job), detalhe: 'Outro texto.' });
     expect((await settle(m.jobs.updateJob(job.id, quiet))).ok).toBe(true);
@@ -63,7 +63,7 @@ describe('editing a job', () => {
   });
 
   it("refuses fewer slots than approved, someone else's job and a closed one", async () => {
-    await settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
+    await settle(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
     await settle(m.apps.approve('BC-4998', 'bruno'));
     const job = m.store.getDb().jobs['BC-4998'];
     const fewer = await settle(m.jobs.updateJob(job.id, { ...draftFromForm(formFromJob(job)), slots: 0 }));

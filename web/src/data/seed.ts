@@ -47,7 +47,7 @@ export const ACCOUNTS: Record<string, Account> = {
   },
   'conta-meridiano': {
     id: 'conta-meridiano',
-    email: 'construtora@bicos.demo',
+    email: 'empresa@bicos.demo',
     role: 'recrutador',
     document: '18.402.551/0001-47',
     whatsapp: '(11) 98842-3310',
@@ -143,7 +143,7 @@ function toArrange(n: number): Pick<Job, 'dateToArrange' | 'startDate' | 'endDat
 export const COMPANIES: Record<string, Company> = {
   meridiano: {
     id: 'meridiano',
-    name: 'Construtora Meridiano',
+    name: 'Eventos Meridiano',
     contactName: 'Ricardo Alves',
     cnpj: '18.402.551/0001-47',
     location: 'Zona Leste, SP',
@@ -157,7 +157,7 @@ export const COMPANIES: Record<string, Company> = {
     respondTime: 'Responde em 1h20, em média',
     paidCount: 128,
     about:
-      'Construtora da Zona Leste com obras residenciais e reformas. Pagamos a diária no fim do dia e fornecemos EPI e almoço.',
+      'Empresa de eventos da Zona Leste: casamentos, formaturas e festas de empresa. Pagamos a diária no fim do dia e oferecemos almoço.',
     reviews: [
       {
         id: 'r1',
@@ -176,7 +176,7 @@ export const COMPANIES: Record<string, Company> = {
         authorLabel: 'Jorge M.',
         value: 4,
         tags: [],
-        comment: 'Obra organizada e EPI no local. Começou 30 min atrasado.',
+        comment: 'Evento bem organizado e local seguro. Começou 30 min atrasado.',
         createdAt: ago(24 * 31)
       },
       {
@@ -193,7 +193,7 @@ export const COMPANIES: Record<string, Company> = {
   },
   alvorada: {
     id: 'alvorada',
-    name: 'Construtora Alvorada',
+    name: 'Restaurante Alvorada',
     location: 'Mooca, SP',
     whatsapp: '(11) 97731-4402',
     rating: 4.5,
@@ -208,14 +208,14 @@ export const COMPANIES: Record<string, Company> = {
         authorLabel: 'Caio N.',
         value: 4,
         tags: [],
-        comment: 'Bom acabamento, chegou 20 min atrasado.',
+        comment: 'Bom serviço, chegou 20 min atrasado.',
         createdAt: ago(24 * 57)
       }
     ]
   },
   'vila-formosa': {
     id: 'vila-formosa',
-    name: 'Instalações Vila Formosa',
+    name: 'Loja Vila Formosa',
     location: 'Vila Formosa, SP',
     whatsapp: '(11) 96614-2078',
     rating: 4.6,
@@ -226,7 +226,7 @@ export const COMPANIES: Record<string, Company> = {
   },
   'serra-braganca': {
     id: 'serra-braganca',
-    name: 'Reforma Serra de Bragança',
+    name: 'Buffet Serra de Bragança',
     location: 'Tatuapé, SP',
     whatsapp: '(11) 98127-5530',
     rating: 4.8,
@@ -241,14 +241,14 @@ export const COMPANIES: Record<string, Company> = {
         authorLabel: 'Nelson A.',
         value: 5,
         tags: [],
-        comment: 'Assentamento impecável, obra organizada.',
+        comment: 'Equipe educada e tudo bem organizado.',
         createdAt: ago(24 * 34)
       }
     ]
   },
   'vila-prudente': {
     id: 'vila-prudente',
-    name: 'Obra Vila Prudente',
+    name: 'Mercado Vila Prudente',
     location: 'Vila Prudente, SP',
     whatsapp: '(11) 95548-9016',
     rating: 4.4,
@@ -270,7 +270,7 @@ export const COMPANIES: Record<string, Company> = {
   },
   belem: {
     id: 'belem',
-    name: 'Obra Belém',
+    name: 'Padaria Belém',
     location: 'Belém, SP',
     whatsapp: '(11) 97402-6621',
     rating: 4.3,
@@ -281,7 +281,7 @@ export const COMPANIES: Record<string, Company> = {
   },
   aricanduva: {
     id: 'aricanduva',
-    name: 'Obra Aricanduva',
+    name: 'Mudanças Aricanduva',
     location: 'Aricanduva, SP',
     whatsapp: '(11) 96280-3147',
     rating: 4.2,
@@ -292,7 +292,7 @@ export const COMPANIES: Record<string, Company> = {
   },
   cangaiba: {
     id: 'cangaiba',
-    name: 'Obra Cangaíba',
+    name: 'Casa de Festas Cangaíba',
     location: 'Cangaíba, SP',
     whatsapp: '(11) 98865-1204',
     rating: 4.3,
@@ -315,11 +315,11 @@ export const WORKERS: Record<string, Worker> = {
     jobsDone: 23,
     verified: true,
     identity: 'verificado',
-    bio: 'Pedreiro de acabamento há 12 anos. Reboco, massa corrida e assentamento de piso. Tenho ferramenta própria.',
+    bio: 'Trabalho com eventos há 12 anos: garçom, montagem de salão e apoio na cozinha. Sou pontual e caprichoso.',
     experiences: [
-      'Reboco de fachada em prédio de 4 andares',
-      'Contrapiso e assentamento de porcelanato',
-      'Massa corrida e acabamento de apartamentos'
+      'Garçom em casamentos e formaturas',
+      'Montagem e desmontagem de salão de festas',
+      'Apoio na cozinha de buffet'
     ],
     facts: [
       '23 diárias pagas pela plataforma',
@@ -332,7 +332,7 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r7',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Obra Vila Prudente',
+        authorLabel: 'Mercado Vila Prudente',
         value: 5,
         tags: [],
         comment: 'Trabalhou o dia todo sem reclamar. Deixou a área limpa.',
@@ -342,20 +342,20 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r8',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Reforma Serra de Bragança',
+        authorLabel: 'Buffet Serra de Bragança',
         value: 5,
         tags: [],
-        comment: 'Chegou no horário, acabamento bem feito.',
+        comment: 'Chegou no horário, serviço bem feito.',
         createdAt: ago(24 * 54)
       },
       {
         id: 'r9',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Construtora Meridiano',
+        authorLabel: 'Eventos Meridiano',
         value: 5,
         tags: [],
-        comment: 'Chegou no horário, acabamento bem feito. Chamo de novo.',
+        comment: 'Chegou no horário, serviço bem feito. Chamo de novo.',
         createdAt: ago(24 * 28)
       }
     ]
@@ -377,7 +377,7 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r10',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Obra Belém',
+        authorLabel: 'Padaria Belém',
         value: 4,
         tags: [],
         comment: 'Fez o serviço direito. Saiu 20 min mais cedo.',
@@ -402,10 +402,10 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r11',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Reforma Serra de Bragança',
+        authorLabel: 'Buffet Serra de Bragança',
         value: 5,
         tags: [],
-        comment: 'Assentamento impecável. Levou as próprias ferramentas.',
+        comment: 'Atendimento impecável. Chegou já de uniforme.',
         createdAt: ago(24 * 34)
       }
     ]
@@ -427,7 +427,7 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r12',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Obra Vila Prudente',
+        authorLabel: 'Mercado Vila Prudente',
         value: 5,
         tags: [],
         comment: 'Trabalhador de confiança. Já chamei três vezes.',
@@ -452,7 +452,7 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r13',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Construtora Alvorada',
+        authorLabel: 'Restaurante Alvorada',
         value: 5,
         tags: [],
         comment: 'Pegou no pesado o dia todo. Chamo de novo.',
@@ -472,7 +472,7 @@ export const WORKERS: Record<string, Worker> = {
     novo: true,
     verified: false,
     facts: [
-      '11 anos de obra, primeiro bico pela plataforma',
+      '11 anos de experiência, primeiro bico pela plataforma',
       'Documentos enviados, em conferência',
       'Telefone confirmado por SMS'
     ],
@@ -495,7 +495,7 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r14',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Obra Belém',
+        authorLabel: 'Padaria Belém',
         value: 5,
         tags: [],
         comment: 'Serviço limpo e no prazo combinado.',
@@ -520,10 +520,10 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r15',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Construtora Alvorada',
+        authorLabel: 'Restaurante Alvorada',
         value: 4,
         tags: [],
-        comment: 'Bom acabamento, chegou 20 min atrasado.',
+        comment: 'Bom serviço, chegou 20 min atrasado.',
         createdAt: ago(24 * 57)
       }
     ]
@@ -545,7 +545,7 @@ export const WORKERS: Record<string, Worker> = {
         id: 'r16',
         applicationId: null,
         direction: 'para_trabalhador',
-        authorLabel: 'Construtora Meridiano',
+        authorLabel: 'Eventos Meridiano',
         value: 5,
         tags: [],
         comment: 'Já trabalhou com a gente três vezes. Sempre pontual.',
@@ -565,7 +565,7 @@ export const WORKERS: Record<string, Worker> = {
     novo: true,
     verified: false,
     facts: [
-      '6 anos de obra, primeiro bico pela plataforma',
+      '6 anos de experiência, primeiro bico pela plataforma',
       'Documentos enviados, em conferência',
       'Telefone confirmado por SMS'
     ],
@@ -592,8 +592,8 @@ export const JOBS: Record<string, Job> = {
   'BC-4821': {
     id: 'BC-4821',
     companyId: 'meridiano',
-    oficioId: 'pedreiro-acabamento',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Garçom para casamento',
     pay: 220,
     address: addr('Tatuapé', 'Rua Serra de Bragança', '1240', 'BC-4821'),
     ...span(0, 1, 'qualquer'),
@@ -602,18 +602,18 @@ export const JOBS: Record<string, Job> = {
     dias: 'qualquer',
     urgent: true,
     boostEndsAt: ago(-20),
-    photos: ['img/jobs/pedreiro-2.jpg', 'img/jobs/pedreiro-1.jpg', 'img/jobs/pedreiro-3.jpg'],
+    photos: [],
     slots: 4,
     description:
-      'Reboco e regularização de duas paredes externas e acabamento em massa corrida numa reforma residencial. Material já está no canteiro.',
+      'Servir as mesas num casamento de 150 convidados e ajudar na montagem do salão antes da festa. Almoço e uniforme por nossa conta.',
     payment: 'pix_dia',
-    requirements: ['Experiência com reboco e massa corrida', 'Botina e capacete próprios', 'Chegar 10 minutos antes']
+    requirements: ['Experiência como garçom', 'Calça preta e sapato fechado', 'Chegar 10 minutos antes']
   },
   'BC-4822': {
     id: 'BC-4822',
     companyId: 'alvorada',
-    oficioId: 'pintor',
-    title: null,
+    oficioId: 'cozinha',
+    title: 'Auxiliar de cozinha',
     pay: null,
     address: addr('Mooca', 'Rua da Mooca', '3180', 'BC-4822'),
     ...span(0, 1, 'qualquer'),
@@ -621,17 +621,17 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'qualquer',
     urgent: true,
-    photos: ['img/jobs/pintor-1.jpg', 'img/jobs/pintor-2.jpg'],
+    photos: [],
     slots: 1,
-    description: 'Pintura interna em parede lisa de apartamento recém-reformado, duas demãos de tinta acrílica branca.',
+    description: 'Ajudar no preparo do almoço de um restaurante: cortar legumes, montar os pratos e lavar a louça.',
     payment: 'pix_dia',
-    requirements: ['Pintura interna, parede lisa', 'Rolo e pincel próprios', 'Tinta e lixa fornecidas pela obra']
+    requirements: ['Experiência em cozinha', 'Touca e avental fornecidos', 'Cabelo preso']
   },
   'BC-4855': {
     id: 'BC-4855',
     companyId: 'vila-formosa',
-    oficioId: 'eletricista',
-    title: null,
+    oficioId: 'vendas',
+    title: 'Vendedor para loja de roupas',
     pay: null,
     address: addr('Vila Formosa', 'Rua Vila Formosa', '210', 'BC-4855'),
     ...span(6, 1, 'semana'),
@@ -639,20 +639,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description:
-      'Instalação elétrica residencial em casa em reforma: troca de disjuntores, tomadas e pontos de luz em três cômodos.',
+    description: 'Atender os clientes, organizar as araras e ajudar no caixa durante a semana de liquidação.',
     payment: 'pix_dia',
-    requirements: [
-      'Instalação elétrica residencial',
-      'Ferramentas próprias',
-      'Combine o valor direto com a construtora'
-    ]
+    requirements: ['Gostar de atender pessoas', 'Saber fazer troco', 'Combine o valor direto com a empresa']
   },
   'BC-4830': {
     id: 'BC-4830',
     companyId: 'vila-prudente',
-    oficioId: 'servente',
-    title: null,
+    oficioId: 'estoque',
+    title: 'Repositor de mercado',
     pay: 150,
     address: addr('Vila Prudente', 'Av. Vila Ema', '2790', 'BC-4830'),
     ...span(2, 2, 'semana'),
@@ -660,16 +655,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '16:00',
     dias: 'semana',
     slots: 1,
-    description:
-      'Carga e descarga de material de construção e limpeza do piso ao fim do expediente, em obra residencial de dois pavimentos.',
+    description: 'Repor as prateleiras, conferir a validade dos produtos e organizar o estoque ao fim do expediente.',
     payment: 'pix_dia',
-    requirements: ['Carregar material e limpar o piso', 'Botina própria', 'Capacete fornecido pela obra']
+    requirements: ['Repor prateleiras e organizar o estoque', 'Sapato fechado', 'Uniforme fornecido pela empresa']
   },
   'BC-4835': {
     id: 'BC-4835',
     companyId: 'serra-braganca',
-    oficioId: 'azulejista',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Copeiro para buffet',
     pay: 260,
     address: addr('Tatuapé', 'Rua Serra de Bragança', '640', 'BC-4835'),
     ...span(3, 1, 'semana'),
@@ -677,19 +671,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description: 'Assentamento de porcelanato 60x60 em sala e cozinha, com nivelamento e rejunte incluídos.',
+    description: 'Montar a copa, servir bebidas e repor o buffet numa festa de formatura.',
     payment: 'pix_dia',
-    requirements: [
-      'Assentamento de porcelanato 60x60',
-      'Desempenadeira e nível próprios',
-      'Argamassa fornecida pela obra'
-    ]
+    requirements: ['Experiência com buffet', 'Roupa preta', 'Uniforme fornecido pela empresa']
   },
   'BC-4841': {
     id: 'BC-4841',
     companyId: 'meridiano',
-    oficioId: 'armador',
-    title: null,
+    oficioId: 'eventos',
+    title: 'Montagem de feira',
     pay: 240,
     address: addr('Penha', 'Rua Cantagalo', '890', 'BC-4841'),
     ...span(4, 3, 'semana'),
@@ -697,16 +687,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description:
-      'Montagem da ferragem de laje de um pavimento, seguindo projeto estrutural fornecido pela construtora.',
+    description: 'Montar e desmontar mesas, cadeiras e a decoração de uma feira de três dias.',
     payment: 'pix_dia',
-    requirements: ['Montagem de ferragem de laje', 'Botina, capacete e luva próprios', 'Experiência com vergalhão']
+    requirements: ['Montagem de mesas e decoração', 'Sapato fechado e luva própria', 'Disposição para pegar peso']
   },
   'BC-4848': {
     id: 'BC-4848',
     companyId: 'belem',
-    oficioId: 'ajudante-geral',
-    title: null,
+    oficioId: 'mudanca',
+    title: 'Ajudante de carga e descarga',
     pay: 140,
     address: addr('Belém', 'Rua Padre Adelino', '410', 'BC-4848'),
     ...span(5, 1, 'fimdesemana'),
@@ -714,15 +703,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '14:00',
     dias: 'fimdesemana',
     slots: 1,
-    description: 'Descarregar um caminhão de material de construção e organizar no canteiro. Serviço de meio período.',
+    description: 'Descarregar um caminhão de farinha e organizar no depósito. Serviço de meio período.',
     payment: 'pix_dia',
-    requirements: ['Descarregar caminhão de material', 'Botina própria', 'Sem experiência exigida']
+    requirements: ['Descarregar caminhão', 'Sapato fechado', 'Sem experiência exigida']
   },
   'BC-4998': {
     id: 'BC-4998',
     companyId: 'meridiano',
-    oficioId: 'servente',
-    title: null,
+    oficioId: 'estoque',
+    title: 'Repositor de estoque',
     pay: 150,
     address: addr('Vila Prudente', 'Av. Vila Ema', '2790', 'BC-4998'),
     ...span(2, 2, 'semana'),
@@ -730,16 +719,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '16:00',
     dias: 'semana',
     slots: 2,
-    description:
-      'Carga e descarga de material de construção e limpeza do piso ao fim do expediente, em obra residencial de dois pavimentos.',
+    description: 'Separar e organizar o material dos eventos no depósito e limpar o espaço ao fim do expediente.',
     payment: 'pix_dia',
-    requirements: ['Carregar material e limpar o piso', 'Botina própria']
+    requirements: ['Organizar o depósito', 'Sapato fechado']
   },
   'BC-4995': {
     id: 'BC-4995',
     companyId: 'meridiano',
-    oficioId: 'azulejista',
-    title: null,
+    oficioId: 'eventos',
+    title: 'Recepcionista de evento',
     pay: 260,
     address: addr('Tatuapé', 'Rua Serra de Bragança', '640', 'BC-4995'),
     ...span(3, 1, 'semana'),
@@ -747,15 +735,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description: 'Assentamento de porcelanato 60x60 em sala e cozinha, com nivelamento e rejunte incluídos.',
+    description: 'Receber os convidados de uma festa de empresa, conferir a lista e indicar as mesas.',
     payment: 'pix_dia',
-    requirements: ['Assentamento de porcelanato 60x60', 'Desempenadeira e nível próprios']
+    requirements: ['Experiência com recepção', 'Roupa social']
   },
   'BC-5010': {
     id: 'BC-5010',
     companyId: 'alvorada',
-    oficioId: 'eletricista',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Garçom para almoço executivo',
     pay: 250,
     address: addr('Mooca', 'Rua Taquari', '1180', 'BC-5010'),
     ...span(1, 1, 'semana'),
@@ -763,17 +751,17 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     urgent: true,
-    photos: ['img/jobs/eletricista-1.jpg', 'img/jobs/eletricista-2.jpg'],
+    photos: [],
     slots: 1,
-    description: 'Troca da fiação de um apartamento de dois quartos e instalação de quadro de distribuição novo.',
+    description: 'Atender as mesas no almoço de um restaurante movimentado, de segunda a sexta.',
     payment: 'pix_dia',
-    requirements: ['NR-10 em dia', 'Ferramentas próprias', 'Material fornecido pela obra']
+    requirements: ['Experiência como garçom', 'Calça preta', 'Uniforme fornecido pela empresa']
   },
   'BC-5011': {
     id: 'BC-5011',
     companyId: 'serra-braganca',
-    oficioId: 'pintor',
-    title: 'Pintor de fachada',
+    oficioId: 'baba',
+    title: 'Recreador para colônia de férias',
     pay: 200,
     address: addr('Tatuapé', 'Rua Tuiuti', '2210', 'BC-5011'),
     ...span(7, 2, 'semana'),
@@ -781,15 +769,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 2,
-    description: 'Pintura de fachada de sobrado, com andaime já montado pela obra.',
+    description: 'Brincar com as crianças e organizar as atividades numa colônia de férias.',
     payment: 'pix_dia',
-    requirements: ['Experiência com pintura externa', 'Rolo, pincel e trincha próprios', 'EPI fornecido pela obra']
+    requirements: ['Experiência com crianças', 'Animação e paciência', 'Camiseta fornecida pela empresa']
   },
   'BC-5012': {
     id: 'BC-5012',
     companyId: 'vila-prudente',
-    oficioId: 'encanador',
-    title: null,
+    oficioId: 'limpeza',
+    title: 'Limpeza urgente no mercado',
     pay: null,
     address: addr('Vila Prudente', 'Rua Ibitirama', '845', 'BC-5012'),
     ...span(0, 1, 'qualquer'),
@@ -798,15 +786,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'qualquer',
     urgent: true,
     slots: 1,
-    description: 'Vazamento na prumada do banheiro. Trocar a tubulação de água fria e testar a pressão.',
+    description: 'Limpar o piso e os corredores depois de um vazamento no freezer, hoje até as 18h.',
     payment: 'pix_dia',
-    requirements: ['Experiência com PVC e PPR', 'Ferramentas próprias']
+    requirements: ['Experiência com limpeza', 'Material de limpeza fornecido']
   },
   'BC-5013': {
     id: 'BC-5013',
     companyId: 'belem',
-    oficioId: 'servente',
-    title: null,
+    oficioId: 'vendas',
+    title: 'Atendente de padaria',
     pay: 150,
     address: addr('Belém', 'Rua Siqueira Bueno', '1320', 'BC-5013'),
     ...span(8, 1, 'fimdesemana'),
@@ -814,32 +802,32 @@ export const JOBS: Record<string, Job> = {
     endTime: '16:00',
     dias: 'fimdesemana',
     slots: 2,
-    description: 'Apoio ao pedreiro no preparo de massa e transporte de blocos para o segundo andar.',
+    description: 'Atender no balcão e repor os pães e os doces no fim de semana.',
     payment: 'pix_dia',
-    requirements: ['Botina própria', 'Capacete e luvas fornecidos pela obra']
+    requirements: ['Simpatia no atendimento', 'Touca e avental fornecidos']
   },
   'BC-5014': {
     id: 'BC-5014',
     companyId: 'alvorada',
-    oficioId: 'azulejista',
-    title: null,
+    oficioId: 'cozinha',
+    title: 'Cozinheiro para eventos',
     pay: 280,
     address: addr('Mooca', 'Rua Javari', '540', 'BC-5014'),
     ...toArrange(2),
     startTime: null,
     endTime: null,
     dias: 'semana',
-    photos: ['img/jobs/azulejista-1.jpg', 'img/jobs/azulejista-2.jpg'],
+    photos: [],
     slots: 1,
-    description: 'Revestimento de banheiro inteiro com porcelanato 60x120, incluindo recortes para nichos.',
+    description: 'Preparar os pratos quentes de dois eventos do restaurante, em datas a combinar.',
     payment: 'pix_dia',
-    requirements: ['Experiência com peça grande', 'Cortador e nível a laser próprios']
+    requirements: ['Experiência em cozinha industrial', 'Facas próprias']
   },
   'BC-5015': {
     id: 'BC-5015',
     companyId: 'vila-formosa',
-    oficioId: 'carpinteiro',
-    title: null,
+    oficioId: 'vendas',
+    title: 'Promotor de vendas',
     pay: 260,
     address: addr('Vila Formosa', 'Av. Renata', '910', 'BC-5015'),
     ...span(10, 3, 'semana'),
@@ -847,32 +835,32 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 2,
-    description: 'Montagem de fôrmas de madeira para a laje do térreo.',
+    description: 'Apresentar produtos aos clientes e distribuir amostras na semana de inauguração da loja.',
     payment: 'pix_dia',
-    requirements: ['Experiência com fôrma de laje', 'Serrote, martelo e trena próprios']
+    requirements: ['Gostar de falar com o público', 'Roupa social']
   },
   'BC-5016': {
     id: 'BC-5016',
     companyId: 'cangaiba',
-    oficioId: 'pedreiro',
-    title: 'Pedreiro para muro de divisa',
+    oficioId: 'jardinagem',
+    title: 'Jardineiro para casa de festas',
     pay: 230,
     address: addr('Cangaíba', 'Rua Pedro Álvares', '77', 'BC-5016'),
     ...span(1, 2, 'qualquer'),
     startTime: '07:00',
     endTime: '17:00',
     dias: 'qualquer',
-    photos: ['img/jobs/pedreiro-1.jpg', 'img/jobs/pedreiro-3.jpg', 'img/jobs/pedreiro-2.jpg'],
+    photos: [],
     slots: 1,
-    description: 'Levantamento de muro de divisa com bloco de concreto, cerca de 20 metros.',
+    description: 'Cortar a grama, podar as plantas e limpar o jardim da casa de festas, cerca de 500 m².',
     payment: 'pix_dia',
-    requirements: ['Experiência com alvenaria', 'Colher e prumo próprios']
+    requirements: ['Experiência com jardinagem', 'Cortador de grama fornecido']
   },
   'BC-5017': {
     id: 'BC-5017',
     companyId: 'aricanduva',
-    oficioId: 'ajudante-geral',
-    title: null,
+    oficioId: 'mudanca',
+    title: 'Ajudante de mudança',
     pay: 130,
     address: addr('Aricanduva', 'Rua Olga Fadel Abarca', '300', 'BC-5017'),
     ...span(0, 1, 'qualquer'),
@@ -881,15 +869,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'qualquer',
     urgent: true,
     slots: 1,
-    description: 'Limpeza pós-obra de uma casa térrea: retirada de entulho e varrição.',
+    description: 'Carregar móveis e caixas numa mudança de apartamento, com elevador.',
     payment: 'pix_dia',
-    requirements: ['Sem experiência exigida', 'Botina própria']
+    requirements: ['Sem experiência exigida', 'Sapato fechado']
   },
   'BC-5018': {
     id: 'BC-5018',
     companyId: 'serra-braganca',
-    oficioId: 'gesseiro',
-    title: null,
+    oficioId: 'cozinha',
+    title: 'Auxiliar de cozinha para buffet',
     pay: 240,
     address: addr('Tatuapé', 'Rua Apucarana', '1450', 'BC-5018'),
     ...span(11, 2, 'semana'),
@@ -897,15 +885,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description: 'Instalação de forro de gesso em sala e dois quartos, com sanca aberta na sala.',
+    description: 'Preparar salgados e montar as bandejas para dois eventos do buffet.',
     payment: 'pix_dia',
-    requirements: ['Experiência com forro e sanca', 'Ferramentas próprias']
+    requirements: ['Experiência com salgados', 'Touca e avental fornecidos']
   },
   'BC-5019': {
     id: 'BC-5019',
     companyId: 'vila-prudente',
-    oficioId: 'pintor',
-    title: null,
+    oficioId: 'vendas',
+    title: 'Caixa de mercado',
     pay: 190,
     address: addr('Vila Prudente', 'Av. Paes de Barros', '3100', 'BC-5019'),
     ...toArrange(1),
@@ -913,15 +901,15 @@ export const JOBS: Record<string, Job> = {
     endTime: null,
     dias: 'qualquer',
     slots: 1,
-    description: 'Pintura interna de apartamento de 60 m², com massa corrida nos pontos danificados.',
+    description: 'Trabalhar no caixa num dia de promoção, em data a combinar.',
     payment: 'pix_dia',
-    requirements: ['Rolo e pincel próprios', 'Tinta fornecida pela obra']
+    requirements: ['Experiência como caixa', 'Uniforme fornecido pela empresa']
   },
   'BC-5020': {
     id: 'BC-5020',
     companyId: 'belem',
-    oficioId: 'eletricista',
-    title: null,
+    oficioId: 'entregas',
+    title: 'Entregador de pães',
     pay: null,
     address: addr('Belém', 'Av. Álvaro Ramos', '890', 'BC-5020'),
     ...span(9, 1, 'semana'),
@@ -929,15 +917,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description: 'Instalação de iluminação em LED e tomadas numa loja de 80 m².',
+    description: 'Entregar os pedidos de café da manhã no bairro, de bicicleta ou moto.',
     payment: 'pix_dia',
-    requirements: ['NR-10 em dia', 'Ferramentas próprias']
+    requirements: ['Bicicleta ou moto própria', 'Conhecer o bairro']
   },
   'BC-5021': {
     id: 'BC-5021',
     companyId: 'alvorada',
-    oficioId: 'mestre-de-obras',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Líder de equipe de salão',
     pay: 380,
     address: addr('Mooca', 'Rua dos Trilhos', '1600', 'BC-5021'),
     ...toArrange(5),
@@ -945,15 +933,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description: 'Coordenar uma equipe de quatro pessoas na reforma completa de um apartamento.',
+    description: 'Coordenar uma equipe de quatro garçons na reabertura do restaurante.',
     payment: 'pix_dia',
-    requirements: ['Experiência comprovada como mestre', 'Leitura de projeto']
+    requirements: ['Experiência como líder de equipe', 'Saber organizar escalas']
   },
   'BC-5022': {
     id: 'BC-5022',
     companyId: 'cangaiba',
-    oficioId: 'servente',
-    title: null,
+    oficioId: 'limpeza',
+    title: 'Limpeza pós-festa',
     pay: 140,
     address: addr('Cangaíba', 'Rua Dr. Assis Ribeiro', '2200', 'BC-5022'),
     ...span(0, 1, 'qualquer'),
@@ -962,15 +950,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'qualquer',
     urgent: true,
     slots: 2,
-    description: 'Carga e descarga de sacos de cimento e areia para a concretagem de sábado.',
+    description: 'Limpar o salão, os banheiros e a cozinha depois de uma festa de sábado.',
     payment: 'pix_dia',
-    requirements: ['Botina própria']
+    requirements: ['Sapato fechado']
   },
   'BC-5023': {
     id: 'BC-5023',
     companyId: 'vila-formosa',
-    oficioId: 'encanador',
-    title: null,
+    oficioId: 'estoque',
+    title: 'Embalador para loja',
     pay: 220,
     address: addr('Vila Formosa', 'Rua Itapeti', '60', 'BC-5023'),
     ...span(8, 1, 'fimdesemana'),
@@ -978,15 +966,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'fimdesemana',
     slots: 1,
-    description: 'Instalação de aquecedor a gás e ligação das tubulações de água quente.',
+    description: 'Embalar os pedidos da loja virtual no fim de semana.',
     payment: 'pix_dia',
-    requirements: ['Experiência com aquecedor a gás', 'Ferramentas próprias']
+    requirements: ['Atenção aos detalhes', 'Material fornecido pela empresa']
   },
   'BC-5024': {
     id: 'BC-5024',
     companyId: 'serra-braganca',
-    oficioId: 'pedreiro-acabamento',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Garçom para formatura',
     pay: 240,
     address: addr('Tatuapé', 'Rua Cantagalo', '1220', 'BC-5024'),
     ...span(10, 1, 'semana'),
@@ -994,15 +982,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 1,
-    description: 'Assentamento de rodapé e soleiras de granito, com acabamento em rejunte epóxi.',
+    description: 'Servir bebidas e salgados numa festa de formatura de 300 pessoas.',
     payment: 'pix_dia',
-    requirements: ['Experiência com granito', 'Nível e esquadro próprios']
+    requirements: ['Experiência como garçom', 'Roupa preta']
   },
   'BC-5025': {
     id: 'BC-5025',
     companyId: 'meridiano',
-    oficioId: 'telhadista',
-    title: null,
+    oficioId: 'eventos',
+    title: 'Controle de entrada em evento',
     pay: 250,
     address: addr('Penha', 'Rua Padre João', '480', 'BC-5025'),
     ...span(11, 1, 'semana'),
@@ -1010,15 +998,15 @@ export const JOBS: Record<string, Job> = {
     endTime: '16:00',
     dias: 'semana',
     slots: 2,
-    description: 'Troca de telhas quebradas e revisão das calhas de um galpão.',
+    description: 'Controlar a entrada dos convidados e entregar as pulseiras num show do bairro.',
     payment: 'pix_dia',
-    requirements: ['Experiência em altura', 'Cinto de segurança fornecido pela obra']
+    requirements: ['Experiência com público', 'Colete fornecido pela empresa']
   },
   'BC-5026': {
     id: 'BC-5026',
     companyId: 'meridiano',
-    oficioId: 'pintor',
-    title: null,
+    oficioId: 'limpeza',
+    title: 'Limpeza de salão de eventos',
     pay: 210,
     address: addr('Tatuapé', 'Rua Itapura', '900', 'BC-5026'),
     ...span(7, 2, 'semana'),
@@ -1026,16 +1014,16 @@ export const JOBS: Record<string, Job> = {
     endTime: '17:00',
     dias: 'semana',
     slots: 3,
-    description: 'Pintura das áreas comuns de um condomínio: escadas e corredores de quatro andares.',
+    description: 'Limpar o salão de eventos e os banheiros entre duas festas.',
     payment: 'pix_dia',
-    requirements: ['Rolo e pincel próprios', 'Tinta fornecida pela obra']
+    requirements: ['Experiência com limpeza', 'Material de limpeza fornecido']
   },
   // closed / historical
   'BC-4712': {
     id: 'BC-4712',
     companyId: 'aricanduva',
-    oficioId: 'ajudante-geral',
-    title: null,
+    oficioId: 'mudanca',
+    title: 'Ajudante de mudança',
     pay: 140,
     address: addr('Aricanduva', 'Av. Aricanduva', '5200', 'BC-4712'),
     ...span(-30, 1, 'semana'),
@@ -1044,15 +1032,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     closed: true,
-    description: 'Descarregar material de construção na entrada da obra e organizar no canteiro.',
+    description: 'Carregar móveis e caixas numa mudança de casa.',
     payment: 'pix_dia',
-    requirements: ['Descarregar material', 'Botina própria']
+    requirements: ['Carregar móveis', 'Sapato fechado']
   },
   'BC-4703': {
     id: 'BC-4703',
     companyId: 'cangaiba',
-    oficioId: 'servente',
-    title: null,
+    oficioId: 'limpeza',
+    title: 'Limpeza de salão',
     pay: 150,
     address: addr('Cangaíba', 'Rua Cachoeira Tijuco Preto', '75', 'BC-4703'),
     ...span(-26, 1, 'fimdesemana'),
@@ -1061,15 +1049,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'fimdesemana',
     slots: 1,
     closed: true,
-    description: 'Limpeza geral do piso e carga de material de construção durante a diária.',
+    description: 'Limpeza geral do salão e organização das mesas durante a diária.',
     payment: 'pix_dia',
-    requirements: ['Limpeza de piso e carga de material', 'Botina própria']
+    requirements: ['Limpeza de salão e organização das mesas', 'Sapato fechado']
   },
   'BC-4698': {
     id: 'BC-4698',
     companyId: 'alvorada',
-    oficioId: 'pintor',
-    title: null,
+    oficioId: 'cozinha',
+    title: 'Auxiliar de cozinha',
     pay: 190,
     address: addr('Mooca', 'Rua da Mooca', '3180', 'BC-4698'),
     ...span(-35, 1, 'semana'),
@@ -1078,15 +1066,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     closed: true,
-    description: 'Pintura interna em parede lisa, duas demãos de tinta acrílica.',
+    description: 'Ajudar no preparo do almoço e lavar a louça.',
     payment: 'pix_dia',
-    requirements: ['Pintura interna', 'Rolo e pincel próprios']
+    requirements: ['Experiência em cozinha', 'Touca fornecida']
   },
   'BC-4960': {
     id: 'BC-4960',
     companyId: 'meridiano',
-    oficioId: 'pintor',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Garçom para aniversário',
     pay: 190,
     address: addr('Mooca', 'Rua da Mooca', '3180', 'BC-4960'),
     ...span(-35, 1, 'semana'),
@@ -1095,15 +1083,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     closed: true,
-    description: 'Pintura interna em parede lisa, duas demãos de tinta acrílica.',
+    description: 'Servir as mesas numa festa de aniversário de 80 pessoas.',
     payment: 'pix_dia',
-    requirements: ['Pintura interna', 'Rolo e pincel próprios']
+    requirements: ['Experiência como garçom', 'Roupa preta']
   },
   'BC-4944': {
     id: 'BC-4944',
     companyId: 'meridiano',
-    oficioId: 'armador',
-    title: null,
+    oficioId: 'eventos',
+    title: 'Montagem de estandes',
     pay: 240,
     address: addr('Penha', 'Rua Cantagalo', '890', 'BC-4944'),
     ...span(-41, 3, 'semana'),
@@ -1113,16 +1101,15 @@ export const JOBS: Record<string, Job> = {
     slots: 2,
     closed: true,
     semContratacao: true,
-    description:
-      'Montagem da ferragem de laje de um pavimento, seguindo projeto estrutural fornecido pela construtora.',
+    description: 'Montar e desmontar os estandes de uma feira de três dias.',
     payment: 'pix_dia',
-    requirements: ['Montagem de ferragem de laje']
+    requirements: ['Montagem de estandes']
   },
   'BC-4918': {
     id: 'BC-4918',
     companyId: 'meridiano',
-    oficioId: 'pedreiro-acabamento',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Garçom para casamento',
     pay: 220,
     address: addr('Tatuapé', 'Rua Serra de Bragança', '1240', 'BC-4918'),
     ...span(-38, 1, 'semana'),
@@ -1131,15 +1118,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     closed: true,
-    description: 'Reboco e regularização de parede externa numa reforma residencial.',
+    description: 'Servir as mesas num casamento de 120 convidados.',
     payment: 'pix_dia',
-    requirements: ['Experiência com reboco e massa corrida']
+    requirements: ['Experiência como garçom']
   },
   'BC-4899': {
     id: 'BC-4899',
     companyId: 'meridiano',
-    oficioId: 'pedreiro-acabamento',
-    title: null,
+    oficioId: 'garcom',
+    title: 'Copeiro para evento',
     pay: 220,
     address: addr('Tatuapé', 'Rua Serra de Bragança', '1240', 'BC-4899'),
     ...span(-42, 1, 'semana'),
@@ -1148,15 +1135,15 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     closed: true,
-    description: 'Acabamento em massa corrida antes da pintura, numa reforma residencial.',
+    description: 'Montar a copa e servir bebidas numa festa de empresa.',
     payment: 'pix_dia',
-    requirements: ['Experiência com reboco e massa corrida']
+    requirements: ['Experiência com copa']
   },
   'BC-4870': {
     id: 'BC-4870',
     companyId: 'meridiano',
-    oficioId: 'servente',
-    title: null,
+    oficioId: 'estoque',
+    title: 'Repositor de estoque',
     pay: 150,
     address: addr('Vila Prudente', 'Av. Vila Ema', '2790', 'BC-4870'),
     ...span(-47, 1, 'semana'),
@@ -1165,9 +1152,9 @@ export const JOBS: Record<string, Job> = {
     dias: 'semana',
     slots: 1,
     closed: true,
-    description: 'Carga de material de construção e limpeza do piso ao fim do expediente.',
+    description: 'Organizar o material dos eventos no depósito e limpar o espaço ao fim do expediente.',
     payment: 'pix_dia',
-    requirements: ['Carregar material e limpar o piso']
+    requirements: ['Organizar o depósito']
   }
 };
 
@@ -1271,7 +1258,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     id: 'n1',
     kind: 'pre_selecionado',
     title: 'Você foi pré-selecionado',
-    text: 'Construtora Meridiano quer falar com você sobre Pedreiro de acabamento. O WhatsApp está liberado.',
+    text: 'Eventos Meridiano quer falar com você sobre Garçom para casamento. O WhatsApp está liberado.',
     workerId: CURRENT_WORKER_ID,
     companyId: null,
     target: '/selecionado/BC-4821',
@@ -1282,7 +1269,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     id: 'n2',
     kind: 'bico_urgente',
     title: 'Bico urgente perto de você',
-    text: 'Pintor na Mooca, hoje às 8h. Valor a combinar.',
+    text: 'Auxiliar de cozinha na Mooca, hoje às 8h. Valor a combinar.',
     workerId: CURRENT_WORKER_ID,
     companyId: null,
     target: '/vaga/BC-4822',
@@ -1293,7 +1280,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     id: 'n3',
     kind: 'avaliar_diaria',
     title: 'Avalie sua diária',
-    text: 'Obra Cangaíba · Servente. Conte como foi.',
+    text: 'Casa de Festas Cangaíba · Limpeza de salão. Conte como foi.',
     workerId: CURRENT_WORKER_ID,
     companyId: null,
     target: '/avaliar/BC-4703',
@@ -1304,7 +1291,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     id: 'n4',
     kind: 'candidatura_em_analise',
     title: 'Candidatura em análise',
-    text: 'Obra Vila Prudente está avaliando seu perfil para Servente.',
+    text: 'Mercado Vila Prudente está avaliando seu perfil para Repositor de mercado.',
     workerId: CURRENT_WORKER_ID,
     companyId: null,
     target: '/vaga/BC-4830',
@@ -1315,7 +1302,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     id: 'n5',
     kind: 'novos_candidatos',
     title: '2 novos candidatos',
-    text: 'Pedreiro de acabamento · Tatuapé recebeu novas candidaturas.',
+    text: 'Garçom para casamento · Tatuapé recebeu novas candidaturas.',
     workerId: null,
     companyId: CURRENT_COMPANY_ID,
     target: '/vaga-gerenciar/BC-4821',
@@ -1326,7 +1313,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     id: 'n6',
     kind: 'novos_candidatos',
     title: 'Nova candidatura',
-    text: 'Joel Ribeiro se candidatou para Servente.',
+    text: 'Joel Ribeiro se candidatou para Repositor de estoque.',
     workerId: null,
     companyId: CURRENT_COMPANY_ID,
     target: '/vaga-gerenciar/BC-4998',
@@ -1337,7 +1324,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     id: 'n7',
     kind: 'avaliar_trabalhador',
     title: 'Avalie o trabalhador',
-    text: 'Marcos Aurélio concluiu a diária de Pintor.',
+    text: 'Marcos Aurélio concluiu a diária de Garçom para aniversário.',
     workerId: null,
     companyId: CURRENT_COMPANY_ID,
     target: '/avaliar-trabalhador/BC-4960/marcos',
@@ -1377,11 +1364,11 @@ export const REGIOES_TRABALHADOR = [
 ];
 export const REGIOES_RECRUTADOR = ['Zona Leste, SP', 'Zona Norte, SP', 'Zona Sul, SP', 'Zona Oeste, SP', 'Centro, SP'];
 export const REQUISITOS_OPCOES = [
-  'Botina e capacete próprios',
-  'Ferramenta própria',
+  'Sapato fechado',
+  'Uniforme próprio',
   'Experiência comprovada',
   'Chegar 10 min antes',
-  'EPI fornecido pela obra'
+  'Uniforme fornecido pela empresa'
 ];
 
 // Portfolio posts (photo/video of finished work) a worker publishes on their own profile.
@@ -1393,7 +1380,7 @@ export const WORKER_POSTS: WorkerPost[] = [
     workerId: 'jorge',
     mediaUrl: null,
     mediaType: 'image',
-    caption: 'Reboco e regularização de parede externa, obra em Tatuapé. Dois dias de serviço.',
+    caption: 'Montagem do salão e serviço de mesa num casamento no Tatuapé. Dois dias de trabalho.',
     date: '2026-09-10'
   },
   {
@@ -1401,7 +1388,7 @@ export const WORKER_POSTS: WorkerPost[] = [
     workerId: 'jorge',
     mediaUrl: null,
     mediaType: 'image',
-    caption: 'Acabamento em massa corrida antes da pintura. Cliente pediu prazo curto e entreguei em 1 diária.',
+    caption: 'Garçom numa formatura de 300 pessoas. O cliente elogiou o atendimento.',
     date: '2026-08-22'
   },
   {
@@ -1409,7 +1396,7 @@ export const WORKER_POSTS: WorkerPost[] = [
     workerId: 'jorge',
     mediaUrl: null,
     mediaType: 'image',
-    caption: 'Assentamento de contrapiso em área externa.',
+    caption: 'Apoio na cozinha de um buffet de aniversário.',
     date: '2026-08-05'
   }
 ];

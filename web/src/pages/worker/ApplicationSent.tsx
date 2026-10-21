@@ -40,7 +40,7 @@ export default function ApplicationSent({ params }: ScreenProps) {
         <div className="flex flex-col gap-2">
           <h1 className="font-display font-bold text-2xl text-concrete-900">Candidatura enviada</h1>
           <p className="text-base text-concrete-700">
-            A construtora recebeu seu perfil. Avisamos quando você avançar de etapa.
+            A empresa recebeu seu perfil. Avisamos quando você avançar de etapa.
           </p>
         </div>
         <Card tone="sunken" padding="md" className="w-full">

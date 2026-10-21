@@ -22,7 +22,7 @@ import type { NotificationGroup } from '../../types/models';
 const GROUPS: { id: NotificationGroup; label: string; description: string }[] = [
   { id: 'candidaturas', label: 'Candidaturas e contratações', description: 'Aprovado, contratado, desistências…' },
   { id: 'lembretes', label: 'Lembretes', description: 'Confirmar presença, avaliar a diária' },
-  { id: 'bicos_novos', label: 'Bicos novos e convites', description: 'Avisos de bico novo e convites de construtoras' },
+  { id: 'bicos_novos', label: 'Bicos novos e convites', description: 'Avisos de bico novo e convites de empresas' },
   { id: 'conta', label: 'Sua conta', description: 'Verificação da empresa, impulsionamentos' }
 ];
 
@@ -83,7 +83,7 @@ export default function NotificationSettings() {
 
 const PUSH_TEXT: Record<PushState, string> = {
   ligado: 'Este aparelho recebe as notificações.',
-  desligado: 'Receba no celular, mesmo com o app fechado, quando a construtora responder ou um bico aparecer.',
+  desligado: 'Receba no celular, mesmo com o app fechado, quando a empresa responder ou um bico aparecer.',
   bloqueado:
     'As notificações estão bloqueadas no navegador. Libere em Configurações do site (cadeado ao lado do endereço).',
   indisponivel: 'Este navegador não recebe notificações. No iPhone, adicione a Bicos à tela de início primeiro.'
@@ -129,7 +129,7 @@ function PushDevice() {
         <div className="flex flex-col gap-3 text-sm text-concrete-700">
           <p>Avisamos no celular, mesmo com o app fechado:</p>
           <ul className="flex flex-col gap-2 pl-1">
-            <li>• quando a construtora aprovar, contratar ou cancelar;</li>
+            <li>• quando a empresa aprovar, contratar ou cancelar;</li>
             <li>• lembretes de confirmar presença e de avaliar a diária;</li>
             <li>• bicos novos e convites, se você quiser (escolha abaixo).</li>
           </ul>

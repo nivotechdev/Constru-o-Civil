@@ -48,7 +48,7 @@ describe('boost payments', () => {
     await vi.runAllTimersAsync();
     return r;
   };
-  const signIn = () => settle(m.auth.signIn('construtora@bicos.demo', 'bicos123'));
+  const signIn = () => settle(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
 
   it('PIX: waiting does not boost; confirmed boosts until the end of the plan', async () => {
     await signIn();
@@ -76,10 +76,10 @@ describe('boost payments', () => {
     await settle(m.pay.simulatePixPaid(started.v.id));
     const list = m.pay.myPayments(m.store.getDb());
     expect(list[0]).toMatchObject({ id: started.v.id, status: 'confirmado' });
-    const text = m.pay.receiptText(list[0], m.store.getDb().jobs['BC-4998'], 'Construtora Meridiano');
+    const text = m.pay.receiptText(list[0], m.store.getDb().jobs['BC-4998'], 'Eventos Meridiano');
     expect(text).toContain('RECIBO');
     expect(text).toContain('Valor: R$ 12,00');
-    expect(text).toContain('Construtora: Construtora Meridiano');
+    expect(text).toContain('Empresa: Eventos Meridiano');
   });
 
   it('PIX: an unpaid code expires and can no longer be confirmed', async () => {

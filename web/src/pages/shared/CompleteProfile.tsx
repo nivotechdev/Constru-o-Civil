@@ -89,11 +89,11 @@ export default function CompleteProfile({ params }: ScreenProps) {
     >
       <FlowHeading
         overline="Completar perfil"
-        title={company ? 'O perfil da sua construtora' : 'Seu perfil'}
+        title={company ? 'O perfil da sua empresa' : 'Seu perfil'}
         help={
           company
             ? 'Capa e logo aparecem para os candidatos. As fotos são opcionais.'
-            : 'Capa e foto aparecem para as construtoras. As fotos são opcionais.'
+            : 'Capa e foto aparecem para as empresas. As fotos são opcionais.'
         }
       />
 
@@ -126,7 +126,7 @@ export default function CompleteProfile({ params }: ScreenProps) {
       </div>
 
       <CurrentLocationField
-        title={company ? 'Onde ficam suas obras' : 'Onde você está'}
+        title={company ? 'Onde fica sua empresa' : 'Onde você está'}
         help={company ? 'Suas vagas novas já começam nessa cidade.' : 'O mural sempre abre com os bicos perto daqui.'}
         value={ui.location}
         error={ui.locationError}

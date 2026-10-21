@@ -105,7 +105,7 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
         id: 'doc',
         label: 'CPF',
         question: 'Qual é o seu CPF?',
-        help: 'Serve para conferir sua identidade. A construtora não vê esse número.',
+        help: 'Serve para conferir sua identidade. A empresa não vê esse número.',
         placeholder: '000.000.000-00',
         icon: 'id-card',
         mask: 'cpf',
@@ -114,7 +114,7 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
       { ...COMUM_EMAIL, help: 'Use um e-mail que você abre: é com ele que você entra e recupera a senha.' },
       {
         ...COMUM_WHATSAPP,
-        help: 'É por ele que as construtoras falam com você. Vamos mandar um código para confirmar o número.'
+        help: 'É por ele que as empresas falam com você. Vamos mandar um código para confirmar o número.'
       },
       COMUM_CODIGO,
       COMUM_SENHA

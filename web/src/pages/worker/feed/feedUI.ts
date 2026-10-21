@@ -163,7 +163,7 @@ export function activeFilters(filters: Omit<FeedFilters, 'from'>, home: string):
       ? { label: filters.location, icon: 'map-pin', remove: () => setFeed({ location: home, origin: null }) }
       : null,
     filters.oficio
-      ? { label: oficioNome(filters.oficio), icon: 'hard-hat', remove: () => setFeed({ oficio: null }) }
+      ? { label: oficioNome(filters.oficio), icon: 'briefcase', remove: () => setFeed({ oficio: null }) }
       : null,
     filters.dist !== ALL_CITY
       ? { label: filters.dist, icon: 'map-pin', remove: () => setFeed({ dist: ALL_CITY }) }

@@ -6,26 +6,28 @@
 
 ## 1. O produto
 
-**Bicos** é um marketplace de **diárias de obra** (trabalho temporário na construção civil), da **NivoTech**
-(nivotech.com.br, Brasil). Objetivo de negócio: tirar o recrutamento de obra da informalidade — construtoras
-encontram profissionais verificados; trabalhadores têm um canal único de oportunidades.
+**Bicos** é um marketplace de **bicos e diárias** (trabalho temporário) para o **público geral**, da **NivoTech**
+(nivotech.com.br, Brasil). Desde o U48 (21/10/2026) não é mais só de construção: empresas e pessoas que precisam de
+alguém para um serviço encontram trabalhadores verificados; quem procura bico tem um canal único de oportunidades.
+Nos textos e ícones do app, nada de construtora, obra, pedreiro ou EPI — "empresa", "serviço", "local", "trabalhador".
+Os nomes internos antigos (papel `recrutador`, lado `construtora`, `para_construtora`, rota `/construtora/:id`) ficam.
 
 Dois lados (enum `app_role`):
-- **trabalhador** (pessoa física, CPF, 18+): pedreiro, eletricista, pintor, azulejista etc. (`oficios`).
-- **recrutador** = construtora/empreiteiro (CNPJ, ou CPF em alguns casos; ver Y16/Y17).
+- **trabalhador** (pessoa física, CPF, 18+): quem procura bico (garçom, faxina, eventos, mudança, loja, cuidados…).
+- **recrutador** = empresa ou pessoa que contrata (CNPJ, ou CPF em alguns casos; ver Y16/Y17). Na tela: "empresa".
 
 Fluxo central (não mudar sem pedir):
-1. Construtora publica a vaga (título, valor da diária, dias/diárias/horário com data a combinar, endereço sem número,
+1. Empresa publica a vaga (título, valor da diária, dias/diárias/horário com data a combinar, endereço sem número,
    fotos, pessoas). U01: sem ofício, datas, urgente, pagamento e requisitos na tela — vagas antigas mantêm os seus.
 2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros — sem filtro de ofício desde o U01;
    impulsionadas → urgentes → recentes).
-3. Trabalhador se candidata; a construtora vê os candidatos e os perfis (os dois lados veem o perfil do outro).
-4. Construtora aprova → **o WhatsApp é liberado para os dois lados** (`get_contact`). O endereço exato da obra
+3. Trabalhador se candidata; a empresa vê os candidatos e os perfis (os dois lados veem o perfil do outro).
+4. Empresa aprova → **o WhatsApp é liberado para os dois lados** (`get_contact`). O endereço exato do serviço
    só aparece para quem está no bico (`get_job_addresses`).
 5. Presença confirmada → diária concluída (cron) → **avaliação dos dois lados** → notas e histórico nos perfis.
 6. Vaga paga ("impulsionar", Mercado Pago PIX/cartão) sobe no mural.
 
-Público: trabalhadores de obra usando celular simples, internet ruim, pouca familiaridade com apps. Texto curto,
+Público: trabalhadores usando celular simples, internet ruim, pouca familiaridade com apps. Texto curto,
 direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 
 ## 2. Pessoas e decisões

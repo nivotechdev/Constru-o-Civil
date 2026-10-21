@@ -141,7 +141,7 @@ export default function DeleteAccount() {
                     <Icon name="user-x" size={18} color="var(--red-500)" />
                     <span className="text-sm text-concrete-700">
                       {worker
-                        ? `Você desiste de ${jobTitle(job)} (${dateText(job)}). A construtora é avisada.`
+                        ? `Você desiste de ${jobTitle(job)} (${dateText(job)}). A empresa é avisada.`
                         : `A contratação de ${db.workers[app.workerId]?.name ?? 'um trabalhador'} em ${jobTitle(job)} é cancelada, e ele é avisado.`}
                     </span>
                   </div>

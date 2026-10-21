@@ -124,7 +124,7 @@ export default function Login() {
         <div className="max-w-app mx-auto min-h-full px-6 sm:px-8 pt-12 pb-[max(1rem,env(safe-area-inset-bottom))] short:pt-6 flex flex-col gap-7 short:gap-4">
           <div className="flex flex-col items-center gap-4 short:gap-2.5 text-center">
             <span className="inline-flex items-center justify-center w-11 h-11 short:w-10 short:h-10 rounded-xl bg-brand-500">
-              <Icon name="hammer" size={22} color="#fff" />
+              <Icon name="briefcase" size={22} color="#fff" />
             </span>
             <h1 className="font-display font-bold text-3xl short:text-[1.625rem] text-concrete-900">Olá de novo</h1>
           </div>
@@ -207,7 +207,7 @@ export default function Login() {
                     setUi({ identifier: a.email, identifierError: null, passwordError: null, error: null });
                   }}
                 >
-                  <span className="font-semibold">{a.role === 'recrutador' ? 'Construtora:' : 'Trabalhador:'}</span>
+                  <span className="font-semibold">{a.role === 'recrutador' ? 'Empresa:' : 'Trabalhador:'}</span>
                   <span className="font-mono">{a.email}</span>
                 </button>
               ))}

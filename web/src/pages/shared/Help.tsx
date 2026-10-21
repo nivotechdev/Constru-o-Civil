@@ -18,7 +18,7 @@ interface Question {
 const COMMON: Question[] = [
   {
     q: 'A Bicos cobra alguma coisa?',
-    a: 'Do trabalhador, nunca. A construtora publica vagas de graça e só paga se quiser colocar uma vaga no topo do mural.'
+    a: 'Do trabalhador, nunca. Quem contrata publica vagas de graça e só paga se quiser colocar uma vaga no topo do mural.'
   },
   {
     q: 'Esqueci minha senha. E agora?',
@@ -37,29 +37,29 @@ const COMMON: Question[] = [
 const WORKER: Question[] = [
   {
     q: 'Como me candidato a um bico?',
-    a: 'Abra a vaga no mural e toque em "Quero esse bico". A construtora recebe seu perfil e avisamos você quando ela decidir.'
+    a: 'Abra a vaga no mural e toque em "Quero esse bico". A empresa recebe seu perfil e avisamos você quando ela decidir.'
   },
   {
-    q: 'Quando vejo o endereço e o WhatsApp da construtora?',
+    q: 'Quando vejo o endereço e o WhatsApp da empresa?',
     a: 'Quando ela aprovar você. Antes disso, aparecem só o bairro e a distância. Depois, o endereço completo, o mapa e o botão do WhatsApp.'
   },
   {
     q: 'Não vou poder ir. O que faço?',
-    a: 'Abra "Minhas candidaturas", entre no bico e toque em "Não vou poder ir". A construtora é avisada na hora. Avise o quanto antes.'
+    a: 'Abra "Minhas candidaturas", entre no bico e toque em "Não vou poder ir". A empresa é avisada na hora. Avise o quanto antes.'
   },
   {
     q: 'Como recebo pela diária?',
-    a: 'O pagamento é combinado direto com a construtora (a forma aparece na vaga). A Bicos não entra no pagamento da diária.'
+    a: 'O pagamento é combinado direto com a empresa (a forma aparece na vaga). A Bicos não entra no pagamento da diária.'
   }
 ];
 
 const COMPANY: Question[] = [
   {
     q: 'Como publico uma vaga?',
-    a: 'Toque em "Publicar", diga o ofício, o endereço da obra, as datas e o valor. Publicar é grátis.'
+    a: 'Toque em "Publicar", diga o serviço, o endereço, os dias e o valor. Publicar é grátis.'
   },
   {
-    q: 'Quem vê o endereço da obra?',
+    q: 'Quem vê o endereço do serviço?',
     a: 'Só quem você aprovar. Os outros candidatos veem o bairro e a distância.'
   },
   {

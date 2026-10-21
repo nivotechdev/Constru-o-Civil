@@ -52,9 +52,9 @@ export default function ChooseProfile() {
       <div className="flex flex-col gap-3 short:gap-2.5">
         <RadioCard
           name="perfil-cadastro"
-          icon="hard-hat"
+          icon="briefcase"
           label="Quero pegar bico"
-          description="Sou pedreiro, servente, pintor ou eletricista"
+          description="Procuro bicos e diárias perto de mim"
           checked={ui.role === 'trabalhador'}
           onChange={() => setUi({ role: 'trabalhador' })}
         />
@@ -62,7 +62,7 @@ export default function ChooseProfile() {
           name="perfil-cadastro"
           icon="building-2"
           label="Quero contratar"
-          description="Represento uma construtora ou uma obra"
+          description="Tenho uma empresa ou preciso de alguém para um serviço"
           checked={ui.role === 'recrutador'}
           onChange={() => setUi({ role: 'recrutador' })}
         />

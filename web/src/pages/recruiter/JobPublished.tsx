@@ -24,7 +24,7 @@ export default function JobPublished({ params }: ScreenProps) {
         <div className="flex flex-col gap-2">
           <h1 className="font-display font-bold text-2xl text-concrete-900">Vaga publicada</h1>
           <p className="text-base text-concrete-700">
-            Ela já está no mural de quem trabalha perto da obra. Avisamos quando chegar o primeiro candidato.
+            Ela já está no mural de quem trabalha perto do local. Avisamos quando chegar o primeiro candidato.
           </p>
         </div>
         <Card tone="sunken" padding="md" className="w-full">
