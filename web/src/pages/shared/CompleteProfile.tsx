@@ -6,6 +6,7 @@ import { CurrentLocationField } from '../../components/CurrentLocationField';
 import { FieldError } from '../../components/FieldError';
 import { FlowBar, FlowHeading, FlowLayout, FlowSignOut } from '../../components/FlowLayout';
 import { PhotoSlot } from '../../components/PhotoSlot';
+import { useBusyWhile } from '../../hooks/useBusy';
 import { useUI } from '../../hooks/useStore';
 import { finishSignUp } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
@@ -54,6 +55,8 @@ export default function CompleteProfile({ params }: ScreenProps) {
     'completar-perfil-' + (company ? 'recrutador' : 'trabalhador'),
     DEFAULTS
   );
+  // U45: while the profile is saved, nothing else takes a tap.
+  useBusyWhile(ui.saving);
 
   function finish() {
     if (ui.saving) return;

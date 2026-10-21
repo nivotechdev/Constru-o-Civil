@@ -4,6 +4,7 @@ import { FieldError } from '../../components/FieldError';
 import { GoogleButton, OrDivider } from '../../components/GoogleButton';
 import { Icon } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
+import { useBusyWhile } from '../../hooks/useBusy';
 import { useUI } from '../../hooks/useStore';
 import {
   DEMO_ACCOUNTS,
@@ -71,6 +72,13 @@ export default function Login() {
   // Y22: the password stays in this screen only (never in the shared store).
   const [password, setPassword] = useState('');
   const captcha = useCaptcha();
+  // U45: while entering (or the e-mail code), nothing else on the screen takes a tap.
+  useBusyWhile(ui.submitting || ui.confirming || ui.resending);
+
+  function google() {
+    setUi({ error: null, notice: null });
+    signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }));
+  }
 
   function submit() {
     if (ui.submitting) return;
@@ -174,11 +182,7 @@ export default function Login() {
             {ui.unconfirmed ? <Unconfirmed ui={ui} setUi={setUi} /> : null}
             <Button label="Entrar" size="lg" fullWidth loading={ui.submitting} onClick={submit} />
             {FEATURES.googleLogin ? <OrDivider /> : null}
-            {FEATURES.googleLogin ? (
-              <GoogleButton
-                onClick={() => signInWithGoogle().catch((e: unknown) => setUi({ error: errorMessage(e) }))}
-              />
-            ) : null}
+            {FEATURES.googleLogin ? <GoogleButton onClick={google} /> : null}
           </form>
           <p className="mt-auto flex flex-wrap items-center justify-center gap-x-1 text-sm text-concrete-600">
             Não tem conta?

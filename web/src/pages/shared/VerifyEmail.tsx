@@ -10,6 +10,8 @@ import { FieldError } from '../../components/FieldError';
 import { FlowBar, FlowHeading, FlowLayout, FlowSignOut } from '../../components/FlowLayout';
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
+import { useBusyWhile } from '../../hooks/useBusy';
+import { useInnerBack } from '../../hooks/useInnerBack';
 import { useSession, useScreenUI } from '../../hooks/useStore';
 import { changePendingEmail, resendConfirmationEmail, SAME_EMAIL, verifyEmailCode } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
@@ -163,6 +165,11 @@ export default function VerifyEmail() {
         focusNewEmail();
       });
   }
+
+  // U45: while the code is checked or sent, nothing else takes a tap; with "Trocar" open, the phone's back button
+  // closes it (the e-mail stays as it was).
+  useBusyWhile(ui.confirming || ui.changing || ui.resending);
+  useInnerBack(ui.editing, stopEditing);
 
   // Opening "Trocar" puts the caret at the end of the address, ready to fix it (the app's autofocus works
   // only on the first field a page ever shows, so it is done here).

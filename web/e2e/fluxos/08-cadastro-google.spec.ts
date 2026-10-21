@@ -82,6 +82,13 @@ test('Google sem conta: o mesmo cadastro, sem o e-mail, e a conta nasce com o e-
   await semRolagem(page, 'nome (Google)');
   await print(page, 'f8', 'google nome ja preenchido');
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  // U45: the phone's back button goes back one question (and the answer stays); forward again with "Continuar".
+  await expect(page.getByText('Passo 2 de 4')).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText('Passo 1 de 4')).toBeVisible();
+  await expect(page).toHaveURL(/\/cadastro\/trabalhador/);
+  await expect(page.locator(k + 'nome')).toHaveValue(nome);
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.fill(k + 'doc', cpf);
   await semRolagem(page, 'CPF (Google)');
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();

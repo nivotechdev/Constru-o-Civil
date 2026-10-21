@@ -90,5 +90,10 @@ export function useCaptcha(): { widget: React.ReactNode; getToken: CaptchaSource
     });
   }, []);
 
-  return { widget: FEATURES.captcha ? <div ref={setBox} className="flex justify-center" /> : null, getToken };
+  // U45: above the invisible "loading" layer (services/busy.ts) — a challenge, when there is one, shows while the
+  // button that asked for it is loading.
+  return {
+    widget: FEATURES.captcha ? <div ref={setBox} className="relative z-[75] flex justify-center" /> : null,
+    getToken
+  };
 }

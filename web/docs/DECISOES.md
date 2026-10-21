@@ -2045,3 +2045,31 @@ Pedido do responsável: tocar na engrenagem do perfil (no celular) abria uma jan
 a página Configurações de uma vez, e a seta de voltar de lá volta ao perfil. Nada se perdeu com a janelinha: o sino
 das notificações fica no topo do mural, as vagas salvas em Minhas candidaturas, os bicos fechados na aba Encerradas
 de Minhas vagas, e Ajuda e "Sair da conta" em Configurações. No computador continua o menu da conta no topo.
+
+## U45 — "Carregando" que trava a tela, e o voltar do celular no cadastro
+
+Problema relatado: tocar em "Continuar com o Google" não mostrava nada até a janela do Google aparecer e, depois de
+escolher a conta, havia uma demora em que dava para mexer em tudo no login, sem nenhum sinal de carregamento — e o
+avançar/voltar do cadastro com o Google tinha inconsistências. **Agora** há um bloqueio único para o app inteiro
+(`services/busy.ts` + `components/BusyOverlay.tsx`): enquanto algo que a pessoa pediu está carregando, nenhum toque,
+nenhuma tecla e nenhum "voltar" do celular chegam ao app.
+
+- **Google**: do toque até a próxima tela aparece um cartão por cima da tela escurecida — "Esperando o Google…" ("Escolha
+  sua conta na janela do Google", com **Cancelar**, para quem fechou a janela: o Firebase demora até ~18 s para notar a
+  janela fechada) e, assim que a conta é escolhida, "Entrando na sua conta…". O app por trás fica `inert`. O cartão só sai
+  depois que a próxima tela foi desenhada (sem piscar o login no meio). Se a pessoa cancelou, o que a janela responder
+  depois é ignorado (sem entrar, sem erro). Um segundo toque enquanto carrega não faz nada.
+- **Botões** (Continuar, Entrar, Criar minha conta, confirmar e trocar o e-mail, concluir perfil): uma camada invisível
+  segura os toques enquanto o botão mostra o próprio "girando" (`useBusyWhile`). Ela não tira o foco do campo, para o
+  teclado do celular não fechar entre os passos. O captcha, quando ligado, fica acima dela.
+- **Nunca trava para sempre**: cada bloqueio termina sozinho (30 s nos botões, 10 min com a janela do Google aberta e
+  o Cancelar sempre à mão).
+- **Voltar do celular = voltar do app**: o roteador guarda em cada entrada do histórico de onde ela veio e o tamanho da
+  pilha de volta; a seta do app passa a usar o voltar do próprio navegador quando a tela anterior é a mesma (antes ela
+  trocava a entrada atual, e o voltar do celular depois disso repetia telas), e o voltar do celular mantém a pilha
+  certa. No cadastro, o voltar do celular volta **uma pergunta** (antes saía do cadastro e perdia tudo o que foi
+  digitado): enquanto há pergunta anterior, uma entrada extra fica no topo do histórico (`holdBack`, uma só — não
+  uma por pergunta). Com "Trocar e-mail" aberto, o voltar fecha o editor.
+- **Google sem conta**: de "Como você vai usar o Bicos?" o cadastro abre por cima (a seta volta para a escolha do lado,
+  como no cadastro normal); voltar até o login pelo botão do celular também desfaz o login do Google pendente, como a
+  seta do app já fazia (U40).

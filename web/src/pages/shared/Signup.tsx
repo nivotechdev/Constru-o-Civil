@@ -7,6 +7,8 @@ import { GoogleButton, OrDivider } from '../../components/GoogleButton';
 import { FlowHeading, FlowLayout, FlowProgress } from '../../components/FlowLayout';
 import type { IconName } from '../../components/icons/Icon';
 import { Input, PasswordInput } from '../../components/Input';
+import { useBusyWhile } from '../../hooks/useBusy';
+import { useInnerBack } from '../../hooks/useInnerBack';
 import { useUI } from '../../hooks/useStore';
 import {
   completeGoogleSignUp,
@@ -284,6 +286,11 @@ export default function Signup({ params }: ScreenProps) {
   const isLast = step === cfg.fields.length - 1;
   const fieldDomId = key + '-' + (field.isPassword ? 'senha' : field.id);
 
+  // U45: while a step is checked or the account is created, nothing else takes a tap (nor the back button).
+  useBusyWhile(ui.submitting || ui.resending);
+  // U45: the phone's back button goes back one question, like the arrow on top (the first one leaves the screen).
+  useInnerBack(step > 0, () => setUi((s) => ({ step: Math.max(0, s.step - 1), submitError: null })), step);
+
   // Enter moves to the next step: put the caret in its field so the keyboard flow continues.
   const advancedByEnter = useRef(false);
   useEffect(() => {
@@ -527,7 +534,10 @@ export default function Signup({ params }: ScreenProps) {
             <>
               <OrDivider />
               <GoogleButton
-                onClick={() => signInWithGoogle(role).catch((e: unknown) => setUi({ submitError: errorMessage(e) }))}
+                onClick={() => {
+                  setUi({ submitError: null });
+                  signInWithGoogle(role).catch((e: unknown) => setUi({ submitError: errorMessage(e) }));
+                }}
               />
             </>
           ) : null}

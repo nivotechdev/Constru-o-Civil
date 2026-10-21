@@ -85,11 +85,21 @@ async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'se
   }
 }
 
+/** U45: what the Google sign-in tells the screen on the way (see signInWithGoogle in services/auth.ts). */
+export interface GoogleSignInHooks {
+  /** The Google window answered with an account: now the Bicos account is being opened. */
+  onAccountChosen?: () => void;
+  /** Read right after the window answers: false (the person tapped "Cancelar") stops there, signed out. */
+  stillWanted?: () => boolean;
+}
+
 /**
  * The Google window. When Firebase is already loaded (the usual case: it loads as the screen opens), the window opens
- * right inside the tap — nothing is awaited before it.
+ * right inside the tap — nothing is awaited before it. `cancelado`: the person gave up while the window was open.
  */
-export async function signInWithFirebaseGoogle(): Promise<'ok' | GoogleIdentity> {
+export async function signInWithFirebaseGoogle(
+  hooks: GoogleSignInHooks = {}
+): Promise<'ok' | 'cancelado' | GoogleIdentity> {
   const loaded = ready;
   let popup;
   if (loaded) {
@@ -106,6 +116,11 @@ export async function signInWithFirebaseGoogle(): Promise<'ok' | GoogleIdentity>
       popup = sdk.signInWithPopup(auth, provider);
     }
     const result = await popup;
+    if (hooks.stillWanted && !hooks.stillWanted()) {
+      void sdk.signOut(auth).catch(() => undefined);
+      return 'cancelado';
+    }
+    hooks.onAccountChosen?.();
     idToken = await result.user.getIdToken();
   } catch (e) {
     throw firebaseError(e);

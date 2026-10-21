@@ -1,5 +1,6 @@
 import { startTransition, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
+import { BusyOverlay } from './components/BusyOverlay';
 import { Button } from './components/Button';
 import { OfflineBanner } from './components/OfflineBanner';
 import { ResultIcon } from './components/ResultIcon';
@@ -93,6 +94,7 @@ export function App() {
       <OfflineBanner />
       {boot === 'starting' ? <BootSplash /> : boot === 'offline' ? <OfflineStart /> : <Routes />}
       <ToastHost />
+      <BusyOverlay />
     </ErrorBoundary>
   );
 }

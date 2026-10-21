@@ -8,7 +8,8 @@ import { ACCOUNTS, DEMO_PASSWORD } from '../data/seed';
 import type { Account, Company, Role, Worker } from '../types/models';
 import { localLatency, mockLatency } from './mockLatency';
 import { clearQueries } from './queries';
-import { navigate, resetHistory } from './router';
+import { currentPath, getLocation, navigate, resetHistory, subscribe as onRoute } from './router';
+import { isBusy, startBusy, type BusyHandle } from './busy';
 import {
   getDb,
   getSession,
@@ -398,14 +399,95 @@ export async function abandonPasswordReset(): Promise<void> {
  */
 export async function signInWithGoogle(role?: Role): Promise<void> {
   if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
+  // U45: something is already loading (a second tap in the same instant): nothing happens.
+  if (isBusy()) return;
+  const attempt = ++googleAttempt;
+  const wanted = () => attempt === googleAttempt;
   rememberGoogleRole(role ?? null);
-  // U29: straight into Firebase, nothing awaited before — the Google window must open inside the tap.
-  if (!FEATURES.firebase) return remote.signInWithGoogle();
-  const result = await remoteFirebase.signInWithFirebaseGoogle();
-  if (result !== 'ok') {
-    setGoogleIdentity(result);
-    navigate(googleSignUpPath(), { replace: true });
+  // U45: from the tap until the next screen, the app shows that it is loading and takes no other tap. While the
+  // Google window is open the person can give up ("Cancelar": whatever that window answers later is ignored).
+  const lock: BusyHandle = startBusy(
+    {
+      message: FEATURES.firebase ? 'Esperando o Google…' : 'Abrindo o Google…',
+      detail: FEATURES.firebase ? 'Escolha sua conta na janela do Google.' : undefined,
+      cancel: {
+        label: 'Cancelar',
+        onCancel: () => {
+          googleAttempt++;
+          lock.end();
+        }
+      }
+    },
+    { maxMs: GOOGLE_WINDOW_MAX_MS }
+  );
+  // Supabase's own Google page: the app leaves for it (the lock goes with the page).
+  if (!FEATURES.firebase) {
+    try {
+      await remote.signInWithGoogle();
+    } catch (e) {
+      lock.end();
+      throw e;
+    }
+    return;
   }
+  try {
+    // U29: straight into Firebase, nothing awaited before — the Google window must open inside the tap.
+    const result = await remoteFirebase.signInWithFirebaseGoogle({
+      onAccountChosen: () => {
+        if (wanted()) lock.update({ message: 'Entrando na sua conta…', detail: 'Só um instante.' });
+      },
+      stillWanted: wanted
+    });
+    if (!wanted() || result === 'cancelado') return;
+    unlockOnNextScreen(lock);
+    if (result !== 'ok') {
+      setGoogleIdentity(result);
+      watchGoogleSignUpExit();
+      // From choosing the side, the sign-up opens on top of it (its back arrow returns there); from the sign-up's
+      // first step, the same screen continues without the e-mail.
+      const next = googleSignUpPath();
+      navigate(next, { replace: next === currentPath() });
+    }
+  } catch (e) {
+    lock.end();
+    if (!wanted()) return; // given up: the window's answer is no news
+    throw e;
+  }
+}
+
+/** U45: the Google attempt being waited on; a newer tap or "Cancelar" makes an older one's answer be ignored. */
+let googleAttempt = 0;
+/** How long the Google window can stay open (a second step on the Google account takes a while). */
+const GOOGLE_WINDOW_MAX_MS = 10 * 60_000;
+
+/**
+ * The account opened (the route guard takes it to its screen) or the sign-up continues: the app unlocks once the next
+ * screen is drawn, so the previous one never shows again in between.
+ */
+function unlockOnNextScreen(lock: BusyHandle): void {
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    stop();
+    clearTimeout(timer);
+    requestAnimationFrame(() => lock.end());
+  };
+  const stop = onRoute(finish);
+  const timer = setTimeout(finish, 1500);
+}
+
+/**
+ * U45: leaving a Google sign-up by the phone's back button, back to the login, ends the pending Google login too —
+ * the same as the screens' own back arrow (U40): the login and the plain sign-up start clean.
+ */
+let watchingGoogleExit = false;
+function watchGoogleSignUpExit(): void {
+  if (watchingGoogleExit) return;
+  watchingGoogleExit = true;
+  onRoute(() => {
+    if (getLocation().path === '/login' && googleIdentity()) void leaveGoogleSignUp();
+  });
 }
 
 /** U29: loads Firebase as a screen with the Google/phone buttons opens, so the tap opens the window at once. */
@@ -459,6 +541,7 @@ export async function loadGoogleSignUp(): Promise<GoogleIdentity | null> {
   if (IS_DEMO) return null;
   const identity = await remote.pendingGoogleIdentity().catch(() => googleIdentity());
   setGoogleIdentity(identity);
+  if (identity) watchGoogleSignUpExit();
   return identity;
 }
 

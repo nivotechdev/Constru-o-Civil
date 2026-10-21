@@ -4,7 +4,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authUser, fakeSupabase } from './fakeSupabase';
 
-const holder = vi.hoisted(() => ({ client: null as unknown, signedOut: 0, popup: 0 }));
+const holder = vi.hoisted(() => ({
+  client: null as unknown,
+  signedOut: 0,
+  popup: 0,
+  /** U45: while set, the Google window stays open (the person is choosing the account). */
+  gate: null as Promise<void> | null
+}));
 
 vi.mock('../services/supabase', () => ({
   isSupabaseConfigured: () => true,
@@ -12,6 +18,10 @@ vi.mock('../services/supabase', () => ({
   getSupabase: async () => holder.client
 }));
 vi.mock('@firebase/app', () => ({ getApps: () => [], initializeApp: () => ({}) }));
+vi.mock('../services/features', async (original) => {
+  const m = await original<typeof import('../services/features')>();
+  return { ...m, FEATURES: { ...m.FEATURES, firebase: true, googleLogin: true } };
+});
 vi.mock('@firebase/auth', () => ({
   getAuth: () => ({}),
   useDeviceLanguage: () => undefined,
@@ -30,6 +40,7 @@ vi.mock('@firebase/auth', () => ({
   },
   signInWithPopup: async () => {
     holder.popup++;
+    if (holder.gate) await holder.gate;
     return { user: { getIdToken: async () => 'firebase-token-google' } };
   }
 }));
@@ -111,5 +122,62 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     expect(await firebase.signInWithFirebaseGoogle()).toEqual({ email: 'ana@exemplo.com', name: '' });
     expect(holder.popup).toBeGreaterThan(0);
     expect(fake.calls.find((c) => c.kind === 'function')?.args).toEqual({ idToken: 'firebase-token-google' });
+  });
+
+  it('U45: from the tap to the next screen the app is locked, says what is happening and can give up', async () => {
+    const loc = { protocol: 'https:', origin: 'https://bicos.app', pathname: '/escolha-perfil', search: '', hash: '' };
+    const go = (_: unknown, __: string, url?: string) => url && Object.assign(loc, { pathname: url });
+    vi.stubGlobal('window', { location: loc, addEventListener: () => undefined });
+    vi.stubGlobal('location', loc);
+    vi.stubGlobal('history', { state: null, pushState: go, replaceState: go });
+    vi.stubGlobal('requestAnimationFrame', (fn: () => void) => setTimeout(fn));
+    vi.stubGlobal('sessionStorage', {
+      getItem: (k: string) => box.get(k) ?? null,
+      setItem: (k: string, v: string) => void box.set(k, v),
+      removeItem: (k: string) => void box.delete(k)
+    });
+    const fake = server('ok');
+    holder.client = fake.client;
+    const firebase = await import('../services/remote/firebase');
+    const auth = await import('../services/auth');
+    const busy = await import('../services/busy');
+    await firebase.prepareFirebase();
+    let choose = () => undefined as void;
+    holder.gate = new Promise<void>((done) => (choose = done));
+    const shown: (string | undefined)[] = [];
+    busy.subscribeBusy(() => shown.push(busy.getBusy()?.message));
+
+    // The tap: locked at once, waiting on the Google window (with a way out); a second tap does nothing.
+    const done = auth.signInWithGoogle('trabalhador');
+    expect(busy.getBusy()).toMatchObject({ message: 'Esperando o Google…', cancel: { label: 'Cancelar' } });
+    const windows = holder.popup;
+    await auth.signInWithGoogle('trabalhador');
+    expect(holder.popup).toBe(windows);
+    // The account was chosen: now the Bicos account opens (no way out any more); then the next screen, then unlocked.
+    choose();
+    await done;
+    expect(loc.pathname).toBe('/cadastro/trabalhador'); // no account yet: the same sign-up, without the e-mail
+    expect(busy.isBusy()).toBe(true); // until the next screen is drawn
+    await vi.waitFor(() => expect(busy.isBusy()).toBe(false));
+    expect(shown).toEqual(['Esperando o Google…', 'Entrando na sua conta…', undefined]);
+    // The phone's back button all the way to the login ends that Google login (nothing stays half-done).
+    const pending = await import('../services/googleSignUp');
+    expect(pending.googleIdentity()?.email).toBe('ana@exemplo.com');
+    (await import('../services/router')).navigate('/login');
+    await vi.waitFor(() => expect(pending.googleIdentity()).toBeNull());
+    await vi.waitFor(() => expect(fake.calls.some((c) => c.name === 'signOut')).toBe(true));
+
+    // "Cancelar" while the window is open: unlocked at once; whatever the window answers later is ignored.
+    holder.gate = new Promise<void>((done) => (choose = done));
+    loc.pathname = '/login';
+    const calls = fake.calls.length;
+    const given = auth.signInWithGoogle();
+    busy.getBusy()?.cancel?.onCancel();
+    expect(busy.isBusy()).toBe(false);
+    choose();
+    await expect(given).resolves.toBeUndefined();
+    expect(fake.calls.length).toBe(calls); // no exchange for a session
+    expect(loc.pathname).toBe('/login');
+    holder.gate = null;
   });
 });

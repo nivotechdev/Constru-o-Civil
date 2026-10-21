@@ -573,20 +573,26 @@ describe('remote: data and actions', () => {
       }
     });
     const m = await load(fake);
+    const busy = await import('../services/busy');
     await m.auth.signInWithGoogle('recrutador');
     expect(fake.calls.find((c) => c.name === 'signInWithOAuth')?.args).toMatchObject({ provider: 'google' });
+    // U45: the app stays locked ("Abrindo o Google…") while the page leaves for Google's own page.
+    expect(busy.getBusy()?.message).toBe('Abrindo o Google…');
+    busy.resetBusy(); // the page left and came back
     const signUp = await import('../services/googleSignUp');
     // Kept (not read once): a reload in the middle of the sign-up stays on the same side.
     expect([signUp.googleRole(), signUp.googleRole()]).toEqual(['recrutador', 'recrutador']);
     expect(signUp.googleSignUpPath()).toBe('/cadastro/recrutador');
     // From the login, no side yet: it is chosen first.
     await m.auth.signInWithGoogle();
+    busy.resetBusy();
     expect(signUp.googleSignUpPath()).toBe('/escolha-perfil');
     // The e-mail (already confirmed by Google) and the name, for the steps.
     expect(await m.auth.loadGoogleSignUp()).toEqual({ email: 'novo@gmail.com', name: 'Marcos Pereira da Silva' });
     expect(signUp.googleIdentity()?.email).toBe('novo@gmail.com');
     // U40: leaving in the middle (back to the login) ends the pending Google login — nothing stays stuck.
     await m.auth.signInWithGoogle('trabalhador');
+    busy.resetBusy();
     await m.auth.leaveGoogleSignUp();
     expect([signUp.googleRole(), signUp.googleIdentity()]).toEqual([null, null]);
     expect(fake.calls.some((c) => c.name === 'signOut')).toBe(true);
