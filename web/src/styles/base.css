@@ -78,6 +78,35 @@ button {
   }
 }
 
+/* U47: how a screen comes in (layouts/AppShell.tsx). `backwards` only: once it ends nothing stays on <main> (a
+   transform left there would hold the screen's fixed bars in place of the window). */
+@keyframes bicos-screen-from-right {
+  from {
+    transform: translateX(1.25rem);
+    opacity: 0;
+  }
+}
+@keyframes bicos-screen-from-left {
+  from {
+    transform: translateX(-1.25rem);
+    opacity: 0;
+  }
+}
+@keyframes bicos-screen-in {
+  from {
+    opacity: 0;
+  }
+}
+.animate-screen-from-right {
+  animation: bicos-screen-from-right 320ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.animate-screen-from-left {
+  animation: bicos-screen-from-left 320ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.animate-screen-in {
+  animation: bicos-screen-in 220ms ease-out backwards;
+}
+
 .animate-spin-token {
   animation: bicos-spin 0.7s linear infinite;
 }

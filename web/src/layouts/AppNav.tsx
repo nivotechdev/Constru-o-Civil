@@ -10,41 +10,14 @@ import { getUI, setUI } from '../services/store';
 import type { Role } from '../types/models';
 import { cx } from '../utils/cx';
 import { ACCOUNT_MENU } from './accountMenu';
-
-interface NavItem {
-  id: string;
-  icon: IconName;
-  label: string;
-  desktopLabel?: string;
-  path: string;
-}
-
-const ITEMS: Record<Role, NavItem[]> = {
-  trabalhador: [
-    { id: 'mural', icon: 'hammer', label: 'Vagas', path: '/mural' },
-    {
-      id: 'minhas-candidaturas',
-      icon: 'file-check',
-      label: 'Minhas',
-      desktopLabel: 'Candidaturas',
-      path: '/minhas-candidaturas'
-    },
-    { id: 'perfil', icon: 'user', label: 'Perfil', path: '/perfil' }
-  ],
-  recrutador: [
-    { id: 'mural', icon: 'hammer', label: 'Início', path: '/mural' },
-    { id: 'minhas-vagas', icon: 'hard-hat', label: 'Vagas', desktopLabel: 'Minhas vagas', path: '/minhas-vagas' },
-    { id: 'criar-vaga', icon: 'plus', label: 'Publicar', desktopLabel: 'Publicar vaga', path: '/criar-vaga' },
-    { id: 'empresa', icon: 'building-2', label: 'Perfil', path: '/empresa' }
-  ]
-};
+import { NAV_ITEMS as ITEMS, type NavItem } from './navItems';
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Phone tab bar: where the blue circle last sat, so a newly mounted tab bar can roll it from there
-// to the newly active tab.
-let lastPillDot: number | null = null;
+// Phone tab bar (U47): where the blue pill last sat (position and width), so a newly mounted tab bar slides it from
+// there to the newly active tab.
+let lastPillDot: { x: number; w: number } | null = null;
 
 function placePillDot(animate: boolean) {
   const dot = document.querySelector<HTMLElement>('.nav-pill-dot');
@@ -55,27 +28,25 @@ function placePillDot(animate: boolean) {
     lastPillDot = null;
     return;
   }
-  const x = tab.offsetLeft + (tab.offsetWidth - dot.offsetWidth) / 2;
-  const icon = tab.querySelector<HTMLElement>('.icon');
-  const slide = animate && lastPillDot != null && lastPillDot !== x && !reducedMotion();
+  const target = { x: tab.offsetLeft, w: tab.offsetWidth };
+  const slide =
+    animate && lastPillDot != null && (lastPillDot.x !== target.x || lastPillDot.w !== target.w) && !reducedMotion();
   dot.style.transition = 'none';
-  if (slide) {
-    dot.style.transform = `translateX(${lastPillDot}px)`;
-    // The icon turns white as the circle arrives under it, not before.
-    if (icon) {
-      icon.style.transition = 'none';
-      icon.style.color = 'var(--gray-500)';
-    }
+  if (slide && lastPillDot) {
+    dot.style.transform = `translateX(${lastPillDot.x}px)`;
+    dot.style.width = `${lastPillDot.w}px`;
+    // The icon and the name turn white as the pill arrives under them, not before.
+    tab.style.transition = 'none';
+    tab.style.color = 'var(--gray-600)';
     void dot.offsetWidth;
-    dot.style.transition = `transform 420ms ${EASE}`;
-    if (icon) {
-      icon.style.transition = 'color 200ms ease 180ms';
-      icon.style.color = '#fff';
-    }
+    dot.style.transition = `transform 440ms ${EASE}, width 440ms ${EASE}`;
+    tab.style.transition = 'color 200ms ease 200ms';
+    tab.style.color = '';
   }
-  dot.style.transform = `translateX(${x}px)`;
+  dot.style.transform = `translateX(${target.x}px)`;
+  dot.style.width = `${target.w}px`;
   dot.style.opacity = '1';
-  lastPillDot = x;
+  lastPillDot = target;
 }
 
 // Where the active-tab underline was last drawn, so a newly mounted header slides it from there.
@@ -157,7 +128,9 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
 
   // Starting position, captured at mount; from then on placePillDot()/placeIndicator() own the style.
   const [dotStyle] = useState(() =>
-    lastPillDot != null ? { transform: `translateX(${lastPillDot}px)` } : { opacity: '0' }
+    lastPillDot != null
+      ? { transform: `translateX(${lastPillDot.x}px)`, width: `${lastPillDot.w}px` }
+      : { opacity: '0' }
   );
 
   useLayoutEffect(() => {
@@ -169,21 +142,23 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
   return (
     <div className="contents">
       {showMobilePill ? (
+        // U47: a fuller pill — each tab is its icon with its name underneath, and one blue pill behind the open tab
+        // slides to the tab you open. The bar keeps the app's look: the surface colour, translucent and blurred.
         <nav
           aria-label="Navegação principal"
-          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-3.5 rounded-full px-5 py-2 shadow-raised border border-concrete-0/60"
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-30 flex items-stretch p-1.5 rounded-full shadow-raised border border-concrete-0/60"
           style={{
-            bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
+            bottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))',
+            width: `min(calc(100vw - 1.5rem), ${items.length * 5.75 + 0.75}rem)`,
             // U21: the surface colour (white in the light theme), translucent.
             backgroundColor: 'rgb(var(--c-concrete-0) / 0.72)',
             backdropFilter: 'blur(16px) saturate(1.6)',
             WebkitBackdropFilter: 'blur(16px) saturate(1.6)'
           }}
         >
-          {/* One shared blue circle behind the icons; it rolls to the tab you open. */}
           <span
             aria-hidden="true"
-            className="nav-pill-dot pointer-events-none absolute left-0 top-1/2 -mt-5 w-10 h-10 rounded-full bg-brand-500 shadow-[0_4px_12px_rgba(29,75,237,0.35)]"
+            className="nav-pill-dot pointer-events-none absolute left-0 top-1.5 bottom-1.5 rounded-full bg-brand-500 shadow-[0_6px_16px_rgba(29,75,237,0.32)]"
             style={dotStyle}
           />
           {items.map((it) => {
@@ -192,12 +167,23 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
               <button
                 key={it.id}
                 type="button"
-                aria-label={it.label}
                 aria-current={isActive ? 'page' : undefined}
-                className="relative z-10 inline-flex items-center justify-center w-11 h-11 shrink-0 rounded-full outline-none focus-visible:ring-4 focus-visible:ring-brand-100 active:scale-95 transition-transform"
+                className={cx(
+                  'relative z-10 flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 h-[3.375rem] px-1 rounded-full',
+                  'outline-none focus-visible:ring-4 focus-visible:ring-brand-100 active:scale-[0.96] transition-transform duration-150',
+                  isActive ? 'text-white' : 'text-concrete-600'
+                )}
                 onClick={() => navigate(it.path)}
               >
-                <Icon name={it.icon} size={22} color={isActive ? '#fff' : 'var(--gray-500)'} />
+                <Icon name={it.icon} size={22} />
+                <span
+                  className={cx(
+                    'max-w-full truncate text-[0.75rem] leading-4',
+                    isActive ? 'font-bold' : 'font-semibold'
+                  )}
+                >
+                  {it.label}
+                </span>
               </button>
             );
           })}

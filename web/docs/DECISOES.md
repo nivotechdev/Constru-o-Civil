@@ -2096,3 +2096,18 @@ Firebase ainda carregava o quadro auxiliar do Google só no primeiro toque. **Ag
   Google carrega quando a tela abre (o celular e o Safari já faziam isso), então a janela abre sem essa espera; e, ao
   entrar, o tema e o perfil são lidos juntos (uma ida e volta a menos para qualquer login).
 - **Produção** (ação com "pode"): as funções da produção só ganham isso quando forem republicadas.
+
+## U47 — Menu de baixo do celular com ícone e nome, e transição de tela
+
+Pedido do responsável (com uma print de referência): no celular, o menu de baixo com cada aba sendo o ícone e, embaixo
+dele, o nome da página, numa pílula mais "gordinha", mantendo a cor, a meia transparência e o desfoque do nosso. **Agora**
+a barra tem 68 px de altura e uma aba de ~90 px para cada página (ícone de 22 px + nome); a aba aberta fica sobre uma
+pílula azul (a cor da marca) que **desliza** até a aba tocada (440 ms, a mesma curva suave do menu do computador), e o
+ícone e o nome ficam brancos quando ela chega. A barra continua com a superfície translúcida e desfocada (clara ou
+escura, conforme o tema) e cabe a partir de 360 px de largura. "Minhas" virou "Candidaturas" (com o nome embaixo, o
+texto precisa se explicar sozinho); "Vagas" e "Início" ganharam ícones de público geral (maleta e casa).
+
+**Transição de tela**: entre as abas do menu, a tela nova entra deslizando 20 px do lado da aba (direita ou esquerda) com
+um esmaecer, em 320 ms; nas outras telas, só esmaece (220 ms). Só esmaecer ali porque deslizar move a tela inteira, e uma
+barra presa no pé dela ("Quero esse bico") seria arrastada junto enquanto dura. A primeira tela da visita não anima (nada
+de atrasar a primeira pintura) e quem pediu menos movimento no celular não vê animação.
