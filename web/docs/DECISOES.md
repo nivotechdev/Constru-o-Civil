@@ -2315,3 +2315,19 @@ o bico como no Google Maps, e o menu de baixo do celular meio transparente e fos
 - **Distância e tempo**: o caminho é pedido a um segundo servidor OSRM (`routing.openstreetmap.de`) se o primeiro não
   responder; o GPS usa a posição de no máximo 5 s atrás. Limite que continua: o tempo do OSRM é sem trânsito e pode ser
   um pouco menor que o do Google; só a API paga do Google (com o mapa do próprio Google) dá o mesmo número.
+
+## U56 — Mapa parado com botão de tela cheia e cards mais enxutos
+
+Pedido do responsável: o mapa dentro da vaga fica parado (sem mexer), sem os três botões e sem "Abrir no Google Maps",
+com um botão só (as setas na diagonal) que abre o mapa em tela cheia, onde aí sim se mexe; e os cards do mural mais
+minimalistas. **Agora**:
+
+- **Mapa na vaga**: parado (não arrasta nem dá zoom; um dedo ainda rola a página) com o botão de tela cheia no canto,
+  e tocar no mapa também abre. Em **tela cheia** (`JobMap.tsx`, diálogo com Esc/foco como os outros): um dedo move, dois
+  dedos dão zoom, botões de aproximar, afastar e ver o caminho todo, botão de fechar, e embaixo o endereço com a
+  distância e o tempo de carro. A página de trás fica parada enquanto o mapa está aberto. O botão "Abrir no Google Maps"
+  saiu (e `utils/mapUrls.ts` com ele); "Mostrar onde estou" continua abaixo do mapa, até a pessoa liberar a localização.
+- **Cards** (`JobTile.tsx`): fica o bairro; sai o que aparecia ao lado dele (os dias da semana); o "Data a combinar"
+  sai e fica só o horário (`tileWhenText`: "7h–17h"; com data marcada, "Hoje · 7h–17h"; sem nada, "Horário a combinar"
+  para os cards terem a mesma altura); a bandeira de distância sai de cima da foto e vira uma pílula azul-clara com o
+  ícone, ao lado do bairro (a distância é a da casa da pessoa, como no U51).

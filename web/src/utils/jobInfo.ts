@@ -189,6 +189,16 @@ export function whenText(job: Schedule, now: Date = new Date()): string {
   return `${dateText(job, now)} · ${hasHours ? hoursText(job) : 'horário a combinar'}`;
 }
 
+/**
+ * U56: the "when" line of a tile: with the date to be arranged, only the hours ("7h–17h"); with a date, the date and the
+ * hours ("Hoje · 7h–17h"); nothing fixed at all says "Horário a combinar" (the line keeps the tiles the same size).
+ */
+export function tileWhenText(job: Schedule, now: Date = new Date()): string {
+  const hasHours = Boolean(job.startTime && job.endTime);
+  if (job.dateToArrange || !job.startDate) return hasHours ? hoursText(job) : 'Horário a combinar';
+  return `${dateText(job, now)} · ${hasHours ? hoursText(job) : 'horário a combinar'}`;
+}
+
 /** W03: what the whole job pays (diária × diárias) — only when there is more than one diária and a fixed pay. */
 export function totalText(job: Pick<Job, 'pay' | 'diarias'>): string | null {
   if (job.pay == null || job.diarias <= 1) return null;

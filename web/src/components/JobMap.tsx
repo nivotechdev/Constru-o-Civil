@@ -5,8 +5,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { GeoPoint } from '../types/models';
 import { distanceKm, formatKm } from '../utils/geo';
-import { mapOpenUrl } from '../utils/mapUrls';
 import { drivingRoute, formatDriveTime, formatRoadKm, type DrivingRoute } from '../services/route';
+import { useModal } from '../hooks/useModal';
 import { Icon } from './icons/Icon';
 
 const MapCanvas = lazy(() => import('./MapCanvas'));
@@ -31,6 +31,8 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
   const [gps, setGps] = useState<Gps>('idle');
   const [visible, setVisible] = useState(false);
   const [road, setRoad] = useState<Road>(null);
+  const [open, setOpen] = useState(false);
+  const modal = useModal(open, () => setOpen(false));
   const box = useRef<HTMLDivElement>(null);
 
   // The map loads only when the section is about to show (it is far down the page and weighs on a weak connection).
@@ -62,6 +64,16 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
     };
   }, []);
 
+  // The full-screen map holds the page still behind it.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   function locate() {
     setGps('asking');
     askPosition()
@@ -91,70 +103,95 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
   const who = origin?.from === 'aqui' ? 'Você está a' : 'A';
   const whereFrom = origin?.from === 'aqui' ? 'do bico' : 'da sua casa';
 
+  const distanceLine = origin ? (
+    <div className="text-concrete-900" aria-live="polite">
+      {route ? (
+        <span>
+          {who} <strong className="font-bold">{formatRoadKm(route.meters)}</strong> {whereFrom}
+          <span className="text-concrete-700"> · {formatDriveTime(route.seconds)} de carro</span>
+        </span>
+      ) : calculating ? (
+        <span className="text-concrete-700">Calculando o caminho…</span>
+      ) : straightKm !== null ? (
+        <span className="text-concrete-700">
+          {who} cerca de {formatKm(straightKm)} {whereFrom} (em linha reta).
+        </span>
+      ) : null}
+    </div>
+  ) : null;
+  const canvas = (mode: 'static' | 'full') => (
+    <Suspense fallback={<MapLoading />}>
+      <MapCanvas
+        job={job}
+        origin={origin?.point ?? null}
+        path={route?.path ?? null}
+        mode={mode}
+        onExpand={() => setOpen(true)}
+        label={
+          mode === 'full'
+            ? 'Mapa de onde vai ser o bico. Arraste com um dedo para mover.'
+            : 'Mapa de onde vai ser o bico'
+        }
+      />
+    </Suspense>
+  );
+
   return (
     <div className="flex flex-col gap-3">
       <span className="text-concrete-700">{place}</span>
       <div
         ref={box}
-        className="relative w-full h-80 rounded-2xl overflow-hidden border border-concrete-200 bg-concrete-100"
+        className="relative w-full h-72 rounded-2xl overflow-hidden border border-concrete-200 bg-concrete-100"
+        onClick={() => visible && setOpen(true)}
       >
-        {visible ? (
-          <Suspense fallback={<MapLoading />}>
-            <MapCanvas
-              job={job}
-              origin={origin?.point ?? null}
-              path={route?.path ?? null}
-              label="Mapa de onde vai ser o bico. Arraste com um dedo para mover."
-            />
-          </Suspense>
-        ) : (
-          <MapLoading />
-        )}
+        {visible ? canvas('static') : <MapLoading />}
       </div>
-      {origin ? (
-        <div className="text-concrete-900" aria-live="polite">
-          {route ? (
-            <span>
-              {who} <strong className="font-bold">{formatRoadKm(route.meters)}</strong> {whereFrom}
-              <span className="text-concrete-700"> · {formatDriveTime(route.seconds)} de carro</span>
-            </span>
-          ) : calculating ? (
-            <span className="text-concrete-700">Calculando o caminho…</span>
-          ) : straightKm !== null ? (
-            <span className="text-concrete-700">
-              {who} cerca de {formatKm(straightKm)} {whereFrom} (em linha reta).
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        <a
-          className="flex-1 min-w-[12rem] inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-control bg-brand-500 text-white text-sm font-bold hover:bg-brand-600"
-          href={mapOpenUrl(job, origin?.point ?? null)}
-          target="_blank"
-          rel="noopener noreferrer"
+      {distanceLine}
+      {here ? null : (
+        <button
+          type="button"
+          className="self-start inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-control border border-concrete-300 bg-concrete-0 text-sm font-bold text-concrete-900 hover:bg-concrete-50 disabled:opacity-60"
+          disabled={gps === 'asking'}
+          onClick={locate}
         >
-          <Icon name="map" size={18} />
-          Abrir no Google Maps
-        </a>
-        {here ? null : (
-          <button
-            type="button"
-            className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-control border border-concrete-300 bg-concrete-0 text-sm font-bold text-concrete-900 hover:bg-concrete-50 disabled:opacity-60"
-            disabled={gps === 'asking'}
-            onClick={locate}
-          >
-            <Icon name="locate-fixed" size={18} />
-            {gps === 'asking' ? 'Achando você…' : 'Mostrar onde estou'}
-          </button>
-        )}
-      </div>
+          <Icon name="locate-fixed" size={18} />
+          {gps === 'asking' ? 'Achando você…' : 'Mostrar onde estou'}
+        </button>
+      )}
       {gps === 'denied' ? (
         <span className="text-sm text-concrete-600">
           O navegador não liberou a localização. Toque no cadeado ao lado do endereço do site para permitir.
         </span>
       ) : gps === 'error' ? (
         <span className="text-sm text-concrete-600">Não deu para achar onde você está agora.</span>
+      ) : null}
+      {open ? (
+        <div
+          ref={modal}
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mapa de onde vai ser o bico"
+          className="fixed inset-0 z-[60] bg-concrete-100 outline-none animate-fade-in"
+        >
+          {canvas('full')}
+          <button
+            type="button"
+            aria-label="Fechar o mapa"
+            className="absolute left-3 z-[600] w-12 h-12 flex items-center justify-center rounded-full bg-concrete-0 text-concrete-900 shadow-[0_2px_10px_rgba(16,24,40,0.25)] active:bg-concrete-100"
+            style={{ top: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}
+            onClick={() => setOpen(false)}
+          >
+            <Icon name="x" size={22} />
+          </button>
+          <div
+            className="absolute inset-x-3 z-[600] flex flex-col gap-1 rounded-2xl bg-concrete-0 p-4 shadow-[0_6px_24px_rgba(16,24,40,0.2)]"
+            style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+          >
+            <span className="font-semibold text-concrete-900">{place}</span>
+            {distanceLine}
+          </div>
+        </div>
       ) : null}
     </div>
   );

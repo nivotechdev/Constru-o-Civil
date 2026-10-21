@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { drivingRoute, formatDriveTime, formatRoadKm } from '../services/route';
-import { mapOpenUrl } from '../utils/mapUrls';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -63,10 +62,5 @@ describe('U54: road distance and time, as Google Maps writes them', () => {
     const r = await drivingRoute({ lat: -29.1, lon: -51.1 }, { lat: -29.2, lon: -51.2 });
     expect(r?.meters).toBe(900);
     expect(urls[1]).toContain('routing.openstreetmap.de');
-  });
-  it('opens the route in Google Maps by car', () => {
-    expect(mapOpenUrl({ lat: -29.1, lon: -51.2 }, { lat: -29.3, lon: -51.4 })).toBe(
-      'https://www.google.com/maps/dir/?api=1&origin=-29.300000,-51.400000&destination=-29.100000,-51.200000&travelmode=driving'
-    );
   });
 });

@@ -40,3 +40,10 @@
   filter: drop-shadow(0 3px 4px rgba(16, 24, 40, 0.35));
   display: block;
 }
+
+/* The picture in the job page does not move, and a finger on it still scrolls the page. */
+.bicos-map-static,
+.bicos-map-static .leaflet-pane {
+  touch-action: pan-y;
+  cursor: pointer;
+}

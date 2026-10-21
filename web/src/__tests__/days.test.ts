@@ -11,7 +11,8 @@ import {
   jobWeekdays,
   placeTypeText,
   runsOn,
-  whenText
+  whenText,
+  tileWhenText
 } from '../utils/jobInfo';
 
 describe('the days of the week', () => {
@@ -81,5 +82,21 @@ describe('what the job pays', () => {
     expect(jobPayTotal({ pay: null, diarias: 3 })).toBeNull();
     expect(placeTypeText({ placeType: 'condominio' })).toBe('Condomínio');
     expect(placeTypeText({ placeType: null })).toBeNull();
+  });
+});
+
+describe('U56: the when line of a tile', () => {
+  it('shows only the hours when the date is to be arranged', () => {
+    const base = { dateToArrange: true, startDate: null, endDate: null, startTime: '07:00', endTime: '17:00' };
+    expect(tileWhenText(base, new Date('2026-10-08T12:00:00'))).toBe('7h–17h');
+    expect(tileWhenText({ ...base, startTime: null, endTime: null }, new Date('2026-10-08T12:00:00'))).toBe(
+      'Horário a combinar'
+    );
+    expect(
+      tileWhenText(
+        { ...base, dateToArrange: false, startDate: '2026-10-09', endDate: '2026-10-09' },
+        new Date('2026-10-08T12:00:00')
+      )
+    ).toContain('7h–17h');
   });
 });

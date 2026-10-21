@@ -4,7 +4,7 @@ import type { StatusBadge, Tone } from '../types/ui';
 import { Icon } from './icons/Icon';
 import { cx } from '../utils/cx';
 import { formatBRL } from '../utils/format';
-import { daysText, whenText } from '../utils/jobInfo';
+import { tileWhenText } from '../utils/jobInfo';
 import { PhotoCarousel } from './PhotoCarousel';
 import { jobTitle } from '../services/catalog';
 import { SaveFlag } from './SaveFlag';
@@ -50,7 +50,7 @@ interface JobTileProps {
 
 /**
  * Mural tile, listing-style: a rounded photo with the save flag (or a corner button) on top, and compact
- * single-line rows underneath (role; neighbourhood and days of the week; date and hours; pay) — no
+ * single-line rows underneath (role; neighbourhood with the distance from home in a highlighted pill; the hours; pay) — no
  * card chrome; on the photo only the candidacy status (U35, "Minhas candidaturas"). Every row truncates, so all tiles in a grid are exactly the
  * same size whatever their content.
  */
@@ -65,18 +65,16 @@ export function JobTile({
   footer = null,
   badge = null
 }: JobTileProps) {
-  // U51: how far it is from the worker's home, on the photo ("1,2 km").
+  // U51/U56: how far it is from the worker's home, highlighted in the description ("1,2 km").
   const km = homeDistanceKm(useDb(), job);
   const bairro = job.address.neighborhood;
-  // U52: the days in a word ("Durante a semana", "Fim de semana", "Todos os dias").
-  const where = [bairro, job.dias || job.weekdays?.length ? daysText(job) : null].filter(Boolean).join(' · ');
-  const when = whenText(job);
+  const when = tileWhenText(job);
   const distance = km === null ? null : formatKm(km);
   const label = [
     jobTitle(job),
     badge && badge.label,
     company && company.name,
-    where,
+    bairro,
     distance && `a ${distance} da sua casa`,
     when
   ]
@@ -103,15 +101,6 @@ export function JobTile({
           >
             <Icon name={badge.icon} size={12} color={TONE_COLOR[badge.tone]} />
             <span className="truncate min-w-0">{badge.label}</span>
-          </span>
-        ) : null}
-        {distance ? (
-          <span
-            aria-hidden="true"
-            className="absolute bottom-2 left-2 z-10 inline-flex items-center gap-1 h-6 sm:h-7 px-2 sm:px-2.5 rounded-full bg-concrete-0 text-[0.6875rem] sm:text-xs font-semibold text-concrete-900 shadow-[0_1px_3px_rgba(16,20,24,0.18)] whitespace-nowrap"
-          >
-            <Icon name="map-pin" size={12} color="var(--text-brand)" />
-            {distance}
           </span>
         ) : null}
         {corner ? (
@@ -149,7 +138,15 @@ export function JobTile({
           <div className="pt-1.5">{footer}</div>
         ) : (
           <>
-            <span className="truncate text-concrete-500">{where}</span>
+            <span className="flex items-center gap-2 min-w-0 text-concrete-500">
+              <span className="truncate min-w-0">{bairro}</span>
+              {distance ? (
+                <span className="shrink-0 inline-flex items-center gap-1 h-5 sm:h-6 px-2 rounded-full bg-brand-50 text-brand-700 text-[0.6875rem] sm:text-xs font-bold whitespace-nowrap">
+                  <Icon name="navigation" size={11} />
+                  {distance}
+                </span>
+              ) : null}
+            </span>
             <span className="truncate text-concrete-500">{when}</span>
             <span className={cx('truncate pt-0.5', muted ? 'text-concrete-500' : 'text-concrete-900')}>
               {job.pay == null ? (
