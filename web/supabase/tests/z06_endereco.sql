@@ -14,7 +14,9 @@ select pg_temp.fails('select street from public.jobs', '42501');
 select pg_temp.fails('select number, complement, cep from public.jobs', '42501');
 select pg_temp.fails('select lat, lon from public.jobs', '42501');
 select pg_temp.fails('select * from public.jobs', '42501');
-select pg_temp.ok((select neighborhood = 'Tatuapé' and area_lat = -23.54 from public.jobs where id = (select v from t_ids where k = 'vaga')),
+-- U51: o ponto aproximado é o exato (-23.54, -46.57) deslocado 100–200 m (~0,001–0,002°).
+select pg_temp.ok((select neighborhood = 'Tatuapé' and abs(area_lat + 23.54) < 0.0025 and abs(area_lon + 46.57) < 0.0025
+                     from public.jobs where id = (select v from t_ids where k = 'vaga')),
   'bairro e ponto aproximado são públicos');
 select public.submit_application((select v from t_ids where k = 'vaga'));
 select pg_temp.ok(not exists (select 1 from public.get_job_addresses(array[(select v from t_ids where k = 'vaga')])),

@@ -222,19 +222,36 @@ export async function prepararPagina(page: Page): Promise<void> {
       })
     );
   }
-  // CEP sempre igual (BrasilAPI/ViaCEP de fora não fazem parte do teste).
-  await page.route('https://brasilapi.com.br/api/cep/**', (route) =>
-    route.fulfill({
-      json: {
-        cep: '03307000',
-        state: 'SP',
-        city: 'São Paulo',
-        neighborhood: 'Tatuapé',
-        street: 'Rua Tuiuti',
-        location: { type: 'Point', coordinates: { latitude: '-23.5403', longitude: '-46.5765' } }
-      }
-    })
-  );
+  // Endereço (U51): os serviços de fora não fazem parte do teste. A BrasilAPI responde os dois CEPs de teste (Caxias,
+  // a cidade do piloto, e São Paulo) e "não achei" o resto; o ViaCEP e o mapa (Nominatim e Photon) respondem vazio —
+  // o ponto do endereço fica sendo o do CEP, sempre o mesmo.
+  const CEPS: Record<string, object> = {
+    '95020000': {
+      cep: '95020000',
+      state: 'RS',
+      city: 'Caxias do Sul',
+      neighborhood: 'Centro',
+      street: 'Rua Sinimbu',
+      location: { type: 'Point', coordinates: { latitude: '-29.16806', longitude: '-51.17944' } }
+    },
+    '03307000': {
+      cep: '03307000',
+      state: 'SP',
+      city: 'São Paulo',
+      neighborhood: 'Tatuapé',
+      street: 'Rua Tuiuti',
+      location: { type: 'Point', coordinates: { latitude: '-23.5403', longitude: '-46.5765' } }
+    }
+  };
+  await page.route('https://brasilapi.com.br/api/cep/**', (route) => {
+    const cep = route.request().url().replace(/\D/g, '').slice(-8);
+    return CEPS[cep]
+      ? route.fulfill({ json: CEPS[cep] })
+      : route.fulfill({ status: 404, json: { message: 'CEP não encontrado' } });
+  });
+  await page.route('https://viacep.com.br/**', (route) => route.fulfill({ json: [] }));
+  await page.route('https://nominatim.openstreetmap.org/**', (route) => route.fulfill({ json: [] }));
+  await page.route('https://photon.komoot.io/**', (route) => route.fulfill({ json: { features: [] } }));
   // CNPJ na Receita: o CNPJ de teste é sorteado e às vezes é de uma empresa real (uma BAIXADA reprovou a
   // construtora e travou a publicação). A resposta é a de "Receita fora do ar": a construtora fica pendente,
   // como a fila da equipe (fluxo 7) espera, e nenhum CNPJ sorteado vai para a BrasilAPI.
