@@ -5,22 +5,27 @@ import type { GeoPoint } from '../types/models';
 
 export type DrivingRoute = { meters: number; seconds: number; path: [number, number][] };
 
-const URL_BASE = 'https://router.project-osrm.org/route/v1/driving/';
+// Two public OSRM servers of the same kind: if the first does not answer, the second does.
+const SERVERS = [
+  'https://router.project-osrm.org/route/v1/driving/',
+  'https://routing.openstreetmap.de/routed-car/route/v1/driving/'
+];
 
-export async function drivingRoute(from: GeoPoint, to: GeoPoint, signal?: AbortSignal): Promise<DrivingRoute | null> {
-  const coords = `${from.lon.toFixed(6)},${from.lat.toFixed(6)};${to.lon.toFixed(6)},${to.lat.toFixed(6)}`;
+async function ask(base: string, coords: string, signal?: AbortSignal): Promise<DrivingRoute | null> {
   const timeout = new AbortController();
-  const timer = setTimeout(() => timeout.abort(), 9000);
+  const timer = setTimeout(() => timeout.abort(), 7000);
   signal?.addEventListener('abort', () => timeout.abort(), { once: true });
   try {
-    const res = await fetch(`${URL_BASE}${coords}?overview=full&geometries=geojson`, { signal: timeout.signal });
+    const res = await fetch(`${base}${coords}?overview=full&geometries=geojson&alternatives=false&steps=false`, {
+      signal: timeout.signal
+    });
     if (!res.ok) return null;
     const data = (await res.json()) as {
       code?: string;
       routes?: { distance: number; duration: number; geometry: { coordinates: [number, number][] } }[];
     };
     const r = data.code === 'Ok' ? data.routes?.[0] : undefined;
-    if (!r || !Number.isFinite(r.distance)) return null;
+    if (!r || !Number.isFinite(r.distance) || !Number.isFinite(r.duration)) return null;
     return {
       meters: r.distance,
       seconds: r.duration,
@@ -31,6 +36,16 @@ export async function drivingRoute(from: GeoPoint, to: GeoPoint, signal?: AbortS
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function drivingRoute(from: GeoPoint, to: GeoPoint, signal?: AbortSignal): Promise<DrivingRoute | null> {
+  const coords = `${from.lon.toFixed(6)},${from.lat.toFixed(6)};${to.lon.toFixed(6)},${to.lat.toFixed(6)}`;
+  for (const base of SERVERS) {
+    if (signal?.aborted) return null;
+    const r = await ask(base, coords, signal);
+    if (r) return r;
+  }
+  return null;
 }
 
 /** How Google Maps writes a road distance: "650 m", "3,2 km", "12 km". */

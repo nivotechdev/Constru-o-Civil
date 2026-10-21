@@ -2303,3 +2303,15 @@ o bico como no Google Maps, e o menu de baixo do celular meio transparente e fos
   alguns metros do Google, porque os dois usam mapas de ruas e rotas próprios.
 - **Menu de baixo**: a cor da superfície a 70% sobre um desfoque do que passa por trás (`backdrop-blur-xl`), borda
   clara e sombra suave; a aba aberta continua no azul da marca.
+
+## U55 — Menu com o mesmo vidro do desktop, mapa escuro azul-cinza, ícones retos e rota com segundo servidor
+
+- **Menu do celular**: usa a classe `.app-glass` (em `base.css`), com a mesma cor, desfoque, borda e sombra do vidro
+  da barra do desktop (`.app-island` rolada) — um único visual nos dois.
+- **Mapa escuro**: o mapa do dia era invertido e ficava marrom (o bege do mapa virava marrom). Agora vai a cinza primeiro
+  e depois ganha o tom azul-acinzentado (`map.css`), com as ruas mais claras que o chão.
+- **Ícones do mapa**: mais, menos e o pino são SVG desenhados na mesma grade (traço de 2 px, pontas redondas); o pino
+  tem a ponta exatamente em cima do ponto do bico. Sem o ícone de carro embaixo do mapa.
+- **Distância e tempo**: o caminho é pedido a um segundo servidor OSRM (`routing.openstreetmap.de`) se o primeiro não
+  responder; o GPS usa a posição de no máximo 5 s atrás. Limite que continua: o tempo do OSRM é sem trânsito e pode ser
+  um pouco menor que o do Google; só a API paga do Google (com o mapa do próprio Google) dá o mesmo número.

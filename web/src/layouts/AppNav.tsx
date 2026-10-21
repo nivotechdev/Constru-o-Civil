@@ -99,12 +99,11 @@ export function AppNav({ role, active, showMobilePill = true, account = {} }: Ap
       {showMobilePill ? (
         // U50: simple and steady — a plain bar in the surface colour (no glass, no glow), each tab its icon with its
         // name underneath, and the open tab on a pill drawn in its own place (nothing slides from where it was, so
-        // nothing can be left out of place). U54: frosted like Instagram's bar — the surface colour at 70% over a blur of what
-        // is behind it. U53: the pill is the app's blue (brand-500, both themes), the same size
+        // nothing can be left out of place). U55: the same glass as the desktop bar (`.app-glass`). U53: the pill is the app's blue (brand-500, both themes), the same size
         // on every tab. Centred with auto margins, never with a half-pixel transform.
         <nav
           aria-label="Navegação principal"
-          className="lg:hidden fixed inset-x-0 mx-auto z-30 flex items-stretch gap-1 p-1.5 rounded-full bg-concrete-0/70 backdrop-blur-xl backdrop-saturate-150 border border-concrete-0/60 shadow-[0_6px_24px_rgba(16,24,40,0.14)]"
+          className="lg:hidden fixed inset-x-0 mx-auto z-30 flex items-stretch gap-1 p-1.5 rounded-full app-glass"
           style={{
             bottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))',
             // Three tabs get a little more room than four; both fit a 360 px phone.

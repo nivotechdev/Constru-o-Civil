@@ -53,6 +53,17 @@ describe('U54: road distance and time, as Google Maps writes them', () => {
     vi.stubGlobal('fetch', async () => Promise.reject(new Error('offline')));
     expect(await drivingRoute({ lat: 0, lon: 0 }, { lat: 1, lon: 1 })).toBeNull();
   });
+  it('asks the second server when the first does not answer', async () => {
+    const ok = { code: 'Ok', routes: [{ distance: 900, duration: 120, geometry: { coordinates: [[-51.1, -29.1]] } }] };
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', async (u: string) => {
+      urls.push(String(u));
+      return urls.length === 1 ? new Response('x', { status: 503 }) : new Response(JSON.stringify(ok));
+    });
+    const r = await drivingRoute({ lat: -29.1, lon: -51.1 }, { lat: -29.2, lon: -51.2 });
+    expect(r?.meters).toBe(900);
+    expect(urls[1]).toContain('routing.openstreetmap.de');
+  });
   it('opens the route in Google Maps by car', () => {
     expect(mapOpenUrl({ lat: -29.1, lon: -51.2 }, { lat: -29.3, lon: -51.4 })).toBe(
       'https://www.google.com/maps/dir/?api=1&origin=-29.300000,-51.400000&destination=-29.100000,-51.200000&travelmode=driving'

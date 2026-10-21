@@ -21,7 +21,7 @@ function askPosition(): Promise<GeoPoint> {
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
       reject,
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
     );
   });
 }
@@ -112,8 +112,7 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
         )}
       </div>
       {origin ? (
-        <div className="flex items-center gap-2 text-concrete-900" aria-live="polite">
-          <Icon name="car" size={20} color="var(--text-brand)" />
+        <div className="text-concrete-900" aria-live="polite">
           {route ? (
             <span>
               {who} <strong className="font-bold">{formatRoadKm(route.meters)}</strong> {whereFrom}

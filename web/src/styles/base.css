@@ -247,6 +247,16 @@ button {
     0 12px 36px rgba(16, 20, 24, 0.14);
   transform: translateY(2px);
 }
+/* U55: the phone's bottom bar is the desktop island's scrolled look, the same glass (same colour, blur and shadow). */
+.app-glass {
+  background: rgb(var(--c-concrete-0) / 0.78);
+  border: 1px solid rgb(var(--c-concrete-0) / 0.7);
+  -webkit-backdrop-filter: blur(18px) saturate(1.8);
+  backdrop-filter: blur(18px) saturate(1.8);
+  box-shadow:
+    0 0 0 1px rgba(16, 20, 24, 0.07),
+    0 12px 36px rgba(16, 20, 24, 0.14);
+}
 @media (prefers-reduced-motion: reduce) {
   .app-island {
     transition: none;

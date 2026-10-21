@@ -11,7 +11,28 @@ import { Icon } from './icons/Icon';
 type Props = { job: GeoPoint; origin: GeoPoint | null; path: [number, number][] | null; label: string };
 
 const ctl =
-  'w-11 h-11 flex items-center justify-center rounded-full bg-concrete-0 text-concrete-900 text-2xl leading-none font-semibold border border-concrete-200 shadow-[0_2px_8px_rgba(16,24,40,0.18)] active:bg-concrete-100';
+  'w-11 h-11 flex items-center justify-center rounded-full bg-concrete-0 text-concrete-900 border border-concrete-200 shadow-[0_2px_8px_rgba(16,24,40,0.18)] active:bg-concrete-100';
+
+/** A 24-box stroke icon, drawn like the others (round caps, 2px) so every button glyph sits on the same centre. */
+function Glyph({ d }: { d: string }) {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
+const PIN =
+  '<svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg"><path d="M17 43C17 43 3 28.5 3 16.5a14 14 0 0 1 28 0C31 28.5 17 43 17 43Z" fill="#1d4bed" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><circle cx="17" cy="16.5" r="5.5" fill="#fff"/></svg>';
 
 export default function MapCanvas({ job, origin, path, label }: Props) {
   const box = useRef<HTMLDivElement>(null);
@@ -71,7 +92,7 @@ export default function MapCanvas({ job, origin, path, label }: Props) {
     L.marker([job.lat, job.lon], {
       keyboard: false,
       interactive: false,
-      icon: L.divIcon({ className: '', html: '<div class="bicos-pin"></div>', iconSize: [36, 36], iconAnchor: [4, 40] })
+      icon: L.divIcon({ className: '', html: PIN, iconSize: [34, 44], iconAnchor: [17, 43] })
     }).addTo(g);
     fit(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,10 +103,10 @@ export default function MapCanvas({ job, origin, path, label }: Props) {
       <div ref={box} role="application" aria-label={label} className="bicos-map absolute inset-0" />
       <div className="absolute right-3 top-3 z-[500] flex flex-col gap-2">
         <button type="button" aria-label="Aproximar o mapa" className={ctl} onClick={() => map.current?.zoomIn()}>
-          +
+          <Glyph d="M12 5v14M5 12h14" />
         </button>
         <button type="button" aria-label="Afastar o mapa" className={ctl} onClick={() => map.current?.zoomOut()}>
-          −
+          <Glyph d="M5 12h14" />
         </button>
         <button type="button" aria-label="Ver o caminho todo" className={ctl} onClick={() => fit(true)}>
           <Icon name="locate-fixed" size={20} />
