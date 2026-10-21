@@ -27,7 +27,7 @@ select pg_temp.ok((select array_agg(id order by pos) from t_page) =
   array[(select v from t_ids where k = 'impulsionada'), (select v from t_ids where k = 'urgente'),
         (select v from t_ids where k = 'perto'), (select v from t_ids where k = 'longe')],
   'impulsionada → urgente → mais perto; sem encerrada nem outra cidade');
-select pg_temp.ok(not exists (select 1 from t_page where j ? 'street' or j ? 'cep'), 'sem rua nem CEP no mural');
+select pg_temp.ok(not exists (select 1 from t_page where not (j ? 'street' and j ? 'cep')), 'U53: o mural manda rua e CEP');
 
 -- Página por cursor: duas por vez.
 create temp table t_p1 as select (j->>'id') as id, j from public.feed_jobs('São Paulo', 'SP', -23.54, -46.57, p_limit => 2) j;
