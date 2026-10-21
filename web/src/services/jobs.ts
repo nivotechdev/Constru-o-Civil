@@ -20,8 +20,8 @@ import { withAlertNotices } from './alerts';
 /** The mural's open jobs. Backend: select open jobs (+ companies) near the worker; put them in the store. */
 /**
  * The mural's first page. Demo: everything is already here (the screen filters and orders it). Backend:
- * the RPC feed_jobs (city or radius, boosted → urgent → order, 30 per page) and, for a search, the
- * companies (and, for a company, the workers) that match.
+ * the RPC feed_jobs (city or radius, boosted → urgent → order, 30 per page); a search finds only jobs, by service,
+ * neighborhood or city (U49).
  */
 export type { FeedQuery };
 export { feedKey };

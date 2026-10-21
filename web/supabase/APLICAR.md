@@ -640,6 +640,16 @@ cadastro (sem linha em `accounts`). Só troca a função; não mexe em dado ao a
 select prosrc like '%via%firebase%' from pg_proc where proname = 'purge_unconfirmed_signups';  -- true
 ```
 
+### 55. `20261021000400_u49_busca_vagas.sql` (U49)
+
+A busca do mural (`feed_jobs`) passa a ser só de vagas: cada palavra precisa estar no serviço (título ou ofício), no
+bairro ou na cidade da vaga — o nome da empresa não conta mais; outra cidade aparece quando a busca a nomeia; durante a
+busca os filtros (distância, quando, ofício) não valem. Só troca a função (mesma assinatura e grants); não mexe em dado.
+
+```sql
+select prosrc like '%terms as%' from pg_proc where proname = 'feed_jobs';  -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

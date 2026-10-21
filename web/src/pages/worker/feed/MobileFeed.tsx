@@ -1,22 +1,17 @@
-import { Card } from '../../../components/Card';
-import { EmptyState } from '../../../components/EmptyState';
 import { IconButton } from '../../../components/IconButton';
 import { Logo } from '../../../components/Logo';
 import { QueryView } from '../../../components/QueryView';
 import { TileGridSkeleton } from '../../../components/Skeleton';
 import type { Query } from '../../../hooks/useQuery';
 import { NotificationsPanel } from '../../../components/NotificationsPanel';
-import { Rating } from '../../../components/Rating';
 import { Tag } from '../../../components/Tag';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { useUI } from '../../../hooks/useStore';
 import { navigate } from '../../../services/router';
-import { workerPlace } from '../../../utils/workerInfo';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
-import { FeedGrid, LoadMore, NoJobsState, SearchPill, SearchScope } from './FeedParts';
+import { FeedGrid, LoadMore, NoJobsState, NoSearchResults, SearchPill, SearchScope } from './FeedParts';
 import { setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
-import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
 import type { Paging } from '../../../services/paging';
 
 export interface FeedLayoutProps {
@@ -38,62 +33,22 @@ export interface FeedLayoutProps {
 
 /** The mural below 770px: search pill, filter chips, sort control and the grid of tiles. */
 export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, paging }: FeedLayoutProps) {
-  const noResults =
-    found !== null && found.jobs.length === 0 && found.companies.length === 0 && found.workers.length === 0;
   const activeCount = chips.length;
 
+  // U49: the search finds only jobs; nothing found says so, with the search typed.
   const searchResults = found ? (
     <div className="flex flex-col gap-5">
       <SearchScope location={ui.location} allCities={ui.allCities} />
       {found.jobs.length ? (
         <div className="flex flex-col gap-3">
-          <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Vagas</div>
+          <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500" role="status">
+            {found.jobs.length === 1 ? '1 vaga encontrada' : `${found.jobs.length} vagas encontradas`}
+          </div>
           <FeedGrid db={db} role={role} jobs={found.jobs} />
         </div>
-      ) : null}
-      {found.companies.length ? (
-        <div className="flex flex-col gap-2">
-          <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Construtoras</div>
-          {found.companies.map((c) => (
-            <Card key={c.id} padding="md" onClick={() => navigate('/construtora/' + c.id)}>
-              <div className="flex items-center gap-3">
-                <CompanyAvatar company={c} size="sm" />
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <span className="font-semibold text-concrete-900 truncate">{c.name}</span>
-                  <span className="text-sm text-concrete-500 truncate">{c.location}</span>
-                </div>
-                <Rating value={c.rating} count={c.reviewCount} />
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : null}
-      {found.workers.length ? (
-        <div className="flex flex-col gap-2">
-          <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">Trabalhadores</div>
-          {found.workers.map((w) => (
-            <Card key={w.id} padding="md" onClick={() => navigate('/trabalhador/' + w.id)}>
-              <div className="flex items-center gap-3">
-                <WorkerAvatar worker={w} size="sm" />
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <span className="font-semibold text-concrete-900 truncate">{w.name}</span>
-                  <span className="text-sm text-concrete-500 truncate">{workerPlace(w)}</span>
-                </div>
-                <Rating value={w.rating} count={w.reviewCount} />
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : null}
-      {noResults ? (
-        <EmptyState
-          icon="search-x"
-          title="Nenhum resultado para essa busca"
-          description="Confira a grafia ou tente um termo mais curto."
-          actionLabel="Limpar busca"
-          onAction={() => setFeed({ search: '' })}
-        />
-      ) : null}
+      ) : (
+        <NoSearchResults search={ui.search} location={ui.location} allCities={ui.allCities} />
+      )}
     </div>
   ) : null;
 
@@ -141,7 +96,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
           </h1>
           <MobileNotifications />
         </div>
-        <SearchPill id="feed-search" role={role} search={ui.search} compact />
+        <SearchPill id="feed-search" search={ui.search} compact />
       </div>
       <div className="px-4 pt-4 pb-6">
         <div className="mural-frame flex flex-col gap-5">

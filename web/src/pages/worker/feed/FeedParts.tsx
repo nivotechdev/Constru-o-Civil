@@ -76,14 +76,13 @@ export function NoJobsState({ location, home }: { location: string; home: string
 
 interface SearchPillProps {
   id: string;
-  role: Role;
   search: FeedUI['search'];
   compact?: boolean;
 }
 
 // Search field shared by the phone and desktop murals: a pill with the blue search button on the left
 // and no visible label (the placeholder says what can be searched).
-export function SearchPill({ id, role, search, compact = false }: SearchPillProps) {
+export function SearchPill({ id, search, compact = false }: SearchPillProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div
@@ -114,12 +113,9 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
           autoComplete="off"
           spellCheck={false}
           enterKeyHint="search"
-          aria-label="Buscar bicos"
-          placeholder={
-            role === 'recrutador'
-              ? 'Buscar vaga, construtora ou trabalhador'
-              : 'Buscar por serviço, bairro ou construtora'
-          }
+          aria-label="Buscar vagas por serviço, bairro ou cidade"
+          // U49: only jobs — by service, neighborhood or city.
+          placeholder="Buscar por serviço, bairro ou cidade"
           value={search}
           className={cx(
             'w-full min-w-0 bg-transparent outline-none text-concrete-900 placeholder:text-concrete-500 [&::-webkit-search-cancel-button]:hidden',
@@ -144,6 +140,32 @@ export function SearchPill({ id, role, search, compact = false }: SearchPillProp
         </button>
       ) : null}
     </div>
+  );
+}
+
+/** U49: a search that found no job: says what was searched and where, and how to try again. */
+export function NoSearchResults({
+  search,
+  location,
+  allCities
+}: {
+  search: string;
+  location: string;
+  allCities: boolean;
+}) {
+  const city = location.split(',')[0];
+  return (
+    <EmptyState
+      icon="search-x"
+      title={`Nenhuma vaga para “${search.trim()}”`}
+      description={
+        allCities
+          ? 'Não achamos vaga com essa busca em nenhuma cidade. Tente outro serviço, bairro ou cidade.'
+          : `Não achamos vaga com essa busca em ${city}. Tente outro serviço, bairro ou o nome de outra cidade.`
+      }
+      actionLabel="Limpar busca"
+      onAction={() => setFeed({ search: '' })}
+    />
   );
 }
 

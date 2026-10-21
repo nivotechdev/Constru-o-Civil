@@ -955,7 +955,7 @@ describe('remote: data and actions', () => {
     expect(queries.getQuery('my-applications').status).toBe('ready');
   });
 
-  it('a search brings matching companies; workers only for a company (L17)', async () => {
+  it('U49: a search goes to feed_jobs only — no company or person is searched', async () => {
     const q = (search: string) => ({
       location: 'São Paulo, SP',
       from: { lat: -23.56, lon: -46.65 },
@@ -966,25 +966,21 @@ describe('remote: data and actions', () => {
       search,
       allCities: false
     });
-    let fake = server('ana', { rpc: { feed_jobs: () => ({ data: [], error: null }) } });
-    let m = await load(fake);
-    await m.auth.signIn('ana@exemplo.com', 'segredo123');
-    await m.jobs.loadFeed(q('outra'));
-    expect((fake.calls.filter((c) => c.name === 'feed_jobs')[0].args as Record<string, unknown>).p_search).toBe(
-      'outra'
-    );
-    expect(m.store.getDb().companies['u-outra']).toBeDefined();
-    expect(
-      fake.calls.some((c) => c.kind === 'from' && c.name === 'workers' && c.ops?.some((o) => o[0] === 'ilike'))
-    ).toBe(false);
-
-    fake = server('obra', { rpc: { feed_jobs: () => ({ data: [], error: null }) } });
-    m = await load(fake);
-    await m.auth.signIn('obra@exemplo.com', 'segredo123');
-    await m.jobs.loadFeed(q('ana'));
-    expect(
-      fake.calls.some((c) => c.kind === 'from' && c.name === 'workers' && c.ops?.some((o) => o[0] === 'ilike'))
-    ).toBe(true);
+    for (const who of ['ana', 'obra'] as const) {
+      const fake = server(who, { rpc: { feed_jobs: () => ({ data: [], error: null }) } });
+      const m = await load(fake);
+      await m.auth.signIn(who + '@exemplo.com', 'segredo123');
+      const before = fake.calls.length;
+      await m.jobs.loadFeed(q('garçom centro'));
+      const calls = fake.calls.slice(before);
+      expect((calls.find((c) => c.name === 'feed_jobs')?.args as Record<string, unknown>).p_search).toBe(
+        'garçom centro'
+      );
+      const searched = calls.some(
+        (c) => c.kind === 'from' && ['companies', 'workers'].includes(c.name) && c.ops?.some((o) => o[0] === 'ilike')
+      );
+      expect(searched).toBe(false);
+    }
   });
 
   it('a decision is one RPC; a refusal comes back with the server message', async () => {

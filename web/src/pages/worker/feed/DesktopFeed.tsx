@@ -1,19 +1,13 @@
-import type { ReactNode } from 'react';
 import { Button } from '../../../components/Button';
-import { EmptyState } from '../../../components/EmptyState';
 import { Icon } from '../../../components/icons/Icon';
 import { QueryView } from '../../../components/QueryView';
 import { TileGridSkeleton } from '../../../components/Skeleton';
-import { Rating } from '../../../components/Rating';
 import { Tag } from '../../../components/Tag';
-import { navigate } from '../../../services/router';
-import { workerPlace } from '../../../utils/workerInfo';
 import type { Database, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
-import { FeedGrid, LoadMore, NoJobsState, SearchPill, SearchScope } from './FeedParts';
+import { FeedGrid, LoadMore, NoJobsState, NoSearchResults, SearchPill, SearchScope } from './FeedParts';
 import { noFilters, setFeed, type SearchMatches } from './feedUI';
 import type { FeedLayoutProps } from './MobileFeed';
-import { CompanyAvatar, WorkerAvatar } from '../../../components/Avatar';
 
 /** The mural from 770px up (tablet and desktop): a wide search bar, the filters button and the grid. */
 export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, paging }: FeedLayoutProps) {
@@ -47,7 +41,7 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, 
       <div className="page-x pt-1 pb-8 border-b border-concrete-200">
         <div className="max-w-[60rem] mx-auto flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <SearchPill id="feed-search-desktop" role={role} search={ui.search} />
+            <SearchPill id="feed-search-desktop" search={ui.search} />
           </div>
           <button
             type="button"
@@ -74,7 +68,14 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, 
             {() =>
               found ? (
                 <div className="flex flex-col gap-4">
-                  <SearchResults db={db} role={role} search={ui.search} found={found} />
+                  <SearchResults
+                    db={db}
+                    role={role}
+                    search={ui.search}
+                    found={found}
+                    location={ui.location}
+                    allCities={ui.allCities}
+                  />
                   <SearchScope location={ui.location} allCities={ui.allCities} />
                 </div>
               ) : (
@@ -93,115 +94,27 @@ interface SearchResultsProps {
   role: Role;
   search: string;
   found: SearchMatches;
+  location: string;
+  allCities: boolean;
 }
 
-function SearchResults({ db, role, search, found }: SearchResultsProps) {
-  const { jobs, companies, workers } = found;
-  const parts = [
-    jobs.length ? (jobs.length === 1 ? '1 vaga' : `${jobs.length} vagas`) : null,
-    companies.length ? (companies.length === 1 ? '1 construtora' : `${companies.length} construtoras`) : null,
-    workers.length ? (workers.length === 1 ? '1 trabalhador' : `${workers.length} trabalhadores`) : null
-  ].filter(Boolean);
-
-  const heading = (
-    <div className="flex items-baseline gap-3 flex-wrap">
-      <h1 className="text-[1.75rem] font-semibold leading-tight text-concrete-900">{`Resultados para “${search.trim()}”`}</h1>
-      {parts.length ? <span className="text-concrete-500">{parts.join(' · ')}</span> : null}
-    </div>
-  );
-
-  if (!parts.length) {
-    return (
-      <div className="flex flex-col gap-4">
-        {heading}
-        <EmptyState
-          icon="search-x"
-          title="Nenhum resultado para essa busca"
-          description="Confira a grafia ou tente um termo mais curto, como o nome do serviço ou do bairro."
-          actionLabel="Limpar busca"
-          onAction={() => setFeed({ search: '' })}
-        />
-      </div>
-    );
-  }
-
-  const group = (title: string, content: ReactNode) => (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-[1.375rem] font-semibold text-concrete-900">{title}</h2>
-      {content}
-    </section>
-  );
-
+function SearchResults({ db, role, search, found, location, allCities }: SearchResultsProps) {
+  const { jobs } = found;
   return (
-    <div className="flex flex-col gap-12">
-      {heading}
-      {jobs.length ? group('Vagas', <FeedGrid db={db} role={role} jobs={jobs} />) : null}
-      {companies.length
-        ? group(
-            'Construtoras',
-            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(17rem,1fr))]">
-              {companies.map((c) => (
-                <PersonCard
-                  key={c.id}
-                  avatar={<CompanyAvatar company={c} />}
-                  name={c.name}
-                  meta={c.location}
-                  rating={<Rating value={c.rating} count={c.reviewCount} />}
-                  onClick={() => navigate('/construtora/' + c.id)}
-                />
-              ))}
-            </div>
-          )
-        : null}
-      {workers.length
-        ? group(
-            'Trabalhadores',
-            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(17rem,1fr))]">
-              {workers.map((w) => (
-                <PersonCard
-                  key={w.id}
-                  avatar={<WorkerAvatar worker={w} />}
-                  name={w.name}
-                  meta={workerPlace(w)}
-                  rating={<Rating value={w.rating} count={w.reviewCount} />}
-                  onClick={role === 'recrutador' ? () => navigate('/trabalhador/' + w.id) : null}
-                />
-              ))}
-            </div>
-          )
-        : null}
-    </div>
-  );
-}
-
-interface PersonCardProps {
-  avatar: ReactNode;
-  name: string;
-  meta: string;
-  rating: ReactNode;
-  onClick: (() => void) | null;
-}
-
-function PersonCard({ avatar, name, meta, rating, onClick }: PersonCardProps) {
-  const className = cx(
-    'flex items-center gap-4 p-4 rounded-2xl border border-concrete-200 bg-concrete-0 text-left',
-    onClick ? 'transition hover:shadow-raised hover:border-concrete-300' : ''
-  );
-  const content = (
-    <>
-      {avatar}
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <span className="font-semibold text-concrete-900 truncate">{name}</span>
-        <span className="text-sm text-concrete-500 truncate">{meta}</span>
-        {rating}
+    <div className="flex flex-col gap-6">
+      <div className="flex items-baseline gap-3 flex-wrap">
+        <h1 className="text-[1.75rem] font-semibold leading-tight text-concrete-900">{`Resultados para “${search.trim()}”`}</h1>
+        {jobs.length ? (
+          <span className="text-concrete-500" role="status">
+            {jobs.length === 1 ? '1 vaga' : `${jobs.length} vagas`}
+          </span>
+        ) : null}
       </div>
-    </>
-  );
-  return onClick ? (
-    <button type="button" className={className} onClick={onClick}>
-      {content}
-    </button>
-  ) : (
-    <div className={className}>{content}</div>
+      {jobs.length ? (
+        <FeedGrid db={db} role={role} jobs={jobs} />
+      ) : (
+        <NoSearchResults search={search} location={location} allCities={allCities} />
+      )}
+    </div>
   );
 }

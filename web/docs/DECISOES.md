@@ -2111,3 +2111,22 @@ texto precisa se explicar sozinho); "Vagas" e "Início" ganharam ícones de púb
 um esmaecer, em 320 ms; nas outras telas, só esmaece (220 ms). Só esmaecer ali porque deslizar move a tela inteira, e uma
 barra presa no pé dela ("Quero esse bico") seria arrastada junto enquanto dura. A primeira tela da visita não anima (nada
 de atrasar a primeira pintura) e quem pediu menos movimento no celular não vê animação.
+
+## U49 — Busca do mural só por vagas: serviço, bairro ou cidade
+
+Pedido do responsável: o campo de busca da tela inicial só pode buscar vagas — pelo serviço, pelo bairro ou pela
+cidade — nunca o trabalhador, a empresa ou qualquer pessoa; buscar um bairro ou uma cidade tem que trazer as vagas de
+lá, e sem vaga tem que dizer que não existe vaga para aquela busca. Antes, a busca também achava empresas e (para quem
+contrata) trabalhadores pelo nome, achava vagas pelo nome da empresa, e ficava presa na cidade do mural — digitar o
+nome de outra cidade não achava nada. **Agora** (a mesma regra no servidor, migration `u49` › `feed_jobs`, e no app,
+`feedUI.searchMatches`):
+
+- Cada palavra digitada precisa estar na vaga — no serviço (o título ou o ofício, com sinônimos), no bairro ou na
+  cidade —, sem diferença de acento nem de maiúscula; palavras de ligação ("de", "em", "para"…) não contam. Assim
+  "garçom centro" acha garçom no Centro, e "cozinha em caxias do sul" acha cozinha em Caxias.
+- A busca fica na cidade escolhida no mural ("Buscando em …", com "Buscar em todas as cidades"), mas quem digita o
+  nome de outra cidade (ou o começo, a partir de 4 letras: com menos, "gar" de "garçom" puxaria Garibaldi) acha as
+  vagas de lá. O bairro fica na cidade do mural (há "Centro" em toda cidade).
+- Durante a busca, os filtros (distância, quando, ofício) não valem — a tela da busca não os mostra.
+- Nome de empresa ou de pessoa não acha nada. Sem vaga: "Nenhuma vaga para “…”", dizendo onde se buscou, e "Limpar
+  busca". O campo diz "Buscar por serviço, bairro ou cidade" para os dois lados.

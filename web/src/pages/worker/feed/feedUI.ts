@@ -5,21 +5,13 @@
 import type { IconName } from '../../../components/icons/Icon';
 import { jobTitle, oficioNome, oficioSearchText } from '../../../services/catalog';
 import { cityByLabel, DEFAULT_CITY, knownCity } from '../../../services/cities';
-import {
-  allCompanies,
-  allWorkers,
-  companyOf,
-  currentCompany,
-  currentWorker,
-  isMine
-} from '../../../services/selectors';
+import { currentCompany, currentWorker, isMine } from '../../../services/selectors';
 import { setUI } from '../../../services/store';
-import type { Company, Database, GeoPoint, Job, Role, Worker } from '../../../types/models';
+import type { Database, GeoPoint, Job, Role } from '../../../types/models';
 import { addDays, todayISO } from '../../../utils/dates';
 import { distanceKm } from '../../../utils/geo';
-import { cityLabel, isBoosted, placeText, runsOn } from '../../../utils/jobInfo';
+import { cityLabel, isBoosted, runsOn } from '../../../utils/jobInfo';
 import { fold } from '../../../utils/text';
-import { workerPlace } from '../../../utils/workerInfo';
 
 export const FEED_KEY = 'feed';
 
@@ -181,45 +173,67 @@ export function activeFilters(filters: Omit<FeedFilters, 'from'>, home: string):
 }
 
 export interface SearchMatches {
-  /** Already in the mural's default order. */
+  /** U49: only jobs (the search never finds companies or people), in the mural's default order. */
   jobs: Job[];
-  companies: Company[];
-  workers: Worker[];
+}
+
+/** U49: words that don't narrow a search ("garçom em caxias" = "garçom caxias"). The same list as feed_jobs. */
+const STOPWORDS = new Set(
+  ['a', 'o', 'as', 'os', 'de', 'da', 'do', 'das', 'dos', 'e', 'em', 'no', 'na', 'nos', 'nas'].concat([
+    'para',
+    'pra',
+    'por',
+    'com',
+    'um',
+    'uma'
+  ])
+);
+
+/** U49: the words of a search, each of which a job must have; only linking words → the whole search as one word. */
+export function searchWords(query: string): string[] {
+  const needle = fold(query.trim());
+  const words = needle.split(/[^a-z0-9]+/).filter((w) => w && !STOPWORDS.has(w));
+  return words.length ? words : needle ? [needle] : [];
+}
+
+/** U49: the search names the job's city (or starts its name, from 4 letters): found even outside the mural's city. */
+export function namesCity(job: Job, query: string): boolean {
+  const needle = fold(query.trim());
+  const city = fold(job.address.city);
+  return needle.includes(city) || (needle.length >= 4 && city.startsWith(needle));
+}
+
+/** U49: every word of the search is in the job's service (title or trade), neighborhood or city. */
+export function matchesSearch(job: Job, query: string): boolean {
+  const text = [
+    fold([jobTitle(job), job.address.neighborhood, job.address.city, job.address.uf].join(' ')),
+    oficioSearchText(job.oficioId)
+  ].join(' ');
+  const words = searchWords(query);
+  return words.length > 0 && words.every((w) => text.includes(w));
 }
 
 /**
- * What a search finds among the open jobs, the companies and the workers. Accents and case are ignored,
- * and a trade is found by its name or any synonym ("hidráulica" finds the encanador jobs).
+ * U49: what a search finds — only open jobs, by service, neighborhood or city (never by the company's or a person's
+ * name). Accents, case and linking words don't matter, and a trade is found by its name or any synonym ("hidráulica"
+ * finds the encanador jobs). The search stays in the chosen city (L17), unless the person asks for every city or
+ * names another one. The same rule as the server (migration u49 › feed_jobs).
  */
 export function searchMatches(
-  db: Database,
   open: Job[],
   query: string,
   role: Role,
   from: GeoPoint,
   where: { location: string; allCities: boolean } = { location: '', allCities: true }
 ): SearchMatches {
-  const q = fold(query.trim());
-  const has = (...parts: string[]) => fold(parts.join(' ')).includes(q);
-  // L17: the search stays in the chosen city, unless the person asks for every city.
-  const inCity = (j: Job) => where.allCities || cityLabel(j) === where.location;
+  const inScope = (j: Job) => where.allCities || cityLabel(j) === where.location || namesCity(j, query);
   return {
     jobs: orderJobs(
-      open.filter(
-        (j) =>
-          inCity(j) &&
-          (has(jobTitle(j), companyOf(db, j).name, placeText(j)) || oficioSearchText(j.oficioId).includes(q))
-      ),
+      open.filter((j) => inScope(j) && matchesSearch(j, query)),
       role,
       'perto',
       from
-    ),
-    companies: allCompanies(db).filter((c) => c.name !== 'Construtora (conta excluída)' && has(c.name, c.location)),
-    // L17: workers show up only for companies.
-    workers:
-      role === 'recrutador'
-        ? allWorkers(db).filter((w) => w.name !== 'Conta excluída' && has(w.name, workerPlace(w)))
-        : []
+    )
   };
 }
 

@@ -172,8 +172,8 @@ function defaultFeedQuery(): FeedQuery {
  * The mural (X01): one page of the RPC feed_jobs — open jobs with room, in the city or the radius,
  * boosted → urgent → the chosen order. `more` loads the next page ("Carregar mais"). On the first page,
  * the jobs already on the device for this city that didn't come back are read again (closed, filled up
- * or deleted meanwhile: Y10), so the mural never shows a job that is gone. A search also brings the
- * companies (and, for a company, the workers) that match (L17).
+ * or deleted meanwhile: Y10), so the mural never shows a job that is gone. U49: a search finds only jobs (by
+ * service, neighborhood or city) — never companies or people.
  */
 export async function loadFeed(query?: FeedQuery, more = false): Promise<void> {
   const q = query ?? defaultFeedQuery();
@@ -225,25 +225,8 @@ export async function loadFeed(query?: FeedQuery, more = false): Promise<void> {
       );
     }
   }
-  if (q.search.trim()) recipes.push(...(await searchPeople(q.search.trim())));
   const saved = me().workerId && !more ? [putSavedJobIds(await savedIds())] : [];
   apply(...recipes, ...saved);
-}
-
-/** Companies (and, for a company, workers) whose name — or the worker's trade — matches a search. */
-async function searchPeople(text: string): Promise<Recipe[]> {
-  const client = await db();
-  const like = `%${text.replace(/[%_,()]/g, ' ')}%`;
-  const companies = await request(() => client.from('companies').select(COMPANY_COLUMNS).ilike('name', like).limit(10));
-  const recipes: Recipe[] = [putCompanies(companies, undefined, accountId())];
-  if (me().companyId) {
-    // L17: workers only show up for companies.
-    const workers = await request(() =>
-      client.from('workers').select(WORKER_COLUMNS).ilike('name', like).neq('name', 'Conta excluída').limit(20)
-    );
-    recipes.push(putWorkers(workers, undefined, accountId()));
-  }
-  return recipes;
 }
 
 /** One job, its company, and the session's side of it (my candidacy, or the candidates if it's mine). */

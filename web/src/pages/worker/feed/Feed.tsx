@@ -22,7 +22,7 @@ import {
   type FeedUI
 } from './feedUI';
 import { MobileFeed } from './MobileFeed';
-import { isBlocked, loadMyBlocks, notBlocked } from '../../../services/safety';
+import { loadMyBlocks, notBlocked } from '../../../services/safety';
 
 /**
  * The mural. Both layouts are in the page (CSS shows one), so the lists they show are worked out
@@ -78,15 +78,11 @@ export default function Feed() {
       ),
     [open, role, location, oficio, dist, quando, sort, from]
   );
-  const found = useMemo(() => {
-    if (!q) return null;
-    const m = searchMatches(db, open, q, role, from, { location, allCities });
-    return {
-      ...m,
-      companies: m.companies.filter((c) => !isBlocked(db, c.id)),
-      workers: m.workers.filter((w) => !isBlocked(db, w.id))
-    };
-  }, [db, open, q, role, from, location, allCities]);
+  // U49: the search finds only jobs (by service, neighborhood or city).
+  const found = useMemo(
+    () => (q ? searchMatches(open, q, role, from, { location, allCities }) : null),
+    [open, q, role, from, location, allCities]
+  );
   const chips = useMemo(
     () => activeFilters({ location, oficio, dist, quando }, home),
     [location, oficio, dist, quando, home]
