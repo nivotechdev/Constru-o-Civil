@@ -14,6 +14,7 @@ import * as remote from './remote/jobs';
 import * as remoteData from './remote/data';
 import { feedKey, type FeedQuery } from './feedQuery';
 import { withAlertNotices } from './alerts';
+import { jobWeekdays } from '../utils/jobInfo';
 
 // ---- reads ----
 
@@ -129,12 +130,21 @@ export function significantChanges(job: Job, draft: JobDraft): string[] {
     job.startDate !== draft.startDate ||
     job.endDate !== draft.endDate ||
     job.startTime !== draft.startTime ||
-    job.endTime !== draft.endTime
+    job.endTime !== draft.endTime ||
+    // U52: the days marked (a job from before has none: its days are those of its "dias").
+    jobWeekdays(job).join() !== jobWeekdays(draft).join()
   )
     changes.push('data');
   const a = job.address;
   const b = draft.address;
-  if (a.cep !== b.cep || a.street !== b.street || a.number !== b.number || a.city !== b.city || a.uf !== b.uf)
+  if (
+    a.cep !== b.cep ||
+    a.street !== b.street ||
+    a.number !== b.number ||
+    a.city !== b.city ||
+    a.uf !== b.uf ||
+    (job.placeType ?? null) !== (draft.placeType ?? null)
+  )
     changes.push('endereço');
   return changes;
 }

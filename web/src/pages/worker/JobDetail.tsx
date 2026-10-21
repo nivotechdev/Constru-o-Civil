@@ -19,6 +19,7 @@ import { withdrawApplication } from '../../services/applications';
 import { loadJob } from '../../services/jobs';
 import { showToast } from '../../services/toast';
 import type { ScreenProps } from '../../types/screen';
+import type { Job } from '../../types/models';
 import { goBack, navigate } from '../../services/router';
 import {
   applicationFor,
@@ -36,15 +37,18 @@ import { jobTitle } from '../../services/catalog';
 import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, originText, type FeedUI } from './feed/feedUI';
 import { formatKm } from '../../utils/geo';
 import {
-  diasInfo,
+  daysListText,
+  daysText,
   durationText,
   hoursText,
+  jobPayTotal,
   paymentText,
   placeText,
+  placeTypeText,
   streetText,
-  totalText,
   whenText
 } from '../../utils/jobInfo';
+import { formatBRL } from '../../utils/format';
 import { AVATAR_FRAME, CompanyAvatar } from '../../components/Avatar';
 import { cx } from '../../utils/cx';
 import { shareJob } from '../../utils/share';
@@ -85,7 +89,9 @@ export default function JobDetail({ params }: ScreenProps) {
   const invite = role === 'trabalhador' ? inviteFor(db, job.id, worker.id) : null;
   // Y07: a job that doesn't take candidates says why, with no "Quero esse bico".
   const unavailable = unavailableText(jobState(db, job));
-  const dias = diasInfo(job);
+  // U52: the days in a word ("Durante a semana") and one by one ("Segunda, quarta e sexta").
+  const days = job.dias || job.weekdays?.length ? { word: daysText(job), list: daysListText(job) } : null;
+  const placeType = placeTypeText(job);
   // U51: from the worker's home (their address); an account without one measures from the mural's place, as before.
   const fromHome = role === 'trabalhador' && myAddress(db) ? homeDistanceKm(db, job) : null;
   const distance =
@@ -234,18 +240,10 @@ export default function JobDetail({ params }: ScreenProps) {
                   <span className="text-xs font-bold tracking-[0.08em] uppercase text-brand-600">Diária</span>
                   <span className="font-mono font-bold text-4xl text-concrete-900">{formatPay(job.pay)}</span>
                 </div>
-                {/* X12/W03: the job's own payment form, and the total when it has several diárias. */}
-                <span className="text-sm text-concrete-700 text-right max-w-[11rem]">
-                  {totalText(job) ? (
-                    <>
-                      <span className="block font-semibold text-concrete-900">{`Total ${totalText(job)}`}</span>
-                      {paymentText(job)}
-                    </>
-                  ) : (
-                    paymentText(job)
-                  )}
-                </span>
+                {/* X12: the job's own payment form. */}
+                <span className="text-sm text-concrete-700 text-right max-w-[11rem]">{paymentText(job)}</span>
               </div>
+              <PayTotal job={job} />
               <div className="flex items-center gap-2 pt-4 border-t border-brand-200">
                 <Icon name="calendar" size={20} color="var(--text-brand)" />
                 <span className="font-display font-semibold text-lg text-concrete-900">{whenText(job)}</span>
@@ -268,7 +266,14 @@ export default function JobDetail({ params }: ScreenProps) {
                   }
                 />
                 {exact ? <MapLinks job={job} /> : null}
-                {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
+                {placeType ? <InfoRow icon="house" main={placeType} sub="Tipo do local" /> : null}
+                {days ? (
+                  <InfoRow
+                    icon="calendar-days"
+                    main={days.word}
+                    sub={days.list !== days.word ? days.list : undefined}
+                  />
+                ) : null}
                 <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
                 <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com a empresa" />
               </div>
@@ -300,11 +305,12 @@ export default function JobDetail({ params }: ScreenProps) {
                 <span className="font-mono font-bold text-3xl text-concrete-900">{formatPay(job.pay)}</span>
                 {job.pay == null ? null : <span className="text-concrete-500">por dia</span>}
               </div>
-              {totalText(job) ? <span className="text-sm text-concrete-700">{`Total: ${totalText(job)}`}</span> : null}
             </div>
+            <PayTotal job={job} />
             <div className="flex flex-col rounded-xl border border-concrete-200 divide-y divide-concrete-200">
               <SummaryRow icon="calendar" label="Quando" value={whenText(job)} />
-              {dias ? <SummaryRow icon="calendar-days" label="Dias" value={dias.label} /> : null}
+              {days ? <SummaryRow icon="calendar-days" label="Dias" value={days.list} /> : null}
+              {placeType ? <SummaryRow icon="house" label="Local" value={placeType} /> : null}
               <SummaryRow icon="clock" label="Duração" value={durationText(job)} />
               <SummaryRow icon="map-pin" label="Onde" value={[placeText(job), distance].filter(Boolean).join(' · ')} />
             </div>
@@ -359,6 +365,28 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
     <div className="flex flex-col gap-2">
       <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">{title}</div>
       {children}
+    </div>
+  );
+}
+
+/**
+ * U52: what the worker gets for the whole job ("Total do bico") — the diária times the diárias — highlighted inside
+ * the job (never on the card). Nothing when the pay is to be arranged.
+ */
+function PayTotal({ job }: { job: Pick<Job, 'pay' | 'diarias'> }) {
+  const total = jobPayTotal(job);
+  if (total == null || job.pay == null) return null;
+  const n = Math.max(job.diarias || 1, 1);
+  return (
+    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-success-50 border border-success-100">
+      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-concrete-0 shrink-0">
+        <Icon name="wallet" size={20} color="var(--green-500)" />
+      </span>
+      <span className="flex-1 min-w-0 flex flex-col">
+        <span className="text-xs font-bold tracking-[0.08em] uppercase text-success-600">Total do bico</span>
+        <span className="text-sm text-concrete-700">{`${n === 1 ? '1 diária' : `${n} diárias`} de ${formatBRL(job.pay)}`}</span>
+      </span>
+      <span className="font-mono font-bold text-2xl text-success-600 whitespace-nowrap">{formatBRL(total)}</span>
     </div>
   );
 }

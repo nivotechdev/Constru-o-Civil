@@ -4,7 +4,7 @@ import type { StatusBadge, Tone } from '../types/ui';
 import { Icon } from './icons/Icon';
 import { cx } from '../utils/cx';
 import { formatBRL } from '../utils/format';
-import { diasInfo, whenText } from '../utils/jobInfo';
+import { daysText, whenText } from '../utils/jobInfo';
 import { PhotoCarousel } from './PhotoCarousel';
 import { jobTitle } from '../services/catalog';
 import { SaveFlag } from './SaveFlag';
@@ -28,7 +28,7 @@ type TileJob = Pick<
   Job,
   'id' | 'oficioId' | 'title' | 'pay' | 'photos' | 'dateToArrange' | 'startDate' | 'endDate' | 'startTime' | 'endTime'
 > & { address: Pick<Job['address'], 'neighborhood'> & Partial<Pick<Job['address'], 'lat' | 'lon'>> } & Partial<
-    Pick<Job, 'dias'>
+    Pick<Job, 'dias' | 'weekdays'>
   >;
 
 interface JobTileProps {
@@ -68,8 +68,8 @@ export function JobTile({
   // U51: how far it is from the worker's home, on the photo ("1,2 km").
   const km = homeDistanceKm(useDb(), job);
   const bairro = job.address.neighborhood;
-  const dias = diasInfo(job);
-  const where = [bairro, dias && dias.short].filter(Boolean).join(' · ');
+  // U52: the days in a word ("Durante a semana", "Fim de semana", "Todos os dias").
+  const where = [bairro, job.dias || job.weekdays?.length ? daysText(job) : null].filter(Boolean).join(' · ');
   const when = whenText(job);
   const distance = km === null ? null : formatKm(km);
   const label = [

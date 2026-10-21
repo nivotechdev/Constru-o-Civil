@@ -2223,3 +2223,33 @@ editar em Editar perfil; tirar o "Usar minha localização atual" do cadastro e 
 - **Banco** (migration `u51`, **produção só com "pode"**): `addresses` + `set_my_address`; `finish_sign_up` aceita
   `p.address` (o formato antigo segue valendo); `jobs.area_lat/area_lon` deixam de ser colunas calculadas e `area_geog`
   passa a vir deles (`SET EXPRESSION` do Postgres 17 — apagar e recriar a coluna travava o painel do Supabase).
+
+## U52 — Publicar vaga: cidade ligada ao CEP, número e tipo do local, os 7 dias, "a combinar" e o total
+
+Pedido do responsável: na vaga, a cidade como campo de texto ligado ao CEP (sem botão de escolher), com o CEP se
+preenchendo pela cidade, bairro e rua; número e tipo do local (casa, prédio, apartamento, condomínio…) opcionais; "que
+dias pode ser" com todos os dias da semana, compacto e fácil de editar, e no card uma palavra só ("Durante a semana",
+"Fim de semana", "Todos os dias"); sem data e sem horário, "data e horário a combinar"; com data e sem horário, a data e
+"horário a combinar"; e o total (diária × dias) destacado só dentro da vaga. **Agora**:
+
+- **Endereço**: o mesmo bloco do U51 (CEP e cidade lado a lado, rua, bairro, com as sugestões reais e o CEP achado pela
+  rua), mais **Número (opcional)** e **Tipo do local (opcional)** — Casa, Apartamento, Condomínio, Prédio, Comércio,
+  Outro. O número continua escondido até a aprovação (como a rua); o tipo do local todos veem. O endereço é achado no
+  mapa ao sair do passo 1 (e de novo só se mudar); editar sem mudar o endereço mantém o ponto salvo.
+- **Dias**: os sete dias numa linha (Seg … Dom), cada um liga e desliga, com atalhos "Seg a sex", "Fim de semana" e
+  "Todos", e embaixo a palavra que vai para o mural. A regra da palavra: só dias de segunda a sexta (qualquer um deles)
+  → "Durante a semana"; só sábado e/ou domingo → "Fim de semana"; os sete → "Todos os dias"; outra mistura → os dias em
+  poucas letras ("Ter e sáb", "Sex a dom"). Na vaga aparecem por extenso ("Segunda, quarta e sexta"). Vaga antiga
+  marcada "qualquer dia" continua "Qualquer dia".
+- **Data**: o U01 tinha tirado as datas (sempre "a combinar"); para o caso "com data e sem horário" pedido agora, voltou
+  **uma** data, opcional: a de início. O fim sai sozinho das diárias contadas nos dias marcados (ex.: sábado, 3 diárias,
+  sexta a domingo → até a sexta seguinte), a data tem que cair num dos dias marcados e cabe em 60 dias. Sem data, a vaga
+  fica "a combinar" como antes (e vence 30 dias depois de publicada).
+- **Card**: "Data e horário a combinar"; "Sáb, 24 out · horário a combinar"; "Data a combinar · 7h–17h"; a linha do
+  bairro leva a palavra dos dias ("Centro · Durante a semana") — o card não cresce.
+- **Total**: dentro da vaga, logo abaixo da diária, um quadro verde "Total do bico — R$ 450 · 3 diárias de R$ 150"
+  (também na coluna do computador). Não aparece no card nem quando o valor é "a combinar".
+- **Banco** (migration `u52`, **produção só com "pode"**): `jobs.weekdays` (os dias marcados) e `jobs.place_type`; o
+  `dias` antigo vira o resumo dos dias marcados, calculado no servidor — os filtros "Durante a semana"/"Fim de semana"
+  do mural e as vagas antigas seguem iguais. Hoje/Amanhã e o lembrete de presença olham os dias marcados; mudar os dias
+  ou o tipo do local avisa os candidatos.

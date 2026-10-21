@@ -169,6 +169,9 @@ export interface HomeAddress extends GeoPoint {
   precision: PlacePrecision;
 }
 
+/** U52: the kind of place of a job. */
+export type PlaceType = 'casa' | 'apartamento' | 'condominio' | 'predio' | 'comercio' | 'outro';
+
 /** Where the job is. Before approval the worker sees only the neighbourhood and city (L19). */
 export interface JobAddress extends GeoPoint {
   /** "03307-000" */
@@ -209,7 +212,12 @@ export interface Job {
   endTime: string | null;
   /** How many diárias (work days) the job has. */
   diarias: number;
+  /** The part of the week, as a summary ("semana", "fimdesemana", "qualquer"); kept by the database from `weekdays`. */
   dias?: DiasKey | null;
+  /** U52: the days of the week it can happen on (1 = Monday … 7 = Sunday); absent on jobs from before (see `dias`). */
+  weekdays?: number[] | null;
+  /** U52: what kind of place it is (optional; everyone sees it — the number stays hidden with the street). */
+  placeType?: PlaceType | null;
   /** Marked urgent by the company when publishing (free). */
   urgent?: boolean;
   /** Paid boost: at the top of the mural until then (ISO); `null`/absent = not boosted (B08). */

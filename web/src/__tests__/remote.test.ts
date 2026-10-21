@@ -112,7 +112,9 @@ const jobRow = (id: string, companyId: string, slots = 1) => ({
   deleted_at: null,
   area_lat: -23.56,
   area_lon: -46.65,
-  public_slug: 'slug' + id.replace(/\D/g, '').padStart(8, '2')
+  public_slug: 'slug' + id.replace(/\D/g, '').padStart(8, '2'),
+  weekdays: null,
+  place_type: null
 });
 /** A row as feed_jobs returns it (X01): the job without its exact address, plus the order keys. */
 const feedRow = (id: string, companyId: string, slots: number, rank: number) => {

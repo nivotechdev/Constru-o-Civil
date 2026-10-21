@@ -13,10 +13,23 @@ interface SelectProps {
   value?: string;
   onChange?: (value: string) => void;
   error?: string | null;
+  /** The placeholder can be chosen again (an optional field: "not said"). */
+  clearable?: boolean;
+  id?: string;
 }
 
-export function Select({ label, placeholder = 'Selecione', options = [], value = '', onChange, error }: SelectProps) {
-  const fieldId = useId();
+export function Select({
+  label,
+  placeholder = 'Selecione',
+  options = [],
+  value = '',
+  onChange,
+  error,
+  clearable = false,
+  id
+}: SelectProps) {
+  const autoId = useId();
+  const fieldId = id || autoId;
   return (
     <div className="flex flex-col gap-1.5 w-full">
       {label ? (
@@ -36,12 +49,12 @@ export function Select({ label, placeholder = 'Selecione', options = [], value =
           id={fieldId}
           className={cx(
             'flex-1 min-w-0 h-11 bg-transparent outline-none text-base appearance-none pr-6 cursor-pointer',
-            value ? 'text-concrete-900' : 'text-concrete-400'
+            value ? 'text-concrete-900' : 'text-concrete-500'
           )}
           value={value}
           onChange={(e) => onChange && onChange(e.target.value)}
         >
-          <option value="" disabled>
+          <option value="" disabled={!clearable}>
             {placeholder}
           </option>
           {options.map((opt) => {

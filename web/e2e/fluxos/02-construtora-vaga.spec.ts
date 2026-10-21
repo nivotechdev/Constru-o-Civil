@@ -73,17 +73,26 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).not.toHaveURL(/completar-perfil/);
 
-  // Publicar a vaga (U01 — passo 1: foto, título, endereço sem número, dias, diárias, pessoas; passo 2: valor e
-  // descrição). Sem ofício, sem datas (sempre a combinar), sem urgente, sem pagamento e sem requisitos.
+  // Publicar a vaga (U01/U52 — passo 1: foto, título, endereço pelo CEP com número e tipo do local, os dias da
+  // semana; passo 2: valor, diárias, horário, pessoas e descrição, sem data — a combinar). Sem ofício, sem urgente,
+  // sem pagamento e sem requisitos. Em Caxias do Sul, a cidade do trabalhador do fluxo 1.
   await page.goto('/criar-vaga');
   await page.locator('input[type=file]').first().setInputFiles(FOTO);
   // O título é obrigatório: sem ele, não passa do passo 1.
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(page.getByText('Dê um título para a vaga')).toBeVisible();
   await page.fill('#create-job-titulo', 'Garçom para evento E2E');
-  await page.fill('#create-job-cep', '03307000');
+  await page.fill('#create-job-cep', '95020000');
   await expect(page.getByText('Endereço encontrado')).toBeVisible();
-  await page.getByRole('radio', { name: /Qualquer dia/ }).click();
+  await expect(page.getByRole('combobox', { name: 'Cidade' })).toHaveValue('Caxias do Sul, RS');
+  await page.fill('#create-job-numero', '120');
+  await page.selectOption('#create-job-tipo', 'casa');
+  // Sem dia marcado não passa; "Fim de semana" e mais a sexta.
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await expect(page.getByText('Marque pelo menos um dia.')).toBeVisible();
+  await page.getByRole('button', { name: 'Fim de semana', exact: true }).click();
+  await page.getByRole('button', { name: 'Sex', exact: true }).click();
+  await expect(page.getByText('No mural: Sex a dom')).toBeVisible();
   await print(page, 'f2', 'publicar vaga passo 1');
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   // U02: diárias, horário e pessoas ficam no passo 2 (valor e pessoas).
@@ -102,17 +111,24 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
 
   const { data: job } = await admin()
     .from('jobs')
-    .select('city, uf, photos, oficio_id, date_to_arrange, diarias, slots, payment_method')
+    .select(
+      'city, uf, cep, number, photos, oficio_id, date_to_arrange, diarias, slots, payment_method, weekdays, dias, place_type'
+    )
     .eq('id', vaga)
     .single();
   expect(job).toMatchObject({
-    city: 'São Paulo',
-    uf: 'SP',
+    city: 'Caxias do Sul',
+    uf: 'RS',
+    cep: '95020-000',
+    number: '120',
     oficio_id: null,
     date_to_arrange: true,
     diarias: 2,
     slots: 2,
-    payment_method: null
+    payment_method: null,
+    weekdays: [5, 6, 7],
+    dias: 'qualquer',
+    place_type: 'casa'
   });
   expect(job!.photos?.length).toBe(1);
 });
@@ -128,19 +144,19 @@ test('a vaga aparece no mural do trabalhador (por cidade e por raio)', async ({ 
   // Raio: a mesma vaga pelo filtro "Até X km" (feed_jobs com p_radius_km), como o app chama.
   const worker = await comoConta(contas.trabalhador.email);
   const { data: porRaio, error } = await worker.rpc('feed_jobs', {
-    p_city: 'São Paulo',
-    p_uf: 'SP',
-    p_lat: -23.55,
-    p_lon: -46.63,
+    p_city: 'Caxias do Sul',
+    p_uf: 'RS',
+    p_lat: -29.17,
+    p_lon: -51.18,
     p_radius_km: 15
   });
   expect(error).toBeNull();
   expect((porRaio as { id: string }[]).map((j) => j.id)).toContain(vaga);
   const { data: longe } = await worker.rpc('feed_jobs', {
-    p_city: 'Caxias do Sul',
-    p_uf: 'RS',
-    p_lat: -29.17,
-    p_lon: -51.18,
+    p_city: 'São Paulo',
+    p_uf: 'SP',
+    p_lat: -23.55,
+    p_lon: -46.63,
     p_radius_km: 50
   });
   expect((longe as { id: string }[]).map((j) => j.id)).not.toContain(vaga);

@@ -10,7 +10,7 @@ import {
   validateStep2,
   type JobForm
 } from '../pages/recruiter/jobForm';
-import { lookupCep, locate, maskCEP } from '../services/address';
+import { lookupCep, maskCEP } from '../services/address';
 import type { Job } from '../types/models';
 import { addDays, dayLabel, isValidISODate, todayISO } from '../utils/dates';
 import { distanceKm, formatKm } from '../utils/geo';
@@ -151,40 +151,43 @@ describe('publish form', () => {
     street: 'Rua Serra de Bragança',
     number: '1240',
     neighborhood: 'Tatuapé',
-    dias: 'semana',
+    weekdays: [1, 2, 3, 4, 5],
     dateToArrange: false,
     startDate: '2026-10-08',
-    endDate: '2026-10-13',
-    vagas: '1'
+    diarias: '4',
+    vagas: '1',
+    valor: '200',
+    detalhe: 'Faxina completa de um apartamento de dois quartos.'
   });
 
-  it('U01: a new job asks only the title, the address without number, the days, the diárias and the people', () => {
+  it('U01/U52: a new job asks the title, the address, the days, the diárias and the people', () => {
     const fresh: JobForm = {
       ...emptyForm(),
       cep: '03307-000',
       street: 'Rua Serra de Bragança',
-      neighborhood: 'Tatuapé',
-      dias: 'semana'
+      neighborhood: 'Tatuapé'
     };
-    // Starts "a combinar", with no people, no requirement, no payment and no urgency.
-    expect([fresh.dateToArrange, fresh.vagas, fresh.requisitos, fresh.pagamento, fresh.urgente]).toEqual([
-      true,
+    // Starts "a combinar", with no day marked, no people, no requirement, no payment and no urgency.
+    expect([fresh.startDate, fresh.weekdays, fresh.vagas, fresh.requisitos, fresh.pagamento, fresh.urgente]).toEqual([
+      '',
+      [],
       '',
       [],
       null,
       false
     ]);
-    const missing = validateStep1(fresh, NOW);
+    const missing = validateStep1(fresh);
     expect(missing.titulo).toMatch(/título/);
+    expect(missing.weekdays).toMatch(/pelo menos um dia/);
     expect(validateStep2({ ...fresh, vagas: '' }).vagas).toMatch(/quantas pessoas/);
     // U23: "Quantas diárias" starts empty (no "1" to erase) and is asked.
     expect(fresh.diarias).toBe('');
     expect(validateStep2(fresh).diarias).toMatch(/quantas diárias/);
     expect(missing.number).toBeUndefined();
-    const ok = { ...fresh, titulo: '  Reboco da fachada ', vagas: '2', diarias: '1' };
-    expect(Object.values(validateStep1(ok, NOW)).filter(Boolean)).toEqual([]);
-    expect(validateStep1({ ...ok, titulo: 'x'.repeat(61) }, NOW).titulo).toMatch(/até 60/);
-    const draft = draftFromForm(ok);
+    const ok = { ...fresh, titulo: '  Reboco da fachada ', vagas: '2', diarias: '1', weekdays: [6, 7] };
+    expect(Object.values(validateStep1(ok)).filter(Boolean)).toEqual([]);
+    expect(validateStep1({ ...ok, titulo: 'x'.repeat(61) }).titulo).toMatch(/até 60/);
+    const draft = draftFromForm(ok, undefined, { lat: -23.54, lon: -46.57 });
     expect(draft).toMatchObject({
       oficioId: null,
       title: 'Reboco da fachada',
@@ -192,12 +195,20 @@ describe('publish form', () => {
       startDate: null,
       endDate: null,
       diarias: 1,
+      weekdays: [6, 7],
+      dias: 'fimdesemana',
+      placeType: null,
       slots: 2,
       requirements: [],
       urgent: false
     });
-    expect(draft.address.number).toBe('');
+    expect(draft.address).toMatchObject({ number: '', lat: -23.54, lon: -46.57 });
     expect(draft.payment).toBeUndefined();
+    // The number and the kind of place, when given.
+    expect(draftFromForm({ ...ok, number: ' 120 ', placeType: 'casa' })).toMatchObject({
+      address: { number: '120' },
+      placeType: 'casa'
+    });
     // Editing an older job keeps its trade and payment.
     expect(draftFromForm({ ...valid(), pagamento: 'dinheiro' })).toMatchObject({
       oficioId: 'limpeza',
@@ -205,28 +216,36 @@ describe('publish form', () => {
     });
   });
 
-  it('accepts a complete form and refuses past dates, end before start and bad hours', () => {
-    expect(Object.values(validateStep1(valid(), NOW)).filter(Boolean)).toEqual([]);
-    expect(validateStep1({ ...valid(), startDate: '2026-10-07' }, NOW).startDate).toMatch(/passado/);
-    expect(validateStep1({ ...valid(), endDate: '2026-10-07' }, NOW).endDate).toMatch(/depois do início/);
+  it('U52: the start date is optional; with it, the end comes from the diárias on the days marked', () => {
+    // Thursday 8 Oct, 4 diárias on weekdays: Thu, Fri, Mon, Tue → until Tuesday 13.
+    expect(Object.values(validateStep2(valid(), {}, NOW)).filter(Boolean)).toEqual([]);
+    const draft = draftFromForm(valid());
+    expect(draft).toMatchObject({ dateToArrange: false, startDate: '2026-10-08', endDate: '2026-10-13', diarias: 4 });
+    expect(validateStep2({ ...valid(), startDate: '2026-10-07' }, {}, NOW).startDate).toMatch(/passado/);
+    // A Saturday when only weekdays are marked.
+    expect(validateStep2({ ...valid(), startDate: '2026-10-10' }, {}, NOW).startDate).toMatch(/sábado/);
+    // More diárias than fit in 60 days.
+    expect(
+      validateStep2({ ...valid(), weekdays: [7], startDate: '2026-10-11', diarias: '20' }, {}, NOW).startDate
+    ).toMatch(/passam de 60/);
+    // Without a date: "a combinar".
+    expect(draftFromForm({ ...valid(), startDate: '' })).toMatchObject({
+      dateToArrange: true,
+      startDate: null,
+      endDate: null
+    });
     // W08: a night shift crosses midnight; the same start and end is refused.
-    // U01: the hours are checked in step 2 (valor e pessoas).
-    expect(validateStep2({ ...valid(), startTime: '22:00', endTime: '06:00' }).periodo).toBeUndefined();
-    expect(validateStep2({ ...valid(), startTime: '07:00', endTime: '07:00' }).periodo).toMatch(/iguais/);
-    expect(validateStep2({ ...valid(), startTime: '07:00' }).periodo).toMatch(/início e o fim/);
-    expect(validateStep1({ ...valid(), cep: '0330' }, NOW).cep).toBeTruthy();
-    // Sat → Sun on weekdays only: no day fits.
-    expect(validateStep1({ ...valid(), startDate: '2026-10-10', endDate: '2026-10-11' }, NOW).endDate).toMatch(
-      /Nenhum dia/
-    );
+    expect(validateStep2({ ...valid(), startTime: '22:00', endTime: '06:00' }, {}, NOW).periodo).toBeUndefined();
+    expect(validateStep2({ ...valid(), startTime: '07:00', endTime: '07:00' }, {}, NOW).periodo).toMatch(/iguais/);
+    expect(validateStep2({ ...valid(), startTime: '07:00' }, {}, NOW).periodo).toMatch(/início e o fim/);
+    expect(validateStep1({ ...valid(), cep: '0330' }).cep).toBeTruthy();
   });
 
-  it('works out the diárias from the dates, and builds the draft with the address on the map', () => {
+  it('works out the diárias from what was typed, and builds the draft with the address on the map', () => {
     expect(formDiarias(valid())).toBe(4);
-    expect(formDiarias({ ...valid(), dateToArrange: true, diarias: '3' })).toBe(3);
-    const draft = draftFromForm(valid());
+    const draft = draftFromForm(valid(), undefined, { lat: -23.5407, lon: -46.5762 });
     expect(draft.address).toMatchObject({ cep: '03307-000', city: 'São Paulo', uf: 'SP', neighborhood: 'Tatuapé' });
-    expect(Math.abs(draft.address.lat + 23.54)).toBeLessThan(0.02);
+    expect(draft.address.lat).toBe(-23.5407);
     expect(draft.diarias).toBe(4);
     expect(draft.startTime).toBeNull();
   });
@@ -244,9 +263,6 @@ describe('CEP', () => {
     expect(await missing).toBeNull();
     await expect(lookupCep('123')).rejects.toThrow(/8 números/);
     vi.useRealTimers();
-    // An unknown CEP still lands in its city, near the centre.
-    const p = locate({ cep: '99999-999', street: 'Rua X', number: '1', city: 'Campinas, SP' });
-    expect(p && Math.abs(p.lat + 22.9)).toBeLessThan(0.1);
   });
 });
 
@@ -315,9 +331,8 @@ describe('W08: limits of the publish and payment forms', () => {
     expect(validateStep2({ ...base, valor: '50000' }).valor).toMatch(/até R\$ 5\.000/);
     expect(validateStep2({ ...base, detalhe: 'Reboco' }).detalhe).toMatch(/pelo menos 20/);
     expect(validateStep2({ ...base, detalhe: 'x'.repeat(1001) }).detalhe).toMatch(/até 1000/);
-    const { EXAMPLE_CEPS } = await import('../services/address');
-    const step1 = validateStep1({ ...emptyForm(), cep: EXAMPLE_CEPS[0], city: 'Recife, PE' });
-    expect(step1.cep).toMatch(/Esse CEP é de/);
+    // U52: the CEP of another city is found when the address is looked up (address.test.ts › resolveAddress).
+    expect(validateStep1({ ...emptyForm(), city: 'Cidade Inventada, ZZ' }).city).toMatch(/na lista/);
     const card = { name: 'ANA SILVA', expiry: '12/39', cvv: '123' };
     expect(validateCard({ ...card, number: '378282246310005' }).number).toBeUndefined();
     expect(validateCard({ ...card, number: '4111 1111 1111' }).number).toMatch(/15 a 19/);

@@ -263,6 +263,8 @@ export function jobFromRow(row: TableRow<'jobs'>): Job {
   setIf(job, 'payment', row.payment_method);
   setIf(job, 'paymentNote', row.payment_note);
   setIf(job, 'publicSlug', row.public_slug);
+  setIf(job, 'weekdays', row.weekdays);
+  setIf(job, 'placeType', row.place_type);
   return job;
 }
 
@@ -324,6 +326,8 @@ export function jobToRow(job: Job, deletedAt: string | null = null): TableInsert
     end_time: job.endTime,
     diarias: job.diarias,
     dias: job.dias ?? null,
+    weekdays: job.weekdays ?? null,
+    place_type: job.placeType ?? null,
     urgent: Boolean(job.urgent),
     boost_ends_at: job.boostEndsAt ?? null,
     photos: job.photos ?? null,

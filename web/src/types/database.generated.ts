@@ -746,6 +746,8 @@ export type Database = {
           hidden_reason: string | null;
           public_slug: string;
           last_day: string | null;
+          weekdays: number[] | null;
+          place_type: string | null;
         };
         Insert: {
           id?: string;
@@ -789,6 +791,8 @@ export type Database = {
           hidden_reason?: string | null;
           public_slug?: string;
           last_day?: never;
+          weekdays?: number[] | null;
+          place_type?: string | null;
         };
         Update: {
           id?: string;
@@ -832,6 +836,8 @@ export type Database = {
           hidden_reason?: string | null;
           public_slug?: string;
           last_day?: never;
+          weekdays?: number[] | null;
+          place_type?: string | null;
         };
         Relationships: [
           {

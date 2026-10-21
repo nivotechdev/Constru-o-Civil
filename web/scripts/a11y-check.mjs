@@ -36,7 +36,7 @@ for (const [who, email, pages] of [
   [
     'r',
     'empresa@bicos.demo',
-    ['/minhas-vagas', '/publicar', '/pagamentos', '/empresa', '/empresa/editar', '/configuracoes']
+    ['/minhas-vagas', '/criar-vaga', '/pagamentos', '/empresa', '/empresa/editar', '/configuracoes']
   ]
 ]) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });

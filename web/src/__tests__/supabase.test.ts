@@ -90,6 +90,8 @@ function stored(inserts: ReturnType<typeof databaseToInserts>): DatabaseRows {
       area_lat: 0,
       area_lon: 0,
       ...r,
+      weekdays: r.weekdays ?? null,
+      place_type: r.place_type ?? null,
       id: r.id ?? '',
       // The database fills it (L10); demo jobs have none, and the round trip keeps it that way.
       public_slug: r.public_slug as string

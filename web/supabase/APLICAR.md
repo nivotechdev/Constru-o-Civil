@@ -679,6 +679,21 @@ select bool_and(st_distance(area_geog, st_setsrid(st_makepoint(lon, lat), 4326):
   from public.jobs;                                                                                     -- true (ou null sem vagas)
 ```
 
+### 58. `20261021000700_u52_dias_e_local.sql` (U52)
+
+A vaga passa a guardar os dias da semana marcados um a um (`jobs.weekdays`, 1 = segunda … 7 = domingo) e o tipo do
+local (`jobs.place_type`, opcional: casa, apartamento, condomínio, prédio, comércio, outro). `jobs.dias` continua como o
+resumo dos dias marcados (os filtros do mural e as vagas antigas não mudam). Troca `job_from_draft`, `publish_job`,
+`update_job` (avisa os candidatos se os dias ou o tipo do local mudarem), `job_runs_on` (Hoje/Amanhã e o lembrete de
+presença seguem os dias marcados), o gatilho que zera a presença, `feed_jobs` e `public_job_card` (mandam os dois
+campos). Só acrescenta colunas; não apaga nada.
+
+```sql
+select count(*) from information_schema.columns
+ where table_name = 'jobs' and column_name in ('weekdays', 'place_type');  -- 2
+select prosrc like '%weekdays%' from pg_proc where proname = 'job_runs_on';  -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

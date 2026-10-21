@@ -37,9 +37,9 @@ describe('editing a job', () => {
     const job = { ...m.store.getDb().jobs['BC-4821'], startDate: '2026-01-05', endDate: '2026-12-30' };
     const form = formFromJob(job);
     const now = new Date(2026, 9, 8);
-    expect(validateStep1(form, now, { originalStartDate: '2026-01-05' }).startDate).toBeUndefined();
+    expect(validateStep2(form, { originalStartDate: '2026-01-05' }, now).startDate).toBeUndefined();
     expect(
-      validateStep1({ ...form, startDate: '2026-01-06' }, now, { originalStartDate: '2026-01-05' }).startDate
+      validateStep2({ ...form, startDate: '2026-01-06' }, { originalStartDate: '2026-01-05' }, now).startDate
     ).toMatch(/passado/);
     expect(validateStep2({ ...form, vagas: '1' }, { minSlots: 2 }).vagas).toMatch(/já aprovou 2/);
   });
@@ -91,15 +91,10 @@ describe('X10: the job point when editing', () => {
     job.address = { ...job.address, lat: -23.123456, lon: -46.654321 };
     const same = draftFromForm({ ...formFromJob(job), detalhe: 'Outro texto.' }, job);
     expect([same.address.lat, same.address.lon]).toEqual([-23.123456, -46.654321]);
-    const moved = draftFromForm({ ...formFromJob(job), number: '999' }, job);
-    expect(moved.address.lat).not.toBe(-23.123456);
-    expect(moved.address.lat).not.toBe(0);
-    const nowhere = validateStep1(
-      { ...formFromJob(job), cep: '99999-999', city: 'Cidade Inventada, ZZ' },
-      new Date(),
-      {},
-      job
-    );
-    expect(nowhere.city).toMatch(/mapa/);
+    // A new number: the point the address was found at (the screen looks it up again).
+    const moved = draftFromForm({ ...formFromJob(job), number: '999' }, job, { lat: -23.54, lon: -46.57 });
+    expect([moved.address.lat, moved.address.lon]).toEqual([-23.54, -46.57]);
+    const nowhere = validateStep1({ ...formFromJob(job), cep: '99999-999', city: 'Cidade Inventada, ZZ' });
+    expect(nowhere.city).toMatch(/na lista/);
   });
 });

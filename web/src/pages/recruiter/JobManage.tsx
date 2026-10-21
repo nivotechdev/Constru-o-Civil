@@ -37,7 +37,9 @@ import type { Database, Job } from '../../types/models';
 import type { StatusBadge } from '../../types/ui';
 import { formatPay } from '../../utils/format';
 import {
-  diasInfo,
+  daysListText,
+  daysText,
+  placeTypeText,
   durationText,
   hoursText,
   paymentText,
@@ -112,7 +114,9 @@ export default function JobManage({ params }: ScreenProps) {
   const editable = state === 'aberta' || state === 'cheia';
   const hasTeam = applications.some((a) => holdsSlot(a.status));
   const status = jobStatus(db, job, state, approved, pending);
-  const dias = diasInfo(job);
+  // U52: the days marked and the kind of place.
+  const days = job.dias || job.weekdays?.length ? { word: daysText(job), list: daysListText(job) } : null;
+  const placeType = placeTypeText(job);
   const boosted = isBoosted(job);
 
   // Pay, headcount and actions are built fresh for each placement: in the page flow on phones, and in
@@ -252,7 +256,14 @@ export default function JobManage({ params }: ScreenProps) {
             <Card padding="md">
               <div className="flex flex-col gap-3.5">
                 <InfoRow icon="map-pin" main={streetText(job)} sub={`${placeText(job)} · CEP ${job.address.cep}`} />
-                {dias ? <InfoRow icon="calendar-days" main={dias.label} sub={dias.hint} /> : null}
+                {placeType ? <InfoRow icon="house" main={placeType} sub="Tipo do local" /> : null}
+                {days ? (
+                  <InfoRow
+                    icon="calendar-days"
+                    main={days.word}
+                    sub={days.list !== days.word ? days.list : undefined}
+                  />
+                ) : null}
                 <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
                 <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com o trabalhador" />
               </div>

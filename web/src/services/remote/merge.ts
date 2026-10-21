@@ -25,7 +25,7 @@ export const WORKER_COLUMNS =
   'id, name, initials, city, neighborhood, lat, lon, rating, review_count, jobs_done, novo, verified, facts, photo_url, cover_url, identity_status, bio, experiences, created_at';
 /** What anyone may read of a job (Z06): the exact address comes from get_job_addresses. */
 export const JOB_COLUMNS =
-  'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, payment_method, payment_note, public_slug, created_at, updated_at, deleted_at';
+  'id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange, start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed, sem_contratacao, description, requirements, payment_method, payment_note, public_slug, weekdays, place_type, created_at, updated_at, deleted_at';
 /** U51: the session's own address (RLS: only its own row). */
 export const ADDRESS_COLUMNS = 'account_id, cep, street, neighborhood, city, uf, lat, lon, precision, updated_at';
 export const COMPANY_COLUMNS =

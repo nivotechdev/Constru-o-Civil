@@ -1,19 +1,20 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { AddressFields } from '../../components/AddressFields';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
-import { CityPicker, LocationButton } from '../../components/CityPicker';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { JobTile } from '../../components/JobTile';
 import { PhotoManager } from '../../components/PhotoManager';
+import { Select } from '../../components/Select';
 import { Switch } from '../../components/Switch';
 import { TextArea } from '../../components/TextArea';
+import { useBusyWhile } from '../../hooks/useBusy';
 import { useDb, useScreenUI } from '../../hooks/useStore';
 import { useTextField } from '../../hooks/useTextField';
-import { EXAMPLE_CEPS, lookupCep, maskCEP, onlyDigits } from '../../services/address';
+import { resolveAddress, type AddressErrors } from '../../services/address';
 import { knownCity } from '../../services/cities';
-import { IS_DEMO } from '../../services/mode';
 import { errorMessage } from '../../services/errors';
 import { publishJob, significantChanges, updateJob } from '../../services/jobs';
 import { holdsSlot, isPending } from '../../services/applicationMachine';
@@ -21,25 +22,29 @@ import { showToast } from '../../services/toast';
 import { goBack, navigate } from '../../services/router';
 import { applicationsForJob, approvedCount, currentCompanyId, getCompany } from '../../services/selectors';
 import { resetUI } from '../../services/store';
-import type { DiasKey, Job } from '../../types/models';
+import type { GeoPoint, Job, PlaceType } from '../../types/models';
 import { cx } from '../../utils/cx';
-import { DIAS, DIAS_ORDEM } from '../../utils/jobInfo';
+import { dayLabel, todayISO } from '../../utils/dates';
+import { fold } from '../../utils/addressText';
+import { cleanWeekdays, daysText, PLACE_TYPES, WEEKDAYS } from '../../utils/jobInfo';
 import { FEATURES } from '../../services/features';
 import {
   draftFromForm,
   emptyForm,
+  formAddress,
+  formDiarias,
+  formEndDate,
   formFromJob,
   MAX_DESCRIPTION,
   MAX_TITLE,
   MIN_PAY,
+  sameAddress,
   validateStep1,
   validateStep2,
   type FieldKey,
   type FormErrors,
   type JobForm
 } from './jobForm';
-
-type CepStatus = 'idle' | 'loading' | 'found' | 'notfound' | 'error';
 
 const STEPS: { n: 1 | 2; label: string }[] = [
   { n: 1, label: 'Serviço e local' },
@@ -50,9 +55,10 @@ interface CreateJobUI {
   step: 1 | 2;
   form: JobForm;
   errors: FormErrors;
-  cepStatus: CepStatus;
-  cepError: string | null;
-  pickerOpen: boolean;
+  /** U52: finding the address on the map (leaving step 1, or publishing). */
+  locating: boolean;
+  /** The point found for the address as it is now (`key`); found again only if the address changes. */
+  located: (GeoPoint & { key: string }) | null;
   publishing: boolean;
   publishError: string | null;
 }
@@ -62,6 +68,10 @@ function digits(v: string, max: number) {
 }
 
 const hasErrors = (e: FormErrors) => Object.values(e).some(Boolean);
+
+/** The address as the map needs it, spelling aside: a new key means it has to be found again. */
+const addressKey = (f: JobForm) =>
+  [f.cep, f.city, f.street, f.neighborhood, f.number].map((x) => fold(x ?? '')).join('|');
 
 /** Publishing a new job. */
 export default function CreateJob() {
@@ -88,13 +98,14 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       ? formFromJob(job)
       : (template ?? emptyForm(knownCity(getCompany(db, currentCompanyId())?.location) ?? undefined)),
     errors: {},
-    cepStatus: 'idle',
-    cepError: null,
-    pickerOpen: false,
+    locating: false,
+    located: null,
     publishing: false,
     publishError: null
   }));
   const f = ui.form;
+  // U45: while the address is looked up or the job saved, nothing else takes a tap.
+  useBusyWhile(ui.locating || ui.publishing);
 
   // U01: each step opens from the top (the "Continuar" button is at the bottom of a long page).
   useEffect(() => {
@@ -108,110 +119,102 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
       errors: clear.length ? { ...s.errors, ...Object.fromEntries(clear.map((k) => [k, null])) } : s.errors
     }));
 
-  // The CEP fills street, neighbourhood and city as soon as its 8 digits are typed. A newer lookup (or a
-  // change to the CEP) makes the answers of older ones stale.
-  const cepSeq = useRef(0);
-  function searchCep(cep: string) {
-    const seq = ++cepSeq.current;
-    setUi({ cepStatus: 'loading', cepError: null });
-    lookupCep(cep)
-      .then((found) => {
-        if (seq !== cepSeq.current) return;
-        if (!found) {
-          setUi({ cepStatus: 'notfound' });
-          return;
-        }
-        setUi((s) => ({
-          cepStatus: 'found',
-          form: { ...s.form, street: found.street, neighborhood: found.neighborhood, city: found.city },
-          errors: { ...s.errors, cep: null, street: null, neighborhood: null, city: null }
-        }));
-      })
-      .catch((e: unknown) => {
-        if (seq === cepSeq.current) setUi({ cepStatus: 'error', cepError: errorMessage(e) });
-      });
+  /**
+   * U52: where the address is on the map — the saved point when editing an unchanged address, the one already found
+   * for this same address, or found now (CEP checked against the city and the street; a blank CEP found from the
+   * street). `null` with the problems shown on step 1.
+   */
+  async function locate(form: JobForm): Promise<{ point: GeoPoint; form: JobForm } | null> {
+    if (job && sameAddress(form, job)) return { point: { lat: job.address.lat, lon: job.address.lon }, form };
+    if (ui.located && ui.located.key === addressKey(form))
+      return { point: { lat: ui.located.lat, lon: ui.located.lon }, form };
+    const r = await resolveAddress(formAddress(form));
+    if (!r.ok) {
+      setUi((s) => ({ step: 1, errors: { ...s.errors, ...(r.errors as Partial<Record<FieldKey, string | null>>) } }));
+      return null;
+    }
+    const next = {
+      ...form,
+      cep: r.draft.cep,
+      city: r.draft.city,
+      street: r.draft.street,
+      neighborhood: r.draft.neighborhood
+    };
+    const point = { lat: r.address.lat, lon: r.address.lon };
+    setUi({ form: next, located: { ...point, key: addressKey(next) } });
+    return { point, form: next };
   }
 
-  // X10: editing, the CEP is looked up again on opening (the map point of a changed number comes from it);
-  // the street and the rest stay as saved.
-  useEffect(() => {
-    if (!job || onlyDigits(job.address.cep).length !== 8) return;
-    lookupCep(job.address.cep).catch(() => undefined);
-  }, [job]);
-
-  function onCep(v: string) {
-    const cep = maskCEP(v);
-    set({ cep }, 'cep');
-    if (onlyDigits(cep).length === 8 && onlyDigits(cep) !== onlyDigits(f.cep)) searchCep(cep);
-    else if (onlyDigits(cep).length < 8) {
-      cepSeq.current++;
-      setUi({ cepStatus: 'idle', cepError: null });
+  async function leaveStep1(): Promise<boolean> {
+    const errors = validateStep1(f);
+    if (hasErrors(errors)) {
+      setUi({ step: 1, errors });
+      return false;
+    }
+    setUi({ locating: true, publishError: null });
+    try {
+      return (await locate(f)) !== null;
+    } catch (e: unknown) {
+      setUi({ publishError: errorMessage(e) });
+      return false;
+    } finally {
+      setUi({ locating: false });
     }
   }
 
   // Step 2 opens only with step 1 complete (the same check as "Continuar"); a mistake is shown on step 1.
-  function goToStep(step: 1 | 2) {
-    if (step === 2) {
-      const errors = validateStep1(f, new Date(), limits, job);
-      if (hasErrors(errors)) {
-        setUi({ step: 1, errors });
-        return;
-      }
+  async function goToStep(step: 1 | 2) {
+    if (step === 1 || ui.step === 2) {
+      setUi({ step, errors: {} });
+      return;
     }
-    setUi({ step, errors: {} });
+    if (await leaveStep1()) setUi({ step: 2, errors: {} });
   }
 
-  function advance() {
+  async function advance() {
+    if (ui.locating || ui.publishing) return;
     if (ui.step === 1) {
-      const errors = validateStep1(f, new Date(), limits, job);
-      if (hasErrors(errors)) {
-        setUi({ errors });
-        return;
-      }
-      setUi({ step: 2, errors: {} });
+      if (await leaveStep1()) setUi({ step: 2, errors: {} });
       return;
     }
     // U02: publishing checks both steps; a mistake on step 1 sends the user back to it.
-    const first = validateStep1(f, new Date(), limits, job);
+    const first = validateStep1(f);
     const second = validateStep2(f, limits);
     if (hasErrors(first) || hasErrors(second)) {
       setUi({ errors: { ...first, ...second }, step: hasErrors(first) ? 1 : 2 });
       return;
     }
-    if (ui.publishing) return;
     setUi({ publishing: true, publishError: null });
-    const draft = draftFromForm(f, job);
-    const saving = job
-      ? updateJob(job.id, draft).then(() => {
-          resetUI(KEY);
-          showToast(warnChanges.length ? 'Vaga atualizada. Avisamos os candidatos.' : 'Vaga atualizada');
-          navigate('/vaga-gerenciar/' + job.id, { replace: true });
-        })
-      : publishJob(draft).then((id) => {
-          resetUI(KEY);
-          navigate('/vaga-publicada/' + id);
-        });
-    saving.catch((e: unknown) => setUi({ publishing: false, publishError: errorMessage(e) }));
+    try {
+      const found = await locate(f);
+      if (!found) {
+        setUi({ publishing: false });
+        return;
+      }
+      // The form as `locate` left it (the CEP found, the city as the list names it).
+      const draft = draftFromForm(found.form, job, found.point);
+      if (job) {
+        await updateJob(job.id, draft);
+        resetUI(KEY);
+        showToast(warnChanges.length ? 'Vaga atualizada. Avisamos os candidatos.' : 'Vaga atualizada');
+        navigate('/vaga-gerenciar/' + job.id, { replace: true });
+      } else {
+        const id = await publishJob(draft);
+        resetUI(KEY);
+        navigate('/vaga-publicada/' + id);
+      }
+    } catch (e: unknown) {
+      setUi({ publishing: false, publishError: errorMessage(e) });
+    }
   }
 
   // Editing a job people applied to: a new pay, date or address is told to them.
   const warnChanges =
-    job &&
-    candidates.length &&
-    !hasErrors(validateStep1(f, new Date(), limits, job)) &&
-    !hasErrors(validateStep2(f, limits))
-      ? significantChanges(job, draftFromForm(f, job))
+    job && candidates.length && !hasErrors(validateStep1(f)) && !hasErrors(validateStep2(f, limits))
+      ? significantChanges(job, draftFromForm(f, job, ui.located ?? undefined))
       : [];
-  const cepHint =
-    ui.cepStatus === 'loading'
-      ? 'Buscando o endereço…'
-      : ui.cepStatus === 'found'
-        ? 'Endereço encontrado. Confira a rua e o bairro.'
-        : ui.cepStatus === 'notfound'
-          ? 'Não achamos esse CEP. Preencha o endereço abaixo.'
-          : IS_DEMO
-            ? `Demonstração: ${EXAMPLE_CEPS.slice(0, 3).join(', ')} são encontrados.`
-            : '';
+  const end = formEndDate(f);
+  const marked = cleanWeekdays(f.weekdays);
 
   const step1 = (
     <div className="flex flex-col gap-6">
@@ -231,76 +234,45 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
         onInput={(v) => set({ titulo: v }, 'titulo')}
       />
 
-      <fieldset className="flex flex-col gap-4">
+      <fieldset className="flex flex-col gap-3">
         <legend className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500 pb-3">
           Endereço do serviço
         </legend>
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-end gap-2 max-w-[22rem]">
-            <Input
-              id="create-job-cep"
-              label="CEP"
-              placeholder="00000-000"
-              icon="map-pin"
-              inputMode="numeric"
-              mono
-              value={f.cep}
-              error={ui.errors.cep}
-              onInput={onCep}
-            />
-            {ui.cepStatus === 'error' ? (
-              <Button
-                label="Tentar de novo"
-                variant="secondary"
-                iconLeft="refresh-cw"
-                onClick={() => searchCep(f.cep)}
-              />
-            ) : null}
-          </div>
-          {ui.errors.cep ? null : ui.cepStatus === 'error' ? (
-            <FieldError message={ui.cepError || 'Não deu para buscar o CEP.'} />
-          ) : cepHint ? (
-            <span className={cx('text-sm', ui.cepStatus === 'found' ? 'text-success-500' : 'text-concrete-500')}>
-              {cepHint}
-            </span>
-          ) : null}
+        {/* U52: the city typed (with the list), linked to the CEP; the CEP fills itself from the street. */}
+        <AddressFields
+          idPrefix="create-job"
+          value={formAddress(f)}
+          errors={ui.errors as AddressErrors}
+          onChange={(patch, clear) => set(patch, ...clear)}
+        />
+        <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] gap-3 items-start">
+          <Input
+            id="create-job-numero"
+            label="Número (opcional)"
+            placeholder="Ex.: 120"
+            maxLength={10}
+            value={f.number}
+            error={ui.errors.number}
+            onInput={(v) => set({ number: v }, 'number')}
+          />
+          <Select
+            id="create-job-tipo"
+            label="Tipo do local (opcional)"
+            placeholder="Não dizer"
+            clearable
+            options={PLACE_TYPES.map((p) => ({ value: p.id, label: p.label }))}
+            value={f.placeType}
+            onChange={(v) => set({ placeType: v as PlaceType | '' }, 'placeType')}
+          />
         </div>
-        <Input
-          id="create-job-rua"
-          label="Rua"
-          placeholder="Ex.: Rua Serra de Bragança"
-          value={f.street}
-          error={ui.errors.street}
-          onInput={(v) => set({ street: v }, 'street')}
-        />
-        <Input
-          id="create-job-bairro"
-          label="Bairro"
-          placeholder="Ex.: Tatuapé"
-          value={f.neighborhood}
-          error={ui.errors.neighborhood}
-          onInput={(v) => set({ neighborhood: v }, 'neighborhood')}
-        />
-        <LocationButton title="Cidade do serviço" location={f.city} onClick={() => setUi({ pickerOpen: true })} />
-        {ui.errors.city ? <FieldError message={ui.errors.city} /> : null}
+        <span className="-mt-1 text-sm text-concrete-500">O número só aparece para quem você aprovar.</span>
       </fieldset>
 
-      <div className="flex flex-col gap-2" role="radiogroup" aria-labelledby="create-job-dias-label">
-        <span id="create-job-dias-label" className="text-sm font-semibold text-concrete-900">
-          Em que dias pode ser?
-        </span>
-        <div className="grid grid-cols-3 gap-2 max-w-[27rem]">
-          {DIAS_ORDEM.map((id) => (
-            <DiasOption
-              key={id}
-              id={id}
-              checked={f.dias === id}
-              onSelect={() => set({ dias: id }, 'dias', 'endDate')}
-            />
-          ))}
-        </div>
-        {ui.errors.dias ? <FieldError message={ui.errors.dias} /> : null}
-      </div>
+      <WeekdayPicker
+        value={marked}
+        error={ui.errors.weekdays}
+        onChange={(weekdays) => set({ weekdays }, 'weekdays', 'startDate')}
+      />
     </div>
   );
 
@@ -320,22 +292,50 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           onChange={(on) => set({ negociavel: on, valor: '' }, 'valor')}
         />
       </div>
-      {/* U01: the date is always arranged with the worker; older jobs with dates keep them as they are. */}
-      {f.dateToArrange ? (
-        <div className="flex flex-col gap-1.5">
-          <div className="w-[12.5rem]">
-            <Input
-              id="create-job-diarias"
-              label="Quantas diárias"
-              suffix="diária(s)"
-              inputMode="numeric"
-              value={f.diarias}
-              error={ui.errors.diarias}
-              onInput={(v) => set({ diarias: digits(v, 2) }, 'diarias')}
-            />
-          </div>
+      <div className="w-[12.5rem]">
+        <Input
+          id="create-job-diarias"
+          label="Quantas diárias"
+          suffix="diária(s)"
+          inputMode="numeric"
+          value={f.diarias}
+          error={ui.errors.diarias}
+          onInput={(v) => set({ diarias: digits(v, 2) }, 'diarias', 'startDate')}
+        />
+      </div>
+
+      {/* U52: the start date is optional — without it the job reads "Data e horário a combinar". */}
+      <div className="flex flex-col gap-1.5 max-w-[27rem]">
+        <div className="w-[12.5rem]">
+          <Input
+            id="create-job-data"
+            label="Data de início (opcional)"
+            type="date"
+            min={todayISO()}
+            value={f.startDate}
+            error={ui.errors.startDate}
+            onInput={(v) => set({ startDate: v }, 'startDate')}
+          />
         </div>
-      ) : null}
+        {ui.errors.startDate ? null : (
+          <span className="text-sm text-concrete-500">
+            {f.startDate && end
+              ? end === f.startDate
+                ? `Um dia só: ${dayLabel(f.startDate)}.`
+                : `De ${dayLabel(f.startDate)} até ${dayLabel(end)} (${formDiarias(f)} diárias nos dias marcados).`
+              : 'Sem data, a vaga fica com a data a combinar.'}
+          </span>
+        )}
+        {f.startDate ? (
+          <button
+            type="button"
+            className="self-start h-9 px-3 -ml-3 rounded-full text-sm font-semibold text-brand-600 hover:bg-brand-50"
+            onClick={() => set({ startDate: '' }, 'startDate')}
+          >
+            Tirar a data (a combinar)
+          </button>
+        ) : null}
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-semibold text-concrete-900">Horário (opcional)</span>
@@ -404,10 +404,10 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
               oficioId: f.oficioId || null,
               title: f.titulo.trim() || null,
               address: { neighborhood: f.neighborhood.trim() || 'Bairro' },
-              dias: f.dias,
-              dateToArrange: f.dateToArrange,
-              startDate: f.dateToArrange ? null : f.startDate || null,
-              endDate: f.dateToArrange ? null : f.endDate || null,
+              weekdays: marked,
+              dateToArrange: !f.startDate,
+              startDate: f.startDate || null,
+              endDate: end || null,
               startTime: f.startTime || null,
               endTime: f.endTime || null,
               pay: f.negociavel || !f.valor ? null : parseInt(f.valor, 10),
@@ -441,7 +441,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
                   'flex-1 min-w-0 h-10 flex items-center justify-center gap-2 px-2 rounded-full text-sm font-bold transition-colors',
                   selected ? 'bg-concrete-0 text-brand-600 shadow-card' : 'text-concrete-500'
                 )}
-                onClick={() => goToStep(step.n)}
+                onClick={() => void goToStep(step.n)}
               >
                 <span
                   className={cx(
@@ -471,8 +471,8 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           label={ui.step === 1 ? 'Continuar' : job ? 'Salvar alterações' : 'Publicar vaga'}
           size="lg"
           fullWidth
-          loading={ui.publishing}
-          onClick={advance}
+          loading={ui.locating || ui.publishing}
+          onClick={() => void advance()}
         />
         {job ? null : (
           <span className="text-center text-xs text-concrete-500">
@@ -480,47 +480,84 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           </span>
         )}
       </div>
-      <CityPicker
-        open={ui.pickerOpen}
-        title="Cidade do serviço"
-        value={f.city}
-        stateKey={KEY + '-city'}
-        onChoose={(city) => {
-          set({ city }, 'city');
-          setUi({ pickerOpen: false });
-        }}
-        onClose={() => setUi({ pickerOpen: false })}
-      />
     </div>
   );
 }
 
-function DiasOption({ id, checked, onSelect }: { id: DiasKey; checked: boolean; onSelect: () => void }) {
-  const d = DIAS[id];
+/**
+ * U52: "Em que dias pode ser?" — the seven days in one row, each a toggle, with shortcuts for the usual choices and
+ * the word the mural card will show ("Durante a semana", "Fim de semana", "Todos os dias").
+ */
+function WeekdayPicker({
+  value,
+  error,
+  onChange
+}: {
+  value: number[];
+  error?: string | null;
+  onChange: (days: number[]) => void;
+}) {
+  const toggle = (n: number) =>
+    onChange(value.includes(n) ? value.filter((d) => d !== n) : cleanWeekdays([...value, n]));
+  const shortcuts: { label: string; days: number[] }[] = [
+    { label: 'Seg a sex', days: [1, 2, 3, 4, 5] },
+    { label: 'Fim de semana', days: [6, 7] },
+    { label: 'Todos', days: [1, 2, 3, 4, 5, 6, 7] }
+  ];
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={checked ? 'true' : 'false'}
-      aria-label={`${d.label}: ${d.hint}`}
-      className={cx(
-        'relative flex flex-col items-center justify-center gap-0.5 min-h-[4.5rem] px-2 py-2.5 rounded-card border text-center transition-colors',
-        checked
-          ? 'bg-brand-50 border-brand-500 ring-1 ring-brand-500'
-          : 'bg-concrete-0 border-concrete-300 hover:bg-concrete-50'
-      )}
-      onClick={onSelect}
-    >
-      {checked ? (
-        <span className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand-500">
-          <Icon name="check" size={11} color="#fff" />
-        </span>
-      ) : null}
-      <span className={cx('text-sm font-bold leading-tight', checked ? 'text-brand-600' : 'text-concrete-900')}>
-        {d.pick}
-      </span>
-      <span className="text-xs text-concrete-500">{d.pickSub}</span>
-    </button>
+    <fieldset className="flex flex-col gap-2.5 max-w-[27rem]">
+      <legend className="text-sm font-semibold text-concrete-900 pb-2">Em que dias pode ser?</legend>
+      <div className="grid grid-cols-7 gap-1.5">
+        {WEEKDAYS.map((d) => {
+          const on = value.includes(d.n);
+          return (
+            <button
+              key={d.n}
+              type="button"
+              aria-pressed={on ? 'true' : 'false'}
+              className={cx(
+                'h-11 rounded-xl border text-sm font-semibold transition-colors outline-none focus-visible:ring-4 focus-visible:ring-brand-100',
+                on
+                  ? 'bg-brand-500 border-brand-500 text-white'
+                  : error
+                    ? 'bg-concrete-0 border-danger-500 text-concrete-700'
+                    : 'bg-concrete-0 border-concrete-300 text-concrete-700 hover:bg-concrete-50'
+              )}
+              onClick={() => toggle(d.n)}
+            >
+              {d.short}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {shortcuts.map((s) => {
+          const on = value.length === s.days.length && s.days.every((d) => value.includes(d));
+          return (
+            <button
+              key={s.label}
+              type="button"
+              aria-pressed={on ? 'true' : 'false'}
+              className={cx(
+                'h-8 px-3 rounded-full border text-xs font-semibold transition-colors',
+                on
+                  ? 'bg-brand-50 border-brand-200 text-brand-700'
+                  : 'bg-concrete-0 border-concrete-200 text-concrete-700 hover:bg-concrete-50'
+              )}
+              onClick={() => onChange(s.days)}
+            >
+              {s.label}
+            </button>
+          );
+        })}
+        {value.length ? (
+          <span className="ml-auto text-sm text-concrete-500" aria-live="polite">
+            {`No mural: ${daysText({ weekdays: value })}`}
+          </span>
+        ) : null}
+      </div>
+      {error ? <FieldError message={error} /> : null}
+    </fieldset>
   );
 }
 
