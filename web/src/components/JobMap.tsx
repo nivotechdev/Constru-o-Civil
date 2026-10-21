@@ -1,34 +1,29 @@
-// U53/U54: "Onde vai ser" — the job's place and where the worker is (the phone's position when the person allows it,
-// otherwise their saved address), the road between them and its real length and time (a driving route, as Google Maps
-// writes it), on a clean map one finger moves. "Abrir no Google Maps" opens the same route in the app or the site.
-// The map (Leaflet) is a separate chunk that loads only when the section comes near the screen.
+// U53/U54/U57: "Onde vai ser" — the job's place and the worker's home (the address saved in their profile, never the
+// phone's position), the road between them and its real length and time (a driving route, as Google Maps writes it).
+// The picture is still; one button opens it full screen, where it moves. The map (Leaflet) is a separate chunk that
+// loads only when the section comes near the screen.
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { GeoPoint } from '../types/models';
 import { distanceKm, formatKm } from '../utils/geo';
 import { drivingRoute, formatDriveTime, formatRoadKm, type DrivingRoute } from '../services/route';
 import { useModal } from '../hooks/useModal';
+import { navigate } from '../services/router';
 import { Icon } from './icons/Icon';
 
 const MapCanvas = lazy(() => import('./MapCanvas'));
 
-type Origin = { point: GeoPoint; from: 'aqui' | 'casa' } | null;
-type Gps = 'idle' | 'asking' | 'denied' | 'error';
 type Road = { key: string; route: DrivingRoute | null } | null;
 
-function askPosition(): Promise<GeoPoint> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error('sem gps'));
-    navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
-      reject,
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
-    );
-  });
-}
+type Props = {
+  job: GeoPoint;
+  place: string;
+  /** The address saved in the worker's profile — the only starting point there is. */
+  home: GeoPoint | null;
+  /** A worker without a saved address is told where to put it. */
+  askHome?: boolean;
+};
 
-export function JobMap({ job, place, home }: { job: GeoPoint; place: string; home: GeoPoint | null }) {
-  const [here, setHere] = useState<GeoPoint | null>(null);
-  const [gps, setGps] = useState<Gps>('idle');
+export function JobMap({ job, place, home, askHome = false }: Props) {
   const [visible, setVisible] = useState(false);
   const [road, setRoad] = useState<Road>(null);
   const [open, setOpen] = useState(false);
@@ -49,21 +44,6 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
     return () => io.disconnect();
   }, []);
 
-  // Where the person is now, without asking again if they already allowed it.
-  useEffect(() => {
-    let off = false;
-    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions;
-    perms
-      ?.query({ name: 'geolocation' as PermissionName })
-      .then((s) => {
-        if (s.state === 'granted' && !off) return askPosition().then((p) => !off && setHere(p));
-      })
-      .catch(() => undefined);
-    return () => {
-      off = true;
-    };
-  }, []);
-
   // The full-screen map holds the page still behind it.
   useEffect(() => {
     if (!open) return;
@@ -74,24 +54,14 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
     };
   }, [open]);
 
-  function locate() {
-    setGps('asking');
-    askPosition()
-      .then((p) => {
-        setHere(p);
-        setGps('idle');
-      })
-      .catch((e: GeolocationPositionError | Error) => setGps('code' in e && e.code === 1 ? 'denied' : 'error'));
-  }
-
-  const origin: Origin = here ? { point: here, from: 'aqui' } : home ? { point: home, from: 'casa' } : null;
-  const key = origin ? `${origin.point.lat.toFixed(5)},${origin.point.lon.toFixed(5)}>${job.lat},${job.lon}` : '';
+  const origin = home;
+  const key = origin ? `${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}>${job.lat},${job.lon}` : '';
 
   // The road from the origin to the job (the real distance and time); no answer leaves the straight line.
   useEffect(() => {
     if (!origin || !visible) return;
     const ctl = new AbortController();
-    drivingRoute(origin.point, job, ctl.signal).then((route) => !ctl.signal.aborted && setRoad({ key, route }));
+    drivingRoute(origin, job, ctl.signal).then((route) => !ctl.signal.aborted && setRoad({ key, route }));
     return () => ctl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, visible]);
@@ -99,31 +69,38 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
   const answered = road !== null && road.key === key;
   const route = answered ? road.route : null;
   const calculating = Boolean(origin) && !answered;
-  const straightKm = origin ? distanceKm(origin.point, job) : null;
-  const who = origin?.from === 'aqui' ? 'Você está a' : 'A';
-  const whereFrom = origin?.from === 'aqui' ? 'do bico' : 'da sua casa';
+  const straightKm = origin ? distanceKm(origin, job) : null;
 
   const distanceLine = origin ? (
     <div className="text-concrete-900" aria-live="polite">
       {route ? (
         <span>
-          {who} <strong className="font-bold">{formatRoadKm(route.meters)}</strong> {whereFrom}
+          A <strong className="font-bold">{formatRoadKm(route.meters)}</strong> da sua casa
           <span className="text-concrete-700"> · {formatDriveTime(route.seconds)} de carro</span>
         </span>
       ) : calculating ? (
         <span className="text-concrete-700">Calculando o caminho…</span>
       ) : straightKm !== null ? (
-        <span className="text-concrete-700">
-          {who} cerca de {formatKm(straightKm)} {whereFrom} (em linha reta).
-        </span>
+        <span className="text-concrete-700">A cerca de {formatKm(straightKm)} da sua casa (em linha reta).</span>
       ) : null}
+    </div>
+  ) : askHome ? (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-concrete-700">
+      <span>Para ver a distância e o tempo até aqui, cadastre o seu endereço.</span>
+      <button
+        type="button"
+        className="font-bold text-brand-700 underline underline-offset-2 rounded outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
+        onClick={() => navigate('/perfil/editar')}
+      >
+        Cadastrar endereço
+      </button>
     </div>
   ) : null;
   const canvas = (mode: 'static' | 'full') => (
     <Suspense fallback={<MapLoading />}>
       <MapCanvas
         job={job}
-        origin={origin?.point ?? null}
+        origin={origin}
         path={route?.path ?? null}
         mode={mode}
         onExpand={() => setOpen(true)}
@@ -147,24 +124,6 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
         {visible ? canvas('static') : <MapLoading />}
       </div>
       {distanceLine}
-      {here ? null : (
-        <button
-          type="button"
-          className="self-start inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-control border border-concrete-300 bg-concrete-0 text-sm font-bold text-concrete-900 hover:bg-concrete-50 disabled:opacity-60"
-          disabled={gps === 'asking'}
-          onClick={locate}
-        >
-          <Icon name="locate-fixed" size={18} />
-          {gps === 'asking' ? 'Achando você…' : 'Mostrar onde estou'}
-        </button>
-      )}
-      {gps === 'denied' ? (
-        <span className="text-sm text-concrete-600">
-          O navegador não liberou a localização. Toque no cadeado ao lado do endereço do site para permitir.
-        </span>
-      ) : gps === 'error' ? (
-        <span className="text-sm text-concrete-600">Não deu para achar onde você está agora.</span>
-      ) : null}
       {open ? (
         <div
           ref={modal}

@@ -50,7 +50,7 @@ interface JobTileProps {
 
 /**
  * Mural tile, listing-style: a rounded photo with the save flag (or a corner button) on top, and compact
- * single-line rows underneath (role; neighbourhood with the distance from home in a highlighted pill; the hours; pay) — no
+ * single-line rows underneath (role; neighbourhood · distance from home in the brand colour; the hours; pay) — no
  * card chrome; on the photo only the candidacy status (U35, "Minhas candidaturas"). Every row truncates, so all tiles in a grid are exactly the
  * same size whatever their content.
  */
@@ -138,16 +138,18 @@ export function JobTile({
           <div className="pt-1.5">{footer}</div>
         ) : (
           <>
-            <span className="flex items-center gap-2 min-w-0 text-concrete-500">
+            <span className="flex items-baseline min-w-0 text-concrete-600">
               <span className="truncate min-w-0">{bairro}</span>
               {distance ? (
-                <span className="shrink-0 inline-flex items-center gap-1 h-5 sm:h-6 px-2 rounded-full bg-brand-50 text-brand-700 text-[0.6875rem] sm:text-xs font-bold whitespace-nowrap">
-                  <Icon name="navigation" size={11} />
-                  {distance}
-                </span>
+                <>
+                  <span aria-hidden="true" className="shrink-0 px-1.5 text-concrete-400">
+                    ·
+                  </span>
+                  <span className="shrink-0 font-semibold text-brand-700 whitespace-nowrap">{distance}</span>
+                </>
               ) : null}
             </span>
-            <span className="truncate text-concrete-500">{when}</span>
+            <span className="truncate text-concrete-600">{when}</span>
             <span className={cx('truncate pt-0.5', muted ? 'text-concrete-500' : 'text-concrete-900')}>
               {job.pay == null ? (
                 <span className="font-semibold">A combinar</span>

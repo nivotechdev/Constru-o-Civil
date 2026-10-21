@@ -2331,3 +2331,13 @@ minimalistas. **Agora**:
   sai e fica só o horário (`tileWhenText`: "7h–17h"; com data marcada, "Hoje · 7h–17h"; sem nada, "Horário a combinar"
   para os cards terem a mesma altura); a bandeira de distância sai de cima da foto e vira uma pílula azul-clara com o
   ícone, ao lado do bairro (a distância é a da casa da pessoa, como no U51).
+
+## U57 — O mapa usa só o endereço do perfil; descrição do card mais limpa
+
+- **Mapa**: tirada toda a leitura da localização do celular (GPS, permissão e o botão "Mostrar onde estou"). O ponto de
+  partida da distância e do caminho é só o endereço cadastrado no perfil do trabalhador (`workerHome`); o navegador não
+  pede mais a localização na vaga. Quem ainda não cadastrou o endereço vê "Cadastre o seu endereço" com um botão que
+  leva a Editar perfil; a empresa vê o mapa sem distância. O texto fica sempre "A 3,2 km da sua casa · 9 min de carro".
+- **Card**: a pílula azul saiu (pesava e brigava com a foto). Agora são quatro linhas calmas, no estilo das listas de
+  hospedagem: título; bairro e, depois de um ponto, a distância em azul da marca e negrito; o horário em cinza; o valor
+  em negrito com "por diária" em cinza. Tudo continua em uma linha cada, então os cards têm o mesmo tamanho.

@@ -269,6 +269,7 @@ export default function JobDetail({ params }: ScreenProps) {
               job={{ lat: job.address.lat, lon: job.address.lon }}
               place={exact ? fullAddressText(job) : placeText(job)}
               home={role === 'trabalhador' ? workerHome(db) : null}
+              askHome={role === 'trabalhador'}
             />
           </Section>
 
