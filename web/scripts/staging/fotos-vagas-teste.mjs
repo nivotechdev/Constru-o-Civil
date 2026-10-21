@@ -44,7 +44,7 @@ const PICKS = [];
 // recentes; pintura, desenho, acervo de museu, militar, espaço e objeto solto ficam de fora.
 const STOCK = /pexels|unsplash|pixabay|stocksnap|burst|rawpixel/i;
 const REJECT =
-  /paint(ing)? by|fresco|munch|canaletto|stonemason's yard|\(1[5-8]\d\d[-–]1[6-9]\d\d\)|drawing|illustration|engraving|lithograph|poster|museum|louvre|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|nasa|\beva\b|sts-|xbox|toy|mascot|broken|wrench|mountain|landscape|fountain|map\b|diagram|logo|recycl|demolition|ruin|construction|building site|bricklay|scaffold|rebar|hard hat/i;
+  /paint(ing)? by|fresco|munch|canaletto|stonemason's yard|\(1[5-8]\d\d[-–]1[6-9]\d\d\)|drawing|illustration|engraving|lithograph|poster|museum|louvre|archive|lccn|dpla|zentralbibliothek|library of congress|army|navy|military|soldier|seabee|dvids|air force|marine|nasa|\beva\b|sts-|xbox|toy|mascot|broken|wrench|mountain|landscape|fountain|map\b|diagram|logo|recycl|demolition|ruin|construction|building site|bricklay|scaffold|rebar|hard hat|president|secretary|minister|senator|congress|governor|working (dinner|breakfast|lunch)|19[0-6]\d/i;
 // ENSAIO=1: só lista as melhores candidatas de cada vaga, sem enviar nada.
 const DRY = process.env.ENSAIO === '1';
 
