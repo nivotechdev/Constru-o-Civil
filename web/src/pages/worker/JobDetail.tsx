@@ -14,7 +14,7 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { Rating } from '../../components/Rating';
 import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
-import { useDb, useRole, useUI, useScreenUI } from '../../hooks/useStore';
+import { useDb, useRole, useScreenUI } from '../../hooks/useStore';
 import { withdrawApplication } from '../../services/applications';
 import { loadJob } from '../../services/jobs';
 import { showToast } from '../../services/toast';
@@ -27,16 +27,12 @@ import {
   companyOf,
   currentWorker,
   getJob,
-  homeDistanceKm,
   jobState,
-  myAddress,
   unavailableText,
   workerHome
 } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
-import { FEED_KEY, feedDefaults, feedOrigin, jobDistance, originText, type FeedUI } from './feed/feedUI';
-import { formatKm } from '../../utils/geo';
 import {
   daysListText,
   fullAddressText,
@@ -63,7 +59,6 @@ export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
   const [ui, setUi] = useScreenUI<{ confirmCancel: boolean }>('job-detail:' + params.id, { confirmCancel: false });
-  const [feed] = useUI<FeedUI>(FEED_KEY, () => feedDefaults(db, role));
   const query = useQuery('job:' + params.id, () => loadJob(params.id));
   // F13: an invitation from the company to this worker.
   useQuery(role === 'trabalhador' ? 'invites:' + params.id : null, () => loadInvites({ jobId: params.id }));
@@ -94,14 +89,6 @@ export default function JobDetail({ params }: ScreenProps) {
   // U52: the days in a word ("Durante a semana") and one by one ("Segunda, quarta e sexta").
   const days = job.dias || job.weekdays?.length ? { word: daysText(job), list: daysListText(job) } : null;
   const placeType = placeTypeText(job);
-  // U51: from the worker's home (their address); an account without one measures from the mural's place, as before.
-  const fromHome = role === 'trabalhador' && myAddress(db) ? homeDistanceKm(db, job) : null;
-  const distance =
-    role !== 'trabalhador'
-      ? null
-      : fromHome !== null
-        ? `A ${formatKm(fromHome)} da sua casa`
-        : `${formatKm(jobDistance(job, feedOrigin(feed, db, role)))} ${originText(feed, db, role)}`;
   // Z06: the street and number only for the company and the worker it picked or hired.
   const exact = canSeeExactAddress(db, job) && Boolean(job.address.street);
 
@@ -260,7 +247,7 @@ export default function JobDetail({ params }: ScreenProps) {
                 <InfoRow
                   icon="map-pin"
                   main={exact ? streetText(job) : placeText(job)}
-                  sub={[exact ? placeText(job) : null, distance].filter(Boolean).join(' · ') || undefined}
+                  sub={exact ? placeText(job) : undefined}
                 />
                 {placeType ? <InfoRow icon="house" main={placeType} sub="Tipo do local" /> : null}
                 {days ? (
@@ -317,7 +304,7 @@ export default function JobDetail({ params }: ScreenProps) {
               {days ? <SummaryRow icon="calendar-days" label="Dias" value={days.list} /> : null}
               {placeType ? <SummaryRow icon="house" label="Local" value={placeType} /> : null}
               <SummaryRow icon="clock" label="Duração" value={durationText(job)} />
-              <SummaryRow icon="map-pin" label="Onde" value={[placeText(job), distance].filter(Boolean).join(' · ')} />
+              <SummaryRow icon="map-pin" label="Onde" value={placeText(job)} />
             </div>
             {actions()}
             <div className="flex items-start gap-2 text-sm text-concrete-500">

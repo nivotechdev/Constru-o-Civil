@@ -2277,3 +2277,29 @@ principal do app, nos dois temas. **Agora**:
   `https://maps.google.com`.
 - **Menu**: o item "Inscrições", a pílula ativa em `bg-brand-500` com texto branco (o mesmo azul nos dois temas) e
   todas as abas com a mesma altura e o mesmo espaçamento.
+
+## U54 — Mapa limpo e próprio, distância de carro e menu fosco
+
+Pedido do responsável: o mapa do Google embutido vinha cheio de botões e caixas do Google e a distância (em linha
+reta) não batia com a do Google Maps; queria o mapa limpo, mexer com um dedo só, a distância exata do trabalhador até
+o bico como no Google Maps, e o menu de baixo do celular meio transparente e fosco, como o do Instagram. **Agora**:
+
+- **Mapa** (`components/MapCanvas.tsx`): Leaflet com os mapas do OpenStreetMap — só o pino do bico, a bolinha azul de
+  onde a pessoa está e o caminho em azul; botões redondos de aproximar, afastar e "ver o caminho todo". Um dedo move o
+  mapa, dois dedos dão zoom. No tema escuro os mapas escurecem. O embed do Google não deixa tirar a interface dele
+  nem controlar os dedos; a API de mapas do Google exige chave e cartão de crédito no Google Cloud — se o responsável
+  quiser o mapa do próprio Google no futuro, é trocar esse arquivo e pôr a chave em `VITE_GOOGLE_MAPS_KEY`. O mapa é um
+  pedaço separado (45 KB) que só baixa quando a seção chega perto da tela.
+- **Distância** (`services/route.ts`): o caminho de carro e o tempo vêm do OSRM (gratuito, sem chave), com a posição do
+  trabalhador (GPS) ou a casa salva — o mesmo tipo de número do Google ("3,2 km · 9 min de carro"), escrito como o
+  Google escreve. Sem resposta, cai para a linha reta com "cerca de". Só as duas coordenadas saem do aparelho (nada de
+  nome nem conta). Tiramos os números de distância em linha reta da vaga (linha "Onde" e resumo) para não aparecer
+  um número diferente do mapa.
+- **"Abrir no Google Maps"** abre a mesma rota de carro no app ou no site do Google.
+- **CSP** (`public/_headers`): `img-src` ganhou `tile.openstreetmap.org`, `connect-src` ganhou `router.project-osrm.org`
+  e o `frame-src` do Google Maps saiu (não há mais iframe).
+- **Limite**: os servidores gratuitos do OpenStreetMap e do OSRM são para uso leve; com muito acesso, trocar por um
+  provedor com plano (MapTiler, Stadia, Mapbox…) é só mudar a URL dos mapas e do caminho. O número pode diferir
+  alguns metros do Google, porque os dois usam mapas de ruas e rotas próprios.
+- **Menu de baixo**: a cor da superfície a 70% sobre um desfoque do que passa por trás (`backdrop-blur-xl`), borda
+  clara e sombra suave; a aba aberta continua no azul da marca.

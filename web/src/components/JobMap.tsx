@@ -1,15 +1,19 @@
-// U53: "Onde vai ser" — the Google map of the job, inside the job page: the job's place and where the worker is (the
-// phone's position when the person allows it, otherwise their saved address), with the route between them, so the
-// distance is seen and not only read. The map moves and zooms in place; "Abrir no Google Maps" opens the route in the
-// app/site. The map is Google's embed by address (no key needed); it loads only when the section comes near the screen.
-import { useEffect, useRef, useState } from 'react';
+// U53/U54: "Onde vai ser" — the job's place and where the worker is (the phone's position when the person allows it,
+// otherwise their saved address), the road between them and its real length and time (a driving route, as Google Maps
+// writes it), on a clean map one finger moves. "Abrir no Google Maps" opens the same route in the app or the site.
+// The map (Leaflet) is a separate chunk that loads only when the section comes near the screen.
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { GeoPoint } from '../types/models';
 import { distanceKm, formatKm } from '../utils/geo';
-import { mapEmbedUrl, mapOpenUrl } from '../utils/mapUrls';
+import { mapOpenUrl } from '../utils/mapUrls';
+import { drivingRoute, formatDriveTime, formatRoadKm, type DrivingRoute } from '../services/route';
 import { Icon } from './icons/Icon';
+
+const MapCanvas = lazy(() => import('./MapCanvas'));
 
 type Origin = { point: GeoPoint; from: 'aqui' | 'casa' } | null;
 type Gps = 'idle' | 'asking' | 'denied' | 'error';
+type Road = { key: string; route: DrivingRoute | null } | null;
 
 function askPosition(): Promise<GeoPoint> {
   return new Promise((resolve, reject) => {
@@ -17,7 +21,7 @@ function askPosition(): Promise<GeoPoint> {
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
       reject,
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
     );
   });
 }
@@ -26,6 +30,7 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
   const [here, setHere] = useState<GeoPoint | null>(null);
   const [gps, setGps] = useState<Gps>('idle');
   const [visible, setVisible] = useState(false);
+  const [road, setRoad] = useState<Road>(null);
   const box = useRef<HTMLDivElement>(null);
 
   // The map loads only when the section is about to show (it is far down the page and weighs on a weak connection).
@@ -68,38 +73,60 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
   }
 
   const origin: Origin = here ? { point: here, from: 'aqui' } : home ? { point: home, from: 'casa' } : null;
-  const km = origin ? distanceKm(origin.point, job) : null;
+  const key = origin ? `${origin.point.lat.toFixed(5)},${origin.point.lon.toFixed(5)}>${job.lat},${job.lon}` : '';
+
+  // The road from the origin to the job (the real distance and time); no answer leaves the straight line.
+  useEffect(() => {
+    if (!origin || !visible) return;
+    const ctl = new AbortController();
+    drivingRoute(origin.point, job, ctl.signal).then((route) => !ctl.signal.aborted && setRoad({ key, route }));
+    return () => ctl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, visible]);
+
+  const answered = road !== null && road.key === key;
+  const route = answered ? road.route : null;
+  const calculating = Boolean(origin) && !answered;
+  const straightKm = origin ? distanceKm(origin.point, job) : null;
+  const who = origin?.from === 'aqui' ? 'Você está a' : 'A';
+  const whereFrom = origin?.from === 'aqui' ? 'do bico' : 'da sua casa';
 
   return (
     <div className="flex flex-col gap-3">
       <span className="text-concrete-700">{place}</span>
       <div
         ref={box}
-        className="relative w-full h-72 sm:h-80 rounded-2xl overflow-hidden border border-concrete-200 bg-concrete-100"
+        className="relative w-full h-80 rounded-2xl overflow-hidden border border-concrete-200 bg-concrete-100"
       >
         {visible ? (
-          <iframe
-            key={mapEmbedUrl(job, origin?.point ?? null)}
-            title={origin ? 'Mapa com o caminho até o bico' : 'Mapa de onde é o bico'}
-            src={mapEmbedUrl(job, origin?.point ?? null)}
-            className="absolute inset-0 w-full h-full border-0"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            allowFullScreen
-          />
+          <Suspense fallback={<MapLoading />}>
+            <MapCanvas
+              job={job}
+              origin={origin?.point ?? null}
+              path={route?.path ?? null}
+              label="Mapa de onde vai ser o bico. Arraste com um dedo para mover."
+            />
+          </Suspense>
         ) : (
-          <span className="absolute inset-0 flex items-center justify-center text-sm text-concrete-500">
-            Carregando o mapa…
-          </span>
+          <MapLoading />
         )}
       </div>
-      {origin && km !== null ? (
-        <span className="flex items-center gap-2 text-sm text-concrete-700">
-          <Icon name="navigation" size={16} color="var(--text-brand)" />
-          {origin.from === 'aqui'
-            ? `Você está a ${formatKm(km)} do bico (em linha reta).`
-            : `A ${formatKm(km)} da sua casa (em linha reta).`}
-        </span>
+      {origin ? (
+        <div className="flex items-center gap-2 text-concrete-900" aria-live="polite">
+          <Icon name="car" size={20} color="var(--text-brand)" />
+          {route ? (
+            <span>
+              {who} <strong className="font-bold">{formatRoadKm(route.meters)}</strong> {whereFrom}
+              <span className="text-concrete-700"> · {formatDriveTime(route.seconds)} de carro</span>
+            </span>
+          ) : calculating ? (
+            <span className="text-concrete-700">Calculando o caminho…</span>
+          ) : straightKm !== null ? (
+            <span className="text-concrete-700">
+              {who} cerca de {formatKm(straightKm)} {whereFrom} (em linha reta).
+            </span>
+          ) : null}
+        </div>
       ) : null}
       <div className="flex flex-wrap gap-2">
         <a
@@ -124,12 +151,20 @@ export function JobMap({ job, place, home }: { job: GeoPoint; place: string; hom
         )}
       </div>
       {gps === 'denied' ? (
-        <span className="text-sm text-concrete-500">
+        <span className="text-sm text-concrete-600">
           O navegador não liberou a localização. Toque no cadeado ao lado do endereço do site para permitir.
         </span>
       ) : gps === 'error' ? (
-        <span className="text-sm text-concrete-500">Não deu para achar onde você está agora.</span>
+        <span className="text-sm text-concrete-600">Não deu para achar onde você está agora.</span>
       ) : null}
     </div>
+  );
+}
+
+function MapLoading() {
+  return (
+    <span className="absolute inset-0 flex items-center justify-center text-sm text-concrete-600">
+      Carregando o mapa…
+    </span>
   );
 }

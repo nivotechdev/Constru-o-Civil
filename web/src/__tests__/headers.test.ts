@@ -76,7 +76,7 @@ describe('cabeçalhos de segurança (L08)', () => {
     const src = fileURLToPath(new URL('..', import.meta.url));
     // Links people open (WhatsApp, maps, share) are navigations, not loads: the CSP doesn't apply to them.
     const NAVIGATION =
-      /^(https:\/\/(wa\.me|api\.whatsapp\.com|waze\.com|www\.google\.com|maps\.google\.com|bicos\.nivotech\.com\.br)|https:\/\/x\.)/;
+      /^(https:\/\/(wa\.me|api\.whatsapp\.com|waze\.com|www\.google\.com|www\.openstreetmap\.org|maps\.google\.com|bicos\.nivotech\.com\.br)|https:\/\/x\.)/;
     const loads = new Set<string>();
     for (const f of sourceFiles(src)) {
       for (const m of readFileSync(f, 'utf8').matchAll(/['"`](https:\/\/[a-z0-9.-]+\.[a-z]{2,}[^'"`\s$]*)/gi))
