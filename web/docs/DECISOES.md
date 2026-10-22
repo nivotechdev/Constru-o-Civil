@@ -2341,3 +2341,20 @@ minimalistas. **Agora**:
 - **Card**: a pílula azul saiu (pesava e brigava com a foto). Agora são quatro linhas calmas, no estilo das listas de
   hospedagem: título; bairro e, depois de um ponto, a distância em azul da marca e negrito; o horário em cinza; o valor
   em negrito com "por diária" em cinza. Tudo continua em uma linha cada, então os cards têm o mesmo tamanho.
+
+## U58 — Página do bico refeita: limpa, em seções, sem repetir nada
+
+Pedido do responsável: refazer a descrição dos bicos (a página da vaga) para ficar bonita e minimalista. O que pesava:
+caixas em volta de tudo, o endereço dito duas vezes ("Onde e como" e "Onde vai ser"), o horário duas vezes (no quadro
+azul e no "7h–17h"), o quadro azul do valor com o quadro verde do total dentro, e títulos de seção em letras pequenas
+maiúsculas. **Agora**, no estilo das páginas de hospedagem:
+
+- A foto sozinha, com cantos arredondados; o **título** grande e, embaixo, bairro e cidade em cinza.
+- Linha fina; a **empresa** numa linha só (logo, nome, nota e "Ver perfil ›"), toda ela tocável.
+- Linha fina; **os fatos** em lista, ícone de linha + o fato em negrito + uma linha calma: o total do bico ("R$ 440 no
+  total" / "2 diárias de R$ 220", ou "Valor a combinar"), quando (data e horário, com os dias da semana embaixo), o
+  tipo do local e a forma de pagamento.
+- **Sobre o bico**, **O que levar** (checks azuis, sem caixa) e **Onde vai ser** (o mapa do U56/U57), cada um com um
+  título normal e separado por uma linha fina.
+- **Barra de baixo** no celular: o valor da diária ("R$ 220 / diária", e o total embaixo quando há mais de uma diária)
+  ao lado do "Quero esse bico"; depois de se inscrever, só o botão. No computador, o mesmo no quadro da direita.

@@ -4,7 +4,6 @@ import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon, type IconName } from '../../components/icons/Icon';
-import { InfoRow } from '../../components/InfoRow';
 import { JobMap } from '../../components/JobMap';
 import { Dialog } from '../../components/Modal';
 import { NotFound } from '../../components/NotFound';
@@ -38,12 +37,10 @@ import {
   fullAddressText,
   daysText,
   durationText,
-  hoursText,
   jobPayTotal,
   paymentText,
   placeText,
   placeTypeText,
-  streetText,
   whenText
 } from '../../utils/jobInfo';
 import { formatBRL } from '../../utils/format';
@@ -54,6 +51,11 @@ import { IconButton } from '../../components/IconButton';
 import { answerInvite, inviteFor, loadInvites } from '../../services/invites';
 import { FieldError } from '../../components/FieldError';
 import { SafetyMenu } from '../../components/SafetyMenu';
+
+/** The days under the date: the list when it says more than the word ("Segunda, quarta e sexta"). */
+function daysSub(days: { word: string; list: string }): string {
+  return days.list !== days.word ? days.list : days.word;
+}
 
 export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
@@ -89,6 +91,7 @@ export default function JobDetail({ params }: ScreenProps) {
   // U52: the days in a word ("Durante a semana") and one by one ("Segunda, quarta e sexta").
   const days = job.dias || job.weekdays?.length ? { word: daysText(job), list: daysListText(job) } : null;
   const placeType = placeTypeText(job);
+  const total = jobPayTotal(job);
   // Z06: the street and number only for the company and the worker it picked or hired.
   const exact = canSeeExactAddress(db, job) && Boolean(job.address.street);
 
@@ -183,27 +186,14 @@ export default function JobDetail({ params }: ScreenProps) {
             </Card>
           ) : null}
           {application ? <ApplicationStatusCard app={application} /> : null}
-          <Card padding="none">
-            <div className="relative">
-              <PhotoCarousel job={job} className="h-72 sm:h-80 lg:h-[26rem] rounded-t-card" />
-              <div className={cx('absolute z-10 left-4 -bottom-6 w-[3.75rem] h-[3.75rem] shadow-raised', AVATAR_FRAME)}>
-                <CompanyAvatar company={company} className="w-full h-full" />
-              </div>
-            </div>
-            <div className="flex items-end justify-between gap-3 pt-9 pb-4 px-4">
-              <div className="flex flex-col gap-1 min-w-0">
-                <span className="font-semibold text-concrete-900 truncate">{company.name}</span>
-                <Rating value={company.rating} count={company.reviewCount} />
-              </div>
-              <Button
-                label="Ver perfil"
-                variant="secondary"
-                size="sm"
-                iconLeft="building-2"
-                onClick={() => navigate('/construtora/' + company.id)}
-              />
-            </div>
-          </Card>
+
+          {/* U58: the photo on its own, then plain sections split by thin lines — nothing said twice. */}
+          <PhotoCarousel job={job} className="h-72 sm:h-80 lg:h-[26rem] rounded-2xl overflow-hidden" />
+
+          <header className="flex flex-col gap-1">
+            <h1 className="font-display font-bold text-[1.625rem] leading-tight text-concrete-900">{jobTitle(job)}</h1>
+            <p className="text-concrete-600">{placeText(job)}</p>
+          </header>
 
           {unavailable && role === 'trabalhador' ? (
             <div
@@ -217,53 +207,66 @@ export default function JobDetail({ params }: ScreenProps) {
               </div>
             </div>
           ) : null}
-          <div className="flex flex-col gap-1.5">
-            <h1 className="font-display font-bold text-2xl text-concrete-900">{jobTitle(job)}</h1>
-            {job.description ? <p className="text-sm text-concrete-700 leading-relaxed">{job.description}</p> : null}
+
+          <Divider />
+          <button
+            type="button"
+            className="group flex items-center gap-3 text-left rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
+            onClick={() => navigate('/construtora/' + company.id)}
+          >
+            <span className={cx('w-12 h-12 shrink-0', AVATAR_FRAME)}>
+              <CompanyAvatar company={company} className="w-full h-full" />
+            </span>
+            <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+              <span className="font-semibold text-concrete-900 truncate">{company.name}</span>
+              <Rating value={company.rating} count={company.reviewCount} />
+            </span>
+            <span className="shrink-0 inline-flex items-center gap-0.5 text-sm font-semibold text-concrete-700 group-hover:text-concrete-900">
+              Ver perfil
+              <Icon name="chevron-right" size={18} />
+            </span>
+          </button>
+
+          <Divider />
+          <div className="flex flex-col gap-5">
+            <Highlight
+              icon="wallet"
+              main={total == null ? 'Valor a combinar' : `${formatBRL(total)} no total`}
+              sub={job.pay == null ? undefined : `${durationText(job)} de ${formatBRL(job.pay)}`}
+            />
+            <Highlight icon="calendar" main={whenText(job)} sub={days ? daysSub(days) : undefined} />
+            {placeType ? <Highlight icon="house" main={placeType} sub="Tipo do local" /> : null}
+            <Highlight icon="hand-coins" main={paymentText(job)} sub="Combinado direto com a empresa" />
           </div>
 
-          <Card tone="brand" padding="md" className="lg:hidden">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-end justify-between gap-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold tracking-[0.08em] uppercase text-brand-600">Diária</span>
-                  <span className="font-mono font-bold text-4xl text-concrete-900">{formatPay(job.pay)}</span>
-                </div>
-                {/* X12: the job's own payment form. */}
-                <span className="text-sm text-concrete-700 text-right max-w-[11rem]">{paymentText(job)}</span>
-              </div>
-              <PayTotal job={job} />
-              <div className="flex items-center gap-2 pt-4 border-t border-brand-200">
-                <Icon name="calendar" size={20} color="var(--text-brand)" />
-                <span className="font-display font-semibold text-lg text-concrete-900">{whenText(job)}</span>
-              </div>
-            </div>
-          </Card>
+          {job.description ? (
+            <>
+              <Divider />
+              <Section title="Sobre o bico">
+                <p className="text-concrete-700 leading-relaxed whitespace-pre-line">{job.description}</p>
+              </Section>
+            </>
+          ) : null}
 
-          <Section title="Onde e como">
-            <Card padding="md">
-              <div className="flex flex-col gap-3.5">
-                {/* U53: the full address for everyone signed in (no longer only after the company's approval). */}
-                <InfoRow
-                  icon="map-pin"
-                  main={exact ? streetText(job) : placeText(job)}
-                  sub={exact ? placeText(job) : undefined}
-                />
-                {placeType ? <InfoRow icon="house" main={placeType} sub="Tipo do local" /> : null}
-                {days ? (
-                  <InfoRow
-                    icon="calendar-days"
-                    main={days.word}
-                    sub={days.list !== days.word ? days.list : undefined}
-                  />
-                ) : null}
-                <InfoRow icon="clock" main={hoursText(job)} sub={durationText(job)} />
-                <InfoRow icon="hand-coins" main={paymentText(job)} sub="Combinado direto com a empresa" />
-              </div>
-            </Card>
-          </Section>
+          {/* W04: nothing to bring, no empty section. */}
+          {job.requirements.length ? (
+            <>
+              <Divider />
+              <Section title="O que levar">
+                <ul className="flex flex-col gap-3">
+                  {job.requirements.map((r) => (
+                    <li key={r} className="flex gap-3 items-start text-concrete-700">
+                      <Icon name="check" size={20} color="var(--text-brand)" />
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            </>
+          ) : null}
 
-          {/* U53: the map — the job's place and where the worker is, with the route; opens in Google Maps. */}
+          <Divider />
+          {/* U53/U57: the map — the job's place and the worker's saved address, with the road between them. */}
           <Section title="Onde vai ser">
             <JobMap
               job={{ lat: job.address.lat, lon: job.address.lon }}
@@ -272,55 +275,31 @@ export default function JobDetail({ params }: ScreenProps) {
               askHome={role === 'trabalhador'}
             />
           </Section>
-
-          {/* W04: nothing to bring, no empty section. */}
-          {job.requirements.length ? (
-            <Section title="O que precisa levar">
-              <Card padding="md">
-                <div className="flex flex-col gap-3">
-                  {job.requirements.map((r) => (
-                    <div key={r} className="flex gap-2.5 items-center">
-                      <Icon name="circle-check" size={20} color="var(--green-500)" />
-                      <span className="text-concrete-700">{r}</span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </Section>
-          ) : null}
         </div>
 
         <aside className="hidden lg:block lg:sticky lg:top-28">
           <div className="flex flex-col gap-5 p-6 bg-concrete-0 rounded-2xl border border-concrete-200 shadow-float">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-bold tracking-[0.08em] uppercase text-brand-600">Diária</span>
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono font-bold text-3xl text-concrete-900">{formatPay(job.pay)}</span>
-                {job.pay == null ? null : <span className="text-concrete-500">por dia</span>}
-              </div>
-            </div>
-            <PayTotal job={job} />
-            <div className="flex flex-col rounded-xl border border-concrete-200 divide-y divide-concrete-200">
-              <SummaryRow icon="calendar" label="Quando" value={whenText(job)} />
-              {days ? <SummaryRow icon="calendar-days" label="Dias" value={days.list} /> : null}
-              {placeType ? <SummaryRow icon="house" label="Local" value={placeType} /> : null}
-              <SummaryRow icon="clock" label="Duração" value={durationText(job)} />
-              <SummaryRow icon="map-pin" label="Onde" value={placeText(job)} />
-            </div>
+            <Price job={job} total={total} large />
             {actions()}
-            <div className="flex items-start gap-2 text-sm text-concrete-500">
-              <Icon name="hand-coins" size={18} color="var(--text-subtle)" />
-              <span>{`${paymentText(job)}, combinado direto com a empresa.`}</span>
-            </div>
           </div>
         </aside>
       </div>
 
-      {role === 'trabalhador' ? (
-        <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-1.5 lg:hidden">
-          {actions()}
-        </div>
-      ) : null}
+      {/* The phone's bottom bar: the price and the one action; once applied, the action alone. */}
+      <div className="sticky bottom-0 px-4 sm:px-0 py-3 bg-concrete-0 border-t border-concrete-200 lg:hidden">
+        {role !== 'trabalhador' ? (
+          <Price job={job} total={total} />
+        ) : application || unavailable ? (
+          <div className="flex flex-col gap-1.5">{actions()}</div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <Price job={job} total={total} />
+            <div className="flex-1 min-w-0">
+              <Button label="Quero esse bico" size="lg" fullWidth onClick={() => navigate('/confirmar/' + job.id)} />
+            </div>
+          </div>
+        )}
+      </div>
 
       <Dialog
         open={ui.confirmCancel}
@@ -341,45 +320,58 @@ export default function JobDetail({ params }: ScreenProps) {
   );
 }
 
-function SummaryRow({ icon, label, value }: { icon: IconName; label: string; value: string }) {
+function Divider() {
+  return <hr className="border-0 border-t border-concrete-200" />;
+}
+
+/** One fact of the job: a line icon, the fact in bold and a quiet line under it. */
+function Highlight({ icon, main, sub }: { icon: IconName; main: string; sub?: string }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <Icon name={icon} size={18} color="var(--text-subtle)" />
-      <div className="flex flex-col min-w-0">
-        <span className="text-xs font-bold uppercase tracking-[0.06em] text-concrete-500">{label}</span>
-        <span className="text-sm font-semibold text-concrete-900 truncate">{value}</span>
-      </div>
+    <div className="flex items-start gap-4">
+      <span className="pt-0.5 shrink-0">
+        <Icon name={icon} size={24} color="var(--text-strong)" />
+      </span>
+      <span className="flex flex-col min-w-0">
+        <span className="font-semibold text-concrete-900">{main}</span>
+        {sub ? <span className="text-sm text-concrete-600">{sub}</span> : null}
+      </span>
     </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500">{title}</div>
+    <section className="flex flex-col gap-3">
+      <h2 className="font-display font-bold text-xl text-concrete-900">{title}</h2>
       {children}
-    </div>
+    </section>
   );
 }
 
 /**
- * U52: what the worker gets for the whole job ("Total do bico") — the diária times the diárias — highlighted inside
- * the job (never on the card). Nothing when the pay is to be arranged.
+ * The price as it reads at a glance: the diária big, and under it what the whole job pays (U52: the total, only inside
+ * the job). "A combinar" when the company left it open.
  */
-function PayTotal({ job }: { job: Pick<Job, 'pay' | 'diarias'> }) {
-  const total = jobPayTotal(job);
-  if (total == null || job.pay == null) return null;
-  const n = Math.max(job.diarias || 1, 1);
+function Price({
+  job,
+  total,
+  large = false
+}: {
+  job: Pick<Job, 'pay' | 'diarias'>;
+  total: number | null;
+  large?: boolean;
+}) {
   return (
-    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-success-50 border border-success-100">
-      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-concrete-0 shrink-0">
-        <Icon name="wallet" size={20} color="var(--green-500)" />
+    <div className="flex flex-col min-w-0">
+      <span className="whitespace-nowrap text-concrete-900">
+        <span className={cx('font-bold', large ? 'text-3xl' : 'text-xl')}>{formatPay(job.pay)}</span>
+        {job.pay == null ? null : <span className="text-concrete-600"> / diária</span>}
       </span>
-      <span className="flex-1 min-w-0 flex flex-col">
-        <span className="text-xs font-bold tracking-[0.08em] uppercase text-success-600">Total do bico</span>
-        <span className="text-sm text-concrete-700">{`${n === 1 ? '1 diária' : `${n} diárias`} de ${formatBRL(job.pay)}`}</span>
-      </span>
-      <span className="font-mono font-bold text-2xl text-success-600 whitespace-nowrap">{formatBRL(total)}</span>
+      {total != null && job.diarias > 1 ? (
+        <span className="text-sm text-concrete-600 whitespace-nowrap">
+          <strong className="font-semibold text-concrete-900">{formatBRL(total)}</strong> no total
+        </span>
+      ) : null}
     </div>
   );
 }
