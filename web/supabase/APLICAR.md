@@ -708,6 +708,18 @@ select has_column_privilege('anon', 'public.jobs', 'street', 'select');         
 select prosrc like '%''street''%' from pg_proc where proname = 'feed_jobs';         -- true
 ```
 
+### 60. `20261022000100_u62_empresa_sem_endereco.sql` (U62)
+
+A empresa deixa de ter endereço fixo (o endereço de cada vaga continua na vaga). `finish_sign_up` só completa o perfil
+da empresa (ignora endereço, cidade e ponto); `set_my_address` recusa conta de empresa (BC422); e **apaga** de
+`addresses` as linhas das contas de empresa (gravadas pelo U51). O trabalhador não muda. Pode ir antes ou junto com o
+front novo (o front novo não manda mais endereço de empresa).
+
+```sql
+select count(*) from public.addresses a join public.accounts c on c.id = a.account_id
+ where c.role <> 'trabalhador';  -- 0
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -15,7 +15,6 @@ import {
   idDaConta,
   linkDeConfirmacao,
   nomeDeTeste,
-  preencherEndereco,
   prepararPagina,
   print,
   whatsappDeTeste
@@ -68,7 +67,7 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
 
   await page.goto(await linkDeConfirmacao(email));
   await expect(page).toHaveURL(/\/completar-perfil\/recrutador/);
-  await preencherEndereco(page);
+  // U62: a empresa não tem endereço fixo — vai direto para capa e logo.
   await print(page, 'f2', 'empresa completa o perfil');
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).not.toHaveURL(/completar-perfil/);

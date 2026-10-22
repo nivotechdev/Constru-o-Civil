@@ -11,7 +11,6 @@ import { useAction } from '../../hooks/useAction';
 import { useDb } from '../../hooks/useStore';
 import {
   profileErrors,
-  saveMyAddress,
   saveMyProfileImages,
   updateMyCompanyProfile,
   type ProfileImages
@@ -19,13 +18,10 @@ import {
 import { goBack, navigate } from '../../services/router';
 import { FEED_KEY } from '../worker/feed/feedUI';
 import { resetUI } from '../../services/store';
-import { currentCompany, myAddress } from '../../services/selectors';
+import { currentCompany } from '../../services/selectors';
 import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
-import { ProfileAddressField } from '../../components/ProfileAddressField';
-import { useAddressEditor } from '../../hooks/useAddressEditor';
-import { draftFromAddress, knownCityLabel } from '../../services/address';
 import { AboutField } from '../../components/AboutField';
 
 function revoke(urls: (string | null | undefined)[]) {
@@ -35,8 +31,6 @@ function revoke(urls: (string | null | undefined)[]) {
 export default function EditCompanyProfile() {
   const db = useDb();
   const company = currentCompany(db);
-  // U51: the company's address (only the account sees it; the profile shows the city).
-  const address = useAddressEditor(draftFromAddress(myAddress(db), knownCityLabel(company.location) ?? ''));
   const [draft, setDraft] = useState(() => ({
     name: company.name,
     contactName: company.contactName ?? '',
@@ -61,10 +55,8 @@ export default function EditCompanyProfile() {
     async () => {
       const found = profileErrors(changes, 'recrutador');
       setErrors(found);
-      const place = await address.check();
-      if (Object.keys(found).length || place === false) throw serviceError('validacao', 'Confira os campos marcados.');
+      if (Object.keys(found).length) throw serviceError('validacao', 'Confira os campos marcados.');
       await updateMyCompanyProfile(changes);
-      if (place) await saveMyAddress(place);
       setProgress(Object.keys(images).length ? 0 : null);
       try {
         await saveMyProfileImages(images, setProgress);
@@ -168,12 +160,6 @@ export default function EditCompanyProfile() {
               </span>
             </div>
           ) : null}
-          <ProfileAddressField
-            title="Endereço da empresa"
-            help="No perfil aparece só a cidade. O mural abre nela e suas vagas novas já começam nela."
-            idPrefix="edit-company-endereco"
-            editor={address}
-          />
           <WhatsAppRow label="WhatsApp de contato" />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">

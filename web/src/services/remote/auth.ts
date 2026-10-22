@@ -307,18 +307,21 @@ export async function resendConfirmationEmail(to?: string): Promise<void> {
 }
 
 /** "Completar perfil" (U12): saves the place and lets the account into the app. */
-export async function finishSignUp(address: import('../address').ResolvedAddress): Promise<void> {
+export async function finishSignUp(address: import('../address').ResolvedAddress | null): Promise<void> {
   const client = await db();
   const { addressPayload } = await import('./address');
   // The city and the rounded point too: a database from before U51 takes only those (and still completes the profile).
+  // U62: the company sends nothing (it has no fixed address).
   await request(() =>
     client.rpc('finish_sign_up', {
-      p: {
-        address: addressPayload(address),
-        city: address.cityLabel,
-        lat: Math.round(address.lat * 100) / 100,
-        lon: Math.round(address.lon * 100) / 100
-      }
+      p: address
+        ? {
+            address: addressPayload(address),
+            city: address.cityLabel,
+            lat: Math.round(address.lat * 100) / 100,
+            lon: Math.round(address.lon * 100) / 100
+          }
+        : {}
     })
   );
   const { data } = await client.auth.getSession();

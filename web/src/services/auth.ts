@@ -341,13 +341,16 @@ const CANNOT_CHANGE_EMAIL = 'Não deu para trocar o e-mail aqui. Toque em Sair e
  * own: others see only the city. Its city is where the mural opens and where a new job starts (U13); distances to
  * the jobs are measured from it. Backend: RPC finish_sign_up.
  */
-export async function finishSignUp(address: ResolvedAddress): Promise<void> {
+export async function finishSignUp(address: ResolvedAddress | null): Promise<void> {
   if (!IS_DEMO) return remote.finishSignUp(address);
   await mockLatency(500);
   const session = getSession();
   if (!session) return;
-  const { keepAddressInDemo } = await import('./profiles');
-  keepAddressInDemo(address);
+  // U62: the company has no fixed address (each job has its own); only the worker sends one.
+  if (address && session.workerId) {
+    const { keepAddressInDemo } = await import('./profiles');
+    keepAddressInDemo(address);
+  }
   updateAccount(session.accountId, { profileCompletedAt: new Date().toISOString() });
 }
 

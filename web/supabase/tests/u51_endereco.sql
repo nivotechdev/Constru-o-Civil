@@ -43,10 +43,10 @@ select public.finish_sign_up(jsonb_build_object('address', jsonb_build_object(
   'cep', '95010-000', 'street', 'Avenida Júlio de Castilhos', 'neighborhood', 'Centro', 'city', 'Caxias do Sul',
   'uf', 'RS', 'lat', -29.1678, 'lon', -51.1794)));
 select pg_temp.logout();
-select pg_temp.ok((select location = 'Caxias do Sul, RS' from public.companies where id = '96000000-0000-0000-0000-0000000005c1')
-                  and (select profile_completed_at is not null from public.accounts where id = '96000000-0000-0000-0000-0000000005c1')
-                  and exists (select 1 from public.addresses where account_id = '96000000-0000-0000-0000-0000000005c1'),
-                  'o cadastro da empresa grava o endereço e a cidade, e completa o perfil');
+-- U62: a empresa não tem endereço fixo — o cadastro só completa o perfil.
+select pg_temp.ok((select profile_completed_at is not null from public.accounts where id = '96000000-0000-0000-0000-0000000005c1')
+                  and not exists (select 1 from public.addresses where account_id = '96000000-0000-0000-0000-0000000005c1'),
+                  'o cadastro da empresa completa o perfil sem gravar endereço');
 select pg_temp.login('96000000-0000-0000-0000-0000000005a2');
 select public.finish_sign_up('{"city":"Farroupilha, RS","lat":-29.2251,"lon":-51.3478}');
 select pg_temp.fails($$select public.finish_sign_up('{}')$$, 'BC422');

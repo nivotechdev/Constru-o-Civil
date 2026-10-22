@@ -27,7 +27,8 @@ select pg_temp.ok((select profile_completed_at is not null from public.accounts 
 select pg_temp.login('78000000-0000-0000-0000-0000000000c1');
 select public.finish_sign_up('{"city": "Caxias do Sul, RS", "lat": -29.17, "lon": -51.18}');
 select pg_temp.logout();
-select pg_temp.ok((select location = 'Caxias do Sul, RS' from public.companies where id = '78000000-0000-0000-0000-0000000000c1'),
-  'construtora: cidade das obras');
+-- U62: a empresa não tem endereço fixo — completa o perfil sem gravar cidade nem endereço.
+select pg_temp.ok((select profile_completed_at is not null from public.accounts where id = '78000000-0000-0000-0000-0000000000c1'),
+  'empresa: perfil completo sem endereço');
 
 rollback;

@@ -73,8 +73,10 @@ export default function CompleteProfile({ params }: ScreenProps) {
   );
   // U45: while the address is checked or the profile saved, nothing else takes a tap.
   useBusyWhile(ui.checking || ui.saving);
+  // U62: the company has no fixed address (each job has its own): it goes straight to the pictures.
+  const step = company ? 'fotos' : ui.step;
   // The phone's back button on the photos goes back to the address.
-  useInnerBack(ui.step === 'fotos', () => setUi({ step: 'endereco', error: null }), ui.step);
+  useInnerBack(!company && step === 'fotos', () => setUi({ step: 'endereco', error: null }), step);
 
   function checkAddress() {
     if (ui.checking) return;
@@ -88,9 +90,9 @@ export default function CompleteProfile({ params }: ScreenProps) {
   }
 
   function finish() {
-    if (ui.saving || !ui.resolved) return;
+    if (ui.saving || (!company && !ui.resolved)) return;
     setUi({ saving: true, error: null });
-    finishSignUp(ui.resolved)
+    finishSignUp(company ? null : ui.resolved)
       .then(() => savePictures(company ? { logo: ui.photo, capa: ui.capa } : { foto: ui.photo, capa: ui.capa }))
       .then(() => {
         setUi({ saving: false });
@@ -104,13 +106,13 @@ export default function CompleteProfile({ params }: ScreenProps) {
   const header = (
     <FlowBar
       title="Criar minha conta"
-      onBack={ui.step === 'fotos' ? () => setUi({ step: 'endereco', error: null }) : undefined}
+      onBack={!company && step === 'fotos' ? () => setUi({ step: 'endereco', error: null }) : undefined}
       // Y26/U41: the way out for whoever entered the wrong account, on top ("Sair").
       action={<FlowSignOut onClick={askSignOut} />}
     />
   );
 
-  if (ui.step === 'endereco')
+  if (step === 'endereco')
     return (
       <FlowLayout
         header={header}
@@ -123,8 +125,8 @@ export default function CompleteProfile({ params }: ScreenProps) {
       >
         <FlowHeading
           overline="Completar perfil"
-          title={company ? 'Endereço da empresa' : 'Seu endereço'}
-          help={company ? 'No perfil aparece só a cidade da empresa.' : 'Só você vê. Mostra a distância até cada bico.'}
+          title="Seu endereço"
+          help="Só você vê. Mostra a distância até cada bico."
         />
         <AddressFields
           idPrefix="completar-endereco"

@@ -110,7 +110,13 @@ async function walk(width, height, role) {
   await check('código enviado para o novo e-mail');
   await type('123456');
   await page.waitForTimeout(2000);
-  // U51: completing the profile is two steps — the address (also with every field marked as missing), then the photos.
+  // U51: the worker completes the profile in two steps — the address (also with every field marked as missing), then
+  // the photos. U62: the company has no fixed address and goes straight to the photos.
+  if (role === 'recrutador') {
+    await check('fotos do perfil');
+    await page.close();
+    return;
+  }
   await check('endereço');
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.waitForTimeout(400);

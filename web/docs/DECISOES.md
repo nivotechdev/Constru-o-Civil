@@ -2379,3 +2379,16 @@ Pedido do responsável: tirar o nome do bairro do card e pôr a distância no lu
 da sua casa" (a distância é a da casa cadastrada no perfil, U51/U57), sempre na mesma posição. Só quando a distância
 ainda não existe (quem não cadastrou o endereço, ou a empresa vendo as próprias vagas) a linha mostra o bairro, para o
 card não ficar com um buraco e ter a mesma altura dos outros.
+
+## U62 — A empresa não tem endereço fixo; menu do trabalhador "Início" e "Vagas"
+
+Pedido do responsável: tirar o "Endereço da empresa" do Editar perfil, do cadastro e do banco — a empresa não deve ter
+endereço fixo; e no menu do trabalhador, as seções "Início" e "Vagas".
+
+- **Cadastro da empresa**: o "Completar perfil" vai direto para capa e logo (sem o passo do endereço). **Editar
+  empresa**: sem o campo de endereço. **Banco** (`u62_empresa_sem_endereco`): `finish_sign_up` só completa o perfil da
+  empresa, `set_my_address` recusa empresa, e os endereços de empresa já gravados são apagados. O endereço de cada
+  vaga continua na própria vaga (publicar vaga não muda). O mural da empresa abre na cidade escolhida no próprio
+  mural (sem o endereço, como já era para quem não tinha). `companies.location` (cidade antiga) fica como estava.
+- **Menu do trabalhador**: "Vagas" (o mural) virou **Início**, com ícone de casa; "Inscrições" virou **Vagas**, com o
+  ícone de maleta — as vagas em que a pessoa se inscreveu. Perfil continua. (A empresa já tinha "Início" e "Vagas".)
