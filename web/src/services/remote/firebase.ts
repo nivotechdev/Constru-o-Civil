@@ -112,7 +112,9 @@ async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'se
   try {
     const answer = await invokeFunction<{ token_hash: string; conta?: boolean }>('entrar-com-firebase', { idToken });
     const client = await db();
-    const { data, error } = await client.auth.verifyOtp({ token_hash: answer.token_hash, type: 'magiclink' });
+    let { data, error } = await client.auth.verifyOtp({ token_hash: answer.token_hash, type: 'magiclink' });
+    // U64: a link of the sign-up kind (an account whose e-mail was never confirmed) is read as such, once.
+    if (error) ({ data, error } = await client.auth.verifyOtp({ token_hash: answer.token_hash, type: 'signup' }));
     if (error) throw toServiceError(error);
     const user = data.user ?? data.session?.user;
     if (!user) throw serviceError('falha_demo');

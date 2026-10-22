@@ -63,7 +63,7 @@ const box = new Map<string, string>();
 const exchanges = (fake: ReturnType<typeof fakeSupabase>) =>
   fake.calls.filter((c) => c.kind === 'function' && !(c.args as { aquecer?: boolean }).aquecer).map((c) => c.args);
 
-function server(answer: 'ok' | 'sem-conta', conta?: boolean) {
+function server(answer: 'ok' | 'sem-conta', conta?: boolean, refuseMagicLink = false) {
   return fakeSupabase({
     tables: { accounts: [], workers: [], companies: [], jobs: [], applications: [], notifications: [] },
     functions: {
@@ -78,7 +78,10 @@ function server(answer: 'ok' | 'sem-conta', conta?: boolean) {
               }
     },
     auth: {
-      verifyOtp: () => ({ data: { user: authUser('u-ana', 'ana@exemplo.com') }, error: null })
+      verifyOtp: (args: unknown) =>
+        refuseMagicLink && (args as { type: string }).type === 'magiclink'
+          ? { data: null, error: { message: 'Email link is invalid or has expired', status: 403 } }
+          : { data: { user: authUser('u-ana', 'ana@exemplo.com') }, error: null }
     }
   });
 }
@@ -101,6 +104,18 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     expect(exchanges(fake)).toEqual([{ idToken: 'firebase-token-+5554991730426' }]);
     expect(fake.calls.find((c) => c.name === 'verifyOtp')?.args).toEqual({ token_hash: 'hash-1', type: 'magiclink' });
     expect(holder.signedOut).toBeGreaterThan(0);
+  });
+
+  it('U64: a link of the sign-up kind (e-mail never confirmed) still opens the account', async () => {
+    const fake = server('ok', true, true);
+    holder.client = fake.client;
+    const firebase = await import('../services/remote/firebase');
+    await firebase.sendPhoneCode('(54) 99173-0426', {} as HTMLElement);
+    expect(await firebase.confirmPhoneCode('123456')).toBe('ok');
+    expect(fake.calls.filter((c) => c.name === 'verifyOtp').map((c) => (c.args as { type: string }).type)).toEqual([
+      'magiclink',
+      'signup'
+    ]);
   });
 
   it('a number without an account answers sem-conta and the sign-up starts with it', async () => {

@@ -2406,3 +2406,14 @@ claro que o documento pode ser CPF ou CNPJ.
   cumprimenta pelo nome único ("Olá, Ana Souza!").
 - **Banco** (`u63_um_nome_so`): sai `companies.contact_name` (F15) e o que gravava nela; o teste `f15_responsavel`
   deu lugar ao `u63_um_nome_so`.
+
+## U64 — "Continuar com o Google" no cadastro, com o e-mail de uma conta que já existe
+
+Problema: quem já tinha conta (feita por e-mail e senha) e tocava em "Continuar com o Google" no cadastro via um erro.
+O caso que deixa isso acontecer: o cadastro por e-mail cria a conta na hora, mas o login fica "não confirmado" até a
+pessoa clicar no link do e-mail; para um login assim o Supabase gera um link de outro tipo (de cadastro), que o app
+recusava (`verifyOtp` de `magiclink`). **Agora**: `entrar-com-firebase` confere se o login do e-mail está confirmado e, se
+não estiver, confirma (o Google acabou de provar que o e-mail é da pessoa) e gera o link de novo; e o app, se o link
+de entrada vier de outro tipo, tenta de novo como `signup`. O resultado: a pessoa entra na conta que já tinha, como
+no "Entrar com o Google" da tela de login. A função `entrar-com-firebase` precisa ser publicada de novo (o `staging`
+publica sozinho; produção só com "pode").

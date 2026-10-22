@@ -1,7 +1,8 @@
 // Entrar com o Google ou com o celular (U28). O Firebase Authentication faz a parte difícil no navegador — a janela do
 // Google, o código por SMS e o reCAPTCHA contra robôs — e entrega um ID token. Esta função confere o token
 // (_shared/firebase.ts) e abre a sessão da Bicos no Supabase Auth, onde ficam as contas:
-//   * Google (e-mail confirmado pelo Google): entra na conta desse e-mail; sem conta, cria o login (provedor
+//   * Google (e-mail confirmado pelo Google): entra na conta desse e-mail (U64: mesmo a que o cadastro por e-mail deixou
+//     sem confirmar — o Google prova o e-mail, e ele passa a ficar confirmado); sem conta, cria o login (provedor
 //     "google") e o app segue pelo cadastro normal, sem o passo do e-mail nem a confirmação dele (U37);
 //   * celular: entra na conta cujo WhatsApp é esse número (o SMS prova que a pessoa tem o número, e o WhatsApp da
 //     conta fica marcado como confirmado). Sem conta com o número, não cria nada: 404 { erro: 'sem-conta' } e o app
@@ -103,7 +104,16 @@ Deno.serve(
       return json({ erro: 'token-invalido' }, 401);
     }
 
-    const link = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+    let link = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+    // U64: a login whose e-mail was never confirmed (sign-up by e-mail and the link not yet clicked) gets a link of
+    // another kind, which the app's verifyOtp('magiclink') refuses — the person saw an error entering with Google on
+    // the e-mail of their own account. Google (or the SMS) just proved the person owns it: confirm it, then link again.
+    const user = link.data?.user;
+    if (!link.error && user && !user.email_confirmed_at) {
+      const confirmed = await admin.auth.admin.updateUserById(user.id, { email_confirm: true });
+      if (confirmed.error) return json({ erro: 'falha' }, 502);
+      link = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+    }
     const hash = link.data?.properties?.hashed_token;
     if (link.error || !hash) return json({ erro: 'falha' }, 502);
     return json({ token_hash: hash, novo, conta });
