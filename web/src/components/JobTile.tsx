@@ -50,7 +50,7 @@ interface JobTileProps {
 
 /**
  * Mural tile, listing-style: a rounded photo with the save flag (or a corner button) on top, and compact
- * single-line rows underneath (role; neighbourhood · distance from home in the brand colour; the hours; pay) — no
+ * single-line rows underneath (role; pin + neighbourhood · distance from home; clock + the hours; pay) — no
  * card chrome; on the photo only the candidacy status (U35, "Minhas candidaturas"). Every row truncates, so all tiles in a grid are exactly the
  * same size whatever their content.
  */
@@ -138,19 +138,25 @@ export function JobTile({
           <div className="pt-1.5">{footer}</div>
         ) : (
           <>
-            <span className="flex items-baseline min-w-0 text-concrete-600">
+            {/* U59: two quiet detail rows, each led by a small line icon — where (with how far, the one figure set
+                in bold) and when — then the pay. Grey icons, no coloured words. */}
+            <span className="mt-1 flex items-center gap-1.5 min-w-0 text-concrete-500">
+              <Icon name="map-pin" size={14} color="var(--text-subtle)" />
               <span className="truncate min-w-0">{bairro}</span>
               {distance ? (
                 <>
-                  <span aria-hidden="true" className="shrink-0 px-1.5 text-concrete-400">
+                  <span aria-hidden="true" className="shrink-0">
                     ·
                   </span>
-                  <span className="shrink-0 font-semibold text-brand-700 whitespace-nowrap">{distance}</span>
+                  <span className="shrink-0 whitespace-nowrap font-semibold text-concrete-900">{distance}</span>
                 </>
               ) : null}
             </span>
-            <span className="truncate text-concrete-600">{when}</span>
-            <span className={cx('truncate pt-0.5', muted ? 'text-concrete-500' : 'text-concrete-900')}>
+            <span className="mt-0.5 flex items-center gap-1.5 min-w-0 text-concrete-500">
+              <Icon name="clock" size={14} color="var(--text-subtle)" />
+              <span className="truncate min-w-0">{when}</span>
+            </span>
+            <span className={cx('truncate mt-1.5', muted ? 'text-concrete-500' : 'text-concrete-900')}>
               {job.pay == null ? (
                 <span className="font-semibold">A combinar</span>
               ) : (

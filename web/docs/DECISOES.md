@@ -2358,3 +2358,11 @@ maiúsculas. **Agora**, no estilo das páginas de hospedagem:
   título normal e separado por uma linha fina.
 - **Barra de baixo** no celular: o valor da diária ("R$ 220 / diária", e o total embaixo quando há mais de uma diária)
   ao lado do "Quero esse bico"; depois de se inscrever, só o botão. No computador, o mesmo no quadro da direita.
+
+## U59 — Texto do card do mural refeito
+
+O texto embaixo da foto do card (o que o responsável chama de "descrição do bico") ficou com a distância em azul (lilás
+no tema escuro) e um ponto solto. **Agora**: o título; uma linha com ícone de alfinete cinza, o bairro em cinza e,
+depois de um ponto, a distância em negrito na cor do texto ("Tatuapé · **500 m**"); uma linha com ícone de relógio
+cinza e o horário; o valor em negrito com "por diária" em cinza. Os ícones alinham as duas linhas de detalhe, sem
+palavra colorida; cada linha continua numa linha só, então os cards têm a mesma altura.
