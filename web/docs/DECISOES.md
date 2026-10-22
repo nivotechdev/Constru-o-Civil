@@ -2372,3 +2372,10 @@ palavra colorida; cada linha continua numa linha só, então os cards têm a mes
 No U59 a distância vinha logo depois do nome do bairro, então mudava de lugar conforme o tamanho do nome. Agora ela
 fica sempre alinhada à direita do card, na linha do bairro, em negrito e com números de largura fixa; o bairro ocupa o
 resto da linha e corta com "…" antes dela se for comprido. Todos os cards têm a distância na mesma posição.
+
+## U61 — O card mostra a distância no lugar do bairro
+
+Pedido do responsável: tirar o nome do bairro do card e pôr a distância no lugar. A linha do alfinete agora diz "A 500 m
+da sua casa" (a distância é a da casa cadastrada no perfil, U51/U57), sempre na mesma posição. Só quando a distância
+ainda não existe (quem não cadastrou o endereço, ou a empresa vendo as próprias vagas) a linha mostra o bairro, para o
+card não ficar com um buraco e ter a mesma altura dos outros.

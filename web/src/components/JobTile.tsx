@@ -74,8 +74,7 @@ export function JobTile({
     jobTitle(job),
     badge && badge.label,
     company && company.name,
-    bairro,
-    distance && `a ${distance} da sua casa`,
+    distance ? `a ${distance} da sua casa` : bairro,
     when
   ]
     .filter(Boolean)
@@ -138,17 +137,11 @@ export function JobTile({
           <div className="pt-1.5">{footer}</div>
         ) : (
           <>
-            {/* U59/U60: two quiet detail rows, each led by a small grey line icon — where and when — then the pay.
-                The distance always sits at the same place, flush with the card's right edge on the "where" row,
-                whatever the length of the neighbourhood's name (which truncates before it). */}
+            {/* U61: two quiet detail rows, each led by a small grey line icon — how far (from the worker's home; the
+                neighbourhood's name only when the distance is not known yet) and when — then the pay. */}
             <span className="mt-1 flex items-center gap-1.5 min-w-0 text-concrete-500">
               <Icon name="map-pin" size={14} color="var(--text-subtle)" />
-              <span className="flex-1 truncate min-w-0">{bairro}</span>
-              {distance ? (
-                <span className="shrink-0 pl-1 whitespace-nowrap font-semibold text-concrete-900 tabular-nums">
-                  {distance}
-                </span>
-              ) : null}
+              <span className="truncate min-w-0">{distance ? `A ${distance} da sua casa` : bairro}</span>
             </span>
             <span className="mt-0.5 flex items-center gap-1.5 min-w-0 text-concrete-500">
               <Icon name="clock" size={14} color="var(--text-subtle)" />
