@@ -86,12 +86,12 @@ describe('ready-made messages', () => {
   });
 });
 
-describe('F15: the company contact person', () => {
-  it('the worker greets them by first name', () => {
+describe('U63: one name for whoever hires', () => {
+  it('the worker greets them by that name', () => {
     const job = { id: 'BC-1', oficioId: 'pintor', title: null, startDate: '2026-10-12', endDate: '2026-10-12' };
-    expect(
-      workerToCompanyMessage({ workerName: 'Jorge', companyName: 'Obra', job, hired: false, contactName: 'Ana Souza' })
-    ).toMatch(/^Olá, Ana! Aqui é Jorge/);
+    expect(workerToCompanyMessage({ workerName: 'Jorge', companyName: 'Ana Souza', job, hired: false })).toMatch(
+      /^Olá, Ana Souza! Aqui é Jorge/
+    );
   });
 });
 

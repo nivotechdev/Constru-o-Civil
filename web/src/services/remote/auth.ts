@@ -225,8 +225,7 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
           documento: digits(data.doc),
           whatsapp: digits(data.whatsapp),
           terms_version: data.acceptedTermsVersion,
-          maior_de_idade: data.adult,
-          ...(data.contactName ? { responsavel: data.contactName } : {})
+          maior_de_idade: data.adult
         }
       }
     });
@@ -458,8 +457,7 @@ export async function completeGoogleSignUp(data: import('../auth').GoogleSignUpD
       p_document: digits(data.doc),
       p_whatsapp: digits(data.whatsapp),
       p_terms_version: data.acceptedTermsVersion,
-      p_adult: data.adult,
-      p_contact_name: data.contactName?.trim() || null
+      p_adult: data.adult
     })
   );
   const { data: session } = await client.auth.getSession();

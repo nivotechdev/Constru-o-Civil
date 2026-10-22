@@ -33,7 +33,6 @@ export default function EditCompanyProfile() {
   const company = currentCompany(db);
   const [draft, setDraft] = useState(() => ({
     name: company.name,
-    contactName: company.contactName ?? '',
     about: company.about ?? ''
   }));
   const [images, setImages] = useState<ProfileImages>({});
@@ -48,7 +47,6 @@ export default function EditCompanyProfile() {
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
     ...(draft.name !== company.name ? { name: draft.name } : {}),
-    ...(draft.contactName !== (company.contactName ?? '') ? { contactName: draft.contactName } : {}),
     ...(draft.about.trim() !== (company.about ?? '') ? { about: draft.about } : {})
   };
   const save = useAction(
@@ -112,7 +110,7 @@ export default function EditCompanyProfile() {
           </div>
           <Input
             id="edit-company-name"
-            label="Nome da empresa"
+            label="Seu nome ou da empresa"
             icon="building-2"
             autoComplete="organization"
             hint="É esse nome que aparece no seu perfil e nas vagas que você publicar."
@@ -133,19 +131,6 @@ export default function EditCompanyProfile() {
             onInput={(v) => {
               setDraft((d) => ({ ...d, about: v }));
               setErrors((e) => ({ ...e, about: undefined }));
-            }}
-          />
-          <Input
-            id="edit-company-contact"
-            label="Quem fala com os candidatos"
-            icon="user"
-            autoComplete="name"
-            hint='Quem você aprovar vê "Fale com" e esse nome.'
-            value={draft.contactName}
-            error={errors.contactName}
-            onInput={(v) => {
-              setDraft((d) => ({ ...d, contactName: v }));
-              setErrors((e) => ({ ...e, contactName: undefined }));
             }}
           />
           {company.cnpj ? (

@@ -2392,3 +2392,17 @@ endereço fixo; e no menu do trabalhador, as seções "Início" e "Vagas".
   mural (sem o endereço, como já era para quem não tinha). `companies.location` (cidade antiga) fica como estava.
 - **Menu do trabalhador**: "Vagas" (o mural) virou **Início**, com ícone de casa; "Inscrições" virou **Vagas**, com o
   ícone de maleta — as vagas em que a pessoa se inscreveu. Perfil continua. (A empresa já tinha "Início" e "Vagas".)
+
+## U63 — Quem contrata tem um nome só; CPF ou CNPJ claro no cadastro
+
+Pedido do responsável: o contratante tem um nome só (pessoas comuns também pedem serviço e não têm empresa), e deixar
+claro que o documento pode ser CPF ou CNPJ.
+
+- **Cadastro do contratante**: um passo de nome só — "Qual nome vai aparecer nas suas vagas?", "Pode ser o seu nome
+  ou o nome da sua empresa" (exemplo: "Ana Souza ou Padaria Bom Pão"). Saiu o passo "Quem vai falar com os
+  candidatos?". O documento: "Qual é o seu CPF ou CNPJ?", "Pessoa: CPF (11 números). Empresa: CNPJ (14 números)",
+  com o erro dizendo os dois tamanhos.
+- **Editar perfil**: "Seu nome ou da empresa"; saiu "Quem fala com os candidatos". O WhatsApp do trabalhador
+  cumprimenta pelo nome único ("Olá, Ana Souza!").
+- **Banco** (`u63_um_nome_so`): sai `companies.contact_name` (F15) e o que gravava nela; o teste `f15_responsavel`
+  deu lugar ao `u63_um_nome_so`.

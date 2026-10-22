@@ -88,8 +88,6 @@ export interface Company {
   reviewCount: number;
   verified: boolean;
   verifiedSince?: string;
-  /** F15: who talks to the candidates ("Fale com Ana"). */
-  contactName?: string;
   /** Y24: where the company's check stands (absent on old demo data: read from `verified`). */
   verification?: CompanyVerification;
   /** When it was verified (ISO). */

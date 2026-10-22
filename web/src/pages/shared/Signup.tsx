@@ -37,7 +37,7 @@ import { useGoogleSignUp } from '../../hooks/useGoogleSignUp';
 import { isValidCnpj, isValidCpf } from '../../utils/document';
 import { PasswordStrength } from '../../components/PasswordStrength';
 
-type FieldId = 'nome' | 'razao' | 'responsavel' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
+type FieldId = 'nome' | 'razao' | 'doc' | 'email' | 'whatsapp' | 'codigo' | 'senha';
 
 interface SignupField {
   id: FieldId;
@@ -124,27 +124,20 @@ const PERFIS: Record<Role, { overline: string; fields: SignupField[] }> = {
     overline: 'Cadastro de recrutador',
     fields: [
       {
+        // U63: one name only — a person who hires (no company) or the company's name.
         id: 'razao',
-        label: 'Nome da empresa',
-        question: 'Qual é o nome da empresa?',
-        help: 'É esse nome que aparece no seu perfil e nas vagas que você publicar.',
-        placeholder: 'Meridiano Construções',
-        icon: 'building-2'
-      },
-      {
-        id: 'responsavel',
-        label: 'Seu nome',
-        question: 'Quem vai falar com os candidatos?',
-        help: 'Quem você aprovar vê "Fale com" e esse nome no botão do WhatsApp.',
-        placeholder: 'Ana Souza',
+        label: 'Seu nome ou da empresa',
+        question: 'Qual nome vai aparecer nas suas vagas?',
+        help: 'Pode ser o seu nome ou o nome da sua empresa. Ele aparece no seu perfil e nas vagas.',
+        placeholder: 'Ana Souza ou Padaria Bom Pão',
         icon: 'user'
       },
       {
         id: 'doc',
-        label: 'CNPJ ou CPF',
-        question: 'Qual é o CNPJ da empresa?',
-        help: 'Trabalha por conta própria? Use seu CPF. O CPF nunca aparece no perfil; do CNPJ, só o começo.',
-        placeholder: '00.000.000/0000-00',
+        label: 'CPF ou CNPJ',
+        question: 'Qual é o seu CPF ou CNPJ?',
+        help: 'Pessoa: CPF (11 números). Empresa: CNPJ (14 números). O CPF nunca aparece no perfil.',
+        placeholder: 'CPF ou CNPJ',
         icon: 'id-card',
         mask: 'cpfCnpj',
         mono: true
@@ -199,13 +192,11 @@ function validateField(field: SignupField, values: Values, role: Role): string |
     if (v.split(/\s+/).length < 2) return 'Informe nome e sobrenome.';
     return null;
   }
-  if (field.id === 'razao') return v.length < 3 ? 'Informe o nome da empresa.' : null;
-  if (field.id === 'responsavel')
-    return v.length < 2 ? 'Escreva seu nome.' : v.length > 60 ? 'Use até 60 caracteres.' : null;
+  if (field.id === 'razao') return v.length < 3 ? 'Informe seu nome ou o nome da empresa.' : null;
   if (field.id === 'doc') {
     // Y17: the check digits too (the server refuses the same documents).
     if (role === 'recrutador')
-      return isValidCnpj(v) || isValidCpf(v) ? null : 'CNPJ ou CPF inválido. Confira os números.';
+      return isValidCnpj(v) || isValidCpf(v) ? null : 'CPF ou CNPJ inválido. CPF tem 11 números; CNPJ, 14.';
     return isValidCpf(v) ? null : 'CPF inválido. Confira os 11 números.';
   }
   if (field.id === 'email') return isValidEmail(v) ? null : 'E-mail inválido. Confira se tem @ e o domínio.';
@@ -267,11 +258,11 @@ export default function Signup({ params }: ScreenProps) {
   // document, e-mail…) is forgotten when the flow is left — except for a look at the terms.
   const [password, setPassword] = useState('');
   const values: Values = { ...ui.values, senha: password };
-  // U37: the name comes from Google (the person's: the worker's full name, the company's contact), still editable.
+  // U37: the name comes from Google (the person's: the worker's full name, the one who hires), still editable.
   const googleName = google?.name ?? '';
   useEffect(() => {
     if (!googleName) return;
-    const nameField: FieldId = role === 'trabalhador' ? 'nome' : 'responsavel';
+    const nameField: FieldId = role === 'trabalhador' ? 'nome' : 'razao';
     setUi((s) => (s.values[nameField] ? {} : { values: { ...s.values, [nameField]: googleName } }));
   }, [googleName, role, setUi]);
   useEffect(
@@ -430,8 +421,7 @@ export default function Signup({ params }: ScreenProps) {
         whatsapp: ui.values.whatsapp || '',
         password,
         acceptedTermsVersion: TERMS_VERSION,
-        adult: true,
-        ...(role === 'recrutador' ? { contactName: (ui.values.responsavel || '').trim() } : {})
+        adult: true
       },
       captcha.getToken
     )
@@ -467,8 +457,7 @@ export default function Signup({ params }: ScreenProps) {
       whatsapp: ui.values.whatsapp || '',
       password,
       acceptedTermsVersion: TERMS_VERSION,
-      adult: true,
-      ...(role === 'recrutador' ? { contactName: (ui.values.responsavel || '').trim() } : {})
+      adult: true
     })
       .then(() => {
         resetUI(key);
@@ -489,7 +478,7 @@ export default function Signup({ params }: ScreenProps) {
    */
   function refused() {
     const docStep = cfg.fields.findIndex((f) => f.id === 'doc');
-    const doc = role === 'recrutador' ? 'esse CNPJ ou CPF' : 'esse CPF';
+    const doc = role === 'recrutador' ? 'esse CPF ou CNPJ' : 'esse CPF';
     setUi((s) => ({
       submitting: false,
       step: docStep,
@@ -616,7 +605,7 @@ export default function Signup({ params }: ScreenProps) {
           inputMode={
             field.mask === 'phone' ? 'tel' : field.mask ? 'numeric' : field.type === 'email' ? 'email' : 'text'
           }
-          autoComplete={fieldAutoComplete(field, role)}
+          autoComplete={fieldAutoComplete(field)}
           onInput={setValue}
           onEnter={continueByEnter}
           autoFocus
@@ -645,12 +634,11 @@ export default function Signup({ params }: ScreenProps) {
 }
 
 /** X04: what the browser may fill in each step (documents never: it would offer someone else's). */
-function fieldAutoComplete(field: SignupField, role: Role): string | undefined {
+function fieldAutoComplete(field: SignupField): string | undefined {
   if (field.type === 'email') return 'email';
   if (field.mask === 'phone') return 'tel';
   if (field.mask) return 'off';
-  if (field.id === 'nome') return role === 'recrutador' ? 'organization' : 'name';
-  if (field.id === 'responsavel') return 'name';
+  if (field.id === 'nome') return 'name';
   return undefined;
 }
 

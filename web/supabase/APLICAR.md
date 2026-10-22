@@ -720,6 +720,18 @@ select count(*) from public.addresses a join public.accounts c on c.id = a.accou
  where c.role <> 'trabalhador';  -- 0
 ```
 
+### 61. `20261022000200_u63_um_nome_so.sql` (U63)
+
+Quem contrata tem um nome só (o da empresa ou o da própria pessoa). Os cadastros (gatilho `handle_new_user_v2` e
+`create_my_account`) não gravam mais o "responsável" e a coluna `companies.contact_name` é **apagada** (os nomes de
+responsável já gravados se perdem; o nome da empresa fica). `create_my_account` mantém o parâmetro `p_contact_name`
+(ignorado). Aplicar **junto com o front novo**: o front antigo lê `contact_name` e falharia ao ler as empresas.
+
+```sql
+select count(*) from information_schema.columns
+ where table_name = 'companies' and column_name = 'contact_name';  -- 0
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -1405,8 +1405,7 @@ describe('Z11: opening the app with the real backend', () => {
       p_document: '39053344705',
       p_whatsapp: '11988887777',
       p_terms_version: '1.0',
-      p_adult: true,
-      p_contact_name: null
+      p_adult: true
     });
   });
 

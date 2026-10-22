@@ -57,8 +57,7 @@ async function readContact(applicationId: string): Promise<Contact> {
     workerName: worker.name,
     companyName: company.name,
     job,
-    hired: app.status === 'contratado',
-    contactName: company.contactName
+    hired: app.status === 'contratado'
   };
   if (session?.role === 'trabalhador' && session.workerId === app.workerId) {
     const url = workerToCompanyUrl(company.whatsapp, parts);

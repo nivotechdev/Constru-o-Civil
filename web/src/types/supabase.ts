@@ -76,7 +76,6 @@ type CompanyRow = {
   verified: boolean;
   verified_since: string | null;
   /** F15: who talks to the candidates. */
-  contact_name: string | null;
   /** Y24: only the Bicos team changes it (set_company_verification); `verified` follows it. */
   verification_status: CompanyVerification;
   verified_at: string | null;
@@ -392,7 +391,7 @@ export interface SupabaseDatabase {
       companies: Table<
         CompanyRow,
         'id' | 'rating' | 'review_count' | 'verified' | 'verification_status' | 'verified_at' | 'created_at',
-        'name' | 'location' | 'logo_url' | 'cover_url' | 'contact_name' | 'about'
+        'name' | 'location' | 'logo_url' | 'cover_url' | 'about'
       >;
       workers: Table<
         WorkerRow,
@@ -476,7 +475,7 @@ export interface SupabaseDatabase {
           p_whatsapp: string;
           p_terms_version: string;
           p_adult: boolean;
-          p_contact_name: string | null;
+          p_contact_name?: string | null;
         };
         Returns: undefined;
       };

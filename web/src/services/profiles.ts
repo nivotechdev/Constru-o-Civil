@@ -43,7 +43,7 @@ export type WorkerProfilePatch = Partial<
   }
 >;
 
-type ProfileField = 'name' | 'city' | 'location' | 'contactName' | 'bio' | 'about' | 'experiences';
+type ProfileField = 'name' | 'city' | 'location' | 'bio' | 'about' | 'experiences';
 
 /** L11: the problems of a profile edit, per field (the same in both modes; the database checks too). */
 export function profileErrors(
@@ -52,7 +52,6 @@ export function profileErrors(
     oficioId?: string;
     city?: string;
     location?: string;
-    contactName?: string;
     bio?: string;
     about?: string;
     experiences?: string[];
@@ -78,11 +77,6 @@ export function profileErrors(
   }
   if (patch.city !== undefined && !cityByLabel(patch.city)) e.city = 'Escolha a cidade na lista.';
   if (patch.location !== undefined && !cityByLabel(patch.location)) e.location = 'Escolha a cidade na lista.';
-  if (patch.contactName !== undefined) {
-    const n = patch.contactName.trim().length;
-    if (n > 0 && n < 2) e.contactName = 'Escreva o nome de quem fala com os candidatos.';
-    else if (n > 60) e.contactName = 'Use até 60 caracteres.';
-  }
   return e;
 }
 
@@ -147,7 +141,7 @@ export async function saveMyAddress(address: ResolvedAddress): Promise<void> {
   keepAddressInDemo(address);
 }
 
-export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'location' | 'contactName' | 'about'>>;
+export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'location' | 'about'>>;
 
 /**
  * Y25: changes the account's WhatsApp (worker or company). A mobile with DDD (11 digits). The number

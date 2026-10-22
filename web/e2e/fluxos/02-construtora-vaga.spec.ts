@@ -35,8 +35,6 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   const seguir = () => page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await page.fill(k + 'razao', nome);
   await seguir();
-  await page.fill(k + 'responsavel', 'Ana Responsável');
-  await seguir();
   // U10: CPF, e-mail e WhatsApp de outra conta param o cadastro no próprio passo (o do trabalhador do fluxo 1).
   await page.fill(k + 'doc', trabalhador.documento);
   await seguir();

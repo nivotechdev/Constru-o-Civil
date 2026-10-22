@@ -131,7 +131,6 @@ export interface SignUpData {
   /** L14: "Tenho 18 anos ou mais" (the terms require it; the server refuses without it). */
   adult: boolean;
   /** F15: recruiter — who talks to the candidates. */
-  contactName?: string;
 }
 
 /**
@@ -262,7 +261,6 @@ async function createAccount(data: SignUpData, captcha: CaptchaSource): Promise<
       reviewCount: 0,
       verified: false,
       verification: 'pendente',
-      ...(data.contactName ? { contactName: data.contactName } : {}),
       reviews: []
     };
     upsertCompany(company);
@@ -560,7 +558,6 @@ export interface GoogleSignUpData {
   password: string;
   acceptedTermsVersion: string;
   adult: boolean;
-  contactName?: string;
 }
 
 /**

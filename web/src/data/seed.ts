@@ -160,7 +160,6 @@ export const COMPANIES: Record<string, Company> = {
   meridiano: {
     id: 'meridiano',
     name: 'Eventos Meridiano',
-    contactName: 'Ricardo Alves',
     cnpj: '18.402.551/0001-47',
     location: 'Zona Leste, SP',
     whatsapp: '(11) 98842-3310',

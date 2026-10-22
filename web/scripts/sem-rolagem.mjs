@@ -56,8 +56,7 @@ async function walk(width, height, role) {
           ['CPF', '390.533.447-05']
         ]
       : [
-          ['nome da empresa', 'Eventos Serra Gaúcha'],
-          ['responsável', 'Ana Souza'],
+          ['nome (pessoa ou empresa)', 'Eventos Serra Gaúcha'],
           ['CNPJ', FREE_CNPJ]
         ];
   for (const [step, value] of answers) {

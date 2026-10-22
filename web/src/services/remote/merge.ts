@@ -29,7 +29,7 @@ export const JOB_COLUMNS =
 /** U51: the session's own address (RLS: only its own row). */
 export const ADDRESS_COLUMNS = 'account_id, cep, street, neighborhood, city, uf, lat, lon, precision, updated_at';
 export const COMPANY_COLUMNS =
-  'id, name, cnpj, location, rating, review_count, verified, verified_since, verification_status, verified_at, contact_name, since_label, respond_time, paid_count, logo_url, cover_url, about, created_at';
+  'id, name, cnpj, location, rating, review_count, verified, verified_since, verification_status, verified_at, since_label, respond_time, paid_count, logo_url, cover_url, about, created_at';
 
 export type AccountRow = TableRow<'accounts'>;
 export type WorkerRowRead = Omit<TableRow<'workers'>, 'whatsapp'>;

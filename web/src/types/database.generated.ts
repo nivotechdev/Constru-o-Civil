@@ -457,7 +457,6 @@ export type Database = {
           created_at: string;
           verification_status: Database['public']['Enums']['company_verification'];
           verified_at: string | null;
-          contact_name: string | null;
           cnpj_check: Json | null;
           about: string | null;
         };
@@ -479,7 +478,6 @@ export type Database = {
           created_at?: string;
           verification_status?: Database['public']['Enums']['company_verification'];
           verified_at?: string | null;
-          contact_name?: string | null;
           cnpj_check?: Json | null;
           about?: string | null;
         };
@@ -501,7 +499,6 @@ export type Database = {
           created_at?: string;
           verification_status?: Database['public']['Enums']['company_verification'];
           verified_at?: string | null;
-          contact_name?: string | null;
           cnpj_check?: Json | null;
           about?: string | null;
         };
