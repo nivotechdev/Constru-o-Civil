@@ -2366,3 +2366,9 @@ no tema escuro) e um ponto solto. **Agora**: o título; uma linha com ícone de 
 depois de um ponto, a distância em negrito na cor do texto ("Tatuapé · **500 m**"); uma linha com ícone de relógio
 cinza e o horário; o valor em negrito com "por diária" em cinza. Os ícones alinham as duas linhas de detalhe, sem
 palavra colorida; cada linha continua numa linha só, então os cards têm a mesma altura.
+
+## U60 — A distância do card sempre no mesmo lugar
+
+No U59 a distância vinha logo depois do nome do bairro, então mudava de lugar conforme o tamanho do nome. Agora ela
+fica sempre alinhada à direita do card, na linha do bairro, em negrito e com números de largura fixa; o bairro ocupa o
+resto da linha e corta com "…" antes dela se for comprido. Todos os cards têm a distância na mesma posição.
