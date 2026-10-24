@@ -371,6 +371,21 @@ function describe(pages, must) {
     }));
 }
 
+/** U69: envia ao Storage, tentando de novo se o servidor falhar no caminho (520/5xx passageiros). */
+async function upload(path, bytes) {
+  let last = null;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    last = await rest(`/storage/v1/object/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' },
+      body: bytes
+    });
+    if (last.ok || last.status < 500) return last;
+    await new Promise((r) => setTimeout(r, 1500 * attempt));
+  }
+  return last;
+}
+
 async function download(image) {
   const res = await fetch(image.thumb, { headers: { 'User-Agent': UA } });
   if (!res.ok || !/image\/jpe?g/i.test(res.headers.get('content-type') ?? '')) return null;
@@ -405,11 +420,7 @@ for (const job of jobs) {
       const bytes = await download(image);
       if (!bytes) continue;
       const path = `vagas/${job.company_id ?? COMPANY}/${job.id}-${STAMP}-${photos.length + 1}.jpg`;
-      const up = await rest(`/storage/v1/object/${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' },
-        body: bytes
-      });
+      const up = await upload(path, bytes);
       if (!up.ok) throw new Error(`upload ${job.id}: ${up.status} ${await up.text()}`);
       photos.push(`${url}/storage/v1/object/public/${path}`);
       credits.push(
@@ -461,11 +472,7 @@ for (const job of jobs) {
     // Nome novo a cada rodada: o navegador não mostra a foto antiga do cache (as antigas viram órfãs e o
     // limpar-arquivos apaga).
     const path = `vagas/${job.company_id ?? COMPANY}/${job.id}-${STAMP}-${photos.length + 1}.jpg`;
-    const up = await rest(`/storage/v1/object/${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' },
-      body: bytes
-    });
+    const up = await upload(path, bytes);
     if (!up.ok) throw new Error(`upload ${job.id}: ${up.status} ${await up.text()}`);
     used.add(image.id);
     taken.add(image.id);
