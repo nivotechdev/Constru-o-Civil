@@ -2468,8 +2468,10 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
   agora não gira — igual ao login e ao cadastro (U68): fechar a janela sem escolher conta não deixa nada carregando.
 - **Publicar vaga › "Em que dias pode ser?"**: saíram as pílulas "Seg a sex", "Fim de semana" e "Todos"; ficam só os
   sete dias (e o "No mural: …" embaixo).
-- **Fotos**: o `staging-fotos` (U36) passa a pôr 4 fotos livres (domínio público/CC0, do Wikimedia Commons) em **todas**
-  as vagas publicadas do staging, não só nas da conta de teste; sem repetir enquanto houver fotos novas do assunto.
+- **Fotos**: o `staging-fotos` (U36) põe até 4 fotos livres (CC0/domínio público) em **todas** as vagas publicadas do
+  staging. A busca automática no Commons trazia foto fora do assunto (ex.: "serviço florestal" na vaga de garçom), então
+  agora as fotos vêm sobretudo do **StockSnap** (pelo Openverse, sem chave) e são **escolhidas à mão** por serviço
+  (`HAND` no script); sem foto genérica de reserva. O envio ao Storage tenta de novo em erro passageiro.
 - **Filtros (e todo diálogo/folha)**: enquanto estão abertos, a página de trás não rola (`useModal` trava o rolar do
   documento, com contagem para diálogos um sobre o outro) e a folha não "puxa" a página quando chega ao fim
   (`overscroll-contain`). Era isso que fazia a folha dos filtros subir junto com o mural.
