@@ -19,24 +19,56 @@ const ALL = process.env.TODAS !== '0';
 // (a busca do Commons acha o termo em qualquer lugar da página). U48: as vagas de teste são de serviços para o público
 // geral (garçom, cozinha, faxina, recepção, mudança, mercado, jardim, cuidadora, panfletos, loja) — nada de obra.
 const SEARCHES = [
-  [/gar[cç]om|gar[cç]onete/i, ['waiter serving guests', 'waiter restaurant tray'], /waiter|waitress|catering|banquet/i],
-  [/cozinha/i, ['restaurant kitchen cook', 'kitchen staff preparing food'], /kitchen|cook|chef/i],
-  [/faxina|limpeza/i, ['house cleaning mop floor', 'cleaning apartment'], /clean|mop|housekeep/i],
+  [
+    /gar[cç]om|gar[cç]onete/i,
+    ['waiter serving', 'waiter tray', 'waitress serving', 'catering staff banquet', 'waiter restaurant'],
+    /waiter|waitress|catering|banquet/i
+  ],
+  [
+    /cozinha/i,
+    ['restaurant kitchen cook', 'chef cooking kitchen', 'kitchen staff', 'cook preparing food'],
+    /kitchen|cook|chef/i
+  ],
+  [
+    /faxina|limpeza/i,
+    ['house cleaning mop', 'cleaning floor mop', 'cleaner vacuum', 'housekeeping cleaning'],
+    /clean|mop|housekeep|vacuum/i
+  ],
   [
     /recepcion/i,
-    ['receptionist trade fair stand', 'event hostess welcome'],
+    ['receptionist desk', 'trade fair stand', 'exhibition booth visitors', 'conference registration desk'],
     /recep|hostess|trade fair|exhibition|conference/i
   ],
-  [/mudan[cç]a/i, ['movers carrying furniture', 'moving boxes house move'], /mov(ing|ers)|removal|boxes/i],
+  [
+    /mudan[cç]a/i,
+    ['movers carrying furniture', 'moving boxes', 'moving truck furniture', 'removal men'],
+    /mov(ing|ers)|removal|boxes/i
+  ],
   [
     /repositor|mercado/i,
-    ['supermarket shelves stocking', 'grocery store shelves'],
+    ['supermarket shelves', 'grocery store shelves', 'supermarket aisle', 'stocking shelves'],
     /supermarket|grocery|shelves|shelf/i
   ],
-  [/jardin/i, ['gardener mowing lawn', 'gardening hedge trimming'], /garden|lawn|mow|hedge/i],
-  [/cuidador/i, ['caregiver elderly woman home', 'elderly care companion'], /care|elderly|senior|grandmother/i],
-  [/panflet|entregador/i, ['handing out flyers street', 'leaflet distribution'], /flyer|leaflet|pamphlet/i],
-  [/loja|ajudante geral/i, ['clothing store shop assistant', 'retail store employee'], /store|shop|retail|boutique/i],
+  [
+    /jardin/i,
+    ['gardener working garden', 'mowing lawn mower', 'gardening hedge trimming', 'gardener planting'],
+    /garden|mow|hedge/i
+  ],
+  [
+    /cuidador/i,
+    ['caregiver elderly', 'elderly woman care', 'nursing home caregiver', 'senior care'],
+    /care|elderly|senior|grandmother|nursing/i
+  ],
+  [
+    /panflet|entregador/i,
+    ['leaflet distribution', 'handing out flyers', 'flyer distribution street', 'leafleting'],
+    /flyer|leaflet|pamphlet/i
+  ],
+  [
+    /loja|ajudante geral/i,
+    ['clothing store interior', 'shop assistant', 'retail store employee', 'boutique shop interior'],
+    /store|shop|retail|boutique/i
+  ],
   [/bab[aá]|cuidar de crian/i, ['babysitter playing with children', 'nanny child care'], /babysit|nanny|child|kid/i],
   [/pintur|pintor/i, ['painting a wall roller', 'house painter interior'], /paint/i],
   [
@@ -54,7 +86,9 @@ const SEARCHES = [
   ],
   [/caixa|atendente|vendedor/i, ['cashier store counter', 'shop assistant customer'], /cashier|shop|store|customer/i]
 ];
-const FALLBACK = [['people working smiling', 'service worker'], /work|worker|staff|employee/i];
+// U69: sem foto genérica de reserva — uma foto que não é do assunto da vaga é pior que nenhuma (a vaga fica com as
+// fotos que já tinha).
+const FALLBACK = [[], /^$/];
 // Escolhidas à mão entre as candidatas do ensaio (todas CC0 ou domínio público). A busca só entra se uma delas
 // sumir do Commons ou mudar de licença. U48: as de obra saíram; a lista nova sai do ensaio das vagas novas.
 const PICKS = [];
@@ -189,7 +223,7 @@ for (const job of jobs) {
   const hand = new Set(pool.map((c) => c.id));
   for (const [q, re] of [...queries.map((q) => [q, must]), ...FALLBACK[0].map((q) => [q, FALLBACK[1]])]) {
     pool.push(...(await candidates(q, re)).filter((c) => !reserved.has(c.title) && !pool.some((p) => p.id === c.id)));
-    if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 6 : PER_JOB + 2)) break;
+    if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 10 : PER_JOB + 2)) break;
   }
   // As do ofício antes das gerais; dentro de cada grupo, as de nota maior.
   const specific = new Set(pool.filter((c) => must.test(c.title.replace(/_/g, ' '))).map((c) => c.id));
@@ -197,7 +231,7 @@ for (const job of jobs) {
   pool.sort((a, b) => tier(b) - tier(a) || b.score - a.score);
   if (DRY) {
     console.log(`\n${job.id} ${job.title}:`);
-    for (const c of pool.filter((c) => !used.has(c.id)).slice(0, 6))
+    for (const c of pool.filter((c) => !used.has(c.id)).slice(0, 10))
       console.log(`  [${c.score}] ${c.title} (${c.license}) ${c.page}`);
     pool.slice(0, PER_JOB).forEach((c) => used.add(c.id));
     continue;
@@ -226,7 +260,7 @@ for (const job of jobs) {
       `${job.id} · [${image.score}] ${image.title} — ${image.creator || 'autor desconhecido'} (${image.license}) ${image.page ?? ''}`
     );
   }
-  if (!photos.length) {
+  if (photos.length < Math.min(2, PER_JOB)) {
     console.log(`✗ ${job.id} ${job.title}: nenhuma foto boa para "${queries.join('", "')}"`);
     continue;
   }
