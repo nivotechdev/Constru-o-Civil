@@ -146,6 +146,7 @@ async function picked(titles) {
  * trabalhando muito melhor que a busca do Commons. Só CC0 e domínio público, paisagem, grandes; o assunto é conferido
  * no título e nas etiquetas.
  */
+let openverseWarned = false;
 async function openverse(query, must) {
   const q = new URLSearchParams({
     q: query,
@@ -156,8 +157,13 @@ async function openverse(query, must) {
     page_size: '40'
   });
   const res = await fetch(`https://api.openverse.org/v1/images/?${q}`, { headers: { 'User-Agent': UA } });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    if (!openverseWarned) console.log(`(Openverse respondeu ${res.status}: ${(await res.text()).slice(0, 160)})`);
+    openverseWarned = true;
+    return [];
+  }
   const results = (await res.json()).results ?? [];
+  if (DRY) console.log(`  (Openverse "${query}": ${results.length} resultados)`);
   return results
     .map((r) => ({
       id: `ov:${r.id}`,
