@@ -147,14 +147,15 @@ async function picked(titles) {
  * no título e nas etiquetas.
  */
 let openverseWarned = false;
-async function openverse(query, must) {
+async function openverse(query, must, source = '') {
   const q = new URLSearchParams({
     q: query,
     license: 'cc0,pdm',
     aspect_ratio: 'wide',
     size: 'large',
     mature: 'false',
-    page_size: '20'
+    page_size: '20',
+    ...(source ? { source } : {})
   });
   const res = await fetch(`https://api.openverse.org/v1/images/?${q}`, { headers: { 'User-Agent': UA } });
   if (!res.ok) {
@@ -163,7 +164,7 @@ async function openverse(query, must) {
     return [];
   }
   const results = (await res.json()).results ?? [];
-  if (DRY) console.log(`  (Openverse "${query}": ${results.length} resultados)`);
+  if (DRY) console.log(`  (Openverse${source ? ' ' + source : ''} "${query}": ${results.length} resultados)`);
   return results
     .map((r) => ({
       id: `ov:${r.id}`,
@@ -175,7 +176,7 @@ async function openverse(query, must) {
       license: `${r.license}`.toUpperCase(),
       creator: (r.creator ?? '').slice(0, 80),
       page: r.foreign_landing_url,
-      score: 5
+      score: r.source === 'stocksnap' ? 8 : 5
     }))
     .filter(
       (c) =>
@@ -196,7 +197,12 @@ async function candidates(query, must) {
     ...(await search(`${query} pixabay`)),
     ...(await search(query))
   ];
-  return [...(await openverse(query, must)), ...describe(pages, must)].sort((a, b) => b.score - a.score);
+  // U69: primeiro o StockSnap (fotos atuais, de gente trabalhando, CC0); depois o resto do Openverse e o Commons.
+  return [
+    ...(await openverse(query, must, 'stocksnap')),
+    ...(await openverse(query, must)).filter((c) => !/rawpixel/i.test(c.title)),
+    ...describe(pages, must)
+  ].sort((a, b) => b.score - a.score);
 }
 
 /** As páginas do Commons que servem (livres, paisagem, boas e do assunto), com nota. */
