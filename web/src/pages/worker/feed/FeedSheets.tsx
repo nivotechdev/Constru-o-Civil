@@ -20,6 +20,9 @@ import {
 } from '../../../services/alerts';
 import { showToast } from '../../../services/toast';
 
+/** U65: the "Valor mínimo" options (daily pay, in reais). */
+const MIN_PAYS = [100, 150, 200, 250, 300];
+
 function FilterGroup({
   title,
   options,
@@ -88,6 +91,12 @@ export function FiltersSheet({
         options={['Hoje', 'Amanhã', 'Durante a semana', 'Fim de semana']}
         active={ui.quando}
         onSelect={(v) => setFeed({ quando: ui.quando === v ? null : v })}
+      />
+      <FilterGroup
+        title="Valor mínimo da diária"
+        options={MIN_PAYS.map((v) => ({ value: String(v), label: `R$ ${v}` }))}
+        active={ui.minPay ? String(ui.minPay) : null}
+        onSelect={(v) => setFeed({ minPay: ui.minPay === Number(v) ? null : Number(v) })}
       />
       {role === 'trabalhador' && ui.filtersOpen ? <JobAlertSwitch ui={ui} from={from} /> : null}
       <div className="flex gap-3 pt-1">

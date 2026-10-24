@@ -162,6 +162,7 @@ function defaultFeedQuery(): FeedQuery {
     radiusKm: null,
     oficio: null,
     quando: null,
+    minPay: null,
     sort: 'perto',
     search: '',
     allCities: false
@@ -193,7 +194,8 @@ export async function loadFeed(query?: FeedQuery, more = false): Promise<void> {
       p_all_cities: q.allCities,
       p_sort: q.sort,
       p_limit: FEED_PAGE,
-      p_cursor: more ? (getPaging(key).cursor as Json) : null
+      p_cursor: more ? (getPaging(key).cursor as Json) : null,
+      p_min_pay: q.minPay
     })
   );
   const list = (rows ?? []) as FeedRow[];

@@ -102,6 +102,16 @@ describe('mural filters and order with real data', () => {
     expect([near, far].filter((j) => passesFilters(j, f, NOW)).map((j) => j.id)).toEqual(['near']);
   });
 
+  it('U65: "Valor mínimo" keeps the jobs paying at least that much; "a combinar" leaves', () => {
+    const cheap = baseJob({ id: 'cheap', pay: 120 });
+    const rich = baseJob({ id: 'rich', pay: 250 });
+    const open = baseJob({ id: 'open', pay: null });
+    const f = { ...all, minPay: 200 };
+    expect([cheap, rich, open].filter((j) => passesFilters(j, f, NOW)).map((j) => j.id)).toEqual(['rich']);
+    expect([cheap, rich, open].filter((j) => passesFilters(j, { ...all, minPay: null }, NOW))).toHaveLength(3);
+    expect(passesFilters(rich, { ...f, minPay: 250 }, NOW)).toBe(true);
+  });
+
   it('filters "Hoje" and "Amanhã" by the real dates', () => {
     expect([near, later].filter((j) => passesFilters(j, { ...all, quando: 'Hoje' }, NOW)).map((j) => j.id)).toEqual([
       'near'

@@ -2417,3 +2417,15 @@ não estiver, confirma (o Google acabou de provar que o e-mail é da pessoa) e g
 de entrada vier de outro tipo, tenta de novo como `signup`. O resultado: a pessoa entra na conta que já tinha, como
 no "Entrar com o Google" da tela de login. A função `entrar-com-firebase` precisa ser publicada de novo (o `staging`
 publica sozinho; produção só com "pode").
+
+## U65/U66 — Filtros do mural: o erro do aviso, o "x" dos filtros e o valor mínimo
+
+- **Erro "Sua conta não pode fazer isso."** ao abrir os Filtros: a leitura do aviso de bico novo (`job_alerts`) pedia
+  `select *`, mas a tabela só libera colunas (grants por coluna), então o banco recusava (42501) e o app mostrava esse
+  texto embaixo do botão. Agora pede só as colunas liberadas (`alerts.ts`).
+- **"x" dos filtros aplicados** (U66): o "x" ficava dentro do botão do chip, debaixo da área de toque de 44 px do próprio
+  chip, então o toque nunca chegava nele. O chip com "x" agora é o rótulo mais um botão só do "x"
+  ("Tirar o filtro Hoje", área de toque própria); o chip sem "x" continua um botão de ligar/desligar.
+- **Valor mínimo** (U65): grupo "Valor mínimo da diária" nos Filtros (R$ 100, 150, 200, 250 e 300; tocar de novo tira),
+  chip "A partir de R$ 200" na lista, "Limpar" também zera. Vaga com valor "a combinar" não passa quando há mínimo.
+  No servidor, `feed_jobs(p_min_pay)` (migration `u65_valor_minimo`); no demo, o mesmo filtro no aparelho.

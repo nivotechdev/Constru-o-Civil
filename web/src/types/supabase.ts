@@ -535,6 +535,7 @@ export interface SupabaseDatabase {
           p_sort?: string;
           p_limit?: number;
           p_cursor?: Json | null;
+          p_min_pay?: number | null;
         };
         Returns: Json[];
       };

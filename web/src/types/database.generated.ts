@@ -1700,6 +1700,7 @@ export type Database = {
           p_sort?: string;
           p_limit?: number;
           p_cursor?: Json;
+          p_min_pay?: number;
         };
         Returns: Json[];
       };

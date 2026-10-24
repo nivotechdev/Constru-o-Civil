@@ -95,7 +95,13 @@ export async function loadMyJobAlert(): Promise<void> {
   if (!id) return;
   if (IS_DEMO) return mockLatency(200);
   const client = await db();
-  const row = await request(() => client.from('job_alerts').select('*').eq('worker_id', id).maybeSingle());
+  const row = await request(() =>
+    client
+      .from('job_alerts')
+      .select('worker_id, city, uf, lat, lon, radius_km, oficio_id')
+      .eq('worker_id', id)
+      .maybeSingle()
+  );
   putAlert(
     id,
     row

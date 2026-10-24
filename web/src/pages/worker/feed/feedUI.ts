@@ -31,13 +31,18 @@ export interface FeedUI {
   oficio: string | null;
   dist: string;
   quando: string | null;
+  /** U65: the lowest daily pay, in reais (`null`: any). */
+  minPay: number | null;
   sort: Sort;
   /** The search looks in every city, not only `location` (L17). */
   allCities: boolean;
 }
 
 /** The filters that decide which jobs the mural lists, and the point distances are measured from. */
-export type FeedFilters = Pick<FeedUI, 'location' | 'oficio' | 'dist' | 'quando'> & { from: GeoPoint };
+export type FeedFilters = Pick<FeedUI, 'location' | 'oficio' | 'dist' | 'quando'> & {
+  minPay?: number | null;
+  from: GeoPoint;
+};
 
 export { DEFAULT_CITY };
 export const ALL_CITY = 'Toda a cidade';
@@ -68,6 +73,7 @@ export function feedDefaults(db: Database, role: Role): FeedUI {
     oficio: null,
     dist: ALL_CITY,
     quando: null,
+    minPay: null,
     sort: 'perto',
     allCities: false
   };
@@ -75,7 +81,7 @@ export function feedDefaults(db: Database, role: Role): FeedUI {
 
 /** "Limpar filtros": back to the home city and no filter. */
 export function noFilters(home: string): Partial<FeedUI> {
-  return { oficio: null, dist: ALL_CITY, quando: null, location: home, origin: null };
+  return { oficio: null, dist: ALL_CITY, quando: null, minPay: null, location: home, origin: null };
 }
 
 export const setFeed = (patch: Partial<FeedUI>) => setUI<FeedUI>(FEED_KEY, patch);
@@ -152,7 +158,9 @@ export function passesFilters(j: Job, filters: FeedFilters, now: Date = new Date
     cityLabel(j) === filters.location &&
     (!filters.oficio || j.oficioId === filters.oficio) &&
     (filters.dist === ALL_CITY || jobDistance(j, filters.from) <= parseInt(filters.dist.replace(/\D/g, ''), 10)) &&
-    matchesQuando(j, filters.quando, now)
+    matchesQuando(j, filters.quando, now) &&
+    // U65: a job whose pay is "a combinar" has no value to compare, so it leaves when a minimum is set.
+    (!filters.minPay || (j.pay != null && j.pay >= filters.minPay))
   );
 }
 
@@ -173,7 +181,10 @@ export function activeFilters(filters: Omit<FeedFilters, 'from'>, home: string):
     filters.dist !== ALL_CITY
       ? { label: filters.dist, icon: 'map-pin', remove: () => setFeed({ dist: ALL_CITY }) }
       : null,
-    filters.quando ? { label: filters.quando, icon: 'calendar', remove: () => setFeed({ quando: null }) } : null
+    filters.quando ? { label: filters.quando, icon: 'calendar', remove: () => setFeed({ quando: null }) } : null,
+    filters.minPay
+      ? { label: `A partir de R$ ${filters.minPay}`, icon: 'wallet', remove: () => setFeed({ minPay: null }) }
+      : null
   ].filter((f): f is ActiveFilter => Boolean(f));
 }
 

@@ -490,6 +490,7 @@ describe('remote: data and actions', () => {
       radiusKm: 10,
       oficio: 'pintor',
       quando: null,
+      minPay: null,
       sort: 'perto' as const,
       search: '',
       allCities: false
@@ -1058,6 +1059,7 @@ describe('remote: data and actions', () => {
       radiusKm: null,
       oficio: null,
       quando: null,
+      minPay: null,
       sort: 'perto' as const,
       search,
       allCities: false

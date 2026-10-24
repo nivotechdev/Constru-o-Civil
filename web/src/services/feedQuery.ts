@@ -11,6 +11,8 @@ export interface FeedQuery {
   radiusKm: number | null;
   oficio: string | null;
   quando: string | null;
+  /** U65: the lowest daily pay, in reais (`null`: any). */
+  minPay: number | null;
   sort: 'perto' | 'valor' | 'cedo';
   /** Text search ('' for none). */
   search: string;
@@ -21,4 +23,15 @@ export interface FeedQuery {
 /** The read-cache and paging key of one mural query. */
 export const feedKey = (q: FeedQuery): string =>
   'feed:' +
-  JSON.stringify([q.location, q.from.lat, q.from.lon, q.radiusKm, q.oficio, q.quando, q.sort, q.search, q.allCities]);
+  JSON.stringify([
+    q.location,
+    q.from.lat,
+    q.from.lon,
+    q.radiusKm,
+    q.oficio,
+    q.quando,
+    q.minPay,
+    q.sort,
+    q.search,
+    q.allCities
+  ]);

@@ -732,6 +732,18 @@ select count(*) from information_schema.columns
  where table_name = 'companies' and column_name = 'contact_name';  -- 0
 ```
 
+### 62. `20261022000300_u65_valor_minimo.sql` (U65)
+
+`feed_jobs` ganha o parâmetro `p_min_pay` (diária mínima em reais; vazio = qualquer valor) — o filtro "Valor mínimo" do
+mural. A função é recriada (a assinatura antiga sai e a nova, com 13 parâmetros, entra); o parâmetro novo é o último,
+então as chamadas antigas valem. Vaga com valor "a combinar" não aparece quando há mínimo; a busca por texto ignora o
+filtro. **Aplicar antes do front novo** (o app novo manda `p_min_pay`).
+
+```sql
+select count(*) from pg_proc where proname = 'feed_jobs';  -- 1
+select pg_get_function_arguments(oid) like '%p_min_pay%' from pg_proc where proname = 'feed_jobs';  -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

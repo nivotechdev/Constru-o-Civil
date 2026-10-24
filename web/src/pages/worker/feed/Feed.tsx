@@ -42,7 +42,7 @@ export default function Feed() {
   const db = useDb();
   const role = useRole();
   const [ui] = useUI<FeedUI>(FEED_KEY, () => feedDefaults(db, role));
-  const { location, origin, oficio, dist, quando, sort, allCities } = ui;
+  const { location, origin, oficio, dist, quando, minPay, sort, allCities } = ui;
   const q = ui.search.trim();
   const home = homeCity(db, role);
   // X19: the profile moved to another city: a mural still on the old home city follows it.
@@ -54,8 +54,8 @@ export default function Feed() {
   // X01: the server lists the mural for these filters; a typed search waits a moment before asking.
   const search = useDebounced(q, 400);
   const feedQuery: FeedQuery = useMemo(
-    () => ({ location, from, radiusKm: radiusOf(dist), oficio, quando, sort, search, allCities }),
-    [location, from, dist, oficio, quando, sort, search, allCities]
+    () => ({ location, from, radiusKm: radiusOf(dist), oficio, quando, minPay, sort, search, allCities }),
+    [location, from, dist, oficio, quando, minPay, sort, search, allCities]
   );
   const key = feedKey(feedQuery);
   const query = useQuery(key, () => loadFeed(feedQuery));
@@ -71,12 +71,12 @@ export default function Feed() {
   const ordered = useMemo(
     () =>
       orderJobs(
-        open.filter((j) => passesFilters(j, { location, oficio, dist, quando, from })),
+        open.filter((j) => passesFilters(j, { location, oficio, dist, quando, minPay, from })),
         role,
         sort,
         from
       ),
-    [open, role, location, oficio, dist, quando, sort, from]
+    [open, role, location, oficio, dist, quando, minPay, sort, from]
   );
   // U49: the search finds only jobs (by service, neighborhood or city).
   const found = useMemo(
@@ -84,8 +84,8 @@ export default function Feed() {
     [open, q, role, from, location, allCities]
   );
   const chips = useMemo(
-    () => activeFilters({ location, oficio, dist, quando }, home),
-    [location, oficio, dist, quando, home]
+    () => activeFilters({ location, oficio, dist, quando, minPay }, home),
+    [location, oficio, dist, quando, minPay, home]
   );
 
   const layout = { db, role, ui, ordered, found, chips, query, home, paging };
