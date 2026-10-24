@@ -189,20 +189,22 @@ async function openverse(query, must, source = '') {
     );
 }
 
-/** As fotos livres e boas de uma busca, com nota: banco de imagem e recentes primeiro. */
-async function candidates(query, must) {
-  const pages = [
-    ...(await search(`${query} pexels`)),
-    ...(await search(`${query} unsplash`)),
-    ...(await search(`${query} pixabay`)),
-    ...(await search(query))
-  ];
-  // U69: primeiro o StockSnap (fotos atuais, de gente trabalhando, CC0); depois o resto do Openverse e o Commons.
-  return [
-    ...(await openverse(query, must, 'stocksnap')),
-    ...(await openverse(query, must)).filter((c) => !/rawpixel/i.test(c.title)),
-    ...describe(pages, must)
-  ].sort((a, b) => b.score - a.score);
+/**
+ * As fotos livres e boas de uma busca, com nota. U69: primeiro o StockSnap (fotos atuais, de gente trabalhando, CC0);
+ * só se faltar, o resto do Openverse e, por último, o Commons — cada fonte a mais custa tempo.
+ */
+async function candidates(query, must, enough = 6) {
+  const found = [...(await openverse(query, must, 'stocksnap'))];
+  if (found.length < enough) found.push(...(await openverse(query, must)).filter((c) => !/rawpixel/i.test(c.title)));
+  if (found.length < enough) {
+    const pages = [
+      ...(await search(`${query} pexels`)),
+      ...(await search(`${query} unsplash`)),
+      ...(await search(query))
+    ];
+    found.push(...describe(pages, must));
+  }
+  return found.sort((a, b) => b.score - a.score);
 }
 
 /** As páginas do Commons que servem (livres, paisagem, boas e do assunto), com nota. */
