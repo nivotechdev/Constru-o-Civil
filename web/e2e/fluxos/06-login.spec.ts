@@ -74,7 +74,12 @@ test('recuperar a senha pelo link do e-mail', async ({ page }) => {
   await page.fill('#reset-senha', nova);
   await page.fill('#reset-confirm', nova);
   await page.getByRole('button', { name: 'Salvar nova senha' }).click();
-  await expect(page.getByRole('button', { name: 'Ir para o login' })).toBeVisible();
+  // Quando não dá certo, o teste diz o que a tela mostrou (erro do campo ou aviso), não só "botão não apareceu".
+  const sucesso = page.getByRole('button', { name: 'Ir para o login' });
+  const erro = page.locator('[role=alert]').first();
+  await expect(sucesso.or(erro)).toBeVisible({ timeout: 20000 });
+  if (!(await sucesso.isVisible()))
+    throw new Error(`Salvar a senha nova falhou: "${(await erro.textContent())?.trim()}"`);
   await print(page, 'f6', 'senha nova salva');
 
   await page.goto('/login');
