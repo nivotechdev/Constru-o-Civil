@@ -154,7 +154,7 @@ async function openverse(query, must) {
     aspect_ratio: 'wide',
     size: 'large',
     mature: 'false',
-    page_size: '40'
+    page_size: '20'
   });
   const res = await fetch(`https://api.openverse.org/v1/images/?${q}`, { headers: { 'User-Agent': UA } });
   if (!res.ok) {
@@ -279,7 +279,9 @@ for (const job of jobs) {
   if (DRY) {
     console.log(`\n${job.id} ${job.title}:`);
     for (const c of pool.filter((c) => !used.has(c.id)).slice(0, 10))
-      console.log(`  ${c.id} [${c.score}] ${c.title} (${c.license}) ${c.page}`);
+      console.log(
+        `  ${c.id} [${c.score}] ${c.title.slice(0, 90)} (${c.license})${String(c.id).startsWith('ov:') ? ' ' + c.page : ''}`
+      );
     pool.slice(0, PER_JOB).forEach((c) => used.add(c.id));
     continue;
   }
