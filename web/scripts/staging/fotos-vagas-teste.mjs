@@ -141,6 +141,47 @@ async function picked(titles) {
   );
 }
 
+/**
+ * U69: o Openverse (o buscador de imagens livres do WordPress: Flickr, bancos de imagem…) acha fotos de gente
+ * trabalhando muito melhor que a busca do Commons. Só CC0 e domínio público, paisagem, grandes; o assunto é conferido
+ * no título e nas etiquetas.
+ */
+async function openverse(query, must) {
+  const q = new URLSearchParams({
+    q: query,
+    license: 'cc0,pdm',
+    aspect_ratio: 'wide',
+    size: 'large',
+    mature: 'false',
+    page_size: '40'
+  });
+  const res = await fetch(`https://api.openverse.org/v1/images/?${q}`, { headers: { 'User-Agent': UA } });
+  if (!res.ok) return [];
+  const results = (await res.json()).results ?? [];
+  return results
+    .map((r) => ({
+      id: `ov:${r.id}`,
+      title: `${r.title ?? ''} [${r.provider}]`,
+      about: [r.title, ...(r.tags ?? []).map((t) => t.name)].join(' '),
+      thumb: r.url,
+      width: r.width ?? 0,
+      height: r.height ?? 0,
+      license: `${r.license}`.toUpperCase(),
+      creator: (r.creator ?? '').slice(0, 80),
+      page: r.foreign_landing_url,
+      score: 5
+    }))
+    .filter(
+      (c) =>
+        c.width >= 900 &&
+        c.width >= c.height &&
+        c.width <= c.height * 2.2 &&
+        /\.jpe?g($|\?)/i.test(c.thumb) &&
+        must.test(c.about) &&
+        !REJECT.test(c.about)
+    );
+}
+
 /** As fotos livres e boas de uma busca, com nota: banco de imagem e recentes primeiro. */
 async function candidates(query, must) {
   const pages = [
@@ -149,7 +190,7 @@ async function candidates(query, must) {
     ...(await search(`${query} pixabay`)),
     ...(await search(query))
   ];
-  return describe(pages, must).sort((a, b) => b.score - a.score);
+  return [...(await openverse(query, must)), ...describe(pages, must)].sort((a, b) => b.score - a.score);
 }
 
 /** As páginas do Commons que servem (livres, paisagem, boas e do assunto), com nota. */
@@ -200,7 +241,7 @@ async function download(image) {
   const res = await fetch(image.thumb, { headers: { 'User-Agent': UA } });
   if (!res.ok || !/image\/jpe?g/i.test(res.headers.get('content-type') ?? '')) return null;
   const bytes = new Uint8Array(await res.arrayBuffer());
-  return bytes.length > 20_000 && bytes.length < 3_500_000 ? bytes : null;
+  return bytes.length > 20_000 && bytes.length < 6_000_000 ? bytes : null;
 }
 
 const jobsRes = await rest(
@@ -226,13 +267,13 @@ for (const job of jobs) {
     if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 10 : PER_JOB + 2)) break;
   }
   // As do ofício antes das gerais; dentro de cada grupo, as de nota maior.
-  const specific = new Set(pool.filter((c) => must.test(c.title.replace(/_/g, ' '))).map((c) => c.id));
+  const specific = new Set(pool.filter((c) => must.test(c.about ?? c.title.replace(/_/g, ' '))).map((c) => c.id));
   const tier = (c) => (hand.has(c.id) ? 2 : specific.has(c.id) ? 1 : 0);
   pool.sort((a, b) => tier(b) - tier(a) || b.score - a.score);
   if (DRY) {
     console.log(`\n${job.id} ${job.title}:`);
     for (const c of pool.filter((c) => !used.has(c.id)).slice(0, 10))
-      console.log(`  [${c.score}] ${c.title} (${c.license}) ${c.page}`);
+      console.log(`  ${c.id} [${c.score}] ${c.title} (${c.license}) ${c.page}`);
     pool.slice(0, PER_JOB).forEach((c) => used.add(c.id));
     continue;
   }
