@@ -23,6 +23,8 @@ import { showToast } from '../../services/toast';
 import { WhatsAppRow } from '../../components/WhatsAppRow';
 import { serviceError } from '../../services/errors';
 import { AboutField } from '../../components/AboutField';
+import { CityPicker, LocationButton } from '../../components/CityPicker';
+import { knownCity } from '../../services/cities';
 
 function revoke(urls: (string | null | undefined)[]) {
   for (const u of urls) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
@@ -33,8 +35,11 @@ export default function EditCompanyProfile() {
   const company = currentCompany(db);
   const [draft, setDraft] = useState(() => ({
     name: company.name,
-    about: company.about ?? ''
+    about: company.about ?? '',
+    // U67: the city the company is in — the mural always opens there.
+    location: knownCity(company.location) ?? ''
   }));
+  const [cityOpen, setCityOpen] = useState(false);
   const [images, setImages] = useState<ProfileImages>({});
   const [progress, setProgress] = useState<number | null>(null);
   const picked = useRef<ProfileImages>({});
@@ -47,7 +52,8 @@ export default function EditCompanyProfile() {
   const [errors, setErrors] = useState<ReturnType<typeof profileErrors>>({});
   const changes = {
     ...(draft.name !== company.name ? { name: draft.name } : {}),
-    ...(draft.about.trim() !== (company.about ?? '') ? { about: draft.about } : {})
+    ...(draft.about.trim() !== (company.about ?? '') ? { about: draft.about } : {}),
+    ...(draft.location && draft.location !== company.location ? { location: draft.location } : {})
   };
   const save = useAction(
     async () => {
@@ -145,6 +151,29 @@ export default function EditCompanyProfile() {
               </span>
             </div>
           ) : null}
+          <div className="flex flex-col gap-1.5">
+            <LocationButton
+              title="Sua cidade"
+              location={draft.location || 'Escolha a cidade'}
+              onClick={() => setCityOpen(true)}
+            />
+            <span className="text-sm text-concrete-500">
+              O mural abre nas vagas desta cidade. Só a cidade fica salva, sem endereço.
+            </span>
+            {errors.location ? <FieldError message={errors.location} /> : null}
+          </div>
+          <CityPicker
+            open={cityOpen}
+            title="Em que cidade você está?"
+            value={draft.location}
+            stateKey="edit-company-city"
+            onChoose={(label) => {
+              setDraft((d) => ({ ...d, location: label }));
+              setErrors((e) => ({ ...e, location: undefined }));
+              setCityOpen(false);
+            }}
+            onClose={() => setCityOpen(false)}
+          />
           <WhatsAppRow label="WhatsApp de contato" />
         </div>
         <div className="sticky bottom-0 px-4 sm:px-6 lg:px-0 py-3 bg-concrete-0 shadow-bar flex flex-col gap-2 lg:static lg:bg-transparent lg:shadow-none">

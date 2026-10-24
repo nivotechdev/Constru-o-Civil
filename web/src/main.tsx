@@ -47,6 +47,8 @@ function start(): void {
 
 function startRoutes(): void {
   startRouter();
+  // U68: not signed in → Firebase gets ready in the background for the Google button.
+  void import('./services/auth').then((m) => m.prepareSocialSignInWhenIdle());
   // "/" (no hash) opens the splash screen, replacing the entry like the legacy router did.
   if (currentPath() === '/') navigate('/splash', { replace: true });
 }

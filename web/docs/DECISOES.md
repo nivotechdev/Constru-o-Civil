@@ -2429,3 +2429,35 @@ publica sozinho; produção só com "pode").
 - **Valor mínimo** (U65): grupo "Valor mínimo da diária" nos Filtros (R$ 100, 150, 200, 250 e 300; tocar de novo tira),
   chip "A partir de R$ 200" na lista, "Limpar" também zera. Vaga com valor "a combinar" não passa quando há mínimo.
   No servidor, `feed_jobs(p_min_pay)` (migration `u65_valor_minimo`); no demo, o mesmo filtro no aparelho.
+
+## U67 — A cidade do recrutador, salva no perfil
+
+Pedido do responsável: o recrutador escolhe a cidade onde está no cadastro (com "Usar minha localização atual") e a
+troca quando quiser no Editar perfil; só a cidade (nada de endereço — U62), e ela fica salva para o mural abrir sempre
+nas vagas da cidade dele, sem mexer no filtro toda vez. **Agora**:
+
+- **Completar perfil (empresa)**: passo "Em que cidade você está?" antes da capa e do logo — "Usar minha localização
+  atual" (o GPS acha a cidade mais próxima; só a cidade fica, a posição não é guardada) ou "Digitar a cidade" (a lista
+  das cidades do Brasil). Sem cidade não continua.
+- **Editar perfil (empresa)**: "Sua cidade", com o mesmo seletor (GPS ou digitada). Ao salvar, o mural volta a abrir
+  nela.
+- **Banco** (`u67_cidade_da_empresa`): `finish_sign_up` grava a cidade em `companies.location`. O mural da empresa já
+  abria em `companies.location` (U13), então nada mais muda.
+
+## U68 — "Continuar com o Google": sem tela de espera e mais rápido
+
+Pedido do responsável: fechar a janela de contas do Google sem escolher nenhuma deixava a tela "Esperando o Google…"
+com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
+
+- **Sem tela de espera**: nada cobre o app enquanto a janela do Google está aberta — é ela que aparece. Fechada sem
+  escolher conta (ou trocada por um toque novo), a tentativa termina em silêncio: sem mensagem, sem erro, o botão já
+  responde de novo. Só depois de escolher a conta aparece "Entrando na sua conta…" (com Cancelar), até a próxima tela.
+  O Firebase só avisa que a janela fechou uns segundos depois; como não há mais tela travada, isso não aparece para a
+  pessoa.
+- **Mais rápido**: (1) o Firebase passa a carregar assim que o app fica ocioso para quem não entrou (não só ao abrir a
+  tela do botão), junto com o quadro de apoio do Google — ao chegar no botão, tudo já está pronto e a janela abre no
+  mesmo toque; (2) só as partes do Firebase Auth que o app usa (`remote/firebaseSdk.ts`): de ~47 KB para ~33 KB
+  comprimidos, num arquivo só; (3) o navegador já resolve e conecta os endereços do Firebase e do Google antes do toque.
+- **Limite**: a janela do Google passa pela página do Firebase e depois pela do Google; esse caminho é do Google. O
+  jeito de ficar instantâneo é o "Login com o Google" nativo do Google (One Tap / FedCM), que mostra as contas sem abrir
+  página — precisa do "ID do cliente OAuth" do Google Cloud (ação do responsável); fica para o próximo passo.

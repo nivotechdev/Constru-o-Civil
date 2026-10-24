@@ -1,7 +1,7 @@
 // City picker helpers over the full list of Brazilian municipalities. A city is
 // { name, uf, lat, lon, label: "Name, UF", key } with `key` accent/case-free for search.
 import { CIDADES_RAW } from '../data/cidades';
-import type { City } from '../types/models';
+import type { City, GeoPoint } from '../types/models';
 
 export { DEFAULT_CITY } from './defaults';
 
@@ -69,4 +69,22 @@ export function knownCity(label: string | null | undefined): string | null {
 export function cityByLabel(label: string): City | null {
   const key = fold(label.replace(/,/g, ' ')).replace(/\s+/g, ' ').trim();
   return all().find((c) => c.key === key) ?? null;
+}
+
+/**
+ * U67: the city the phone is in — the nearest Brazilian municipality to the GPS position (only the city is kept; the
+ * position itself is returned for the mural's distances and never saved). 'denied': the browser said no.
+ */
+export function locateMyCity(): Promise<{ label: string; point: GeoPoint } | 'denied' | 'error'> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve('error');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const c = nearestCity(pos.coords.latitude, pos.coords.longitude);
+        resolve(c ? { label: c.label, point: { lat: pos.coords.latitude, lon: pos.coords.longitude } } : 'error');
+      },
+      (err) => resolve(err && err.code === 1 ? 'denied' : 'error'),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+    );
+  });
 }

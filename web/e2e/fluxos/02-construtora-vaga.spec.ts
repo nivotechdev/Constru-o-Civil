@@ -65,7 +65,15 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
 
   await page.goto(await linkDeConfirmacao(email));
   await expect(page).toHaveURL(/\/completar-perfil\/recrutador/);
-  // U62: a empresa não tem endereço fixo — vai direto para capa e logo.
+  // U62/U67: a empresa não tem endereço fixo, só a cidade onde está (o mural abre nela) — depois capa e logo.
+  await expect(page.getByText('Em que cidade você está?')).toBeVisible();
+  await page.getByRole('button', { name: 'Digitar a cidade' }).click();
+  await page.fill('#completar-cidade-search', 'Caxias do Sul');
+  await page
+    .getByRole('option', { name: /Caxias do Sul/ })
+    .first()
+    .click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await print(page, 'f2', 'empresa completa o perfil');
   await page.getByRole('button', { name: 'Concluir perfil' }).click();
   await expect(page).not.toHaveURL(/completar-perfil/);

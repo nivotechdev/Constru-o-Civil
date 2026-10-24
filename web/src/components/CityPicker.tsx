@@ -1,7 +1,7 @@
 // "Onde você quer trabalhar": the button that shows the chosen city, and the sheet that picks one — by
 // GPS or by typing any Brazilian municipality. Used by the mural's filters and by "Completar perfil".
 import { useUI } from '../hooks/useStore';
-import { nearestCity, searchCities } from '../services/cities';
+import { locateMyCity, searchCities } from '../services/cities';
 import type { GeoPoint } from '../types/models';
 import { cx } from '../utils/cx';
 import { Button } from './Button';
@@ -68,20 +68,8 @@ export function CityPicker({ open, title, value, onChoose, onClose, stateKey }: 
     onChoose(label, point);
   };
   const useMyLocation = () => {
-    if (!navigator.geolocation) {
-      setUi({ geo: 'error' });
-      return;
-    }
     setUi({ geo: 'loading' });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const c = nearestCity(pos.coords.latitude, pos.coords.longitude);
-        if (c) choose(c.label, { lat: pos.coords.latitude, lon: pos.coords.longitude });
-        else setUi({ geo: 'error' });
-      },
-      (err) => setUi({ geo: err && err.code === 1 ? 'denied' : 'error' }),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
-    );
+    void locateMyCity().then((r) => (typeof r === 'string' ? setUi({ geo: r }) : choose(r.label, r.point)));
   };
   const q = ui.query.trim();
   const results = open ? searchCities(q, 8) : [];

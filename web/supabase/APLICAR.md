@@ -744,6 +744,17 @@ select count(*) from pg_proc where proname = 'feed_jobs';  -- 1
 select pg_get_function_arguments(oid) like '%p_min_pay%' from pg_proc where proname = 'feed_jobs';  -- true
 ```
 
+### 63. `20261024000100_u67_cidade_da_empresa.sql` (U67)
+
+A empresa volta a guardar a cidade onde está (só a cidade, sem endereço): `finish_sign_up` grava `p.city` em
+`companies.location` (formato "Cidade, UF"; fora dele, BC422). Sem cidade, só completa o perfil (como no U62). A troca
+no Editar perfil usa o update de `companies.location`, que já era liberado. Não apaga nada. Pode ir antes ou junto com
+o front novo.
+
+```sql
+select prosrc like '%U67%' from pg_proc where proname = 'finish_sign_up';  -- true
+```
+
 ## Testes
 
 `supabase/tests/[a-z]*.sql` testam cada RPC como o app chama (cada teste termina em `rollback`, então pode rodar

@@ -10,6 +10,8 @@ const holder = vi.hoisted(() => ({
   popup: 0,
   /** U45: while set, the Google window stays open (the person is choosing the account). */
   gate: null as Promise<void> | null,
+  /** U68: the window's answer is this Firebase error (e.g. closed without choosing). */
+  closeWith: null as string | null,
   /** U46: how Firebase was started, and whether Google's helper frame was loaded ahead. */
   started: [] as unknown[],
   framePreloaded: 0
@@ -53,6 +55,7 @@ vi.mock('@firebase/auth', () => ({
   signInWithPopup: async () => {
     holder.popup++;
     if (holder.gate) await holder.gate;
+    if (holder.closeWith) throw Object.assign(new Error('x'), { code: holder.closeWith });
     return { user: { getIdToken: async () => 'firebase-token-google' } };
   }
 }));
@@ -157,7 +160,7 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     expect(exchanges(fake)).toEqual([{ idToken: 'firebase-token-google' }]);
   });
 
-  it('U45: from the tap to the next screen the app is locked, says what is happening and can give up', async () => {
+  it('U68: nothing covers the screen while the Google window is open; once an account is chosen it opens, locked', async () => {
     const loc = { protocol: 'https:', origin: 'https://bicos.app', pathname: '/escolha-perfil', search: '', hash: '' };
     const go = (_: unknown, __: string, url?: string) => url && Object.assign(loc, { pathname: url });
     vi.stubGlobal('window', { location: loc, addEventListener: () => undefined });
@@ -180,19 +183,16 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     const shown: (string | undefined)[] = [];
     busy.subscribeBusy(() => shown.push(busy.getBusy()?.message));
 
-    // The tap: locked at once, waiting on the Google window (with a way out); a second tap does nothing.
+    // The tap: only Google's window shows — no "waiting" screen over the app.
     const done = auth.signInWithGoogle('trabalhador');
-    expect(busy.getBusy()).toMatchObject({ message: 'Esperando o Google…', cancel: { label: 'Cancelar' } });
-    const windows = holder.popup;
-    await auth.signInWithGoogle('trabalhador');
-    expect(holder.popup).toBe(windows);
-    // The account was chosen: now the Bicos account opens (no way out any more); then the next screen, then unlocked.
+    expect(busy.getBusy()).toBeNull();
+    // The account was chosen: now the Bicos account opens (locked); then the next screen, then unlocked.
     choose();
     await done;
     expect(loc.pathname).toBe('/cadastro/trabalhador'); // no account yet: the same sign-up, without the e-mail
     expect(busy.isBusy()).toBe(true); // until the next screen is drawn
     await vi.waitFor(() => expect(busy.isBusy()).toBe(false));
-    expect(shown).toEqual(['Esperando o Google…', 'Entrando na sua conta…', undefined]);
+    expect(shown).toEqual(['Entrando na sua conta…', undefined]);
     // The phone's back button all the way to the login ends that Google login (nothing stays half-done).
     const pending = await import('../services/googleSignUp');
     expect(pending.googleIdentity()?.email).toBe('ana@exemplo.com');
@@ -200,17 +200,19 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     await vi.waitFor(() => expect(pending.googleIdentity()).toBeNull());
     await vi.waitFor(() => expect(fake.calls.some((c) => c.name === 'signOut')).toBe(true));
 
-    // "Cancelar" while the window is open: unlocked at once; whatever the window answers later is ignored.
-    holder.gate = new Promise<void>((done) => (choose = done));
+    // The window closed without an account chosen: the attempt just ends — no error, nothing shown, no session.
+    holder.closeWith = 'auth/popup-closed-by-user';
     loc.pathname = '/login';
-    const calls = fake.calls.length;
-    const given = auth.signInWithGoogle();
-    busy.getBusy()?.cancel?.onCancel();
-    expect(busy.isBusy()).toBe(false);
-    choose();
-    await expect(given).resolves.toBeUndefined();
-    expect(fake.calls.length).toBe(calls); // no exchange for a session
+    shown.length = 0;
+    const calls = fake.calls.filter((c) => c.kind === 'function').length;
+    await expect(auth.signInWithGoogle()).resolves.toBeUndefined();
+    expect(shown).toEqual([]);
+    expect(fake.calls.filter((c) => c.kind === 'function').length).toBe(calls); // no exchange for a session
     expect(loc.pathname).toBe('/login');
+    // A newer tap replaced the older window: the same, silently.
+    holder.closeWith = 'auth/cancelled-popup-request';
+    await expect(auth.signInWithGoogle()).resolves.toBeUndefined();
+    holder.closeWith = null;
     holder.gate = null;
   });
 

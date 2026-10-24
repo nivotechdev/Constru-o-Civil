@@ -12,7 +12,7 @@ import { db, invokeFunction, toServiceError } from './client';
 import { enterSession, googleIdentityOf, MissingAccountError } from './session';
 import type { GoogleIdentity } from '../googleSignUp';
 
-type Sdk = typeof import('@firebase/auth');
+type Sdk = typeof import('./firebaseSdk');
 
 let loading: Promise<{ auth: Auth; sdk: Sdk }> | null = null;
 let ready: { auth: Auth; sdk: Sdk } | null = null;
@@ -23,8 +23,9 @@ let verifier: RecaptchaVerifier | null = null;
 export function prepareFirebase(): Promise<{ auth: Auth; sdk: Sdk }> {
   warmUpSignIn();
   loading ??= (async () => {
-    const [{ initializeApp, getApps }, sdk] = await Promise.all([import('@firebase/app'), import('@firebase/auth')]);
-    const app = getApps()[0] ?? initializeApp(FIREBASE_CONFIG);
+    hintGoogleHosts();
+    const sdk = await import('./firebaseSdk');
+    const app = sdk.getApps()[0] ?? sdk.initializeApp(FIREBASE_CONFIG);
     const auth = startAuth(sdk, app);
     sdk.useDeviceLanguage(auth); // the SMS and the Google window in Portuguese
     ready = { auth, sdk };
@@ -36,6 +37,25 @@ export function prepareFirebase(): Promise<{ auth: Auth; sdk: Sdk }> {
   });
   return loading;
 }
+
+/**
+ * U68: Google's window goes through Firebase's page (authDomain) and then Google's accounts page: the browser looks
+ * their addresses up and opens the connections ahead, while the person is still on the screen.
+ */
+function hintGoogleHosts(): void {
+  if (typeof document === 'undefined' || hinted) return;
+  hinted = true;
+  const hosts = [FIREBASE_CONFIG.authDomain && `https://${FIREBASE_CONFIG.authDomain}`, 'https://accounts.google.com'];
+  for (const href of hosts.filter(Boolean) as string[])
+    for (const rel of ['dns-prefetch', 'preconnect']) {
+      const link = document.createElement('link');
+      link.rel = rel;
+      link.href = href;
+      if (rel === 'preconnect') link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    }
+}
+let hinted = false;
 
 /**
  * U46: Firebase keeps nothing on the device (it signs out right after handing the token over), so it starts in
@@ -78,6 +98,12 @@ function warmUpSignIn(): void {
   if (now - warmedAt < WARM_EVERY_MS) return;
   warmedAt = now;
   void invokeFunction('entrar-com-firebase', { aquecer: true }).catch(() => undefined);
+}
+
+/** U68: Google's window was closed by the person, or replaced by a newer tap — not an error to show. */
+function closedByPerson(e: unknown): boolean {
+  const code = String((e as { code?: string })?.code ?? '');
+  return code.includes('popup-closed') || code.includes('cancelled-popup') || code.includes('user-cancelled');
 }
 
 /** Firebase's errors in the person's words. */
@@ -175,6 +201,8 @@ export async function signInWithFirebaseGoogle(
     hooks.onAccountChosen?.();
     idToken = await result.user.getIdToken();
   } catch (e) {
+    // U68: the window closed without an account chosen (or a newer tap replaced it): the attempt just ends.
+    if (closedByPerson(e)) return 'cancelado';
     throw firebaseError(e);
   }
   const result = await bridge(auth, sdk, idToken);

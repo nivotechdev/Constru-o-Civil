@@ -15,6 +15,7 @@ import {
   getSession,
   setSessionAccount,
   updateAccount,
+  updateCompany,
   upsertAccount,
   upsertCompany,
   upsertWorker
@@ -339,15 +340,18 @@ const CANNOT_CHANGE_EMAIL = 'Não deu para trocar o e-mail aqui. Toque em Sair e
  * own: others see only the city. Its city is where the mural opens and where a new job starts (U13); distances to
  * the jobs are measured from it. Backend: RPC finish_sign_up.
  */
-export async function finishSignUp(address: ResolvedAddress | null): Promise<void> {
-  if (!IS_DEMO) return remote.finishSignUp(address);
+export async function finishSignUp(address: ResolvedAddress | null, companyCity?: string): Promise<void> {
+  if (!IS_DEMO) return remote.finishSignUp(address, companyCity);
   await mockLatency(500);
   const session = getSession();
   if (!session) return;
-  // U62: the company has no fixed address (each job has its own); only the worker sends one.
+  // U62: the company has no fixed address (each job has its own); only the worker sends one. U67: the company keeps
+  // the city it is in (the mural opens there).
   if (address && session.workerId) {
     const { keepAddressInDemo } = await import('./profiles');
     keepAddressInDemo(address);
+  } else if (companyCity && session.companyId) {
+    updateCompany(session.companyId, { location: companyCity });
   }
   updateAccount(session.accountId, { profileCompletedAt: new Date().toISOString() });
 }
@@ -398,29 +402,14 @@ export async function abandonPasswordReset(): Promise<void> {
  */
 export async function signInWithGoogle(role?: Role): Promise<void> {
   if (IS_DEMO) throw serviceError('validacao', 'Na demonstração, entre com e-mail e senha.');
-  // U45: something is already loading (a second tap in the same instant): nothing happens.
+  // U45: something is already loading (the account being opened): nothing happens.
   if (isBusy()) return;
   const attempt = ++googleAttempt;
   const wanted = () => attempt === googleAttempt;
   rememberGoogleRole(role ?? null);
-  // U45: from the tap until the next screen, the app shows that it is loading and takes no other tap. While the
-  // Google window is open the person can give up ("Cancelar": whatever that window answers later is ignored).
-  const lock: BusyHandle = startBusy(
-    {
-      message: FEATURES.firebase ? 'Esperando o Google…' : 'Abrindo o Google…',
-      detail: FEATURES.firebase ? 'Escolha sua conta na janela do Google.' : undefined,
-      cancel: {
-        label: 'Cancelar',
-        onCancel: () => {
-          googleAttempt++;
-          lock.end();
-        }
-      }
-    },
-    { maxMs: GOOGLE_WINDOW_MAX_MS }
-  );
   // Supabase's own Google page: the app leaves for it (the lock goes with the page).
   if (!FEATURES.firebase) {
+    const lock = startBusy({ message: 'Abrindo o Google…' }, { maxMs: GOOGLE_WINDOW_MAX_MS });
     try {
       await remote.signInWithGoogle();
     } catch (e) {
@@ -429,16 +418,37 @@ export async function signInWithGoogle(role?: Role): Promise<void> {
     }
     return;
   }
+  // U68: nothing covers the screen while Google's window is open — it is the window that shows. Closed without
+  // choosing an account, the attempt just ends, silently (no "waiting" screen, no "Cancelar" to tap, no error). Only
+  // once an account is chosen does the app show that it is opening it (and take no other tap meanwhile).
+  let lock: BusyHandle | null = null;
   try {
     // U29: straight into Firebase, nothing awaited before — the Google window must open inside the tap.
     const result = await remoteFirebase.signInWithFirebaseGoogle({
       onAccountChosen: () => {
-        if (wanted()) lock.update({ message: 'Entrando na sua conta…', detail: 'Só um instante.' });
+        if (!wanted()) return;
+        lock = startBusy(
+          {
+            message: 'Entrando na sua conta…',
+            detail: 'Só um instante.',
+            cancel: {
+              label: 'Cancelar',
+              onCancel: () => {
+                googleAttempt++;
+                lock?.end();
+              }
+            }
+          },
+          { maxMs: GOOGLE_WINDOW_MAX_MS }
+        );
       },
       stillWanted: wanted
     });
-    if (!wanted() || result === 'cancelado') return;
-    unlockOnNextScreen(lock);
+    if (!wanted() || result === 'cancelado') {
+      (lock as BusyHandle | null)?.end();
+      return;
+    }
+    if (lock) unlockOnNextScreen(lock);
     if (result !== 'ok') {
       setGoogleIdentity(result);
       watchGoogleSignUpExit();
@@ -448,7 +458,7 @@ export async function signInWithGoogle(role?: Role): Promise<void> {
       navigate(next, { replace: next === currentPath() });
     }
   } catch (e) {
-    lock.end();
+    (lock as BusyHandle | null)?.end();
     if (!wanted()) return; // given up: the window's answer is no news
     throw e;
   }
@@ -492,6 +502,19 @@ function watchGoogleSignUpExit(): void {
 /** U29: loads Firebase as a screen with the Google/phone buttons opens, so the tap opens the window at once. */
 export function prepareSocialSignIn(): void {
   if (FEATURES.firebase) void remoteFirebase.prepareFirebase().catch(() => undefined);
+}
+
+/**
+ * U68: someone not signed in will most likely sign in or sign up: Firebase (and Google's helper frame) loads as soon
+ * as the page is idle, so it is ready well before the Google button is tapped — not only when its screen opens.
+ */
+export function prepareSocialSignInWhenIdle(): void {
+  if (!FEATURES.firebase || IS_DEMO || getSession()) return;
+  const start = () => prepareSocialSignIn();
+  const idle = (globalThis as { requestIdleCallback?: (fn: () => void, o?: { timeout: number }) => void })
+    .requestIdleCallback;
+  if (idle) idle(start, { timeout: 4000 });
+  else setTimeout(start, 1500);
 }
 
 // ---- phone (U28) ----

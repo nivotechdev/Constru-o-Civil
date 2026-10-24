@@ -112,6 +112,22 @@ async function walk(width, height, role) {
   // U51: the worker completes the profile in two steps — the address (also with every field marked as missing), then
   // the photos. U62: the company has no fixed address and goes straight to the photos.
   if (role === 'recrutador') {
+    // U67: the company's city first (by GPS or typed), then the photos.
+    await check('cidade');
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    await page.waitForTimeout(300);
+    await check('cidade sem escolher');
+    await page.getByRole('button', { name: 'Digitar a cidade' }).click();
+    await page.waitForTimeout(400);
+    await page.fill('#completar-cidade-search', 'Caxias do Sul');
+    await page
+      .getByRole('option', { name: /Caxias do Sul/ })
+      .first()
+      .click();
+    await page.waitForTimeout(300);
+    await check('cidade escolhida');
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+    await page.waitForTimeout(600);
     await check('fotos do perfil');
     await page.close();
     return;
