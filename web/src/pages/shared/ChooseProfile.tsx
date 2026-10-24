@@ -42,7 +42,9 @@ export default function ChooseProfile() {
             <>
               <OrDivider />
               {google.error ? <FieldError message={google.error} /> : null}
-              <GoogleButton loading={google.loading} onClick={() => void google.run(ui.role)} />
+              {/* U69: no spinner on the button — like the login and the sign-up (U68), the Google window is what shows;
+                  closed without an account, nothing stays loading. */}
+              <GoogleButton onClick={() => void google.run(ui.role)} />
             </>
           ) : null}
         </>

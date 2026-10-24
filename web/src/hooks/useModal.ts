@@ -8,6 +8,22 @@ const FOCUSABLE =
 
 const stack: HTMLElement[] = [];
 
+// U69: while any dialog, sheet or full-screen viewer is open, the page behind it does not scroll (a finger on the
+// sheet used to move the mural behind it, and the sheet drifted up with it). Counted, so nested ones share one lock.
+let scrollLocks = 0;
+function lockPageScroll(): () => void {
+  const root = document.documentElement;
+  if (scrollLocks++ === 0) {
+    root.style.overflow = 'hidden';
+    root.style.overscrollBehavior = 'none';
+  }
+  return () => {
+    if (--scrollLocks > 0) return;
+    root.style.overflow = '';
+    root.style.overscrollBehavior = '';
+  };
+}
+
 function focusables(root: HTMLElement): HTMLElement[] {
   return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
     (el) => el.offsetParent !== null || el === document.activeElement
@@ -54,7 +70,9 @@ export function useModal<T extends HTMLElement = HTMLDivElement>(open: boolean, 
       }
     };
     document.addEventListener('keydown', onKey, true);
+    const unlock = lockPageScroll();
     return () => {
+      unlock();
       document.removeEventListener('keydown', onKey, true);
       const i = stack.lastIndexOf(node);
       if (i >= 0) stack.splice(i, 1);

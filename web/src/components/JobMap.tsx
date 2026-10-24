@@ -44,16 +44,6 @@ export function JobMap({ job, place, home, askHome = false }: Props) {
     return () => io.disconnect();
   }, []);
 
-  // The full-screen map holds the page still behind it.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
   const origin = home;
   const key = origin ? `${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}>${job.lat},${job.lon}` : '';
 

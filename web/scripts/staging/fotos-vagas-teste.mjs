@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// U36 — Fotos reais nas vagas de TESTE do staging (conta recrutador.teste@bicos.test). Busca no Wikimedia Commons só
-// fotos de domínio público ou CC0 — uso livre, sem obrigação de crédito —, duas por vaga, sem repetir, já reduzidas a
-// 1280 px pelo próprio Commons, envia ao bucket `vagas` na pasta da empresa (a mesma regra do app) e grava em
-// jobs.photos. Roda pelo workflow "staging-fotos" (aqui a rede de fora não alcança os bancos de imagens).
+// U36/U69 — Fotos reais nas vagas do staging. Busca no Wikimedia Commons só fotos de domínio público ou CC0 — uso
+// livre, sem obrigação de crédito —, várias por vaga (U69: 4), sem repetir enquanto der, já reduzidas a 1280 px pelo
+// próprio Commons, envia ao bucket `vagas` na pasta da empresa da vaga (a mesma regra do app) e grava em jobs.photos.
+// U69: todas as vagas publicadas do staging (não só as da conta de teste); TODAS=0 volta a fazer só as da conta de
+// teste. Roda pelo workflow "staging-fotos" (aqui a rede de fora não alcança os bancos de imagens).
 //
 //   SUPABASE_URL=https://<ref>.supabase.co SERVICE_ROLE_KEY=… node scripts/staging/fotos-vagas-teste.mjs
 // Só no staging: recusa a produção.
@@ -12,7 +13,8 @@ if (!url || !key) throw new Error('Faltam SUPABASE_URL e SERVICE_ROLE_KEY.');
 if (url.includes('ppnxdajiihsjaojxokzh')) throw new Error('Isto é só para o staging.');
 
 const COMPANY = 'b1c05000-0000-4000-8000-00000000c0de';
-const PER_JOB = 2;
+const PER_JOB = Number(process.env.FOTOS_POR_VAGA ?? 4);
+const ALL = process.env.TODAS !== '0';
 // Palavras do título → buscas no Commons (em inglês, onde o acervo é maior) e o que o NOME do arquivo precisa ter
 // (a busca do Commons acha o termo em qualquer lugar da página). U48: as vagas de teste são de serviços para o público
 // geral (garçom, cozinha, faxina, recepção, mudança, mercado, jardim, cuidadora, panfletos, loja) — nada de obra.
@@ -34,7 +36,23 @@ const SEARCHES = [
   [/jardin/i, ['gardener mowing lawn', 'gardening hedge trimming'], /garden|lawn|mow|hedge/i],
   [/cuidador/i, ['caregiver elderly woman home', 'elderly care companion'], /care|elderly|senior|grandmother/i],
   [/panflet|entregador/i, ['handing out flyers street', 'leaflet distribution'], /flyer|leaflet|pamphlet/i],
-  [/loja|ajudante geral/i, ['clothing store shop assistant', 'retail store employee'], /store|shop|retail|boutique/i]
+  [/loja|ajudante geral/i, ['clothing store shop assistant', 'retail store employee'], /store|shop|retail|boutique/i],
+  [/bab[aá]|cuidar de crian/i, ['babysitter playing with children', 'nanny child care'], /babysit|nanny|child|kid/i],
+  [/pintur|pintor/i, ['painting a wall roller', 'house painter interior'], /paint/i],
+  [
+    /churrasc|cozinheir|buffet/i,
+    ['barbecue grill cook', 'buffet catering food'],
+    /barbecue|grill|buffet|catering|cook/i
+  ],
+  [/bar ?man|bartender|drinks?/i, ['bartender cocktail bar', 'bartender pouring drink'], /bartend|bar|cocktail/i],
+  [/seguran[cç]a|porteiro/i, ['security guard event entrance', 'doorman building'], /security|guard|doorman/i],
+  [/motorista|entreg/i, ['delivery driver van', 'courier delivering package'], /deliver|driver|courier/i],
+  [
+    /evento|festa|casamento/i,
+    ['wedding reception party staff', 'event staff setting tables'],
+    /wedding|party|event|banquet/i
+  ],
+  [/caixa|atendente|vendedor/i, ['cashier store counter', 'shop assistant customer'], /cashier|shop|store|customer/i]
 ];
 const FALLBACK = [['people working smiling', 'service worker'], /work|worker|staff|employee/i];
 // Escolhidas à mão entre as candidatas do ensaio (todas CC0 ou domínio público). A busca só entra se uma delas
@@ -151,10 +169,12 @@ async function download(image) {
   return bytes.length > 20_000 && bytes.length < 3_500_000 ? bytes : null;
 }
 
-const jobsRes = await rest(`/rest/v1/jobs?company_id=eq.${COMPANY}&select=id,title&order=id`);
+const jobsRes = await rest(
+  `/rest/v1/jobs?${ALL ? '' : `company_id=eq.${COMPANY}&`}deleted_at=is.null&select=id,title,company_id&order=id`
+);
 if (!jobsRes.ok) throw new Error(`jobs ${jobsRes.status}`);
 const jobs = await jobsRes.json();
-console.log(`${jobs.length} vagas da conta de teste.`);
+console.log(`${jobs.length} vagas ${ALL ? 'publicadas no staging' : 'da conta de teste'}, ${PER_JOB} fotos em cada.`);
 const used = new Set();
 // As escolhidas à mão ficam reservadas para a sua vaga: a busca de reserva de outra vaga não as pega.
 const reserved = new Set(PICKS.flatMap(([, titles]) => titles.map((t) => `File:${t}`)));
@@ -182,14 +202,17 @@ for (const job of jobs) {
     pool.slice(0, PER_JOB).forEach((c) => used.add(c.id));
     continue;
   }
-  for (const image of pool) {
+  // Primeiro as que ainda não foram usadas; se faltar (muitas vagas do mesmo serviço), repete as do mesmo assunto.
+  const order = [...pool.filter((c) => !used.has(c.id)), ...pool.filter((c) => used.has(c.id))];
+  const taken = new Set();
+  for (const image of order) {
     if (photos.length >= PER_JOB) break;
-    if (used.has(image.id)) continue;
+    if (taken.has(image.id)) continue;
     const bytes = await download(image);
     if (!bytes) continue;
     // Nome novo a cada rodada: o navegador não mostra a foto antiga do cache (as antigas viram órfãs e o
     // limpar-arquivos apaga).
-    const path = `vagas/${COMPANY}/${job.id}-${STAMP}-${photos.length + 1}.jpg`;
+    const path = `vagas/${job.company_id ?? COMPANY}/${job.id}-${STAMP}-${photos.length + 1}.jpg`;
     const up = await rest(`/storage/v1/object/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' },
@@ -197,6 +220,7 @@ for (const job of jobs) {
     });
     if (!up.ok) throw new Error(`upload ${job.id}: ${up.status} ${await up.text()}`);
     used.add(image.id);
+    taken.add(image.id);
     photos.push(`${url}/storage/v1/object/public/${path}`);
     credits.push(
       `${job.id} · [${image.score}] ${image.title} — ${image.creator || 'autor desconhecido'} (${image.license}) ${image.page ?? ''}`

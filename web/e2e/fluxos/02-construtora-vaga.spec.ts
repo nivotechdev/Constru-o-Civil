@@ -92,11 +92,10 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await expect(page.getByRole('combobox', { name: 'Cidade' })).toHaveValue('Caxias do Sul, RS');
   await page.fill('#create-job-numero', '120');
   await page.selectOption('#create-job-tipo', 'casa');
-  // Sem dia marcado não passa; "Fim de semana" e mais a sexta.
+  // Sem dia marcado não passa; sexta, sábado e domingo.
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(page.getByText('Marque pelo menos um dia.')).toBeVisible();
-  await page.getByRole('button', { name: 'Fim de semana', exact: true }).click();
-  await page.getByRole('button', { name: 'Sex', exact: true }).click();
+  for (const dia of ['Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: dia, exact: true }).click();
   await expect(page.getByText('No mural: Sex a dom')).toBeVisible();
   await print(page, 'f2', 'publicar vaga passo 1');
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();

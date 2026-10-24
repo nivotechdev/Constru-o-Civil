@@ -1,4 +1,4 @@
-# U36 — Põe fotos reais (domínio público/CC0, do Wikimedia Commons) nas vagas da conta de TESTE do staging.
+# U36/U69 — Põe fotos reais (domínio público/CC0, do Wikimedia Commons) nas vagas publicadas do staging (4 por vaga).
 # Só manual (Actions › staging-fotos › Run workflow): não roda a cada envio ao master.
 name: staging-fotos
 
@@ -9,6 +9,10 @@ on:
         description: "Só listar as fotos candidatas, sem gravar"
         type: boolean
         default: false
+      fotos_por_vaga:
+        description: "Quantas fotos em cada vaga"
+        type: number
+        default: 4
 
 permissions:
   contents: read
@@ -39,6 +43,7 @@ jobs:
         # pipefail: um erro do script derruba o passo (o tee sozinho escondia a falha).
         env:
           ENSAIO: ${{ inputs.ensaio && '1' || '' }}
+          FOTOS_POR_VAGA: ${{ inputs.fotos_por_vaga || 4 }}
         run: |
           set -o pipefail
           node scripts/staging/fotos-vagas-teste.mjs | tee -a "$GITHUB_STEP_SUMMARY"

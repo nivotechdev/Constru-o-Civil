@@ -110,7 +110,7 @@ export function Sheet({ open, title, onClose, children }: SheetProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="outline-none w-full sm:max-w-app lg:max-w-[34rem] bg-concrete-0 rounded-t-sheet lg:rounded-sheet shadow-sheet p-4 lg:p-6 flex flex-col gap-4 overflow-y-auto animate-slide-up"
+        className="outline-none w-full sm:max-w-app lg:max-w-[34rem] bg-concrete-0 rounded-t-sheet lg:rounded-sheet shadow-sheet p-4 lg:p-6 flex flex-col gap-4 overflow-y-auto overscroll-contain animate-slide-up"
         style={{ maxHeight: '85vh' }}
         onClick={(e) => e.stopPropagation()}
       >

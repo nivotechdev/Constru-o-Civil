@@ -2461,3 +2461,15 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
 - **Limite**: a janela do Google passa pela página do Firebase e depois pela do Google; esse caminho é do Google. O
   jeito de ficar instantâneo é o "Login com o Google" nativo do Google (One Tap / FedCM), que mostra as contas sem abrir
   página — precisa do "ID do cliente OAuth" do Google Cloud (ação do responsável); fica para o próximo passo.
+
+## U69 — Google na escolha do lado, só os dias na vaga, fotos nas vagas e filtro que trava a tela de trás
+
+- **"Como você vai usar o Bicos?"**: o botão do Google girava até o Firebase avisar que a janela fechou (uns segundos);
+  agora não gira — igual ao login e ao cadastro (U68): fechar a janela sem escolher conta não deixa nada carregando.
+- **Publicar vaga › "Em que dias pode ser?"**: saíram as pílulas "Seg a sex", "Fim de semana" e "Todos"; ficam só os
+  sete dias (e o "No mural: …" embaixo).
+- **Fotos**: o `staging-fotos` (U36) passa a pôr 4 fotos livres (domínio público/CC0, do Wikimedia Commons) em **todas**
+  as vagas publicadas do staging, não só nas da conta de teste; sem repetir enquanto houver fotos novas do assunto.
+- **Filtros (e todo diálogo/folha)**: enquanto estão abertos, a página de trás não rola (`useModal` trava o rolar do
+  documento, com contagem para diálogos um sobre o outro) e a folha não "puxa" a página quando chega ao fim
+  (`overscroll-contain`). Era isso que fazia a folha dos filtros subir junto com o mural.

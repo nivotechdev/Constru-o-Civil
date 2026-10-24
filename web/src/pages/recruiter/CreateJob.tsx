@@ -485,8 +485,8 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
 }
 
 /**
- * U52: "Em que dias pode ser?" — the seven days in one row, each a toggle, with shortcuts for the usual choices and
- * the word the mural card will show ("Durante a semana", "Fim de semana", "Todos os dias").
+ * U52: "Em que dias pode ser?" — the seven days in one row, each a toggle, and the word the mural card will show
+ * ("Durante a semana", "Fim de semana", "Todos os dias"). U69: only the days — no shortcut pills.
  */
 function WeekdayPicker({
   value,
@@ -499,11 +499,6 @@ function WeekdayPicker({
 }) {
   const toggle = (n: number) =>
     onChange(value.includes(n) ? value.filter((d) => d !== n) : cleanWeekdays([...value, n]));
-  const shortcuts: { label: string; days: number[] }[] = [
-    { label: 'Seg a sex', days: [1, 2, 3, 4, 5] },
-    { label: 'Fim de semana', days: [6, 7] },
-    { label: 'Todos', days: [1, 2, 3, 4, 5, 6, 7] }
-  ];
   return (
     <fieldset className="flex flex-col gap-2.5 max-w-[27rem]">
       <legend className="text-sm font-semibold text-concrete-900 pb-2">Em que dias pode ser?</legend>
@@ -530,32 +525,11 @@ function WeekdayPicker({
           );
         })}
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {shortcuts.map((s) => {
-          const on = value.length === s.days.length && s.days.every((d) => value.includes(d));
-          return (
-            <button
-              key={s.label}
-              type="button"
-              aria-pressed={on ? 'true' : 'false'}
-              className={cx(
-                'h-8 px-3 rounded-full border text-xs font-semibold transition-colors',
-                on
-                  ? 'bg-brand-50 border-brand-200 text-brand-700'
-                  : 'bg-concrete-0 border-concrete-200 text-concrete-700 hover:bg-concrete-50'
-              )}
-              onClick={() => onChange(s.days)}
-            >
-              {s.label}
-            </button>
-          );
-        })}
-        {value.length ? (
-          <span className="ml-auto text-sm text-concrete-500" aria-live="polite">
-            {`No mural: ${daysText({ weekdays: value })}`}
-          </span>
-        ) : null}
-      </div>
+      {value.length ? (
+        <span className="text-sm text-concrete-500" aria-live="polite">
+          {`No mural: ${daysText({ weekdays: value })}`}
+        </span>
+      ) : null}
       {error ? <FieldError message={error} /> : null}
     </fieldset>
   );
