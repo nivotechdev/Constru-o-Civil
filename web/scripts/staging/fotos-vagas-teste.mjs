@@ -90,6 +90,109 @@ const SEARCHES = [
 // fotos que já tinha).
 const FALLBACK = [[], /^$/];
 // U69: o StockSnap acha melhor com palavras soltas; por assunto, as palavras e o que o título/etiquetas precisam ter.
+// U69: escolhidas à mão entre as candidatas do ensaio (StockSnap, Commons e WordPress Photos — todas CC0 ou domínio
+// público). "ov:" = id do Openverse; número = página do Commons. A vaga com escolha usa só essas (sem busca).
+const HAND = [
+  [
+    /gar[cç]om|gar[cç]onete/i,
+    [
+      'ov:27ff323c-6798-473e-bdd4-2ceb5bf7fedc',
+      'ov:3542130b-a6df-4834-aebb-42de9f8e5f97',
+      'ov:ba317fb0-d288-4441-83d5-c67d76b8494f',
+      'ov:2498bb63-1d2d-43e4-a5da-5947b273aad2'
+    ]
+  ],
+  [
+    /cozinha/i,
+    [
+      'ov:96a2ce59-b426-4eaf-8302-53b0c68b943d',
+      'ov:4c81c213-3864-49c1-a42c-1447bf3dda9f',
+      'ov:ff771d44-c530-46da-bde9-147724bb53fd',
+      'ov:57bd9504-75b0-40d2-932f-4097d3d0b126'
+    ]
+  ],
+  [
+    /faxina|limpeza/i,
+    [
+      'ov:81811083-3181-4dc4-a50d-af243c219c86',
+      'ov:ec36e194-3b62-43da-996e-d06206dd2160',
+      'ov:62bc13a2-d805-4690-9383-4b56250375b8',
+      'ov:8017eb97-a56e-4111-999e-3b6f963df001'
+    ]
+  ],
+  [
+    /recepcion/i,
+    [
+      'ov:15406615-14a3-4c8c-9522-1ed789adfc84',
+      'ov:cae10b85-2e23-490c-b113-6b2809bc962d',
+      'ov:09c6a2e2-dfa9-4d4f-ab8a-be86edb49ff8'
+    ]
+  ],
+  [/mudan[cç]a/i, ['ov:6d8c6f90-6e4b-4998-a456-79afaba3e4ef', 18727277]],
+  [
+    /repositor|mercado/i,
+    [
+      'ov:11067852-2e75-4a53-81c4-46225d4d7f3a',
+      'ov:f20ed6b2-2563-4337-9fce-0fe70d376990',
+      'ov:a88f8eb8-9c75-445c-bd2d-5244f933a5c6',
+      'ov:89f6c7df-7d59-4013-97db-4c6cad5aa6a3'
+    ]
+  ],
+  [
+    /jardin/i,
+    [
+      'ov:8ad76d6d-9dd8-43e6-8e0d-f784845db4da',
+      'ov:6cd4e416-6ef0-40bf-8354-90ca058065ea',
+      'ov:a17b99f4-5429-4a30-92e5-1e81107d7e1f',
+      'ov:6a789fc3-1af5-49ba-b020-e7c3ba01e812'
+    ]
+  ],
+  [
+    /cuidador/i,
+    [
+      'ov:2adddba5-a019-43ce-a486-53f2dede44fb',
+      'ov:9d030e64-f73a-42bc-9674-b58616727b7f',
+      'ov:79c8aee1-8085-423d-ac54-f9db7358b0b3',
+      'ov:d1d52d6c-ac3c-42dc-a53e-e30403be3caa'
+    ]
+  ],
+  [/panflet/i, [159570542, 'ov:5788ec74-1453-43cb-ab7c-66f20ead9d8e', 'ov:f8ef3479-31fb-4681-b85b-7f99bba6cf75']],
+  [
+    /loja|ajudante geral/i,
+    [
+      'ov:a263c368-6e2e-4f6b-b585-26ffa9bfc9e2',
+      'ov:bc2b3cbf-c1cb-44fe-930b-3e677b5611b9',
+      'ov:d53026c4-3f42-49dd-9e7e-6f259a0fc08b',
+      'ov:025df98b-d71b-41fd-88bd-eb517bde7d4a'
+    ]
+  ]
+];
+
+/** As escolhidas à mão: do Openverse pelo id, do Commons pela página. */
+async function handPicked(ids) {
+  const out = [];
+  for (const id of ids) {
+    if (typeof id === 'number') {
+      const [c] = describe(await commons({ pageids: String(id) }), /./);
+      if (c) out.push(c);
+      continue;
+    }
+    const res = await fetch(`https://api.openverse.org/v1/images/${id.slice(3)}/`, { headers: { 'User-Agent': UA } });
+    if (!res.ok) continue;
+    const r = await res.json();
+    out.push({
+      id,
+      title: `${r.title ?? ''} [${r.provider}]`,
+      thumb: r.url,
+      license: `${r.license}`.toUpperCase(),
+      creator: (r.creator ?? '').slice(0, 80),
+      page: r.foreign_landing_url,
+      score: 9
+    });
+  }
+  return out;
+}
+
 const SNAP = [
   [
     /gar[cç]om|gar[cç]onete/i,
@@ -293,6 +396,37 @@ for (const job of jobs) {
   // As escolhidas à mão; se faltar alguma, as buscas da vaga e, depois, as gerais.
   const pool = await picked(PICKS.find(([re]) => re.test(job.title))?.[1] ?? []);
   const hand = new Set(pool.map((c) => c.id));
+  const handPick = HAND.find(([re]) => re.test(job.title));
+  if (handPick && !DRY) {
+    const chosen = await handPicked(handPick[1]);
+    const photos = [];
+    for (const image of chosen) {
+      if (photos.length >= PER_JOB) break;
+      const bytes = await download(image);
+      if (!bytes) continue;
+      const path = `vagas/${job.company_id ?? COMPANY}/${job.id}-${STAMP}-${photos.length + 1}.jpg`;
+      const up = await rest(`/storage/v1/object/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' },
+        body: bytes
+      });
+      if (!up.ok) throw new Error(`upload ${job.id}: ${up.status} ${await up.text()}`);
+      photos.push(`${url}/storage/v1/object/public/${path}`);
+      credits.push(
+        `${job.id} · ${image.title} — ${image.creator || 'autor desconhecido'} (${image.license}) ${image.page ?? ''}`
+      );
+    }
+    if (photos.length) {
+      const upd = await rest(`/rest/v1/jobs?id=eq.${job.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ photos })
+      });
+      if (!upd.ok) throw new Error(`fotos ${job.id}: ${upd.status} ${await upd.text()}`);
+    }
+    console.log(`${photos.length ? '✓' : '✗'} ${job.id} ${job.title}: ${photos.length} foto(s) escolhida(s) à mão`);
+    continue;
+  }
   const snap = SNAP.find(([re]) => re.test(job.title));
   for (const word of snap?.[1] ?? []) {
     pool.push(...(await openverse(word, snap[2], 'stocksnap')).filter((c) => !pool.some((p) => p.id === c.id)));
