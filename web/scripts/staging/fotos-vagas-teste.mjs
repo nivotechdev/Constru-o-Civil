@@ -89,6 +89,23 @@ const SEARCHES = [
 // U69: sem foto genérica de reserva — uma foto que não é do assunto da vaga é pior que nenhuma (a vaga fica com as
 // fotos que já tinha).
 const FALLBACK = [[], /^$/];
+// U69: o StockSnap acha melhor com palavras soltas; por assunto, as palavras e o que o título/etiquetas precisam ter.
+const SNAP = [
+  [
+    /gar[cç]om|gar[cç]onete/i,
+    ['waiter', 'waitress', 'restaurant service', 'catering'],
+    /waiter|waitress|serv|catering/i
+  ],
+  [/cozinha/i, ['chef', 'kitchen', 'cook'], /kitchen|chef|cook/i],
+  [/faxina|limpeza/i, ['cleaning', 'mop', 'housekeeping', 'cleaner'], /clean|mop|vacuum|housekeep|broom/i],
+  [/recepcion/i, ['receptionist', 'reception', 'conference', 'event'], /recep|conference|event|desk|welcome|hostess/i],
+  [/mudan[cç]a/i, ['moving', 'boxes', 'cardboard', 'movers'], /mov|boxes|box|cardboard/i],
+  [/repositor|mercado/i, ['supermarket', 'grocery', 'grocery store'], /supermarket|grocery|shelves|store|market/i],
+  [/jardin/i, ['gardening', 'gardener', 'lawn mower', 'garden'], /garden|lawn|mow|plant/i],
+  [/cuidador/i, ['caregiver', 'elderly', 'senior'], /care|elderly|senior|old/i],
+  [/panflet|entregador/i, ['flyer', 'delivery', 'courier'], /flyer|leaflet|deliver|courier/i],
+  [/loja|ajudante geral/i, ['clothing store', 'shop', 'retail', 'boutique'], /store|shop|retail|boutique|cloth/i]
+];
 // Escolhidas à mão entre as candidatas do ensaio (todas CC0 ou domínio público). A busca só entra se uma delas
 // sumir do Commons ou mudar de licença. U48: as de obra saíram; a lista nova sai do ensaio das vagas novas.
 const PICKS = [];
@@ -276,7 +293,13 @@ for (const job of jobs) {
   // As escolhidas à mão; se faltar alguma, as buscas da vaga e, depois, as gerais.
   const pool = await picked(PICKS.find(([re]) => re.test(job.title))?.[1] ?? []);
   const hand = new Set(pool.map((c) => c.id));
+  const snap = SNAP.find(([re]) => re.test(job.title));
+  for (const word of snap?.[1] ?? []) {
+    pool.push(...(await openverse(word, snap[2], 'stocksnap')).filter((c) => !pool.some((p) => p.id === c.id)));
+    if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 10 : PER_JOB + 2)) break;
+  }
   for (const [q, re] of [...queries.map((q) => [q, must]), ...FALLBACK[0].map((q) => [q, FALLBACK[1]])]) {
+    if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 10 : PER_JOB + 2)) break;
     pool.push(...(await candidates(q, re)).filter((c) => !reserved.has(c.title) && !pool.some((p) => p.id === c.id)));
     if (pool.filter((c) => !used.has(c.id)).length >= (DRY ? 10 : PER_JOB + 2)) break;
   }
