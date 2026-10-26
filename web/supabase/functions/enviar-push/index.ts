@@ -16,7 +16,8 @@ import { monitored } from '../_shared/monitoring.ts';
 
 const PUBLIC = Deno.env.get('VAPID_PUBLIC_KEY') ?? '';
 const PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
-const SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:nivotech.dev@gmail.com';
+// Sem padrão: o contato vai para o serviço de push e não pode ser um e-mail pessoal escrito no código.
+const SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? '';
 const SECRET = Deno.env.get('PUSH_WEBHOOK_SECRET') ?? '';
 
 // Mesmos grupos de notification_group() no banco (F06).
@@ -49,7 +50,7 @@ Deno.serve(
   monitored('enviar-push', async (req) => {
     if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
     if (!SECRET || !same(req.headers.get('x-webhook-secret') ?? '', SECRET)) return json({ erro: 'segredo' }, 401);
-    if (!PUBLIC || !PRIVATE) return json({ erro: 'push-desligado' }, 503);
+    if (!PUBLIC || !PRIVATE || !SUBJECT) return json({ erro: 'push-desligado' }, 503);
 
     let record: NoticeRecord;
     try {
