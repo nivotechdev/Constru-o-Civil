@@ -165,7 +165,7 @@ Sentry, SMTP próprio (Brevo), `CLEANUP_SECRET`, leaked password protection, URL
 cd web
 npm ci
 npm run dev            # http://localhost:5173 (demo se não houver .env.local)
-npm run typecheck && npm run lint && npm run format:check && npm test   # 207 testes Vitest
+npm run typecheck && npm run lint && npm run format:check && npm test   # 282 testes Vitest (34 arquivos; conferido em 26/10/2026)
 npm run build          # produção: FALHA se faltar variável obrigatória (L01)
 npm run build:demo     # demonstração (dados falsos)
 npm run build:standalone

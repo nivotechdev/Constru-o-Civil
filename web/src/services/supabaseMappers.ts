@@ -14,7 +14,6 @@ import type {
   Database,
   HomeAddress,
   Job,
-  Oficio,
   PlacePrecision,
   Review,
   Worker,
@@ -83,14 +82,6 @@ export function accountToRow(account: Account): TableInsert<'accounts'> {
 }
 
 // ---- ofícios (the catalog) ----
-
-export function oficioFromRow(row: TableRow<'oficios'>): Oficio {
-  return { id: row.id, nome: row.nome, sinonimos: row.sinonimos };
-}
-
-export function oficioToRow(oficio: Oficio): TableInsert<'oficios'> {
-  return { id: oficio.id, nome: oficio.nome, sinonimos: oficio.sinonimos };
-}
 
 // ---- companies ----
 

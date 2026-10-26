@@ -346,37 +346,6 @@ interface Table<R, Defaulted extends keyof R = never, Writable extends keyof R =
   Relationships: Relationship[];
 }
 
-const fk = (table: string, column: string, to: string, isOneToOne = false): Relationship => ({
-  foreignKeyName: `${table}_${column}_fkey`,
-  columns: [column],
-  isOneToOne,
-  referencedRelation: to,
-  referencedColumns: ['id']
-});
-/** The foreign keys, for documentation and for the tests (supabase-js only needs their type). */
-export const RELATIONSHIPS = {
-  accounts: [fk('accounts', 'worker_id', 'workers', true), fk('accounts', 'company_id', 'companies')],
-  workers: [],
-  jobs: [fk('jobs', 'company_id', 'companies'), fk('jobs', 'oficio_id', 'oficios')],
-  applications: [fk('applications', 'job_id', 'jobs'), fk('applications', 'worker_id', 'workers')],
-  saved_jobs: [fk('saved_jobs', 'worker_id', 'workers'), fk('saved_jobs', 'job_id', 'jobs')],
-  reviews: [
-    fk('reviews', 'company_id', 'companies'),
-    fk('reviews', 'worker_id', 'workers'),
-    fk('reviews', 'job_id', 'jobs')
-  ],
-  worker_posts: [fk('worker_posts', 'worker_id', 'workers')],
-  job_alerts: [fk('job_alerts', 'worker_id', 'workers', true)],
-  job_invites: [fk('job_invites', 'job_id', 'jobs'), fk('job_invites', 'worker_id', 'workers')],
-  blocks: [],
-  notification_prefs: [],
-  account_prefs: [],
-  addresses: [],
-  application_events: [fk('application_events', 'application_id', 'applications')],
-  notifications: [fk('notifications', 'worker_id', 'workers'), fk('notifications', 'company_id', 'companies')],
-  boost_payments: [fk('boost_payments', 'job_id', 'jobs'), fk('boost_payments', 'company_id', 'companies')]
-};
-
 export interface SupabaseDatabase {
   public: {
     Tables: {
@@ -639,7 +608,6 @@ export type TableRow<T extends keyof PublicSchema['Tables']> = PublicSchema['Tab
 export type TableInsert<T extends keyof PublicSchema['Tables']> = PublicSchema['Tables'][T]['Insert'];
 /** What an update accepts (any subset of columns). */
 export type TableUpdate<T extends keyof PublicSchema['Tables']> = PublicSchema['Tables'][T]['Update'];
-export type DbEnum<T extends keyof PublicSchema['Enums']> = PublicSchema['Enums'][T];
 
 // ---- X14: the hand-written schema above can't drift from the SQL ----
 // database.generated.ts is generated from the database with every migration (scripts/gen-db-types.mjs). Each

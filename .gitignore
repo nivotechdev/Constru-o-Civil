@@ -1,0 +1,21 @@
+# Arquivos de sistema e restos de edição (LIMPEZA C03): nunca versionados.
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.bak
+*.orig
+*.tmp
+*.swp
+
+# Saídas de ferramentas
+node_modules/
+dist/
+dist-*/
+coverage/
+
+# Credenciais locais
+.env
+.env.*
+!.env.example
+!.env.staging.example

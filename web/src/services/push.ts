@@ -1,5 +1,5 @@
 // X03: notifications on the phone (Web Push). The browser's permission is asked only after the app explains
-// what comes (pages/shared/PushPrompt.tsx), and only when the person taps "Ativar". The device's address goes
+// what comes (pages/shared/NotificationSettings.tsx), and only when the person taps "Ativar". The device's address goes
 // to the server (save_push_subscription); the Edge Function `enviar-push` sends each new notice to it,
 // following the groups chosen in Configurações › Avisos (F06). Hidden until VITE_VAPID_PUBLIC_KEY is set
 // (FEATURES.push); never in the demo.

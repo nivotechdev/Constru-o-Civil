@@ -200,10 +200,6 @@ export const putApplications =
     return { ...db, applications: [...kept, ...fresh.values()] };
   };
 
-export const dropApplication =
-  (jobId: string, workerId: string): Recipe =>
-  (db) => ({ ...db, applications: db.applications.filter((a) => !(a.jobId === jobId && a.workerId === workerId)) });
-
 /** The session's notifications, newest first (the whole list is read at once). */
 export const putNotifications =
   (rows: TableRow<'notifications'>[]): Recipe =>

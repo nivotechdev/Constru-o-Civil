@@ -85,7 +85,6 @@ let state: State = {
 };
 
 const listeners = new Set<() => void>();
-let version = 0;
 
 export function subscribe(fn: () => void): () => void {
   listeners.add(fn);
@@ -95,13 +94,7 @@ export function subscribe(fn: () => void): () => void {
 }
 
 function notify(): void {
-  version++;
   listeners.forEach((fn) => fn());
-}
-
-/** Increments on every store change (see components/LegacyRerender.tsx and layouts/AppShell.tsx). */
-export function getVersion(): number {
-  return version;
 }
 
 export function getDb(): Database {

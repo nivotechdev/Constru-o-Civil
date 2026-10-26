@@ -225,3 +225,21 @@ e `scripts/staging/aplicar-banco.sh` já leem de lá. Nada a fazer; a pasta é c
 | D5  | `web/scripts/limpeza/` depois desta rodada                                                                                                                                                                         | **manter**: é a ferramenta de "a tela não mudou" para mudanças futuras (e mantém `pixelmatch`/`pngjs` em uso quando `scripts/parity/` sair).                                                                                   |
 | D6  | Para onde vão as mudanças                                                                                                                                                                                          | **Decidido (19/10)**: direto no `master`, sem PR (pedido do responsável, registrado no `CLAUDE.md` § 2). A C01 e a C02 já estão no `master`. O PR #10 da sessão anterior (`claude/limpeza`) ficou superado e pode ser fechado. |
 | D7  | Tag `antes-da-limpeza`: esta sessão não consegue enviar tags (403)                                                                                                                                                 | você cria: GitHub › Releases › "Draft a new release" › tag `antes-da-limpeza` no commit `c440e5d` (ou `git tag antes-da-limpeza c440e5d && git push origin antes-da-limpeza`).                                                 |
+
+## Execução (auditoria de 26/10/2026)
+
+Itens da tabela A feitos nesta rodada, na branch `claude/eloquent-heisenberg-y5hwt6`:
+
+- Apagados: `src/utils/list.ts`; `getVersion` e `version` (`store.ts`); `dropApplication` (`remote/merge.ts`);
+  `RELATIONSHIPS`, `fk` e `DbEnum` (`types/supabase.ts`); `candidateCount` (`selectors.ts`); `oficioFromRow` e
+  `oficioToRow` (`supabaseMappers.ts`); `REGIOES_TRABALHADOR` e `REGIOES_RECRUTADOR` (`data/seed.ts` e o re-export
+  de `services/catalog.ts`); o re-export de `DEFAULT_CITY` em `feedUI.ts`; o `import` de `Oficio` que ficou sem uso.
+- Comentário corrigido: `services/push.ts` cita `NotificationSettings.tsx` (o `PushPrompt.tsx` não existe).
+- `.gitignore` na raiz com os restos de sistema e as saídas de ferramenta (C03).
+- Contagem de testes atualizada no `CLAUDE.md` (282).
+
+Verificação: `tsc -b`, `tsc --noUnusedLocals --noUnusedParameters`, ESLint, Prettier e os 282 testes passam.
+
+Ainda abertos (decisão ou ação do responsável): D1 (`archive/`), D2 (documentos de migração), a tabela B
+(ajustes para remover `archive/`), e o plano de limpeza dos exports marcados como "tirar `export`" (não aplicado
+nesta rodada: é mudança de API interna sem ganho de funcionalidade).

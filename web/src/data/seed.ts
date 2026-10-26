@@ -1369,15 +1369,6 @@ export const BOOST_PAYMENTS: BoostPayment[] = [
 
 export const SAVED_JOB_IDS: string[] = ['BC-4841', 'BC-4848', 'BC-4712', 'BC-4698'];
 
-export const REGIOES_TRABALHADOR = [
-  'Tatuapé, SP',
-  'Mooca, SP',
-  'Penha, SP',
-  'Vila Prudente, SP',
-  'Belém, SP',
-  'Vila Formosa, SP'
-];
-export const REGIOES_RECRUTADOR = ['Zona Leste, SP', 'Zona Norte, SP', 'Zona Sul, SP', 'Zona Oeste, SP', 'Centro, SP'];
 export const REQUISITOS_OPCOES = [
   'Sapato fechado',
   'Uniforme próprio',

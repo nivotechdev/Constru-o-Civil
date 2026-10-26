@@ -5,7 +5,7 @@ import { OFICIOS } from '../data/seed';
 import type { BoostPlan, Job, Oficio } from '../types/models';
 import { fold } from '../utils/text';
 
-export { REGIOES_RECRUTADOR, REGIOES_TRABALHADOR, REQUISITOS_OPCOES } from '../data/seed';
+export { REQUISITOS_OPCOES } from '../data/seed';
 export { OFICIOS };
 
 // ---- ofícios (one catalog for jobs, the mural's filter, worker profiles and the search) ----

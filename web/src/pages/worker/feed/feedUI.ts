@@ -44,7 +44,6 @@ export type FeedFilters = Pick<FeedUI, 'location' | 'oficio' | 'dist' | 'quando'
   from: GeoPoint;
 };
 
-export { DEFAULT_CITY };
 export const ALL_CITY = 'Toda a cidade';
 export const SORTS: { id: Sort; label: string }[] = [
   { id: 'perto', label: 'Mais perto' },

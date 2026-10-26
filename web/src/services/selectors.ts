@@ -100,11 +100,6 @@ export function pendingCount(db: Database, jobId: string): number {
   return db.applications.filter((a) => a.jobId === jobId && (a.status === 'enviada' || a.status === 'em_analise'))
     .length;
 }
-/** How many candidates a job has had (any status). */
-export function candidateCount(db: Database, jobId: string): number {
-  const stats = statsOf(db, jobId);
-  return stats ? stats.total : db.applications.filter((a) => a.jobId === jobId).length;
-}
 export const isJobFull = (db: Database, job: Job): boolean => approvedCount(db, job.id) >= (job.slots || 1);
 
 /**
