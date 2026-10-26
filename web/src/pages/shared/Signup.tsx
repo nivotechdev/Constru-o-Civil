@@ -346,7 +346,7 @@ export default function Signup({ params }: ScreenProps) {
     if (check) {
       const value = ui.values[field.id] || '';
       setUi({ submitting: true, submitError: null, taken: null });
-      isFreeForSignUp(check, value)
+      isFreeForSignUp(check, value, captcha.getToken)
         .then((free) => {
           if (free) {
             setUi({ submitting: false });

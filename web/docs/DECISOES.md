@@ -2520,3 +2520,26 @@ digitados por outra pessoa, a dona do e-mail entra numa conta com esses dados e 
 
 Publicar: `entrar-com-firebase` ainda não está na produção. O staging publica sozinho a partir do `master`; produção
 só com "pode".
+
+## X32 — Captcha na verificação de cadastro, só quando há varredura
+
+Problema (achado da auditoria de 26/10/2026): `verificar-cadastro` responde "já tem conta?" para um e-mail, CPF/CNPJ
+ou WhatsApp, e não pedia captcha. O limite (30 por IP e 10 por valor em 15 minutos) segura uma pessoa, mas não impede
+uma varredura que troque de IP. Quem consegue a lista de CPFs de outras pessoas descobre quem tem conta na Bicos.
+
+O que foi feito: depois de 12 perguntas do mesmo IP em 15 minutos, cada pergunta precisa do captcha (Turnstile). Quem
+digita o cadastro pergunta 2 ou 3 vezes e nunca vê o desafio. O limite antigo continua valendo como antes. Quando o
+servidor pede o captcha, o app pede o token à própria tela e refaz a pergunta (`isFreeForSignUp`, com teste em
+`remote.test.ts`).
+
+Números escolhidos: 12 fica acima do uso normal e abaixo do limite de 30. Operadoras de celular dividem um mesmo IP
+entre muitas pessoas; por isso o desafio não é por IP sozinho. Revisar depois do lançamento, olhando quantas vezes o
+desafio aparece para pessoas reais.
+
+Ponto de atenção antes de publicar: sem o segredo do Turnstile, a versão do repositório recusa o pedido (fica fechada,
+como o `captchaOk` do L05). Quem estiver acima de 12 perguntas por IP fica sem cadastro até o segredo ser configurado.
+Por isso a função só deve ser publicada com `TURNSTILE_SECRET` definido.
+
+Hoje a função não está na produção, então nada muda para o público até a publicação (produção só com "pode").
+Cobertura: o contrato do app foi testado; a lógica da função (Deno) não tem teste automatizado. O item S-12 da
+auditoria continua aberto para isso.

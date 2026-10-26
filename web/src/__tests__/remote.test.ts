@@ -350,6 +350,59 @@ describe('remote: sign-in and sign-up', () => {
     });
   });
 
+  it('asks the captcha only when the server asks for it (X32), and asks again with the token', async () => {
+    const seen: unknown[] = [];
+    // The first question is free; from the second on the server asks for the token (the limit is passed).
+    const fake = fakeSupabase({
+      functions: {
+        'verificar-cadastro': (body) => {
+          seen.push(body);
+          if (seen.length > 1 && !(body as { captchaToken?: string }).captchaToken)
+            return {
+              data: null,
+              error: {
+                name: 'FunctionsHttpError',
+                context: new Response(JSON.stringify({ erro: 'captcha' }), { status: 400 })
+              }
+            };
+          return { data: { disponivel: true }, error: null };
+        }
+      }
+    });
+    const m = await load(fake);
+    // Normal use: no challenge, no captcha asked.
+    const quiet = m.auth.isFreeForSignUp('email', 'ana@exemplo.com', async () => 'tok-1');
+    expect(await quiet).toBe(true);
+    // Over the limit: the server asks; the screen gets a token and the question is asked again with it.
+    const asked = m.auth.isFreeForSignUp('documento', '123.456.789-09', async () => 'tok-2');
+    expect(await asked).toBe(true);
+    expect(seen).toEqual([
+      { campo: 'email', valor: 'ana@exemplo.com' },
+      { campo: 'documento', valor: '123.456.789-09' },
+      { campo: 'documento', valor: '123.456.789-09', captchaToken: 'tok-2' }
+    ]);
+  });
+
+  it('says the robot check failed when the server asks for the captcha and none comes', async () => {
+    const m = await load(
+      fakeSupabase({
+        functions: {
+          'verificar-cadastro': () => ({
+            data: null,
+            error: {
+              name: 'FunctionsHttpError',
+              context: new Response(JSON.stringify({ erro: 'captcha' }), { status: 400 })
+            }
+          })
+        }
+      })
+    );
+    await expect(m.auth.isFreeForSignUp('whatsapp', '11988887777', async () => undefined)).rejects.toMatchObject({
+      code: 'validacao',
+      message: expect.stringContaining('robô')
+    });
+  });
+
   it('signs up: sends the profile data (no separate document check), waits for the e-mail confirmation', async () => {
     const fake = fakeSupabase({
       auth: {

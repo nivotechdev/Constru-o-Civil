@@ -158,8 +158,12 @@ export type SignUpCheck = 'email' | 'documento' | 'whatsapp';
  * so a taken one stops the person there instead of at the end. Only a confirmed account holds it (a sign-up
  * never confirmed gives it up). Backend: Edge Function `verificar-cadastro` (attempt limits, yes/no only).
  */
-export async function isFreeForSignUp(kind: SignUpCheck, value: string): Promise<boolean> {
-  if (!IS_DEMO) return remote.isFreeForSignUp(kind, value);
+export async function isFreeForSignUp(
+  kind: SignUpCheck,
+  value: string,
+  captcha: CaptchaSource = noCaptcha
+): Promise<boolean> {
+  if (!IS_DEMO) return remote.isFreeForSignUp(kind, value, captcha);
   await mockLatency(300);
   const accounts = Object.values(getDb().accounts);
   if (kind === 'email') return !accounts.some((a) => a.email.toLowerCase() === value.trim().toLowerCase());
@@ -316,7 +320,7 @@ export async function changePendingEmail(email: string, captcha: CaptchaSource =
   const current = (pending?.email ?? getSession()?.email ?? '').trim().toLowerCase();
   if (clean === current) throw serviceError('validacao', SAME_EMAIL);
   if (!pending && !IS_DEMO) throw serviceError('validacao', CANNOT_CHANGE_EMAIL);
-  if (!(await isFreeForSignUp('email', clean))) return { ok: false, reason: 'email-taken' };
+  if (!(await isFreeForSignUp('email', clean, captcha))) return { ok: false, reason: 'email-taken' };
   if (IS_DEMO || !pending) {
     await mockLatency(500);
     const session = getSession();

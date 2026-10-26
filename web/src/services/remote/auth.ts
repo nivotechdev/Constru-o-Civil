@@ -253,9 +253,28 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
   return { ok: true };
 }
 
-export async function isFreeForSignUp(kind: import('../auth').SignUpCheck, value: string): Promise<boolean> {
+export async function isFreeForSignUp(
+  kind: import('../auth').SignUpCheck,
+  value: string,
+  captcha: CaptchaSource = async () => undefined
+): Promise<boolean> {
+  const ask = (captchaToken?: string) =>
+    invokeFunction<{ disponivel?: boolean }>('verificar-cadastro', {
+      campo: kind,
+      valor: value,
+      ...(captchaToken ? { captchaToken } : {})
+    });
   try {
-    const answer = await invokeFunction<{ disponivel?: boolean }>('verificar-cadastro', { campo: kind, valor: value });
+    let answer: { disponivel?: boolean } | null;
+    try {
+      answer = await ask();
+    } catch (e) {
+      // X32: a pessoa passou do limite de perguntas por IP: o servidor pede o captcha e a pergunta é refeita com ele.
+      if (!(e instanceof ServiceError && e.reason === 'captcha')) throw e;
+      const token = await captcha();
+      if (!token) throw serviceError('validacao', NOT_A_ROBOT);
+      answer = await ask(token);
+    }
     return answer?.disponivel !== false;
   } catch (e) {
     if (e instanceof ServiceError && e.reason === 'muitas-tentativas')
