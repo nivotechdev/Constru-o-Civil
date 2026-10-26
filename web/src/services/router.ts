@@ -1,4 +1,4 @@
-// Minimal router — a typed port of the legacy archive/app/js/router.js, with the same semantics plus real URLs
+// Minimal router with real URLs
 // (X17): served over HTTP the routes are paths (`/vaga/BC-1`, shareable and indexable; the server answers
 // every path with index.html), while the standalone preview opened from disk (file://) keeps them in the
 // hash (`#/vaga/BC-1`). An in-app back stack (independent of the browser's own history, which is

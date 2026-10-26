@@ -8,16 +8,7 @@ import prettier from 'eslint-config-prettier';
 export default tseslint.config(
   // supabase/functions and e2e/local/serve-fn.ts: Deno code, outside the app's build and lint.
   {
-    ignores: [
-      'dist',
-      'dist-standalone',
-      'dist-e2e',
-      'e2e/resultados',
-      'e2e/local/serve-fn.ts',
-      'scripts/parity/output',
-      'scripts/parity/.font-cache',
-      'supabase/functions'
-    ]
+    ignores: ['dist', 'dist-standalone', 'dist-e2e', 'e2e/resultados', 'e2e/local/serve-fn.ts', 'supabase/functions']
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -44,7 +35,7 @@ export default tseslint.config(
     }
   },
   {
-    // Node scripts; the parity harness also ships functions that run inside the browser page.
+    // Node scripts; the limpeza script also ships functions that run inside the browser page.
     files: ['scripts/**/*.{js,mjs}', '*.config.js'],
     extends: [js.configs.recommended],
     languageOptions: { ecmaVersion: 2022, globals: { ...globals.node, ...globals.browser } }

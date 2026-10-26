@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// Same theme as the legacy app (app/tailwind.config.js) — only `content` changed, to scan the React sources.
+// Theme of the Bicos screens; `content` scans the React sources.
 // Data, types and tests hold no class names: leaving them out keeps words in their code and comments
 // ("table", "block"…) from turning into CSS rules nothing uses.
 const scale = (name, steps) => Object.fromEntries(steps.map((k) => [k, `rgb(var(--c-${name}-${k}) / <alpha-value>)`]));

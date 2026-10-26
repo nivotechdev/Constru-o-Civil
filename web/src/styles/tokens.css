@@ -1,6 +1,5 @@
 /* Bicos design tokens — ported from the Claude Design bundle (_ds/bicos-design-system.../tokens/*.css).
-   Only the tokens the app references are kept; the complete set (all hues, semantic aliases, status,
-   elevation) is in the legacy app, archive/app/css/tokens.css.
+   Only the tokens the app references are kept (the full set lives in git history, before the app was rebuilt).
    Spacing itself is NOT tokenized here: screens use Tailwind's rem-based spacing scale directly. */
 :root {
   /* U21: the palette of the Tailwind classes (tailwind.config.js), as "R G B" so classes can add opacity. These are

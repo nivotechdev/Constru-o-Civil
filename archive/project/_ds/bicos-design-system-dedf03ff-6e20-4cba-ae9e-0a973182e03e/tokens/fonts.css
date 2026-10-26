@@ -1,6 +1,0 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
-
-/* Bicos ships no licensed binaries: the three families are loaded from the
-   Google Fonts CDN. Replace this @import with local @font-face rules if the
-   brand later licenses its own files. Fallback stacks in typography.css keep
-   layout stable on a bad canteiro connection. */

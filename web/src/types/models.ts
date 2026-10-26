@@ -1,5 +1,5 @@
-// Domain types for the Bicos marketplace. They mirror, field by field, the records the legacy
-// app kept in its in-memory mock database (archive/app/js/data/seed.js + archive/app/js/store.js).
+// Domain types for the Bicos marketplace. They mirror, field by field, the rows of the Supabase tables
+// (see types/database.generated.ts and services/supabaseMappers.ts).
 
 /** Which side of the marketplace an account is on. One account = one side (see docs/DECISOES.md). */
 export type Role = 'trabalhador' | 'recrutador';

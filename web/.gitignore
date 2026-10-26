@@ -2,8 +2,6 @@ node_modules/
 dist/
 dist-standalone/
 *.tsbuildinfo
-scripts/parity/output/
-scripts/parity/.font-cache/
 # Credenciais locais (ver .env.example)
 .env
 .env.*

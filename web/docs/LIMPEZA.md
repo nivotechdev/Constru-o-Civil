@@ -243,3 +243,14 @@ Verificação: `tsc -b`, `tsc --noUnusedLocals --noUnusedParameters`, ESLint, Pr
 Ainda abertos (decisão ou ação do responsável): D1 (`archive/`), D2 (documentos de migração), a tabela B
 (ajustes para remover `archive/`), e o plano de limpeza dos exports marcados como "tirar `export`" (não aplicado
 nesta rodada: é mudança de API interna sem ganho de funcionalidade).
+
+### Remoção de `archive/` (decisão do responsável, 26/10/2026)
+
+Feito, com os ajustes da tabela B: `utils.parity.test.ts` passa a comparar com valores fixos (o mesmo número de
+testes, 282); `legacy.d.ts`, `scripts/parity/` e o script `parity` saíram; os comentários que citavam `archive/app`
+foram reescritos; `CLAUDE.md` e `web/README.md` foram atualizados. A pasta `archive/` (192 arquivos) foi apagada e
+continua no histórico do Git: basta `git show <commit-anterior>:archive/...`.
+
+Continuam como estavam (decisão ainda não tomada): `docs/VALIDACAO.md`, `MAPEAMENTO.md`, `RELATORIO_PARIDADE.md` e
+`RELATORIO-FINAL.md` (D2). Eles citam `archive/` como histórico; a tabela de links do `links.mjs` mostra as
+citações quebradas.

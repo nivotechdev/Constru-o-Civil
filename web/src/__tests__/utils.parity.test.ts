@@ -1,62 +1,81 @@
-// Pure helpers: every legacy function and its TypeScript port must return the same thing.
+// Pure helpers. The expected values were produced by the legacy app's functions (archive/app/js/utils/format.js)
+// on 26/10/2026 and pinned here, so the test no longer needs that folder (LIMPEZA B, decisão de 26/10/2026).
 import { describe, expect, it } from 'vitest';
-import * as legacyFormat from '../../../archive/app/js/utils/format.js';
 import { nearestCity, popularCities, searchCities } from '../services/cities';
 import { formatBRL, formatPostDate, isValidEmail, maskCNPJ, maskCPF, passwordStrength } from '../utils/format';
 import { whatsappUrl } from '../utils/whatsapp';
 
-const TEXTS = [
-  '',
-  '1',
-  '12',
-  '123',
-  '1234',
-  '123456',
-  '1234567',
-  '123456789',
-  '12345678901',
-  '123456789012345',
-  '111.111.111-11',
-  'ab1c2',
-  ' 98 7 ',
-  '11.111.111/1111-11',
-  '(11) 98842-3310',
-  '55 11 98842-3310',
-  'abc'
+// [entrada, máscara de CPF, máscara de CNPJ] — valores do app antigo.
+const MASKS: [string, string, string][] = [
+  ['', '', ''],
+  ['1', '1', '1'],
+  ['12', '12', '12'],
+  ['123', '123', '12.3'],
+  ['1234', '123.4', '12.34'],
+  ['123456', '123.456', '12.345.6'],
+  ['1234567', '123.456.7', '12.345.67'],
+  ['123456789', '123.456.789', '12.345.678/9'],
+  ['12345678901', '123.456.789-01', '12.345.678/901'],
+  ['123456789012345', '123.456.789-01', '12.345.678/9012-34'],
+  ['111.111.111-11', '111.111.111-11', '11.111.111/111'],
+  ['ab1c2', '12', '12'],
+  [' 98 7 ', '987', '98.7'],
+  ['11.111.111/1111-11', '111.111.111-11', '11.111.111/1111-11'],
+  ['(11) 98842-3310', '119.884.233-10', '11.988.423/310'],
+  ['55 11 98842-3310', '551.198.842-33', '55.119.884/2331-0'],
+  ['abc', '', '']
 ];
 
 describe('format', () => {
-  it('masks CPF and CNPJ exactly like the legacy app', () => {
-    for (const t of TEXTS) {
-      expect(maskCPF(t)).toBe(legacyFormat.maskCPF(t));
-      expect(maskCNPJ(t)).toBe(legacyFormat.maskCNPJ(t));
+  it('masks CPF and CNPJ', () => {
+    for (const [t, cpf, cnpj] of MASKS) {
+      expect(maskCPF(t)).toBe(cpf);
+      expect(maskCNPJ(t)).toBe(cnpj);
     }
     expect(maskCPF('12345678901')).toBe('123.456.789-01');
     expect(maskCNPJ('12345678000199')).toBe('12.345.678/0001-99');
   });
 
-  it('validates e-mail and rates passwords the same way', () => {
-    for (const t of ['', 'a@', 'a@b', 'a@b.c', ' jorge@email.com ', 'jo rge@x.com', 'x@y.com.br']) {
-      expect(isValidEmail(t)).toBe(legacyFormat.isValidEmail(t));
-    }
-    for (const t of ['', 'abc', 'abcdefgh', 'abcdefgh1', 'abcdefgh1!', 'abcdefghijk1', '12345678']) {
-      expect(passwordStrength(t)).toBe(legacyFormat.passwordStrength(t));
-    }
+  it('validates e-mail and rates passwords', () => {
+    const emails: [string, boolean][] = [
+      ['a@', false],
+      ['a@b', false],
+      ['a@b.c', true],
+      [' jorge@email.com ', true],
+      ['jo rge@x.com', false],
+      ['x@y.com.br', true],
+      ['', false]
+    ];
+    for (const [t, ok] of emails) expect(isValidEmail(t)).toBe(ok);
+    const strength: [string, number][] = [
+      ['', 0],
+      ['abc', 1],
+      ['abcdefgh', 1],
+      ['abcdefgh1', 2],
+      ['abcdefgh1!', 3],
+      ['abcdefghijk1', 3],
+      ['12345678', 1]
+    ];
+    for (const [t, level] of strength) expect(passwordStrength(t)).toBe(level);
   });
 
-  it('formats money and post dates the same way', () => {
+  it('formats money and post dates', () => {
     // Whole values read as in the legacy app; W01: with cents, the cents show (the legacy app rounded them away).
-    for (const n of [0, 80, 1234, -3, NaN]) expect(formatBRL(n)).toBe(legacyFormat.formatBRL(n));
+    expect(formatBRL(0)).toBe('R$ 0');
+    expect(formatBRL(80)).toBe('R$ 80');
+    expect(formatBRL(1234)).toBe('R$ 1.234');
+    expect(formatBRL(-3)).toBe('R$ -3');
+    expect(formatBRL(NaN)).toBe('R$ 0');
     expect(formatBRL(150.4)).toBe('R$ 150,40');
     expect(formatBRL(12345.6)).toBe('R$ 12.345,60');
     expect(formatBRL(99.999)).toBe('R$ 100');
-    for (const d of ['2026-09-10', '2026-01-01', 'x', '2026-13'])
-      expect(formatPostDate(d)).toBe(legacyFormat.formatPostDate(d));
+    expect(formatPostDate('2026-09-10')).toBe('10 de set de 2026');
+    expect(formatPostDate('2026-01-01')).toBe('1 de jan de 2026');
+    expect(formatPostDate('x')).toBe('x');
+    expect(formatPostDate('2026-13')).toBe('2026-13');
   });
 });
 
-// The legacy app no longer ships its cities and WhatsApp helpers (they moved into its bundle), so these
-// two are pinned with direct expectations instead of a side-by-side comparison.
 describe('whatsapp links', () => {
   it('build wa.me URLs with the Brazilian prefix', () => {
     expect(whatsappUrl('', 'oi')).toBeNull();

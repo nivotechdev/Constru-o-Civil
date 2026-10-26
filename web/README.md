@@ -35,7 +35,6 @@ npm run deploy:producao
 npm run typecheck && npm run lint && npm run format:check && npm test   # Vitest, nos dois modos
 npm run e2e                 # Playwright de ponta a ponta num Supabase de verdade (e2e/LEIA.md)
 npm run gen:types           # src/types/database.generated.ts a partir do banco (DATABASE_URL)
-npm run parity              # paridade visual com o app legado (../archive/app), à mão
 ```
 
 Testes SQL (Docker):

@@ -2,7 +2,6 @@ dist
 dist-standalone
 node_modules
 public
-scripts/parity/output
 src/data/cidades.ts
 package-lock.json
 preview

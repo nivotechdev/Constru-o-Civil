@@ -19,7 +19,6 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "e2e": "playwright test -c e2e/playwright.config.ts",
-    "parity": "node scripts/parity/run.mjs",
     "gen:types": "node scripts/gen-db-types.mjs"
   },
   "dependencies": {
