@@ -2499,3 +2499,24 @@ que foi escolhido e o gatilho para revisar.
   fica mascarada no log (`::add-mask::`); (2) o workflow de fotos (`staging-fotos.yml`) só roda por `workflow_dispatch`;
   (3) rotacionar o token periodicamente e sempre que alguém deixar a equipe. **Gatilho para revisar:** se o Supabase
   passar a oferecer token com escopo por projeto, trocar. Não foi confirmado.
+
+## X31 — Entrar com o Google num login nunca confirmado: a senha antiga deixa de valer (revisa a U64)
+
+Problema (achado da auditoria de 26/10/2026): pela U64, quando alguém entra com o Google num e-mail cujo login foi
+criado pelo cadastro por e-mail e nunca confirmado, `entrar-com-firebase` confirma o e-mail e entra nessa conta. Mas
+só o e-mail era confirmado: a senha que estava no login continuava valendo. Quem começasse um cadastro com o e-mail de
+outra pessoa (sem nunca confirmar, porque o e-mail não é dele) ficava esperando; quando a dona do e-mail entrasse pelo
+Google, o login virava confirmado e essa senha passava a abrir a conta dela.
+
+O que foi feito: no mesmo pedido que confirma o e-mail, a senha do login é trocada por uma aleatória que ninguém
+conhece (`_shared/confirm.ts`, testado em `src/__tests__/confirmEmail.test.ts`). O caminho do celular não muda: ele só
+entra em conta com e-mail já confirmado.
+
+Troca aceita: quem fez o próprio cadastro por e-mail, não clicou no link e depois entrou pelo Google perde a senha que
+tinha escolhido. Continua entrando pelo Google, ou cria outra senha em "Esqueci a senha".
+
+Fica de fora (risco menor, sem acesso indevido): se esse cadastro nunca confirmado já tinha nome, CPF ou WhatsApp
+digitados por outra pessoa, a dona do e-mail entra numa conta com esses dados e precisa corrigir ou falar com a equipe.
+
+Publicar: `entrar-com-firebase` ainda não está na produção. O staging publica sozinho a partir do `master`; produção
+só com "pode".

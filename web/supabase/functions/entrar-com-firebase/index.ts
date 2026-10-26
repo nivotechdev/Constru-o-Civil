@@ -2,8 +2,9 @@
 // Google, o código por SMS e o reCAPTCHA contra robôs — e entrega um ID token. Esta função confere o token
 // (_shared/firebase.ts) e abre a sessão da Bicos no Supabase Auth, onde ficam as contas:
 //   * Google (e-mail confirmado pelo Google): entra na conta desse e-mail (U64: mesmo a que o cadastro por e-mail deixou
-//     sem confirmar — o Google prova o e-mail, e ele passa a ficar confirmado); sem conta, cria o login (provedor
-//     "google") e o app segue pelo cadastro normal, sem o passo do e-mail nem a confirmação dele (U37);
+//     sem confirmar — o Google prova o e-mail, ele passa a ficar confirmado e a senha antiga deixa de valer, X31); sem
+//     conta, cria o login (provedor "google") e o app segue pelo cadastro normal, sem o passo do e-mail nem a
+//     confirmação dele (U37);
 //   * celular: entra na conta cujo WhatsApp é esse número (o SMS prova que a pessoa tem o número, e o WhatsApp da
 //     conta fica marcado como confirmado). Sem conta com o número, não cria nada: 404 { erro: 'sem-conta' } e o app
 //     oferece criar a conta com esse número.
@@ -18,6 +19,7 @@
 // · 503 { erro: 'desligado' } · 405/502 { erro }.
 // Segredo: FIREBASE_PROJECT_ID (o "projectId" do Firebase; sem ele a função responde 503).
 // Publicar: supabase functions deploy entrar-com-firebase (ver web/docs/SUPABASE.md).
+import { confirmProvenEmail } from '../_shared/confirm.ts';
 import { brazilianMobile, verifyFirebaseToken, warmFirebaseKeys } from '../_shared/firebase.ts';
 import { adminClient, clientIp, json, preflight, requireAppOrigin } from '../_shared/http.ts';
 import { monitored } from '../_shared/monitoring.ts';
@@ -108,10 +110,14 @@ Deno.serve(
     // U64: a login whose e-mail was never confirmed (sign-up by e-mail and the link not yet clicked) gets a link of
     // another kind, which the app's verifyOtp('magiclink') refuses — the person saw an error entering with Google on
     // the e-mail of their own account. Google (or the SMS) just proved the person owns it: confirm it, then link again.
+    // X31: the password that login had stops working (whoever started that sign-up may not be this person).
     const user = link.data?.user;
     if (!link.error && user && !user.email_confirmed_at) {
-      const confirmed = await admin.auth.admin.updateUserById(user.id, { email_confirm: true });
-      if (confirmed.error) return json({ erro: 'falha' }, 502);
+      const confirmed = await confirmProvenEmail(
+        (id, attributes) => admin.auth.admin.updateUserById(id, attributes),
+        user.id
+      );
+      if (!confirmed) return json({ erro: 'falha' }, 502);
       link = await admin.auth.admin.generateLink({ type: 'magiclink', email });
     }
     const hash = link.data?.properties?.hashed_token;
