@@ -2475,3 +2475,27 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
 - **Filtros (e todo diálogo/folha)**: enquanto estão abertos, a página de trás não rola (`useModal` trava o rolar do
   documento, com contagem para diálogos um sobre o outro) e a folha não "puxa" a página quando chega ao fim
   (`overscroll-contain`). Era isso que fazia a folha dos filtros subir junto com o mural.
+
+## X30 — Decisões da auditoria de 26/10/2026 (textos legais, hospedagem, backup, token do CI)
+
+Decidido pela IA a pedido do responsável ("pode decidir por mim, avaliando a melhor opção"). Cada decisão tem o
+que foi escolhido e o gatilho para revisar.
+
+- **Textos legais: continuam como rascunho (`LEGAL_REVIEWED = false`).** Sem advogado, a flag não pode virar
+  `true`: ela afirma que o texto foi revisado, e isso seria falso. Consequência: o build de produção continua
+  recusando subir. **Gatilho para revisar:** quando houver revisão de advogado, ou quando o responsável assumir o
+  risco por escrito (nesse caso, a decisão é dele e registramos aqui).
+- **Hospedagem: plano Free do Supabase enquanto o app está em teste; Pro antes de receber pessoas reais.** Motivo:
+  o Free não tem backup diário e pausa projetos após 7 dias sem atividade (fontes de terceiros, a confirmar em
+  supabase.com/pricing); o Pro custa cerca de US$ 25/mês. Nada disso compensa pagar agora, sem usuários. Enquanto o
+  Free estiver em uso, a regra é: **backup manual (`pg_dump`) antes de qualquer mudança em produção**, que já vale
+  pelo `CLAUDE.md` §9.
+- **Backup automático para o GitHub: não criado.** Um `pg_dump` diário guardado em artefato do GitHub copiaria dados
+  pessoais (CPF, WhatsApp, endereço) para fora do Supabase, sem necessidade hoje. Fica como opção se o Free continuar
+  depois do lançamento, e precisa de aprovação do responsável (LGPD).
+- **Token `SUPABASE_ACCESS_TOKEN` no CI: mantido, com mitigação.** Ele é necessário para publicar as Edge Functions
+  do staging (`publicar-funcoes.sh`) e configurar o Auth; por isso não dá para tirá-lo sem mudar o processo de
+  deploy. Mitigações: (1) a chave `service_role` do staging é lida pela API de gerenciamento com `reveal=true`, e ela
+  fica mascarada no log (`::add-mask::`); (2) o workflow de fotos (`staging-fotos.yml`) só roda por `workflow_dispatch`;
+  (3) rotacionar o token periodicamente e sempre que alguém deixar a equipe. **Gatilho para revisar:** se o Supabase
+  passar a oferecer token com escopo por projeto, trocar. Não foi confirmado.
