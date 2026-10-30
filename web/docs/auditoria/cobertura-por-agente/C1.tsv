@@ -1,0 +1,38 @@
+caminho	linhas	como	achados	nota
+web/src/services/account.ts	220	lido por inteiro	C1-006	demo de exclusão refaz a nota por média arredondada (só demo); comentário de exportMyData desatualizado
+web/src/services/address.ts	420	lido por inteiro	C1-002,C1-003	erro de rede tratado como "não achada"
+web/src/services/admin.ts	208	lido por inteiro		rótulos conferem com staff_log do SQL; sem regra no navegador
+web/src/services/alerts.ts	155	lido por inteiro	C1-006	paridade com banco: ver M1-003
+web/src/services/applicationMachine.ts	173	lido por inteiro	C1-006	tabela idêntica ao banco (M1 maquina.md); CLAUDE.md §3 sem 2 estados
+web/src/services/applications.ts	675	lido por inteiro	C1-001,C1-004,C1-006	demo x real: ver M1-003/M1-002
+web/src/services/auth.ts	678	lido por inteiro	C1-006	senha em memória: H4; Google sem Firebase: H2
+web/src/services/boot.ts	41	lido por inteiro		ok
+web/src/services/busy.ts	93	lido por inteiro		ok; ver H2
+web/src/services/catalog.ts	60	lido por inteiro		importa data/seed (ver M1-005/C2-007)
+web/src/services/cities.ts	90	lido por inteiro	C1-006	H3 (locateMyCity)
+web/src/services/contacts.ts	73	lido por inteiro	C1-005	ok
+web/src/services/defaults.ts	7	lido por inteiro		ok
+web/src/services/demo.ts	30	lido por inteiro		ok
+web/src/services/errors.ts	51	lido por inteiro	C1-006	nome falha_demo (ver C2-006 para o rastro)
+web/src/services/features.ts	47	lido por inteiro		SUPPORT_EMAIL é decisão documentada
+web/src/services/feedQuery.ts	37	lido por inteiro		ok
+web/src/services/feedback.ts	12	lido por inteiro		H1
+web/src/services/googleSignUp.ts	64	lido por inteiro		ok
+web/src/services/guards.ts	43	lido por inteiro		ok
+web/src/services/identity.ts	65	lido por inteiro	C1-006	ok
+web/src/services/invites.ts	124	lido por inteiro	C1-001,C1-006	paridade: M1-003
+web/src/services/jobs.ts	271	lido por inteiro	C1-006	H6 / M1 H5
+web/src/services/remote/address.ts	388	lido por inteiro	C1-002,C1-003	provedores já na política (legal.ts:147)
+web/src/services/remote/admin.ts	113	lido por inteiro		ok
+web/src/services/remote/applications.ts	58	lido por inteiro	C1-001	ok
+web/src/services/remote/jobs.ts	74	lido por inteiro	C1-001	H1
+web/src/services/remote/actions.ts	191	lido por inteiro	C1-001,C1-006	H5; exportMyData baixa JSON no aparelho
+web/src/services/selectors.ts	184	lido por inteiro (apoio)		fallback para ids do seed fora de sessão (M1-005/C2-007)
+web/src/services/remote/client.ts	162	lido por inteiro (apoio)		C2 cobre
+web/src/services/remote/data.ts	560	lido por inteiro (apoio)	C1-004	C2-005 cobre respostas atrasadas
+web/src/utils/whatsapp.ts	52	lido por inteiro (apoio)	C1-005	
+web/src/components/BusyOverlay.tsx	80	lido (primeiras 80 linhas, apoio)		H2
+web/src/pages/recruiter/CreateJob.tsx:150-260	110	amostrado (envio do formulário)	C1-001	quem chama publishJob/updateJob
+repro/falha-parcial.test.ts		objeto: reprodução	C1-001	
+repro/endereco.test.ts		objeto: reprodução	C1-002,C1-003	
+repro/conclui-primeiro.test.ts		objeto: reprodução	C1-004	

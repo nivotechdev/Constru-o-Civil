@@ -1,0 +1,70 @@
+caminho	linhas	como	achados	nota
+web/supabase/migrations/20261013000100_f09_vaga_publica.sql	24	lido por inteiro		substituída por lanc06/lanc10/u-*; staging confere
+web/supabase/migrations/20261013000200_f10_perfil_profissional.sql	37	lido por inteiro	D3b-011	colunas profissionais saíram no U33 (segundo o teste); worker_track_record ok
+web/supabase/migrations/20261013000300_f13_convite.sql	84	lido por inteiro	D3b-010	limite 20/dia sem teste; sem achado de segurança
+web/supabase/migrations/20261013000400_f04_denuncia_bloqueio.sql	136	lido por inteiro	D3b-001,D3b-008,D3b-013	bloqueio não cobre contato; target_id sem limite
+web/supabase/migrations/20261013000500_f06_preferencias_aviso.sql	66	lido por inteiro		ok; notify igual no staging
+web/supabase/migrations/20261013000600_f16_portfolio.sql	13	lido por inteiro		ok (constraint not valid, coluna única no grant)
+web/supabase/migrations/20261013000700_f07_identidade.sql	110	lido por inteiro	D3b-004,D3b-009	bucket privado; só INSERT do dono; sem registro de leitura
+web/supabase/migrations/20261014000300_x03_push.sql	111	lido por inteiro	D3b-010	falhas do pg_net engolidas (D5-001); limite de 10 aparelhos sem teste
+web/supabase/migrations/20261014000400_x09_arquivos_orfaos.sql	99	lido por inteiro	(D1-006,D5-001)	base vazia apaga tudo (D1-006); cron sempre 'sucesso' (D5-001)
+web/supabase/migrations/20261014000500_x21_funil.sql	48	lido por inteiro		só service_role; ok
+web/supabase/migrations/20261014000600_w08_limites_vaga.sql	100	lido por inteiro	D3b-011	mensagens com 'obra' substituídas depois (staging limpo)
+web/supabase/migrations/20261014000700_x22_limpeza_tentativas.sql	26	lido por inteiro		ok; purge_auth_attempts refeito em lanc10
+web/supabase/migrations/20261014000800_x23_indices_fk.sql	9	lido por inteiro		ok
+web/supabase/migrations/20261015000100_lanc06_backoffice.sql	540	lido por inteiro	D3b-004,D3b-005	grants/guard ok; papel sem uso; auditoria mutável
+web/supabase/migrations/20261015000200_lanc07_aceites.sql	207	lido por inteiro	D3b-009,D3b-012	versão de consentimento livre; cascade apaga prova de aceite
+web/supabase/migrations/20261016000100_lanc09_pg_net.sql	30	lido por inteiro	D3b-010	staging: pg_net em extensions; produção ainda em public
+web/supabase/migrations/20261016000200_lanc10_link_publico.sql	106	lido por inteiro	D3b-007	slug 12x31 ok; hash sem segredo
+web/supabase/migrations/20261016000300_lanc12_vigia_cron.sql	163	lido por inteiro	D3b-006	dedupe ignora sent
+web/supabase/migrations/20261016000400_lanc13_mural_volume.sql	94	lido por inteiro	D3b-013	last_day = job_last_day no staging
+web/supabase/migrations/20261017000100_r03_suspensao_completa.sql	138	lido por inteiro	D3b-011	textos 'obra' trocados depois; get_contact final sem bloqueio (D3b-001)
+web/supabase/migrations/20261017000200_r04_exclusao_pelo_painel.sql	147	lido por inteiro	D3b-011,D3b-012	anonymize_account substituída pelo U24 (apaga de verdade)
+web/supabase/tests/f04_denuncia_bloqueio.sql	36	lido por inteiro	D3b-001,D3b-010	sem caso de contato após bloqueio
+web/supabase/tests/f06_preferencias_aviso.sql	22	lido por inteiro		ok
+web/supabase/tests/f07_identidade.sql	23	lido por inteiro		ok
+web/supabase/tests/f09_vaga_publica.sql	18	lido por inteiro		ok (atualizado para slug)
+web/supabase/tests/f10_perfil_profissional.sql	19	lido por inteiro	D3b-010	update de bio sem afirmação
+web/supabase/tests/f13_convite.sql	28	lido por inteiro	D3b-010	faltam negativos
+web/supabase/tests/f16_portfolio.sql	14	lido por inteiro		ok
+web/supabase/tests/lanc06_backoffice.sql	137	lido por inteiro	D3b-010	bom; faltam moderador/outra conta da equipe/remove_staff
+web/supabase/tests/lanc07_aceites.sql	39	lido por inteiro		ok
+web/supabase/tests/lanc09_pg_net.sql	16	lido por inteiro	D3b-010	quebra se o segredo existir
+web/supabase/tests/lanc10_link_publico.sql	51	lido por inteiro	D3b-007	bom (limite, cf-ip); sem IPv6
+web/supabase/tests/lanc12_vigia_cron.sql	64	lido por inteiro	D3b-010	bom; cria segredos
+web/supabase/tests/lanc13_mural_volume.sql	49	lido por inteiro		bom (paridade last_day)
+web/supabase/tests/r03_suspensao_completa.sql	106	lido por inteiro		bom (paridade da máquina)
+web/supabase/tests/r04_exclusao_pelo_painel.sql	75	lido por inteiro		bom (U24)
+web/supabase/tests/w08_limites_vaga.sql	16	lido por inteiro		ok
+web/supabase/tests/x03_push.sql	44	lido por inteiro	D3b-010	conta fila inteira
+web/supabase/tests/x09_arquivos_orfaos.sql	33	lido por inteiro		ok
+web/supabase/tests/x21_funil.sql	17	lido por inteiro		ok
+web/supabase/tests/x22_limpeza_tentativas.sql	23	lido por inteiro		ok
+web/supabase/legado/000_baseline.sql	844	lido por inteiro		chave do Vault de exemplo só se não existir (staging: 64 caracteres, não é o exemplo); funções fechadas na produção
+web/supabase/legado/001_bicos_vagas_columns.sql	28	lido por inteiro		aditiva
+web/supabase/legado/002_bicos_vagas_valor_turno_nullable.sql	21	lido por inteiro		ok
+web/supabase/legado/003_bicos_profiles_whatsapp.sql	13	lido por inteiro		ok
+web/supabase/legado/004_bicos_candidaturas_status.sql	27	lido por inteiro		ok
+web/supabase/legado/005_bicos_whatsapp_rpc.sql	56	lido por inteiro		legado fechado
+web/supabase/legado/006_bicos_candidatura_rpcs.sql	122	lido por inteiro		legado fechado
+web/supabase/legado/007_bicos_profiles_extra_columns.sql	76	lido por inteiro		legado fechado
+web/supabase/legado/008_bicos_avaliacoes.sql	36	lido por inteiro		legado fechado
+web/supabase/legado/009_bicos_vagas_salvas.sql	30	lido por inteiro		legado fechado
+web/supabase/legado/010_bicos_portfolio.sql	59	lido por inteiro		legado fechado
+web/supabase/legado/011_bicos_avaliacao_rpcs.sql	78	lido por inteiro		legado fechado
+web/supabase/legado/012_bicos_vagas_fotos_dias.sql	21	lido por inteiro		ok
+web/supabase/legado/LEIA.md	9	lido por inteiro		ok
+web/supabase/pendentes/20261015000900_lanc07_apagar_app_antigo.sql	102	lido por inteiro	D3b-002,D3b-003	desatualizada frente a U10/U37
+web/supabase/pendentes/LEIA.md	13	lido por inteiro	D3b-002,D3b-003	afirmação "conferido" vencida
+OBJ função get_contact (staging)	-	conferido contra a fonte	D3b-001	falha
+OBJ função block_account (staging)	-	conferido contra a fonte	D3b-001	falha
+OBJ função report_target_info / anonymize_account / delete_my_account / export_my_data (staging)	-	conferido contra a fonte	D3b-011,D3b-012	ok (versão vigente difere das migrations)
+OBJ funções legadas na produção (21): execute para anon/authenticated	-	conferido contra a fonte		ok (nenhuma executável)
+OBJ tabelas legadas na produção (7): RLS ligada, sem política, sem grant	-	conferido contra a fonte		ok
+OBJ colunas sensíveis (suspended_reason, hidden_reason, cnpj_check, identity_reason)	-	conferido contra a fonte		ok (sem grant de leitura)
+OBJ cron (7 rotinas no staging)	-	conferido contra a fonte	D3b-006	ok; horários sem conflito
+OBJ storage.objects policies (staging e produção)	-	conferido contra a fonte		ok (sem listagem pública; identidade só INSERT do dono + SELECT da equipe)
+OBJ Vault produção (bicos_*)	-	n/v		só count(*): cleanup url/segredo = 1; sentry/heartbeat/push = 0
+OBJ regra: bloqueio × get_contact	-	conferido contra a fonte	D3b-001	sem teste
+OBJ regra: limite de 20 denúncias e 20 convites por dia	-	conferido contra a fonte	D3b-010	sem teste
+OBJ regra: moderador x admin	-	conferido contra a fonte	D3b-005	sem teste e sem efeito

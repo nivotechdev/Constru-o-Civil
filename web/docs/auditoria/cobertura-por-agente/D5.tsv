@@ -1,0 +1,63 @@
+caminho	linhas	como	achados	nota
+legal/politica-de-privacidade.md	90	lido por inteiro	D5-001 D5-002 D5-003 D5-004 D5-005 D5-006 D5-009 D5-010 D5-013 D5-014 D5-015 D5-016 D5-021 D5-022	gerado de legal.ts; igual (teste legal.test.ts lido)
+legal/termos-de-uso.md	68	lido por inteiro	D5-005	sem achado próprio além dos campos {{…}} e foro; §3 18+ (D5-019 hipótese 6)
+web/docs/LGPD.md	69	lido por inteiro	D5-004 D5-012 D5-013 D5-015 D5-019	mapa dado→prazo; desatualizado em linhas listadas no D5-019
+web/src/services/legal.ts	225	lido por inteiro	D5-001 D5-002 D5-003 D5-004 D5-005 D5-006 D5-009 D5-010 D5-011 D5-013 D5-014 D5-015 D5-016 D5-021 D5-022 D5-023	10 campos {{…}} distintos; LEGAL_REVIEWED=false
+web/src/__tests__/legal.test.ts	48	lido por inteiro		fora da lista; lido para confirmar a igualdade fonte×md
+web/build/env.ts	129	amostrado (linhas 70-131: parte jurídica)	D5-005	trava de build dos campos {{…}} confirmada
+web/src/pages/shared/LegalScreen.tsx	50	lido por inteiro	D5-005	renderiza o texto cru; sem substituição de campo
+web/src/pages/shared/Privacy.tsx	85	lido por inteiro	D5-007 D5-022	só exportar e excluir
+web/src/services/remote/actions.ts	191	amostrado (linhas 125-170)	D5-007 D5-018	exportMyData / deleteAccount
+web/src/services/remote/session.ts	582	amostrado (135-165)	D5-015	cópia da conta no localStorage
+web/src/services/route.ts	65	amostrado (linhas 1-65, arquivo lido quase todo)	D5-003	OSRM público
+web/src/components/JobMap.tsx	155	amostrado (25-70)	D5-003	origem = casa do trabalhador
+web/src/services/monitoring.ts	163	amostrado (1-120)	D5-014	Sentry sem SDK, limpeza de texto
+web/public/_headers	26	lido por inteiro	D5-003 D5-006	CSP lista os destinos de terceiros
+web/supabase/functions/_shared/http.ts	72	lido por inteiro	D5-015	clientIp = x-forwarded-for
+web/supabase/functions/_shared/monitoring.ts	55	lido por inteiro	D5-014	
+web/supabase/functions/_shared/firebase.ts	115	lido por inteiro	D5-006	
+web/supabase/functions/_shared/captcha.ts	32	lido por inteiro		Turnstile envia remoteip
+web/supabase/functions/_shared/confirm.ts	20	lido por inteiro		
+web/supabase/functions/_shared/mercadopago.ts	83	lido por inteiro	D5-009	
+web/supabase/functions/excluir-conta/index.ts	75	lido por inteiro	D5-002 D5-006	BUCKETS sem identidade; sem Firebase
+web/supabase/functions/limpar-arquivos/index.ts	46	lido por inteiro	D5-001	
+web/supabase/functions/entrar-com-documento/index.ts	59	lido por inteiro	D5-008 D5-015	auth_attempts com IP e hash de CPF
+web/supabase/functions/entrar-com-firebase/index.ts	127	lido por inteiro	D5-006 D5-015	
+web/supabase/functions/codigo-whatsapp/index.ts	95	lido por inteiro	D5-015	telefone em auth_attempts
+web/supabase/functions/verificar-cadastro/index.ts	79	lido por inteiro	D5-015	
+web/supabase/functions/verificar-cnpj/index.ts	82	lido por inteiro		CNPJ é dado público
+web/supabase/functions/criar-cobranca/index.ts	110	lido por inteiro	D5-009	e-mail e CPF (cartão) vão ao MP; não gravados
+web/supabase/functions/webhook-pagamento/index.ts	64	lido por inteiro	D5-009	
+web/supabase/functions/enviar-push/index.ts	106	lido por inteiro	D5-015	
+tabela public.accounts (staging)	—	catálogo+grants+RLS	D5-008 D5-018	ok com ressalvas
+tabela public.workers / companies (staging)	—	catálogo+grants	D5-012	ok
+tabela public.addresses (staging)	—	catálogo+RLS	D5-003 D5-007	RLS ok (só dono); coordenada sai pelo navegador
+tabela public.identity_submissions + bucket identidade (staging)	—	catálogo+contagem	D5-001 D5-002 D5-011 D5-020	falha (142 órfãos)
+tabela public.whatsapp_verifications (staging)	—	catálogo	D5-015	ok (1 dia)
+tabela public.auth_attempts (staging)	—	catálogo+cron	D5-015	ok (1 dia)
+tabela public.public_link_hits (staging)	—	catálogo+função	D5-015	ok (1 dia); não declarada
+tabela public.application_attempts (staging)	—	catálogo	D5-015	ok (2 dias)
+tabela public.push_subscriptions (staging)	—	catálogo	D5-007 D5-015	ok
+tabela public.reports / blocks (staging)	—	catálogo+RLS	D5-007 D5-010	ok
+tabela public.reviews (staging)	—	catálogo+FK	—	ok (cascata dos dois lados)
+tabela public.notifications / notification_prefs / account_prefs (staging)	—	catálogo+FK	D5-007 D5-017	ok com ressalva
+tabela public.terms_acceptances (staging)	—	catálogo+FK	D5-005	ok
+tabela public.staff_actions / staff_members (staging)	—	catálogo+FK	D5-010 D5-020	falha (sem expurgo)
+tabela public.boost_payments / payment_webhook_events (staging)	—	catálogo+FK	D5-009	falha (texto×banco)
+tabela public.job_alerts / job_invites / saved_jobs (staging)	—	catálogo+FK	D5-007	ok
+tabela public.jobs / applications / application_events (staging)	—	catálogo+FK	—	ok
+tabela public.cron_alerts (staging)	—	catálogo	D5-010 D5-019	ok (0 linhas); sem expurgo
+tabelas legadas profiles/vagas/candidaturas/avaliacoes/vagas_salvas/publicacoes_trabalhador/consentimentos	—	catálogo+contagem (staging e produção)	D5-012	falha (guarda sem finalidade; gatilho ativo)
+produção: contagens accounts/profiles/consentimentos/storage	—	count(*)	D5-012	4 contas, 4 profiles (3 com CPF cifrado), 0 identidades
+RPC export_my_data	—	definição lida (staging)	D5-007 D5-018	falha (incompleta)
+RPC delete_my_account / anonymize_account / on_auth_user_deleted	—	definição lida (staging)	D5-002 D5-009 D5-010 D5-017	ok com ressalvas
+RPC create_my_account / create_account_for / finish_sign_up / save_address / accept_terms / submit_identity	—	definição lida (staging)	D5-008 D5-011 D5-019	ok com ressalvas
+RPC public_job_card / signup_taken / document_login_email / document_hash / mask_document	—	definição lida (staging)	D5-008 D5-015	falha (hash sem segredo)
+RPC purge_auth_attempts / purge_unconfirmed_signups / orphan_storage_objects / call_storage_cleanup	—	definição lida (staging)	D5-001 D5-002	falha (cleanup inoperante)
+RPCs legadas perfil_publico/buscar_perfis/exportar_meus_dados/excluir_minha_conta	—	has_function_privilege	D5-012	ok (authenticated sem execute)
+cron.job staging (7) e produção (6)	—	consulta	D5-001	jobs ativos; limpar-arquivos sem efeito
+buckets avatars/portfolio/vagas/identidade	—	catálogo+políticas	D5-001 D5-002 D5-020	identidade privado ok; sem expurgo operante
+Edge Function limpar-arquivos na produção	—	list_edge_functions	D5-001	publicada; CLEANUP_SECRET ausente (401)
+Firebase (console)	—	n/v	D5-006	sem acesso ao projeto bicoapp-6cc68
+Twilio / Brevo / Sentry / Cloudflare (painéis)	—	n/v	D5-013 D5-014	sem acesso; ver hipóteses
+Supabase logs / backups / plano	—	n/v	D5-004 D5-016	sem acesso ao painel; conteúdo pessoal não lido

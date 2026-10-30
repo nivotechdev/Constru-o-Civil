@@ -1,0 +1,238 @@
+objeto	linhas	como	achados	nota
+rota /splash (/splash) | visitante | 360	-	crawl+captura (demo)	B1-011,B1-002	ok; 
+rota /splash (/splash) | visitante | 1280	-	crawl+captura (demo)	B1-011,B1-002	ok; 
+rota /splash (/splash) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; logado: redireciona ao /mural (guarda ok); 57 alvo(s) <44px
+rota /splash (/splash) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural; logado: redireciona ao /mural (guarda ok)
+rota /escolha-perfil (/escolha-perfil) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /escolha-perfil (/escolha-perfil) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /escolha-perfil (/escolha-perfil) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; logado: redireciona ao /mural (guarda ok); 57 alvo(s) <44px
+rota /escolha-perfil (/escolha-perfil) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural; logado: redireciona ao /mural (guarda ok)
+rota /cadastro/:role (/cadastro/trabalhador) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /cadastro/:role (/cadastro/trabalhador) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /cadastro/:role (/cadastro/trabalhador) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; logado: redireciona ao /mural (guarda ok); 57 alvo(s) <44px
+rota /cadastro/:role (/cadastro/trabalhador) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural; logado: redireciona ao /mural (guarda ok)
+rota /verificar-email (/verificar-email) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /verificar-email (/verificar-email) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /verificar-email (/verificar-email) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; 57 alvo(s) <44px
+rota /verificar-email (/verificar-email) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural
+rota /completar-perfil/:role (/completar-perfil/trabalhador) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /completar-perfil/:role (/completar-perfil/trabalhador) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /completar-perfil/:role (/completar-perfil/trabalhador) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; 57 alvo(s) <44px
+rota /completar-perfil/:role (/completar-perfil/trabalhador) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural
+rota /aceitar-termos (/aceitar-termos) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /aceitar-termos (/aceitar-termos) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /aceitar-termos (/aceitar-termos) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; 57 alvo(s) <44px
+rota /aceitar-termos (/aceitar-termos) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural
+rota /login (/login) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 5 alvo(s) <44px
+rota /login (/login) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /login (/login) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; logado: redireciona ao /mural (guarda ok); 57 alvo(s) <44px
+rota /login (/login) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural; logado: redireciona ao /mural (guarda ok)
+rota /entrar-celular (/entrar-celular) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /entrar-celular (/entrar-celular) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /entrar-celular (/entrar-celular) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; logado: redireciona ao /mural (guarda ok); 57 alvo(s) <44px
+rota /entrar-celular (/entrar-celular) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural; logado: redireciona ao /mural (guarda ok)
+rota /esqueci-senha (/esqueci-senha) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /esqueci-senha (/esqueci-senha) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /esqueci-senha (/esqueci-senha) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /esqueci-senha (/esqueci-senha) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /redefinir-senha (/redefinir-senha) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 2 alvo(s) <44px
+rota /redefinir-senha (/redefinir-senha) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /redefinir-senha (/redefinir-senha) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 2 alvo(s) <44px
+rota /redefinir-senha (/redefinir-senha) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /termos (/termos) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /termos (/termos) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /termos (/termos) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /termos (/termos) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /privacidade (/privacidade) | visitante | 360	-	crawl+captura (demo)	B1-003,B1-002	falha; rolagem lateral
+rota /privacidade (/privacidade) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /privacidade (/privacidade) | trabalhador | 360	-	crawl+captura (demo)	B1-003,B1-002	falha; rolagem lateral
+rota /privacidade (/privacidade) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /completar-cadastro (/completar-cadastro) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; abre /escolha-perfil
+rota /completar-cadastro (/completar-cadastro) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /escolha-perfil
+rota /completar-cadastro (/completar-cadastro) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /mural; 57 alvo(s) <44px
+rota /completar-cadastro (/completar-cadastro) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /mural
+rota /v/:id (/v/BC-4821) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /v/:id (/v/BC-4821) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /v/:id (/v/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; abre /vaga/BC-4821
+rota /v/:id (/v/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; abre /vaga/BC-4821
+rota /notificacoes (/notificacoes) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /notificacoes (/notificacoes) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /notificacoes (/notificacoes) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 1 alvo(s) <44px
+rota /notificacoes (/notificacoes) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /whatsapp (/whatsapp) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /whatsapp (/whatsapp) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /whatsapp (/whatsapp) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /whatsapp (/whatsapp) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes (/configuracoes) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /configuracoes (/configuracoes) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /configuracoes (/configuracoes) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 2 alvo(s) <44px
+rota /configuracoes (/configuracoes) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/privacidade (/configuracoes/privacidade) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /configuracoes/privacidade (/configuracoes/privacidade) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /configuracoes/privacidade (/configuracoes/privacidade) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/privacidade (/configuracoes/privacidade) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/senha (/configuracoes/senha) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /configuracoes/senha (/configuracoes/senha) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /configuracoes/senha (/configuracoes/senha) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 3 alvo(s) <44px
+rota /configuracoes/senha (/configuracoes/senha) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/email (/configuracoes/email) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /configuracoes/email (/configuracoes/email) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /configuracoes/email (/configuracoes/email) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 1 alvo(s) <44px
+rota /configuracoes/email (/configuracoes/email) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/bloqueados (/configuracoes/bloqueados) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /configuracoes/bloqueados (/configuracoes/bloqueados) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /configuracoes/bloqueados (/configuracoes/bloqueados) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/bloqueados (/configuracoes/bloqueados) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/avisos (/configuracoes/avisos) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /configuracoes/avisos (/configuracoes/avisos) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /configuracoes/avisos (/configuracoes/avisos) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/avisos (/configuracoes/avisos) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /configuracoes/excluir-conta (/configuracoes/excluir-conta) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /configuracoes/excluir-conta (/configuracoes/excluir-conta) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /configuracoes/excluir-conta (/configuracoes/excluir-conta) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 3 alvo(s) <44px
+rota /configuracoes/excluir-conta (/configuracoes/excluir-conta) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /conta-excluida (/conta-excluida) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /conta-excluida (/conta-excluida) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /conta-excluida (/conta-excluida) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /conta-excluida (/conta-excluida) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /ajuda (/ajuda) | visitante | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /ajuda (/ajuda) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /ajuda (/ajuda) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /ajuda (/ajuda) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /admin (/admin) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /admin (/admin) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /admin (/admin) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; não-equipe: "Área só da equipe"; tela da equipe n/v no demo
+rota /admin (/admin) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; não-equipe: "Área só da equipe"; tela da equipe n/v no demo
+rota /mural (/mural) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /mural (/mural) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /mural (/mural) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 57 alvo(s) <44px
+rota /mural (/mural) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga/:id (/vaga/BC-1) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /vaga/:id (/vaga/BC-1) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /vaga/:id (/vaga/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga/:id (/vaga/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /confirmar/:id (/confirmar/BC-4821) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /confirmar/:id (/confirmar/BC-4821) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /confirmar/:id (/confirmar/BC-4822) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /confirmar/:id (/confirmar/BC-4822) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /enviado/:id (/enviado/BC-4821) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /enviado/:id (/enviado/BC-4821) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /enviado/:id (/enviado/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /enviado/:id (/enviado/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /minhas-candidaturas (/minhas-candidaturas) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /minhas-candidaturas (/minhas-candidaturas) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /minhas-candidaturas (/minhas-candidaturas) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 8 alvo(s) <44px
+rota /minhas-candidaturas (/minhas-candidaturas) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /vagas-salvas (/vagas-salvas) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /vagas-salvas (/vagas-salvas) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /vagas-salvas (/vagas-salvas) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 8 alvo(s) <44px
+rota /vagas-salvas (/vagas-salvas) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /selecionado/:id (/selecionado/BC-4821) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /selecionado/:id (/selecionado/BC-4821) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /selecionado/:id (/selecionado/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /selecionado/:id (/selecionado/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /avaliar/:id (/avaliar/BC-4821) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /avaliar/:id (/avaliar/BC-4821) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /avaliar/:id (/avaliar/BC-4703) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 4 alvo(s) <44px
+rota /avaliar/:id (/avaliar/BC-4703) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /perfil (/perfil) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /perfil (/perfil) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /perfil (/perfil) | trabalhador | 360	-	crawl+captura (demo)	B1-011,B1-002,B1-005	ok; 4 alvo(s) <44px
+rota /perfil (/perfil) | trabalhador | 1280	-	crawl+captura (demo)	B1-011,B1-002	ok; 
+rota /perfil/editar (/perfil/editar) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /perfil/editar (/perfil/editar) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /perfil/editar (/perfil/editar) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 7 alvo(s) <44px
+rota /perfil/editar (/perfil/editar) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /perfil/verificar (/perfil/verificar) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /perfil/verificar (/perfil/verificar) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /perfil/verificar (/perfil/verificar) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /perfil/verificar (/perfil/verificar) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /trabalhador/:id (/trabalhador/jorge) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /trabalhador/:id (/trabalhador/jorge) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /trabalhador/:id (/trabalhador/jorge) | trabalhador | 360	-	crawl+captura (demo)	B1-011,B1-002,B1-005	ok; 3 alvo(s) <44px
+rota /trabalhador/:id (/trabalhador/jorge) | trabalhador | 1280	-	crawl+captura (demo)	B1-011,B1-002	ok; 
+rota /trabalhador/:id/:jobId (/trabalhador/jorge/BC-4821) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /trabalhador/:id/:jobId (/trabalhador/jorge/BC-4821) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /trabalhador/:id/:jobId (/trabalhador/jorge/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /trabalhador/:id/:jobId (/trabalhador/jorge/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /empresa (/empresa) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /empresa (/empresa) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /empresa (/empresa) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /empresa (/empresa) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /empresa/editar (/empresa/editar) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /empresa/editar (/empresa/editar) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /empresa/editar (/empresa/editar) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /empresa/editar (/empresa/editar) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /construtora/:id (/construtora/meridiano) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /construtora/:id (/construtora/meridiano) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /construtora/:id (/construtora/meridiano) | trabalhador | 360	-	crawl+captura (demo)	B1-011,B1-002,B1-005	ok; 13 alvo(s) <44px
+rota /construtora/:id (/construtora/meridiano) | trabalhador | 1280	-	crawl+captura (demo)	B1-011,B1-002	ok; 
+rota /avaliacoes/:type/:id (/avaliacoes/worker/jorge) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; visitante: vai ao /login (guarda ok); 5 alvo(s) <44px
+rota /avaliacoes/:type/:id (/avaliacoes/worker/jorge) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login; visitante: vai ao /login (guarda ok)
+rota /avaliacoes/:type/:id (/avaliacoes/worker/jorge) | trabalhador | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; 3 alvo(s) <44px
+rota /avaliacoes/:type/:id (/avaliacoes/worker/jorge) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /criar-vaga (/criar-vaga) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /criar-vaga (/criar-vaga) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /criar-vaga (/criar-vaga) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /criar-vaga (/criar-vaga) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga-editar/:id | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /vaga-editar/:id | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /vaga-editar/:id (/vaga-editar/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga-editar/:id (/vaga-editar/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /publicar-de-novo/:id | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /publicar-de-novo/:id | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /publicar-de-novo/:id (/publicar-de-novo/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /publicar-de-novo/:id (/publicar-de-novo/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga-publicada/:id | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /vaga-publicada/:id | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /vaga-publicada/:id (/vaga-publicada/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga-publicada/:id (/vaga-publicada/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga-gerenciar/:id | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /vaga-gerenciar/:id | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /vaga-gerenciar/:id (/vaga-gerenciar/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /vaga-gerenciar/:id (/vaga-gerenciar/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /fechado/:id | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /fechado/:id | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /fechado/:id (/fechado/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /fechado/:id (/fechado/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /impulsionar/:id | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /impulsionar/:id | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /impulsionar/:id (/impulsionar/BC-4821) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /impulsionar/:id (/impulsionar/BC-4821) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /impulsionar/:id/:plan | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /impulsionar/:id/:plan | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /impulsionar/:id/:plan (/impulsionar/BC-4821/destaque) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /impulsionar/:id/:plan (/impulsionar/BC-4821/destaque) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /historico (/historico) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /historico (/historico) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /historico (/historico) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /historico (/historico) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /minhas-vagas (/minhas-vagas) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /minhas-vagas (/minhas-vagas) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /minhas-vagas (/minhas-vagas) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /minhas-vagas (/minhas-vagas) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /pagamentos (/pagamentos) | visitante | 360	-	crawl+captura (demo)	B1-002,B1-005	ok; abre /login; 5 alvo(s) <44px
+rota /pagamentos (/pagamentos) | visitante | 1280	-	crawl+captura (demo)	B1-002	ok; abre /login
+rota /pagamentos (/pagamentos) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /pagamentos (/pagamentos) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+rota /avaliar-trabalhador/:jobId/:workerId | visitante | 360	-	n/v		rota não visitada com parâmetro válido
+rota /avaliar-trabalhador/:jobId/:workerId | visitante | 1280	-	n/v		rota não visitada com parâmetro válido
+rota /avaliar-trabalhador/:jobId/:workerId (/avaliar-trabalhador/BC-4821/jorge) | trabalhador | 360	-	crawl+captura (demo)	B1-002	ok; 
+rota /avaliar-trabalhador/:jobId/:workerId (/avaliar-trabalhador/BC-4821/jorge) | trabalhador | 1280	-	crawl+captura (demo)	B1-002	ok; 
+fluxo cadastro trabalhador (6 passos) | visitante->novo | 360	-	fluxo interativo	B1-001,B1-004,B1-010	ok com defeitos; validações de CPF/e-mail/WhatsApp/senha/18 anos/termos testadas; reload perde rascunho
+fluxo verificar e-mail + completar perfil (endereço, fotos) | trabalhador novo | 360	-	fluxo interativo	B1-004	ok; e-mail real/Storage n/v
+fluxo verificar identidade (envio selfie+documento) | trabalhador novo | 360	-	fluxo interativo	B1-013	ok no demo; Storage real n/v; arquivo não-imagem aceito sem aviso
+mural: busca, filtros (km, quando, valor mínimo), ordenação, alerta de bico | trabalhador completo | 360	-	fluxo interativo	B1-005,B1-006	ok
+mural vazio (cidade sem vagas) | trabalhador novo | 360	-	fluxo interativo		ok; texto "com esse filtro" sem filtro aplicado (S3 leve, demo tem vagas só em SP)
+detalhe da vaga + compartilhar + denunciar/bloquear | trabalhador completo | 360	-	fluxo interativo	B1-012	ok; mapa/rota n/v (tiles externos)
+candidatura (confirmar, enviar, duplicada, vaga encerrada, offline, duplo clique) | trabalhador completo | 360	-	fluxo interativo		ok
+minhas candidaturas / selecionado / avaliar | trabalhador completo | 360	-	fluxo interativo	B1-009,B1-014	ok; WhatsApp real n/v
+perfil: editar (validação 80), posts (publicar/excluir), avaliações | trabalhador completo | 360	-	fluxo interativo	B1-005	ok
+configurações: tema, avisos, e-mail, senha, WhatsApp, privacidade, ajuda, sair | trabalhador completo | 360	-	fluxo interativo	B1-008	ok; exportar dados sem retorno visível no demo; e-mail real n/v
+excluir conta (checkbox+modal+senha+offline+duplo clique+voltar) | trabalhador completo | 360	-	fluxo interativo		ok
+login (vazio, errado, offline, CPF, espaços/maiúsculas, duplo clique, deep link, sair, voltar) | visitante | 360	-	fluxo interativo		ok
+esqueci senha / entrar-celular | visitante | 360	-	fluxo interativo	B1-007	ok no demo; e-mail e SMS reais n/v
+estado de erro (?falhar=1) em 21 telas | trabalhador | 360	-	demo		ok: erro com "Tentar de novo" em todas (exceto editar perfil/privacidade/ajuda, que não carregam dados)
+PWA: service worker, manifest, recarregar e navegar offline | trabalhador | 360	-	fluxo interativo		ok; instalação (beforeinstallprompt) n/v em headless
+teclado (viewport 360x330) em login e cadastro | visitante | 360	-	fluxo interativo		ok: nenhum campo coberto
+conta suspensa / staff / sessão expirada / captcha / pagamento / Storage / e-mail real | -	-	n/v		não existem no demo

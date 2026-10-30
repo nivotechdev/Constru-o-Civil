@@ -1,0 +1,1232 @@
+# Prompt — Rodada FIX do Bicos (corrigir tudo o que a auditoria AUD achou)
+
+> Cole tudo abaixo numa sessão nova do Claude Code com acesso ao repositório `nivotechdev/constru-o-civil` e ao conector do Supabase. Esta rodada **corrige**: ela segue o plano da rodada AUD, na ordem dos blocos, sem regressão e com prova.
+> Gerado automaticamente a partir de `web/docs/AUDITORIA-COMPLETA.md` e `web/docs/PLANO-CORRECAO.md` (mesmos `AUD-xxx`). 222 itens: 1 S0, 6 S1, 48 S2, 147 S3, 20 melhorias.
+
+## 1. Papel e missão
+
+Você é o(a) engenheiro(a) sênior responsável pela **rodada FIX** do **Bicos**, marketplace de bicos e diárias para o público geral (NivoTech, Brasil; piloto em Caxias do Sul). Sua missão: **corrigir todos os achados `AUD-xxx` do plano, na ordem dos blocos 0 a 7, sem regressão**, com a menor mudança que resolve a causa raiz, e provar cada correção. Quem fala com você é sócio, não desenvolvedor: explique em português simples, em poucas linhas.
+
+Público do produto: trabalhadores de celular simples, internet ruim e pouca familiaridade com apps; empresas e pessoas com pressa. Texto curto, direto, sem jargão. Isso pesa mais que estética.
+
+## 2. Leitura inicial obrigatória (nesta ordem, antes de mexer em qualquer coisa)
+
+1. `CLAUDE.md` (raiz) — **cuidado: está parcialmente desatualizado** (AUD sobre docs); confirme no código e no banco quando algo parecer estranho.
+2. `web/docs/AUDITORIA-COMPLETA.md` — leia o **resumo, as notas, as seções 3 e 6** (o que está bom e não pode ser estragado) e os achados do bloco em que for trabalhar; `web/docs/AUDITORIA-ACHADOS-S3.md` para os S3.
+3. `web/docs/PLANO-CORRECAO.md` — decisões, blocos, tipos, dependências, riscos.
+4. `web/docs/DECISOES.md` — **só o que cada AUD tocar** (procure o tema com `grep -n`); decisões documentadas não são bug, a menos que o AUD diga que a própria decisão é defeituosa.
+5. `web/docs/CHECKLIST-LANCAMENTO.md`, `web/supabase/APLICAR.md` e `web/docs/IMPLANTACAO.md` antes de qualquer item que toque banco, funções ou implantação.
+6. Anexos da auditoria em `web/docs/auditoria/` (inventários, matrizes, tabela de LGPD, medições, scripts de reprodução citados nos achados).
+7. **Decisões dos sócios** (valem como ordem; onde estiver em branco, o AUD correspondente fica "depende do responsável" e você não decide por eles):
+
+```
+{{DECISOES_DOS_SOCIOS}}
+```
+
+## 3. Regras de trabalho
+
+**Git e CI**
+
+- Crie a branch `claude/correcao` a partir de `claude/auditoria` (que é a branch auditada `67d9ffb` mais os documentos da auditoria). Trabalhe só nela.
+- **Um commit por AUD**: `fix(AUD-0xx): descrição em português` (ou `feat`, `docs`, `test`, `chore` conforme o caso); itens agrupados no plano (duplicatas já unidas) são um commit só. Termine cada mensagem com as linhas de atribuição que a sessão indicar.
+- **CI verde a cada push** (`web.yml`: typecheck, lint, format, testes, `deno check`, builds, Lighthouse, axe, job `sql`). Se ficar vermelho, corrija na hora, sem "skip", sem `.only`, sem afrouxar meta.
+- Antes de cada push rode localmente: `cd web && npm run typecheck && npm run lint && npm run format:check && npm test` e, se mexeu em build/telas, `npm run build:demo`.
+- Nada de `git push --force`, nada de reescrever histórico, nada de merge no `master` ou na branch de origem sem o "pode" dos sócios.
+
+**Método**
+
+- Corrija a **causa raiz**, com a **menor mudança que resolve**. Não refatore o que não está no plano. Não mude comportamento além do que o AUD pede. Se perceber outro problema, **anote** (no relatório) e não conserte de passagem.
+- **Todo AUD de bug ou segurança começa por um teste que FALHA** (Vitest, SQL ou E2E, o que couber) e termina com ele **passando**; mostre as duas saídas no relatório. AUDs de texto/documentação provam-se por `grep`/diff/print.
+- Siga as convenções do `CLAUDE.md` §6: TypeScript e comentários em inglês, textos de tela/docs/migrations/commits em português; Prettier + ESLint; sem `any` novo; sem dependência nova sem justificar; use os componentes de `src/components/` e os tokens de `styles/tokens.css`; estados carregando/erro/vazio/offline em toda tela (nada de tela branca nem botão girando para sempre).
+- **Dois modos, uma porta**: todo serviço novo ou alterado tem corpo demo e corpo real (`src/services/remote/*`); telas e hooks nunca importam `data/`; mantenha o contrato `ServiceError` (`offline | falha_demo | nao_autorizado | nao_encontrado | conflito | validacao`) e as RPCs com SQLSTATE `BC401/BC404/BC409/BC422`. A **máquina de status** é única em `applicationMachine.ts` e espelhada em `transition_application`: mudou uma, mude a outra e os testes dos dois lados.
+- **Migrations**: arquivo `web/supabase/migrations/AAAAMMDDHHMMSS_<id>_<nome>.sql`, **idempotente** (`create … if not exists`, `create or replace`, blocos `do $$`), com teste em `web/supabase/tests/<id>_*.sql` (inclua **caso negativo e de papel errado**), depois `node scripts/aplicar-tudo.mjs` e `npm run gen:types`. RPC nova: `security definer`, `set search_path = public`, `revoke all … from public, anon`, `grant execute … to authenticated`, erro `BC4xx`. Use o id `aud<NNN>` no nome. **Não renumere nem edite migrations já existentes**: crie uma nova.
+- Dados pessoais: nunca em log, Sentry, analytics, prints ou relatório. Nunca coloque `service_role`, token, chave privada ou senha em código, repositório ou saída. O repositório é **público**.
+
+**Produção e staging**
+
+- **Produção (`ppnxdajiihsjaojxokzh`): somente leitura** (catálogo e `count(*)`). Qualquer DDL, `delete`, mudança de Auth, segredo ou função publicada → mostre **exatamente** o comando/SQL, o que ele muda, como desfazer e o backup exigido, e **espere "pode"**. **Uma aprovação vale para um passo.** A produção está 25 migrations e várias funções atrás do código: nenhuma correção sua é aplicada lá isoladamente; elas entram no pacote do roteiro de implantação (AUD do runbook), com backup ensaiado.
+- **Staging (`setyxomsbfrkneqqfoam`)**: liberado para testes (aplicar migrations, publicar funções, rodar E2E, provar RLS com blocos que terminam em `rollback`). Nunca deixe dado de teste. Nunca use dado pessoal real.
+- Não dá para alcançar o staging por rede neste ambiente (o proxy recusa `*.supabase.co`): use o conector do Supabase. O conector pede confirmação humana para `delete`/DDL, mesmo dentro de transação desfeita: prefira `select` e `insert` + `rollback`.
+
+**Honestidade**
+
+- **Nunca diga "feito" sem prova** (saída de teste, consulta, print, diff). O que depende dos sócios (pagar plano, DNS, advogado, contas externas, decisões) vai para `web/docs/CHECKLIST-LANCAMENTO.md` como **"ação do responsável"**, com dono e data sugeridos, e **não** é marcado como feito.
+- Se ao corrigir você descobrir que **o AUD está errado**, ou que a correção é **maior que o previsto**, **pare e reporte** em vez de improvisar: diga o que viu, a alternativa mínima e o que precisa decidir.
+- **Ao fim de cada bloco, pare** e reporte em **até 8 linhas** (o que foi feito, provas, o que ficou pendente/depende dos sócios, riscos) e **espere "pode"** para o bloco seguinte.
+
+**Armadilhas do ambiente (observadas na auditoria)**
+
+- O ambiente de IA tem limite de uso por janela de 5 horas: não rode mais de 3 agentes em paralelo, faça commits pequenos e frequentes e grave relatórios parciais em arquivo.
+- Os testes SQL precisam de Postgres da imagem `supabase/postgres:17.6.1.011`; o Docker Hub pode responder 429 e outros registros podem estar bloqueados. O job `sql` do CI é a prova oficial; se não conseguir rodar local, diga isso no relatório.
+- Subagentes que forem gravar relatório podem ter `Write` recusado para arquivos de relatório: peça o resultado em texto e grave você mesmo.
+- O repositório local é raso (50 commits); use `git fetch` específico, não `--unshallow` sem necessidade.
+
+## 4. Os blocos e cada AUD
+
+Os textos abaixo são o resumo operacional de cada achado. A descrição completa, com prova, está em `web/docs/AUDITORIA-COMPLETA.md` (S0–S2 e M) e `web/docs/AUDITORIA-ACHADOS-S3.md` (S3), pelo mesmo `AUD-xxx`. **Ordem: bloco 0 → 7; dentro do bloco, na ordem listada (já respeita dependências).**
+
+### Bloco 0 — Segurança e privacidade
+
+**Instruções do bloco 0 (segurança e privacidade).** Comece pelos dois S0 (identidade não apagada); depois os S1; depois S2/S3. Para tudo que mexe em grants/RLS/funções, **primeiro** estenda `web/supabase/tests/seguranca.sql` (ou crie teste novo) com o caso negativo por papel (`anon`, trabalhador, empresa, membro, equipe, conta suspensa, dono × não dono). Confirme cada correção no staging com bloco desfeito. Itens `responsável`: só documente no checklist e peça a decisão. Textos legais: **não** invente dado da empresa nem prazo; deixe `{{…}}` e `LEGAL_REVIEWED=false` até o advogado.
+
+- **AUD-002** (S1, esforço M, migration, responsável, produção) — Rua, número, CEP e ponto exato de TODA vaga (inclusive casa/apartamento de pessoa física) saem por `select` direto para qualquer conta logada
+  - Onde: `web/supabase/migrations/20261021000800_u53_endereco_publico.sql:10` (`grant select (cep, street, number, complement, lat, lon) on public.jobs to authenticated`); política `jobs` (`using (deleted_at is null and hidden_at is null …)`); `jobs.place_type` aceita `casa`/`apartamento` (`20261021000700_u52_dias_e_local.sql:22-24`)
+  - Correção esperada: voltar a ler endereço só por RPC (ex.: `get_job_addresses` ampliada) que devolve rua/número apenas depois da candidatura (ou para quem passou pelo mural), com limite por conta; até lá, mostrar bairro/ponto aproximado (`area_lat/area_lon` já existem) e liberar o exato quando `place_type` = comércio ou depois de a empresa aprovar. Alternativa mínima: manter o público, mas esconder rua/número/ponto exato quando `place_type in ('casa','apartamento','condominio')`.
+  - Critério de aceite (copiado do plano): como conta de fora, `select street, number, lat, lon from jobs` falha (42501) ou volta nulo para vagas residenciais; o teste `seguranca.sql` passa a exercitar a coluna (hoje só testa `get_job_addresses`).
+  - Dependências: decisão do responsável (muda o U53 pedido por ele); texto da política de privacidade.
+- **AUD-003** (S1, esforço P, migration, produção) — Texto do endereço da vaga sem limite: uma empresa faz o mural pesar MB
+  - Onde: `web/supabase/migrations/20261021000700_u52_dias_e_local.sql:31` (`job_from_draft`: street/number/complement/neighborhood/city só com btrim); `web/supabase/migrations/20261022000300_u65_valor_minimo.sql:8` (`feed_jobs` devolve street/neighborhood); `jobs` sem CHECK de tamanho; URLs de foto só têm prefixo conferido (`check_job_photos_v2`)
+  - Correção esperada: CHECK `char_length` (street ≤120, neighborhood/city ≤80, number ≤10, complement ≤60, URL de foto ≤300) NOT VALID + VALIDATE, e a mesma checagem em `job_from_draft` com BC422 (colunas editáveis: ver D1-003).
+  - Critério de aceite (copiado do plano): `publish_job` com street de 121 letras → BC422; página do mural < 20 KB por vaga.
+  - Dependências: nenhuma (relacionado a D1-003)
+- **AUD-004** (S1, esforço P, migration, responsável, produção) — Excluir a conta não apaga as avaliações que a pessoa escreveu
+  - Onde: `web/supabase/migrations/20261021000500_u48_publico_geral.sql:79` (`anonymize_account` apaga `reviews` só pelo id do avaliado) e `:458` (`submit_review`: autor só em `author_label`); `web/docs/DECISOES.md:1833-1850` (U24) e a política dizem "apagamos as avaliações que você fez e recebeu"
+  - Correção esperada: coluna `author_account` (backfill por `application_id`), apagar por ela em `anonymize_account` e refazer as notas; ou anonimizar label + comentário e corrigir política/decisão.
+  - Critério de aceite (copiado do plano): estender `tests/u24_exclusao_completa.sql` (0 avaliações escritas pela conta, nota refeita).
+  - Dependências: responsável reconcilia política × decisão
+- **AUD-005** (S1, esforço P, migration, função, produção) — Todos os limites de taxa das Edge Functions usam o primeiro IP de `x-forwarded-for`, que o cliente pode escrever
+  - Onde: `web/supabase/functions/_shared/http.ts:63-66` (`clientIp`); usado por `entrar-com-documento/index.ts:35,44`, `verificar-cadastro/index.ts:55-65`, `codigo-whatsapp/index.ts:57,64`, `entrar-com-firebase/index.ts:56`; contraste: `web/supabase/migrations/20261016000200_lanc10_link_publico.sql:55-58` e `20261021000700_u52_dias_e_local.sql:390-393`; `web/docs/DECISOES.md` L10 (li…
+  - Correção esperada: em `clientIp`, ler primeiro `cf-connecting-ip`, depois `x-real-ip`, e só então o ÚLTIMO item de `x-forwarded-for` (nunca o primeiro). Teste unitário com os cabeçalhos forjados. Registrar na DECISOES.
+  - Critério de aceite (copiado do plano): no staging, chamar `verificar-cadastro` 13 vezes com `X-Forwarded-For` diferente em cada chamada a partir da mesma máquina: a 13ª exige captcha e a 31ª devolve 429; as linhas de `auth_attempts` têm sempre o IP da borda.
+  - Dependências: nenhuma.
+- **AUD-008** (S2, esforço M, migration, produção) — Vídeos do portfólio sobem sem remover metadados (GPS do aparelho) para um bucket público
+  - Onde: web/src/services/remote/storage.ts:76-86 e :91-102; web/src/pages/shared/WorkerPosts.tsx:221 (`accept="image/*,video/*"`); web/src/utils/image.ts:34-60; migration 20261010000700_z12_fotos.sql:103-104 (bucket `portfolio` aceita mp4/quicktime/webm, público)
+  - Correção esperada: desligar vídeo no lançamento (só foto) ou remuxar/limpar no servidor (função que reescreve o mp4 sem os átomos `udta/©xyz/meta`); alternativa mínima: aviso na tela "vídeos podem levar a localização de onde foram gravados".
+  - Critério de aceite (copiado do plano): subir um .mp4/.mov de teste com átomo de GPS e conferir (`exiftool`/`ffprobe`) que o arquivo publicado não tem coordenadas.
+  - Dependências: nenhuma.
+- **AUD-009** (S2, esforço M, migration, responsável, produção) — Empresa sem verificação aprova todos e recebe o WhatsApp deles (coleta para golpe do falso emprego)
+  - Onde: `web/supabase/migrations/20261021000700_u52_dias_e_local.sql:158` (`publish_job` só recusa `reprovada`; padrão da coluna `pendente`); `web/supabase/migrations/20261021000500_u48_publico_geral.sql:522` (`transition_application` aprovar) e `:207` (`get_contact`: basta `pre_selecionado`); `document_valid_for` aceita CPF para empresa
+  - Correção esperada: só empresa verificada (ou conta com X dias + WhatsApp confirmado + sem denúncia) libera contato; teto diário de aprovações para contas novas; o trabalhador toca em "Compartilhar meu WhatsApp".
+  - Critério de aceite (copiado do plano): empresa `pendente` → aprovar/`get_contact` falham.
+  - Dependências: ação do responsável (definir a regra)
+- **AUD-010** (S2, esforço P, migration, produção) — Selo "Verificada/Verificado" permanece depois de trocar o nome
+  - Onde: grants `UPDATE(name)` em `companies` e `workers`; `web/supabase/migrations/20261011000500_y24_verificacao.sql:18` (`sync_company_verified` só olha `verification_status`); nenhum gatilho zera o selo
+  - Correção esperada: gatilho BEFORE UPDATE OF name que volta `verification_status='pendente'` / `identity_status='nao_enviado'` quando `verified`.
+  - Critério de aceite (copiado do plano): renomear empresa verificada → `verified=false`.
+  - Dependências: nenhuma
+- **AUD-012** (S2, esforço M, migration, produção) — Nenhum limite de vagas por empresa; "urgente" grátis pela API
+  - Onde: `web/supabase/migrations/20261021000700_u52_dias_e_local.sql:158` (`publish_job` não conta) e `:31` (`job_from_draft` aceita `urgent`); `DECISOES.md` W08 não trata de quantidade
+  - Correção esperada: teto de abertas (ex.: 10 sem verificação) e por dia; ignorar `urgent` do payload.
+  - Critério de aceite (copiado do plano): 11ª vaga aberta de empresa `pendente` → BC409; `urgent:true` não muda `_rank`.
+  - Dependências: o responsável define os tetos
+- **AUD-011** (S2, esforço M, migration, produção) — Reputação fabricada em segundos com duas contas
+  - Onde: `web/supabase/migrations/20261010000100_z01_rpcs_candidatura.sql:33` (`job_started` = true sempre que `date_to_arrange`); `transition_application` `concluir`; `submit_review` (`…u48…sql:458`); `application_conclude` soma `jobs_done`
+  - Correção esperada: `concluir` só depois do dia combinado (a combinar: data registrada ou ≥24 h após `contratado`); contar `jobs_done`/nota só com presença confirmada ou conclusão dos dois lados; alertar pares que só avaliam um ao outro.
+  - Critério de aceite (copiado do plano): `concluir` logo após `contratar` em vaga "a combinar" → BC409.
+  - Dependências: AUD-009, AUD-012 (M1-H1 é outro assunto: conclusão automática em 32 dias)
+- **AUD-013** (S2, esforço M, função, responsável, produção) — "Empresa verificada" é concedida a qualquer pessoa que digite um CNPJ ativo qualquer
+  - Onde: `web/supabase/functions/verificar-cnpj/index.ts:42-80`; `web/docs/DECISOES.md:771-783` (L10/Y24); `web/src/pages/shared/CompanyProfileScreen.tsx:140,288`, `web/src/pages/shared/PublicJob.tsx:157`
+  - Correção esperada: (a) no mínimo, trocar o texto do selo automático para "CNPJ ativo na Receita" e reservar "Verificada" para a conferência da equipe; (b) cruzar `razao_social`/`nome_fantasia` com o nome digitado e o `ddd_telefone_1`/e-mail da Receita com o WhatsApp/e-mail da conta, e só verificar automaticamente se bater; (c) alternativa mais forte: código de confirmação enviado ao telefone/e-mail que a Receita tem para o CNPJ.
+  - Critério de aceite (copiado do plano): teste da função com BrasilAPI simulada devolvendo ATIVA para um CNPJ de outro nome → status continua `pendente` e a conta entra na fila `/admin`.
+  - Dependências: decisão do responsável sobre o significado do selo.
+- **AUD-014** (S2, esforço M, migration, responsável, produção) — O mapa envia a casa do trabalhador (coordenada de rua, 6 casas) e o IP a servidores públicos de terceiros (OSRM e OpenStreetMap), coisa que a Política nega e não lista
+  - Onde: `web/src/components/JobMap.tsx:47-55` (`origin = home`, `drivingRoute(origin, job…)`), `web/src/pages/worker/JobDetail.tsx:274` (`home={role === 'trabalhador' ? workerHome(db) : null}`), `web/src/services/selectors.ts:33-40` (`workerHome` usa primeiro a linha de `addresses`, 6 casas), `web/src/services/route.ts:10-11,41-43` (`router.project-osrm.org`, `routing.openstreetmap.…
+  - Correção esperada: (a) declarar na Política os provedores de mapa e de rota, com a finalidade e o dado enviado (coordenada de origem e destino, IP), e a base legal; (b) reduzir o dado: arredondar a origem para 2 casas (≈1 km) antes de chamar a rota, ou calcular a rota por uma função própria no servidor (sem IP do usuário), ou só mostrar a linha reta; (c) considerar mapa próprio/pago com contrato (OSRM público é "demo" e sem garantia).
+  - Critério de aceite (copiado do plano): teste de `route.ts` mostrando que a coordenada enviada tem no máximo 2 casas decimais (ou que a chamada sai pelo servidor); Política lista tiles e rota; `headers.test.ts` continua verde.
+  - Dependências: decisão do produto (ação do responsável) sobre o provedor de rota/mapa.
+- **AUD-015** (S2, esforço M, migration, responsável, produção) — Não existe guarda dos registros de acesso por 6 meses (Marco Civil, art. 15); a Política deixa o prazo em branco
+  - Onde: `web/src/services/legal.ts:157` (`{{PRAZO_REGISTROS_ACESSO}}`), `web/docs/LGPD.md:35,66-68` (achado 4), `web/supabase/migrations/20261014000700_x22_limpeza_tentativas.sql` e `20261016000200_lanc10_link_publico.sql:93` (`purge_auth_attempts`: apaga `auth_attempts` com 1 dia)
+  - Correção esperada: decidir com o advogado se o art. 15 se aplica; se sim, gravar o login/ações relevantes (IP, data e hora, versão do app) numa tabela própria com retenção de 6 meses e acesso restrito (ou plano com dreno de logs), declarar o prazo na Política; se não, tirar a promessa do texto.
+  - Critério de aceite (copiado do plano): Política com o prazo preenchido e coerente com o que o banco guarda; consulta mostrando registros com 6 meses de idade e expurgo depois.
+  - Dependências: ação do responsável (advogado e plano de hospedagem).
+- **AUD-018** (S2, esforço P, migration, produção) — "Exportar meus dados" não traz tudo o que a Bicos guarda sobre a pessoa, mas a tela e a Política dizem que traz
+  - Onde: `web/supabase/migrations/20261021000600_u51_endereco.sql:205` (versão atual de `export_my_data`), `web/src/pages/shared/Privacy.tsx` ("baixar uma cópia de tudo o que a Bicos guarda sobre você"), `web/src/services/legal.ts:163`
+  - Correção esperada: incluir as tabelas que faltam (sem expor dado de terceiros: de `blocks` só o id e a data; de `reports` só as que a pessoa fez); renomear `avaliacoes_recebidas` para `avaliacoes`; trocar o texto da tela para "seus dados" se algo ficar de fora de propósito (ex.: denúncias contra você) e dizer o motivo; teste SQL que percorre `information_schema` (colunas `worker_id`, `company_id`, `account_id`, `user_id`, `reporter_id`, `blocker_id`) e falha se uma tabela nova não estiver coberta ou numa lista de exceções.
+  - Critério de aceite (copiado do plano): teste SQL novo `export_cobre_todas_as_tabelas` verde; o JSON de uma conta de teste tem as chaves novas.
+  - Dependências: nenhuma.
+- **AUD-019** (S2, esforço M, migration, função, responsável, produção) — O "hash do documento" é SHA-256 sem segredo: com um vazamento do banco ou de backup, os CPFs saem em minutos (e a máscara mostra 6 dos 9 dígitos); a Política diz "CPF e CNPJ ficam cifrados"
+  - Onde: `web/supabase/migrations/20261009000200_bicos_v2_rules.sql:140` (`document_hash` = `digest(digits, 'sha256')`, `IMMUTABLE`, sem sal nem chave), `mask_document` (CPF `***.NNN.NNN-**`), `web/supabase/functions/entrar-com-documento/index.ts:45` (`'doc:' + sha256Hex(documento)` gravado em `auth_attempts.key`), `verificar-cadastro/index.ts:67`, `web/src/services/legal.ts:114,170`
+  - Correção esperada: trocar por HMAC-SHA256 com uma chave do Vault (`nivotech_documento_pepper`, diferente da de cifra), recalculando os hashes a partir de `document_cipher` numa migration; usar o mesmo HMAC nas chaves de limite (`doc:`); reduzir a máscara do CPF para os 2 últimos dígitos ou nenhum. Alternativa: manter o SHA-256 e declarar o risco ao advogado.
+  - Critério de aceite (copiado do plano): teste SQL mostrando que `document_hash('123.456.789-09')` muda com a chave e que o login por documento continua funcionando; `accounts.document` sem 6 dígitos.
+  - Dependências: migração em produção só com "pode" (ação do responsável).
+- **AUD-020** (S2, esforço M, —) — "Login CSRF": o app aceita `#access_token=…&refresh_token=…` de qualquer link e entra na conta de quem montou o link
+  - Onde: `src/services/remote/session.ts:355-381` (chamada de `setSession` na linha 373); `src/services/supabase.ts:44` (`flowType: 'implicit'`, `detectSessionInUrl: false`)
+  - Correção esperada: passar para `flowType: 'pkce'` e trocar o `code` do link (`exchangeCodeForSession`); ou, mais barato, guardar um marcador com validade (ex.: 1 h) em `localStorage` quando o app pede cadastro, "esqueci a senha" ou troca de e-mail, e só aceitar `setSession` do fragmento se o marcador existir; ao entrar por link, mostrar "Você entrou como <e-mail>".
+  - Critério de aceite (copiado do plano): teste em que um fragmento com tokens válidos, sem marcador, é ignorado e leva a `/login`; o link legítimo de "Esqueci a senha" pedido neste aparelho continua funcionando.
+  - Dependências: nenhuma
+- **AUD-021** (S2, esforço M, migration, responsável, produção) — Qualquer conta logada lê todos os trabalhadores (nome, bairro, coordenada, foto, bio, experiências) com uma consulta só
+  - Onde: `supabase/migrations/20261009000200_bicos_v2_rules.sql:37` (política `using (true)` em `workers`); GRANT de SELECT por coluna em `workers`; `src/services/remote/merge.ts:24` (`WORKER_COLUMNS`)
+  - Correção esperada: trocar a política: o próprio trabalhador, e empresas só quando houver vínculo (candidatura, convite, avaliação); o perfil público passa por uma RPC `get_worker_profile(id)` que confere o vínculo e devolve só os campos necessários, sem coordenada; revisar a rota `/trabalhador/:id` e o fluxo de convidar.
+  - Critério de aceite (copiado do plano): teste SQL em que uma empresa sem vínculo vê 0 trabalhadores e a empresa com candidatura vê só o candidato.
+  - Dependências: decisão dos sócios (perfil visível a quem está logado é uma regra de produto: "os dois lados veem o perfil do outro")
+- **AUD-022** (S2, esforço P, migration, produção) — Vaga oculta pela equipe e conta suspensa ainda aprovam, contratam e convidam
+  - Onde: `transition_application` (staging `pg_get_functiondef`; fonte `web/supabase/migrations/20261021000500_u48_publico_geral.sql`) — ramos `aprovar`/`contratar`/`recusar`/`concluir`: só conferem `v_job.company_id = my_company_id()`, `deleted_at`/`closed` e vagas livres; `invite_worker` (20261013000300_f13_convite.sql) usa `job_is_open` e `own_job_for_update`, que não olham `accou…
+  - Correção esperada: em `transition_application` (ações `aprovar`, `contratar`, `desfazer_aprovacao`; e `undo_reject`) recusar com BC409 se `v_job.hidden_at is not null` ou a conta da empresa estiver suspensa; em `invite_worker` e `update_job` recusar se a conta estiver suspensa (a vaga oculta já é recusada por `job_is_open` no convite). Manter `recusar`, `cancelar_contratacao`, `desistir` liberados (sair do compromisso deve ser sempre possível). Escrever o teste SQL junto.
+  - Critério de aceite (copiado do plano): teste SQL (novo, em `web/supabase/tests/`) que oculta a vaga/suspende a empresa e confirma BC409 em `aprovar`, `contratar`, `invite_worker`, sem quebrar `r03_suspensao_completa.sql`.
+  - Dependências: nenhuma.
+- **AUD-023** (S2, esforço M, responsável, produção) — O token da conta Supabase guardado no CI alcança a produção, e as mitigações do X30 não cobrem o ataque que importa
+  - Onde: `.github/workflows/staging.yml:65,135` (SUPABASE_ACCESS_TOKEN); `.github/workflows/staging-fotos.yml:28`; `web/docs/DECISOES.md:2496-2501` (X30); `web/docs/STAGING.md:20`; `web/docs/CHECKLIST-LANCAMENTO.md:20`
+  - Correção esperada: (a) tirar o staging da organização da produção (usuário Supabase membro só de uma organização "staging" e token dele no CI); (b) `environment: staging` restrito à branch master, com os segredos nele; (c) item "rotacionar token" no checklist com dono e data.
+  - Critério de aceite (copiado do plano): `GET https://api.supabase.com/v1/projects` com o token do CI não lista `ppnxdajiihsjaojxokzh`; branch nova com workflow que lê o segredo recebe vazio; rotação aparece no checklist com data.
+  - Dependências: ação do responsável. Revisa a decisão X30 (a decisão é que não fecha o risco).
+- **AUD-024** (S2, esforço P, responsável) — O site de teste público (GitHub Pages) tem captcha de teste e manda e-mail de verdade pelo remetente da produção, sem aviso de "ambiente de teste" e sem noindex
+  - Onde: `.github/workflows/site.yml:32-36,60`; `staging.yml:93-97,108,112-114`; `web/scripts/configurar-auth.mjs:46-57`; `web/scripts/staging/conferir-funcoes.sh:52`; `web/docs/STAGING.md:73`; `web/public/robots.txt`
+  - Correção esperada: remetente próprio do staging (ou sem SMTP); `<meta robots noindex>` e `Disallow: /` quando `VITE_SENTRY_ENVIRONMENT=staging`; faixa fixa "AMBIENTE DE TESTE — não use dados reais"; captcha real de staging ou lista de e-mails permitidos.
+  - Critério de aceite (copiado do plano): o site mostra a faixa; `robots.txt` do Pages devolve `Disallow: /`; remetente do e-mail de cadastro no staging ≠ produção; token de captcha inválido é recusado no staging.
+  - Dependências: nenhuma (ação do responsável só para a chave Turnstile de staging)
+- **AUD-056** (S3, esforço M, responsável, produção) — Nenhum teto de arquivos por conta no Storage (plano Free: 1 GB)
+  - Onde: `storage.buckets` e `storage.objects` do staging e da produção (idênticos): `portfolio` 50 MB por arquivo, `avatars`/`vagas`/`identidade` 10 MB; políticas de INSERT só conferem a pasta `<uid>/` e o lado da conta
+  - Correção esperada: gatilho em `storage.objects` (ou RPC de envio) que limite N arquivos por pasta; reduzir o limite de vídeo; ligar a limpeza na produção.
+  - Critério de aceite (copiado do plano): o 21º arquivo da mesma pasta é recusado.
+  - Dependências: "ação do responsável" para ligar `CLEANUP_SECRET` (produção).
+- **AUD-057** (S3, esforço P, migration, produção) — Status da verificação de identidade (`recusado`, `em_analise`) legível por qualquer conta logada
+  - Onde: `web/supabase/migrations/20261013000700_f07_identidade.sql:106` (`grant select (identity_status) on public.workers to authenticated`); política `workers` `using (true)`; também `companies.verification_status` e, nas denúncias, `reports.resolved_by`/`resolution` (só para quem denunciou)
+  - Correção esperada: tirar `identity_status` do `select` de `authenticated` (o dono já lê por `my_identity()`), e `resolved_by`/`resolution` do `select` de `reports`.
+  - Critério de aceite (copiado do plano): `select identity_status from workers` falha com 42501 para outra conta; a tela do perfil e a do dono continuam funcionando.
+  - Dependências: conferir `src/services/remote/merge.ts:25`, que hoje pede `identity_status` na lista pública.
+- **AUD-058** (S3, esforço P, migration, produção) — Bloquear uma conta não corta contato nem contratação já aprovada
+  - Onde: `web/supabase/migrations/20261013000400_f04_denuncia_bloqueio.sql:74` (`block_account` só apaga `enviada/em_analise` e convites); `get_contact` e `transition_application` não consultam `blocked_between`
+  - Correção esperada: `block_account` cancela também pre_selecionado/contratado (ação do sistema, reabre a vaga como na R03) e `get_contact`/`transition_application` recusam com BC404 se `blocked_between`.
+  - Critério de aceite (copiado do plano): após bloquear, `get_contact` e `contratar` falham.
+  - Dependências: nenhuma
+- **AUD-059** (S3, esforço P, migration, produção) — Leituras sem checar vínculo: `worker_track_record`, `job_stats` e erro que revela candidatura
+  - Onde: `web/supabase/migrations/20261013000200_f10_perfil_profissional.sql:26`, `…z01_rpcs_candidatura.sql:71`, `…u48_publico_geral.sql:522` (`transition_application` busca a candidatura antes de conferir o dono)
+  - Correção esperada: restringir a candidatos das vagas da empresa; `job_stats` só do dono; conferir o dono antes de ler a candidatura.
+  - Critério de aceite (copiado do plano): empresa estranha → 0 linhas / mesmo BC401 nos dois casos.
+  - Dependências: nenhuma
+- **AUD-060** (S3, esforço P, migration, produção) — O servidor aceita qualquer "versão" de termos e de consentimento
+  - Onde: `web/supabase/migrations/20261015000200_lanc07_aceites.sql:98` (`accept_terms`) e `:120` (`submit_identity`); `create_account_for` (terms_version do metadata, até vazia)
+  - Correção esperada: versão vigente em `app_config` e exigir igualdade.
+  - Critério de aceite (copiado do plano): `accept_terms('99.9')` → BC422.
+  - Dependências: nenhuma
+- **AUD-061** (S3, esforço P, migration, produção) — `cpf_valid`, `cnpj_valid`, `document_valid_for`, `whatsapp_valid` executáveis por visitante
+  - Onde: `migrations/20261011000300_y16_y17_documento.sql:157-158`, `migrations/20261011000600_y25_whatsapp.sql:138` (só `grant … to authenticated, service_role`, sem `revoke … from public, anon`); regra do CLAUDE.md §4/§6
+  - Correção esperada: `revoke execute … from public, anon`.
+  - Critério de aceite (copiado do plano): consulta em `pg_proc` devolve só `public_job_card` para anon.
+  - Dependências: nenhuma
+- **AUD-063** (S3, esforço P, migration, produção) — Papel admin × moderador não faz diferença
+  - Onde: `migrations/20261015000100_lanc06_backoffice.sql` (`is_staff`, `staff_guard`, `add_staff_member`)
+  - Correção esperada: usar o papel nas RPCs ou remover a coluna.
+  - Critério de aceite (copiado do plano): teste de papel.
+  - Dependências: nenhuma (consolidar com D2-015)
+- **AUD-064** (S3, esforço P, migration, responsável, produção) — Link público: IP guardado como sha256(ip|data) sem segredo, limite burlável por IPv6, uma escrita por visita anônima, política não cita
+  - Onde: `migrations/20261016000200_lanc10_link_publico.sql:57-67`; `web/src/services/legal.ts:121,156`
+  - Correção esperada: HMAC com segredo do Vault, agrupar IPv6 por /64, citar na política.
+  - Critério de aceite (copiado do plano): política cita o tratamento; o hash muda com o segredo.
+  - Dependências: texto jurídico (ação do responsável)
+- **AUD-065** (S3, esforço P, função, responsável, produção) — Produção roda Edge Functions de antes do L05: captcha passa sem segredo, CORS cai para "*", 2 funções nem existem
+  - Onde: produção `ppnxdajiihsjaojxokzh` (get_edge_function: `entrar-com-documento` v2, as outras 7 em v1, todas de 09–12/10); repo `web/supabase/functions/_shared/{captcha,http,monitoring}.ts`; `web/docs/SUPABASE.md:28,93`; `CLAUDE.md` §4 ("todas publicadas")
+  - Correção esperada: no lançamento, na ordem: (1) segredos (`APP_ORIGIN`, `TURNSTILE_SECRET`, `FIREBASE_PROJECT_ID`…), (2) publicar as 10 funções do `master` (`supabase functions deploy`, as sem JWT com `--no-verify-jwt`), (3) conferir com `get_edge_function`. Corrigir `SUPABASE.md` §4 e `CLAUDE.md` ("todas publicadas" é falso para 2). Incluir no CI/staging um passo que compare a lista de funções do repo com a do projeto.
+  - Critério de aceite (copiado do plano): `list_edge_functions` na produção lista as 10 funções com `verify_jwt` igual à tabela de `SUPABASE.md` §4; chamada sem token do captcha a `entrar-com-documento` devolve 400 `captcha`; chamada com `Origin` estranho não recebe `Access-Control-Allow-Origin` dele.
+  - Dependências: ação do responsável (Turnstile, Firebase, domínio final em APP_ORIGIN); "pode" para publicar.
+- **AUD-066** (S3, esforço P, função, produção) — Notificação por push: endpoint de inscrição é qualquer `https://…` (SSRF cego) e o clique abre URL absoluta
+  - Onde: RPC `save_push_subscription` (só valida `^https://` e tamanho); `web/supabase/functions/enviar-push/index.ts:84-90`; `web/public/push-sw.js:25`
+  - Correção esperada: na RPC e na função, aceitar só hosts de push conhecidos (`fcm.googleapis.com`, `updates.push.services.mozilla.com`, `*.notify.windows.com`, `*.push.apple.com`, `web.push.apple.com`); no SW, recusar `url` cuja origem difira de `self.location.origin`; passar `timeout` ao `web-push`.
+  - Critério de aceite (copiado do plano): `save_push_subscription('https://169.254.169.254/x',…)` falha com BC422; SW com `url:'https://evil.test'` abre `/`.
+  - Dependências: nenhuma.
+- **AUD-067** (S3, esforço P, função, responsável, produção) — Entrar por celular (Firebase) abre a conta pelo WhatsApp digitado no cadastro, mesmo sem confirmação do número
+  - Onde: `web/supabase/functions/entrar-com-firebase/index.ts:74-87`
+  - Correção esperada: exigir `whatsapp_verified_at is not null` no ramo de celular (ou manter o ramo desligado por padrão até o código do WhatsApp ser obrigatório).
+  - Critério de aceite (copiado do plano): teste com token `phone` e conta com `whatsapp_verified_at` nulo → 404 `sem-conta`.
+  - Dependências: ação do responsável (decidir quando ligar SMS/Twilio).
+- **AUD-068** (S3, esforço P, responsável, produção) — No servidor a senha só precisa de 8 caracteres de qualquer tipo; "letras e números" e a checagem de senha vazada não existem lá
+  - Onde: `web/scripts/configurar-auth.mjs:39` (`password_min_length: 8`, sem `password_required_characters`); `web/docs/SUPABASE.md:78-79`; `get_advisors` (WARN `auth_leaked_password_protection` na produção e no staging)
+  - Correção esperada: incluir `password_required_characters: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789'` no `configurar-auth.mjs`; ligar a proteção contra vazadas quando houver plano Pro.
+  - Critério de aceite (copiado do plano): `POST /auth/v1/signup` com `aaaaaaaa` devolve `weak_password`.
+  - Dependências: ação do responsável (plano Pro para a parte de vazadas).
+- **AUD-069** (S3, esforço P, migration, responsável, produção) — Pagamentos: a Política diz que guarda "por obrigação fiscal", mas excluir a conta apaga `boost_payments` na hora; o prazo está em branco
+  - Onde: `web/src/services/legal.ts:155,157` (`Pagamentos: {{PRAZO_PAGAMENTOS}}, por obrigação fiscal`), `web/docs/LGPD.md:33` (base art. 7, II, "5 anos?"), `web/supabase/migrations/20261020000300_u24_exclusao_completa.sql` (`delete from public.companies` → `boost_payments_company_id_fkey ON DELETE CASCADE`), `web/docs/DECISOES.md` U24 ponto (2)
+  - Correção esperada: o contador responde se a Bicos tem de guardar o registro de cada cobrança (valor, data, id do Mercado Pago, CNPJ/CPF do pagador); se sim, manter uma tabela mínima `payments_ledger` sem vaga nem nome, com prazo fiscal, fora da cascata, e declarar; se não, trocar o texto por "o comprovante fica com o Mercado Pago".
+  - Critério de aceite (copiado do plano): Política e banco dizem a mesma coisa; teste SQL de exclusão conferindo o que sobra de pagamento.
+  - Dependências: ação do responsável (contador/advogado).
+- **AUD-070** (S3, esforço M, migration, responsável, produção) — Histórico sem prazo de apagamento: decisões da equipe (`staff_actions`), denúncias resolvidas, avisos e eventos de pagamento ficam para sempre; as decisões da equipe sobrevivem à exclusão
+  - Onde: `web/src/services/legal.ts:157` (`{{PRAZO_AUDITORIA}}`), `web/docs/LGPD.md:32`, `web/supabase/migrations/20261015000100_lanc06_backoffice.sql:58` (`staff_log` grava `target_id` e `reason` livres), cron `bicos-*` (nenhum expurga essas tabelas)
+  - Correção esperada: definir com o advogado (sugestão: 5 anos para `staff_actions` por defesa em processo, art. 7, VI; 1 ano para denúncias resolvidas; avisos lidos há mais de 1 ano) e criar cron de expurgo; no texto da exclusão, dizer que o registro de moderação fica pelo prazo X; pedir à equipe para não escrever dado pessoal no motivo (placeholder/validação).
+  - Critério de aceite (copiado do plano): cron de expurgo no staging; Política com prazos; teste SQL.
+  - Dependências: ação do responsável (advogado).
+- **AUD-062** (S3, esforço M, migration, produção) — Auditoria da equipe mutável e com lacunas
+  - Onde: `migrations/20261015000100_lanc06_backoffice.sql:27-40,65-83,517-519`
+  - Correção esperada: gatilho que recusa update/delete, guardar o e-mail da pessoa, registrar entrada/saída da equipe e abertura de foto. Ver AUD-070 e AUD-079.
+  - Critério de aceite (copiado do plano): update/delete em `staff_actions` falha; abrir um documento gera linha.
+  - Dependências: AUD-070
+- **AUD-072** (S3, esforço P, migration, responsável, produção) — O gatilho do app antigo continua copiando nome e e-mail de cada cadastro novo para `profiles`; as 7 tabelas antigas seguem guardadas sem uso, fora da Política e da exportação
+  - Onde: `web/supabase/legado/000_baseline.sql:356,395` (`criar_perfil_ao_cadastrar`, gatilho `on_auth_user_created`), `web/supabase/pendentes/20261015000900_lanc07_apagar_app_antigo.sql` (não aplicado), `web/docs/LGPD.md:40,60-62`, `web/supabase/migrations/…` (funções `document_login_email`, `signup_taken` ainda consultam `profiles`)
+  - Correção esperada: decidir (sócios) e executar o `pendentes/…_lanc07_apagar_app_antigo.sql` em staging e depois em produção (com backup antes, como manda CLAUDE.md §9); até lá, tirar o gatilho (`drop trigger on_auth_user_created`) para parar de copiar dados novos.
+  - Critério de aceite (copiado do plano): `select count(*) from information_schema.tables where table_name in ('profiles','vagas','candidaturas','avaliacoes','vagas_salvas','publicacoes_trabalhador','consentimentos')` = 0; cadastro novo não cria linha antiga.
+  - Dependências: ação do responsável ("pode" e backup). Hipótese ligada: base legal e prazo para continuar guardando (nenhum).
+- **AUD-074** (S3, esforço P, função, responsável, produção) — Relatórios de erro (Sentry): a Política diz "sem dados pessoais", mas o mapa interno admite IP; a retenção de 30 dias e a opção de não guardar IP não estão comprovadas
+  - Onde: `web/src/services/legal.ts:30,147,157` ("relatórios de erro sem nome, e-mail, documento ou telefone"; "Relatórios de erro: 30 dias"), `web/docs/LGPD.md:36,50` ("erro sem dado pessoal (pode haver IP)"), `web/src/services/monitoring.ts` (envia direto ao endpoint `store`, com limpeza de e-mail, CPF/CNPJ, telefone, uuid, token), `web/supabase/functions/_shared/monitoring.ts`
+  - Correção esperada: ligar "Prevent Storing of IP Addresses" (e "Data Scrubber") no projeto Sentry, registrar a retenção real em `docs/SUPABASE.md` e dizer na Política "pode registrar o endereço IP, que apagamos em 30 dias".
+  - Critério de aceite (copiado do plano): print/nota da configuração do Sentry em `docs/`; Política igual ao mapa.
+  - Dependências: ação do responsável (acesso ao Sentry).
+- **AUD-016** (S2, esforço P, responsável) — Política e Termos publicados com 10 campos em branco (controlador, encarregado, prazos, base da transferência) e sem revisão jurídica; o build de produção barra, mas o conteúdo exigido pela LGPD não existe ainda
+  - Onde: `web/src/services/legal.ts:22` (`LEGAL_REVIEWED = false`), campos `{{RAZAO_SOCIAL}}` `{{CNPJ}}` `{{ENDERECO}}` `{{DPO_NOME}}` `{{DPO_EMAIL}}` (3 usos) `{{CIDADE_FORO}}` `{{PRAZO_PAGAMENTOS}}` `{{PRAZO_REGISTROS_ACESSO}}` `{{PRAZO_AUDITORIA}}` `{{BASE_TRANSFERENCIA_INTERNACIONAL}}`; `web/build/env.ts:99-122`; `web/vite.config.ts:42-45`; `web/docs/CHECKLIST-LANCAMENTO.md:46,13…
+  - Correção esperada: o responsável envia os 10 dados; o advogado revisa; só então `LEGAL_REVIEWED = true` e `LEGAL_WRITE=1 npx vitest run legal`. Enquanto isso, o site de teste deve avisar que não é para dados reais. Lista de prazos sugeridos para decidir: pagamentos (fiscal, 5 anos, ver AUD-069), registros de acesso (6 meses, AUD-015), auditoria da equipe (AUD-070).
+  - Critério de aceite (copiado do plano): `grep -c "{{" web/src/services/legal.ts` = 0; build de produção passa; advogado assinou.
+  - Dependências: ação do responsável (dados da empresa, advogado). AUD-015, AUD-069, AUD-070, AUD-074.
+- **AUD-017** (S2, esforço M, função, responsável, produção) — Firebase/Google (login por Google e por celular) não é citado como operador e o usuário nunca é apagado de lá; reCAPTCHA, Turnstile e SDK do Mercado Pago contradizem "sem rastreadores de terceiros"
+  - Onde: `web/src/services/legal.ts:147` (operadores: "Google (login, se você escolher; EUA)" e "Twilio (código por WhatsApp ou SMS)"), `legal.ts:177` ("Não usamos cookies de publicidade nem rastreadores de terceiros"), `web/supabase/functions/entrar-com-firebase/index.ts`, `web/supabase/functions/excluir-conta/index.ts` (nenhuma chamada ao Firebase), `web/src/services/remote/firebas…
+  - Correção esperada: (1) incluir Firebase Authentication/Google (finalidade, dado, país) e reCAPTCHA na lista de operadores; trocar o texto da seção 9 por "só usamos o necessário para o funcionamento e a segurança (captcha, pagamento), sem publicidade"; (2) na `excluir-conta`, chamar a API Admin do Identity Toolkit (`accounts:delete`) para o uid do Firebase (localizável pelo e-mail/telefone; ou guardar o `uid` em `accounts`) com conta de serviço, ou usar a opção de apagar usuários do console e documentar o prazo; (3) conferir no console do Firebase que Analytics está desligado.
+  - Critério de aceite (copiado do plano): Política cita Firebase e reCAPTCHA; teste de `excluir-conta` com fake do Firebase mostrando a chamada de exclusão; staging: criar usuário Google/celular de teste, excluir a conta e ver o usuário sumir do Firebase.
+  - Dependências: ação do responsável (credencial de serviço do Firebase; revisão do advogado). AUD-074.
+- **AUD-073** (S3, esforço M, responsável) — Transferência internacional sem base declarada: 6 operadores listados fora do Brasil (e pelo menos 4 não citados) e nenhuma prova de contrato com cláusulas-padrão da ANPD
+  - Onde: `web/src/services/legal.ts:147-148` (`{{BASE_TRANSFERENCIA_INTERNACIONAL}}`), `web/docs/LGPD.md:42-56` (tabela de operadores e "conferir com o advogado")
+  - Correção esperada: aceitar os DPAs/SCCs de Supabase, Cloudflare, Twilio, Sentry, Brevo, Google (Firebase), Mercado Pago; registrar data e versão em `web/docs/LGPD.md`; preencher o campo da Política com a hipótese (cláusulas-padrão, art. 33, II, "b"/Res. 19/2024) e listar os operadores que faltam.
+  - Critério de aceite (copiado do plano): tabela de operadores no `docs/LGPD.md` com coluna "DPA aceito em"; Política sem campo em branco.
+  - Dependências: ação do responsável (advogado, contas nos provedores). AUD-016.
+- **AUD-075** (S3, esforço P, responsável) — Coleta que a Política não descreve ou descreve só em parte
+  - Onde: lista abaixo
+  - Correção esperada: acrescentar os itens 1–6 às seções 2, 5 e 9 e ao `docs/LGPD.md`.
+  - Critério de aceite (copiado do plano): cada tabela/chave acima aparece no mapa e na Política; `legal.test.ts` continua verde.
+  - Dependências: AUD-016 (revisão do advogado).
+- **AUD-076** (S3, esforço P, responsável) — "Apagamos na hora" não diz nada sobre cópias de segurança; e hoje o plano Free nem tem cópia
+  - Onde: `web/src/services/legal.ts:155`, `web/docs/DECISOES.md` X30 (hospedagem Free, "backup manual antes de qualquer mudança")
+  - Correção esperada: acrescentar "Cópias de segurança são apagadas em até N dias" na seção 6; ao restaurar um backup, reaplicar as exclusões pedidas desde a data dele (procedimento em `docs/SUPABASE.md`).
+  - Critério de aceite (copiado do plano): texto da Política e procedimento de restauração documentados.
+  - Dependências: plano contratado (ação do responsável).
+- **AUD-077** (S3, esforço P, —) — Depois que o trabalhador exclui a conta, o primeiro nome dele continua nos avisos da empresa (e vice-versa)
+  - Onde: funções `transition_application`, `confirm_presence`, `answer_invite`, `admin_suspend_account` (usam `first_name(...)` dentro de `notify(...)`; consulta em `pg_proc.prosrc` no staging), `anonymize_account` (apaga só os avisos da própria conta)
+  - Correção esperada: trocar o primeiro nome por "O trabalhador" nos avisos gerados durante a exclusão, ou aceitar e dizer na Política que avisos já entregues à outra parte não são apagados.
+  - Critério de aceite (copiado do plano): teste SQL: excluir um trabalhador e `select … from notifications where body ilike '%<nome>%'` = 0.
+  - Dependências: nenhuma.
+- **AUD-078** (S3, esforço P, migration, produção) — A exportação devolve o CPF/CNPJ em claro sem pedir a senha de novo (a exclusão pede)
+  - Onde: `web/supabase/migrations/20261021000600_u51_endereco.sql:205` (`'documento', v_doc` via `pgp_sym_decrypt`), `web/src/services/remote/actions.ts:140-153` (nenhuma verificação), comparar com `delete_my_account` (`session_authenticated_at() < now() - 5 minutes` → BC401)
+  - Correção esperada: exigir login recente (mesma regra de 5 minutos da exclusão) ou pedir a senha/código na tela antes de gerar o arquivo.
+  - Critério de aceite (copiado do plano): teste SQL: `export_my_data` com sessão de 1 hora falha com BC401.
+  - Dependências: nenhuma.
+- **AUD-079** (S3, esforço P, —) — Todo membro da equipe (inclusive "moderador") enxerga a selfie e a foto do documento; a Política diz "equipe de verificação"
+  - Onde: política de Storage "Equipe lê as fotos de identidade" (`is_staff()`), `staff_members.role in ('admin','moderador')` (CHECK), `admin_identity_queue` (`staff_guard()` sem distinguir papel), `web/src/services/legal.ts:129`
+  - Correção esperada: papel `verificador` separado, ou limitar a política a `role = 'admin'`; registrar a abertura da imagem (RPC que gera a URL assinada e grava em `staff_actions`).
+  - Critério de aceite (copiado do plano): teste SQL com usuário `moderador` recebendo negado no bucket `identidade`.
+  - Dependências: nenhuma.
+- **AUD-081** (S3, esforço P, responsável) — Não há plano de resposta a incidente de segurança, mas a Política promete avisar a pessoa e a ANPD
+  - Onde: `web/src/services/legal.ts:171` ("Se houver um incidente que possa causar risco a você, avisamos você e a ANPD"), `web/docs/` (nenhum documento trata de incidente)
+  - Correção esperada: uma página `docs/INCIDENTE.md` (1 tela): quem é o encarregado, como confirmar o incidente (Sentry, logs do Supabase), contenção (rodar a chave `service_role`, desligar a função), registro (data, dados, quantidade de titulares), modelo de aviso à ANPD e aos titulares, contato do advogado. O advogado revisa.
+  - Critério de aceite (copiado do plano): documento existe e é referenciado no `CHECKLIST-LANCAMENTO.md`; simulação de mesa feita uma vez.
+  - Dependências: ação do responsável (nomear o encarregado, AUD-016).
+- **AUD-082** (S3, esforço P, função, responsável, produção) — Dados pessoais dos sócios num repositório público
+  - Onde: `.github/workflows/site.yml:40`; `staging.yml:178,190`; `web/docs/SUPABASE.md:163`; `web/docs/STAGING.md:17`; `web/supabase/functions/.env.staging.example:21`; `web/src/services/features.ts:47`; `web/src/services/payments.ts:283`; `web/e2e/apoio.ts:28`
+  - Correção esperada: trocar por endereços da empresa (suporte@, dev@nivotech.com.br); `E2E_EMAIL_BASE` sem padrão; corrigir SUPABASE.md:163; decidir se o telefone do suporte pode ser público já.
+  - Critério de aceite (copiado do plano): `git grep` por esses valores = 0 fora de `.env` locais.
+  - Dependências: ação do responsável (escolher os endereços)
+- **AUD-001** (S0, esforço P, migration, função, produção) — Excluir a conta não apaga a selfie e o documento na hora: a função só limpa 3 pastas; as fotos de identidade ficam para o cron (e só depois de 1 dia)
+  - Onde: `web/supabase/functions/excluir-conta/index.ts:18` (`const BUCKETS = ['avatars', 'portfolio', 'vagas']`), `web/supabase/migrations/20261014000400_x09_arquivos_orfaos.sql:33-70` (`identity_files`: `o.created_at < now() - interval '1 day'`), `web/src/services/legal.ts:155` ("Ao excluir a conta, apagamos na hora seus dados, arquivos…"), `web/docs/DECISOES.md` R04 ("os arquivos …
+  - Correção esperada: incluir `identidade` em `BUCKETS` (a pasta `<uid>/` é a mesma). Para a exclusão pelo painel (sem passar pela função), contar com o cron depois que AUD-006 estiver resolvido, mas tirar a espera de 1 dia quando o dono do arquivo já não existe (`not exists (select 1 from auth.users where id::text = (storage.foldername(o.name))[1])`). Não apagar direto em `storage.objects`: o gatilho `protect_objects_delete` do Supabase só aceita a API do Storage.
+  - Critério de aceite (copiado do plano): teste (Deno/Vitest com fake) em que `excluir-conta` remove a pasta `identidade/<uid>/`; em staging, subir selfie, excluir a conta e conferir `storage.objects` = 0 para o uid, sem esperar o cron.
+  - Dependências: nenhuma (código). Relacionado a AUD-006.
+- **AUD-006** (S1, esforço P, migration, função, responsável, produção) — A limpeza que apaga selfie/documento (30 dias), arquivos órfãos e sobras de exclusão não roda em nenhum ambiente, e o cron aparece como "sucesso"
+  - Onde: `web/supabase/migrations/20261014000400_x09_arquivos_orfaos.sql:73` (`call_storage_cleanup`: `if v_url is null or v_secret is null then return;`), `web/supabase/functions/limpar-arquivos/index.ts:12,29`, `web/supabase/migrations/20261016000300_lanc12_vigia_cron.sql:101-120` (`check_cron_failures` só olha status `failed`), `legal.ts:130,156` (promessa de 30 dias)
+  - Correção esperada: (1) configurar as 3 peças em produção e staging; (2) `call_storage_cleanup` deve levantar erro (ou gravar em `cron_alerts`) quando faltar segredo; (3) `check_cron_failures` deve também olhar `net._http_response` com status ≠ 2xx da última chamada; (4) um teste/consulta de saúde: "existe arquivo de `identidade` com mais de 31 dias sem linha em `identity_submissions` ou decidida há mais de 30 dias" = alerta; (5) apagar à mão os 142 arquivos de teste do staging.
+  - Critério de aceite (copiado do plano): staging: `select count(*) from public.orphan_storage_objects(1000)` = 0 no dia seguinte à configuração; `storage.objects` de `identidade` sem arquivo órfão; ao remover o segredo de propósito, o cron passa a `failed` ou gera linha em `cron_alerts`.
+  - Dependências: ação do responsável (criar `CLEANUP_SECRET` na função; já documentado em SUPABASE.md:129). Relacionado a AUD-001.
+- **AUD-071** (S3, esforço M, —) — Retirar o consentimento da selfie/documento não tem caminho no app nem ferramenta da equipe; a Política promete "a qualquer momento"
+  - Onde: `web/src/services/legal.ts:130,197-202` (`IDENTITY_CONSENT.points`: "pela Ajuda ou pelo e-mail de privacidade"), `web/src/pages/shared/Help.tsx` (sem pergunta sobre selfie/consentimento), `web/src/pages/shared/Privacy.tsx` (só exportar e excluir), RPCs de equipe (`admin_decide_identity`, `admin_identity_queue`, `set_identity_status`: nenhuma apaga as fotos ou o selo a pedido)
+  - Correção esperada: botão "Retirar minha selfie e meu documento" em Configurações › Privacidade e dados (visível se há envio), que chama um RPC `withdraw_identity()`: apaga as linhas e os arquivos (ver AUD-001), tira o selo e grava o motivo. Mostrar o e-mail do encarregado nessa tela.
+  - Critério de aceite (copiado do plano): teste SQL e e2e: enviar, retirar, conferir `storage.objects`, `identity_submissions` e `workers.identity_status`.
+  - Dependências: AUD-001.
+- **AUD-080** (S3, esforço P, —) — Os direitos do titular existem no texto, mas o app só tem "exportar" e "excluir": não mostra o canal do encarregado nem como corrigir CPF, pedir anonimização ou se opor
+  - Onde: `web/src/pages/shared/Privacy.tsx` (só dois cartões), `web/src/services/legal.ts:163-164` ("corrigir, pedir anonimização ou eliminação, saber com quem compartilhamos, retirar consentimentos… Pelo app ou pelo {{DPO_EMAIL}}"), `web/src/pages/shared/Help.tsx`
+  - Correção esperada: na tela Privacidade e dados, acrescentar: link para a Política, "Falar com o encarregado" (`mailto:` com o assunto pronto), "Pedir correção do CPF" e "Retirar a selfie". Registrar cada pedido (e-mail dedicado + planilha com data de recebimento e resposta) para provar o prazo de 15 dias.
+  - Critério de aceite (copiado do plano): a tela mostra os 4 itens; `legal.test.ts` cobre o mesmo e-mail nos dois lugares.
+  - Dependências: AUD-016 (e-mail do encarregado), AUD-071.
+
+### Bloco 1 — Fluxo principal e correção de comportamento
+
+**Instruções do bloco 1 (fluxo principal).** Comece pelo link público/Ajuda sem login e acrescente um **E2E de visitante no build real** (rotas `public`/`guest` sem sessão); sem esse teste o item não está pronto. Use sempre um teste que falha antes. Para hora/data: um único "hoje" no cliente (Brasília) e teste com `TZ=UTC`, `Asia/Tokyo` e relógio emulado às 22h30 de Brasília.
+
+- **AUD-007** (S1, esforço P, —) — Link público da vaga e Ajuda quebram para quem não está logado (build de produção)
+  - Onde: `layouts/AppShell.tsx:93-94`; `App.tsx:176-184`; `routes.ts` (`isAuthFlow`, ~l.198-203; rotas `/v/:id`, `/ajuda`, `/completar-cadastro` com acesso `public`)
+  - Correção esperada: em `Routes`, não usar `AppShell` quando `session === null` (ou pôr `/v/` e `/ajuda` em `isAuthFlow`); em `AppShell`, usar `worker?.name`; acrescentar e2e "visitante abre /v/<slug> e /ajuda" no modo real.
+  - Critério de aceite (copiado do plano): build real com Supabase interceptado: `/v/<slug>` mostra título, valor e "Entrar para me candidatar"; `/ajuda` mostra as perguntas; sem erro no console.
+  - Dependências: nenhuma (relacionado a AUD-041 e AUD-204)
+- **AUD-025** (S2, esforço M, —) — Cadastro perde tudo ao recarregar a página no passo do código do WhatsApp
+  - Onde: `pages/shared/Signup.tsx`; `services/auth.ts` (rascunho `pendingSignUp` só em memória; DECISOES Y22 cobre "sair do fluxo", não o descarte da aba)
+  - Correção esperada: guardar nome, lado e passo (nunca a senha) em `sessionStorage`.
+  - Critério de aceite (copiado do plano): e2e com `reload` no passo do código volta ao mesmo passo.
+  - Dependências: nenhuma
+- **AUD-026** (S2, esforço P, —) — Campos numéricos da vaga apagam vírgula, ponto e sinal e mudam o valor sem avisar
+  - Onde: `web/src/pages/recruiter/CreateJob.tsx:66-68` (`digits()`), `:287` (valor), `:303` (diárias), `:375` (pessoas); limites em `jobForm.ts:78-80`
+  - Correção esperada: ao detectar `,` ou `.` seguido de 1–2 dígitos, ou arredondar para a parte inteira (150,50 -> 150) ou recusar com "Use só o valor em reais, sem centavos"; mostrar a prévia "R$ valor por diária" logo abaixo do campo; diárias/pessoas aceitarem só dígitos sem transformar `1.5` em 15.
+  - Critério de aceite (copiado do plano): teste de unidade de `digits`/campo com `45,50`, `150.00`, `1.5`, `-1` e print do passo 2 com a mensagem nova.
+  - Dependências: nenhuma
+- **AUD-028** (S2, esforço P, —) — Cadastro do endereço: sem internet (ou provedor lento) o app diz "Não achamos essa rua", e a localização é salva em silêncio no centro da cidade
+  - Onde: `web/src/services/remote/address.ts:224-259` (`streetsOnline`: o `catch` do ViaCEP só relança se a pessoa abortou; o do Photon devolve `{ body: null }`) → `web/src/services/address.ts:385-390` (`findCep`) → `:329-338` (`resolveAddress` responde `errors.street`); `remote/address.ts:334-388` (`geocodeOnline`: Nominatim e Photon caem em `catch` vazio e devolvem o centro da cida…
+  - Correção esperada: em `streetsOnline` lançar `offline` quando ViaCEP e Photon falham ao mesmo tempo (e não vir de aborto); em `resolveAddress` deixar esse erro subir; em `geocodeOnline` devolver também `degraded: true` e, no cadastro, avisar "Não deu para marcar a casa no mapa; vamos usar o centro da cidade" ou tentar de novo.
+  - Critério de aceite (copiado do plano): o teste `endereco.test.ts` passa a mostrar `THROWS offline` (sem CEP) e um teste novo cobre `precision: 'cidade'` por falha com aviso.
+  - Dependências: nenhuma.
+- **AUD-029** (S2, esforço P, —) — Resposta que chega depois do "Sair" cai no store da conta seguinte (selo de notificações de outra conta, consulta marcada como pronta)
+  - Onde: web/src/services/queries.ts:52-80 e :104-110; web/src/services/remote/merge.ts:42-44 (`apply`); web/src/services/store.ts:150-153 (`clearSessionData`); web/src/services/remote/session.ts:338-347 (`leaveSession`) e :309 (`runQuery('notifications', …)`); mesmo padrão em todos os `load*` de remote/data.ts e nas ações de remote/profiles.ts (`session()` capturado antes do `await`)
+  - Correção esperada: um contador `sessionEpoch` incrementado em `leaveSession`/`setSessionAccount`; cada loader captura o valor antes do `await` e `apply`/`runQuery` descartam o resultado se mudou; `runQuery` guarda `inFlight` por geração e `.finally` não apaga a entrada de outra geração.
+  - Critério de aceite (copiado do plano): o teste de reprodução passa a mostrar `notifications in store= 0` e `query state= loading` (ou ausente) após o logout, e `bell badge for B= 0`.
+  - Dependências: nenhuma.
+- **AUD-027** (S2, esforço P, função, produção) — Ação que deu certo no servidor aparece como erro quando a releitura seguinte falha; em "publicar vaga" o novo toque cria uma vaga repetida
+  - Onde: `web/src/services/remote/jobs.ts:25-31` (`publishJob`: RPC e depois `await loadJob(id)`), `:33-38` (`updateJob`); `web/src/services/remote/applications.ts:10-16` (`transition`, usada por aprovar/recusar/contratar/cancelar/concluir/falta/desistir/desfazer), `:24-34` (`submitApplication`, `withdrawApplication`), `:42-46`, `:54-58`; `web/src/services/remote/actions.ts:77-94` (`…
+  - Correção esperada: separar os dois: depois do RPC, `await refresh().catch(() => markStale(jobId))` (ou só `catch` e um aviso discreto "Feito. Atualize a tela"), mantendo o erro do RPC como está. Em `publishJob` devolver o id mesmo se a releitura falhar (a tela de "vaga publicada" já recarrega a vaga). Opcional: chave de idempotência em `publish_job` (hash título+endereço+empresa em 2 min).
+  - Critério de aceite (copiado do plano): o teste de reprodução passa a mostrar `1st publish -> ok BC-1` e `publish_job RPC calls = 1` quando só a releitura falha; um teste novo por função (`transition`, `submitApplication`, `submitReview`).
+  - Dependências: nenhuma. Relacionado (não repete): AUD-029 (respostas atrasadas) e AUD-130 (erro de rede em Edge Function).
+- **AUD-030** (S2, esforço P, —) — Mural vazio diz "Nenhuma vaga com esse filtro" sem filtro; "Limpar filtros" não faz nada
+  - Onde: `pages/worker/feed/FeedParts.tsx:54-75` (`NoJobsState`; chamado em `MobileFeed.tsx:85` e `DesktopFeed.tsx:34`)
+  - Correção esperada: passar `chips.length`; sem filtro, mostrar "Ainda não tem bico em {cidade}" e, para a empresa, "Publicar vaga".
+  - Critério de aceite (copiado do plano): teste: 0 vagas e sem filtro não contém a palavra "filtro".
+  - Dependências: nenhuma
+- **AUD-031** (S2, esforço P, —) — "Bicos fechados" (`/historico`) abre a aba "Abertas"
+  - Onde: `pages/recruiter/History.tsx:6` (passa `tab:'encerradas'`); `MyJobs.tsx:30-35,49-51` (só conhece `todas|abertas|cheias` e cai em `'abertas'`); `layouts/accountMenu.ts:22`; `RateWorker.tsx:22`
+  - Correção esperada: `tab:'todas'`, ou recriar a aba filtrando por `jobOutcome`.
+  - Critério de aceite (copiado do plano): `/historico` mostra as vagas encerradas.
+  - Dependências: nenhuma
+- **AUD-032** (S2, esforço M, função, responsável, produção) — Pagamento do impulso: três estados sem tela (risco de cobrança em dobro no cartão em análise)
+  - Onde: `pages/recruiter/BoostPayment.tsx:188-242`; `services/remote/actions.ts` (`payWithCard`); `supabase/functions/criar-cobranca/index.ts` (fim); `webhook-pagamento`; `pages/recruiter/Payments.tsx:96-103`; `BoostPayment.tsx:63`
+  - Correção esperada: tela "pagamento em análise" que esconde o formulário, "gerar novo código" para qualquer status que não vale mais, e `paymentId` vindo de `db.boostPayments`.
+  - Critério de aceite (copiado do plano): teste de tela com status `in_process`, `recusado`, `cancelado` e recarga.
+  - Dependências: ligar `FEATURES.payments` é ação do responsável; corrigir antes
+- **AUD-033** (S2, esforço M, —) — "Voltar para a vaga depois de entrar" só vale no login com e-mail e senha; Google, SMS e cadastro novo caem no mural
+  - Onde: `pages/shared/PublicJob.tsx:57-60,105` (grava `RETURN_TO_KEY` também para "Criar minha conta"); `pages/shared/Login.tsx:93-104` (único leitor) e `:247`; `services/guards.ts:26` (`guest` → `homeFor` = `/mural`); `pages/shared/CompleteProfile.tsx:122` (`navigate('/mural')`); `services/store.ts:140-145` (`setSessionAccount` zera `ui` ao trocar de conta)
+  - Correção esperada: guardar o destino (validado como rota do app) em `sessionStorage` e consumi-lo em `homeFor`/fim do onboarding.
+  - Critério de aceite (copiado do plano): e2e modo real `/v/<slug>` → cadastro/Google/SMS → termina em `/vaga/<id>`.
+  - Dependências: AUD-007
+- **AUD-034** (S2, esforço P, —) — A CSP não tem `media-src`: vídeo do portfólio não toca nem aparece na prévia, e nenhuma etapa do CI exercita a CSP num navegador
+  - Onde: `web/public/_headers:8` (sem `media-src`; cai em `default-src 'self'`); consumidores: `web/src/pages/shared/PostViewer.tsx:74`, `web/src/pages/shared/WorkerPosts.tsx:130,240` (`<video src=…>`), `web/src/services/remote/storage.ts:20-22,68-89` (envia mp4/mov/webm ao bucket `portfolio`, até 50 MB); `web/src/__tests__/headers.test.ts` (confere só `connect-src`, `script-src`, `i…
+  - Correção esperada: acrescentar `media-src 'self' blob: https://*.supabase.co`; estender o teste para `media-src` (e `font-src`, `worker-src`); passar a rodar um smoke de navegador (Playwright) contra uma build servida COM os cabeçalhos de `_headers` (um servidor de 15 linhas, como o do script) e falhar se houver `Refused to …`/violação de CSP no console em login, mural, vaga, portfólio, Google e cartão.
+  - Critério de aceite (copiado do plano): `csp-media.mjs` sem nenhuma linha "violates"; o smoke no CI passa sem violação nas telas listadas.
+  - Dependências: nenhuma.
+- **AUD-035** (S2, esforço P, —) — Com o relógio do celular errado, o app dobra cada consulta ou desloga a pessoa uma vez por hora
+  - Onde: `src/services/supabase.ts:44` (`autoRefreshToken:true` sem compensação); `src/services/remote/client.ts:62-72` (`/JWT expired/` leva a `onSessionEnded`); `src/services/remote/session.ts:454-467`
+  - Correção esperada: em `request()`, ao receber `PGRST301`/`JWT expired`, chamar `auth.refreshSession()` e repetir uma vez; só depois `onSessionEnded()`. Opcional: comparar o cabeçalho `Date` com `Date.now()` e avisar "O relógio do seu celular está errado".
+  - Critério de aceite (copiado do plano): `skew2.mjs` com −5 mostra `401 → REFRESH → 200` (teste Vitest com o Supabase falso e relógio deslocado).
+  - Dependências: nenhuma
+- **AUD-083** (S3, esforço P, —) — Busca no mural com texto longo sem espaços: o título "Nenhuma vaga para “…”" sai do cartão
+  - Onde: `components/EmptyState.tsx`; print `$SCRATCH/prints/B1/B1_mural_m_busca_longa.png`
+  - Correção esperada: `break-words` no título do `EmptyState`.
+  - Critério de aceite (copiado do plano): o título não sai do cartão.
+  - Dependências: nenhuma
+- **AUD-084** (S3, esforço P, —) — `/entrar-celular` sem botão, mas abre por link e responde "Na demonstração, entre com e-mail e senha"
+  - Onde: `services/auth.ts:530`; `routes.ts:128` (rota sem guarda); DECISOES:1988
+  - Correção esperada: redirecionar ao `/login` se `!FEATURES.phoneLogin`.
+  - Critério de aceite (copiado do plano): `/entrar-celular` com o recurso desligado leva ao login.
+  - Dependências: nenhuma
+- **AUD-085** (S3, esforço P, —) — Cadastro aceita "Maria 😀 Souza" e não limita o nome; o editar perfil limita em 80
+  - Onde: `pages/shared/Signup.tsx`, `EditWorkerProfile.tsx`
+  - Correção esperada: unificar a regra (comprimento e caracteres).
+  - Critério de aceite (copiado do plano): mesma regra nas duas telas e no banco.
+  - Dependências: nenhuma
+- **AUD-086** (S3, esforço P, —) — Fotos da vaga aceitam qualquer arquivo e qualquer tamanho, e cortam em 6 sem avisar
+  - Onde: `web/src/components/PhotoManager.tsx:39-48` (usado em `CreateJob.tsx:223` e `JobManage.tsx:230`); a validação existente está só em `web/src/utils/media.ts:28-41` (`portfolioFileProblem`, portfólio do trabalhador)
+  - Correção esperada: reaproveitar `portfolioFileProblem` (só imagem, até 10 MB) e mostrar toast "Só cabem 6 fotos" quando passar do limite.
+  - Critério de aceite (copiado do plano): teste de componente com `.txt` (recusa com mensagem), imagem de 11 MB (recusa) e 7 imagens (toast).
+  - Dependências: nenhuma
+- **AUD-087** (S3, esforço P, —) — Impulsionar vaga de outra empresa mostra um título e uma explicação que não combinam
+  - Onde: `web/src/pages/recruiter/BoostJob.tsx:40-57` (descrição fixa quando a vaga não está impulsionada); `boostBlocker` em `services/payments.ts`
+  - Correção esperada: descrição própria para "não é sua" (ou sem descrição), como já fazem `/vaga-gerenciar` e `/fechado` ("Essa vaga não é sua").
+  - Critério de aceite (copiado do plano): teste de tela com vaga alheia, vaga cheia e vaga já impulsionada, cada uma com a explicação certa.
+  - Dependências: nenhuma
+- **AUD-088** (S3, esforço P, migration, produção) — "Trocar WhatsApp" manda o código sem conferir se o número já é de outra conta
+  - Onde: `web/src/pages/shared/ChangeWhatsApp.tsx:44-65` (vai direto a `sendWhatsAppCode`), contra `Signup.tsx:344-364` (que chama `isFreeForSignUp('whatsapp')` antes); índice único `accounts_whatsapp_key` em `supabase/migrations/20261020000100_u10_dados_unicos.sql:77`; demo sem checagem em `services/profiles.ts:151-164`
+  - Correção esperada: chamar `isFreeForSignUp('whatsapp', phone)` antes de enviar o código e mostrar a mesma mensagem do cadastro; no demo, recusar número de outra conta em `changeWhatsApp`.
+  - Critério de aceite (copiado do plano): teste de serviço (modo real com fake Supabase e modo demo) e print da mensagem na tela.
+  - Dependências: nenhuma
+- **AUD-089** (S3, esforço P, —) — Passo do código (WhatsApp e e-mail) abre sem foco no campo: o teclado não sobe sozinho
+  - Onde: `web/src/pages/shared/Signup.tsx:537-550` + `WhatsAppCode.tsx`; `web/src/pages/shared/VerifyEmail.tsx:284-294` (o próprio arquivo comenta que o autofoco só funciona no primeiro campo da página, `:174-175`)
+  - Correção esperada: `useEffect` que foca o campo ao entrar no passo do código.
+  - Critério de aceite (copiado do plano): `document.activeElement.id` igual ao do campo do código ao abrir o passo.
+  - Dependências: nenhuma
+- **AUD-090** (S3, esforço P, —) — "Minhas candidaturas", "Candidatos" e "Minhas vagas" só abrem se uma rotina que escreve (`conclude_my_finished_jobs`) der certo antes
+  - Onde: `web/src/services/remote/data.ts:145-148` (`concludeMine`), chamada sem `catch` em `:307` (`loadMyApplications`), `:355` (`loadJobCandidates`), `:363` (`loadHistory`); expostas por `services/applications.ts:113-141`.
+  - Correção esperada: `await concludeMine().catch(() => undefined)` (ou só tentar uma vez por minuto e não esperar o resultado).
+  - Critério de aceite (copiado do plano): o teste passa a mostrar `loadMyApplications -> ok` e uma leitura da tabela.
+  - Dependências: nenhuma.
+- **AUD-091** (S3, esforço P, responsável) — Mensagem pronta do WhatsApp erra o tratamento: "Aqui é da Ana Souza" (pessoa) e "Fui contratado" para qualquer trabalhador
+  - Onde: `web/src/utils/whatsapp.ts:38-44` (usada por `services/contacts.ts:62-70` e `services/remote/actions.ts:61-70`); testes que fixam o texto: `web/src/__tests__/contacts.test.ts:52,73-83`. Contexto: `DECISOES.md` U63 (quem contrata pode ser "Ana Souza ou Padaria Bom Pão").
+  - Correção esperada: "Aqui é {nome}, pela Bicos" (sem artigo) e "Fui escolhido(a)/Você foi escolhido(a)", ou "Estou dentro da vaga…" — decisão de redação dos sócios.
+  - Critério de aceite (copiado do plano): texto novo nos testes de `contacts.test.ts`.
+  - Dependências: nenhuma (redação: ação do responsável).
+- **AUD-092** (S3, esforço P, responsável) — Textos legais mudaram em 21/10 sem mudar `version` nem `updatedAt` (continuam "2.0 / 15/10/2026")
+  - Onde: web/src/services/legal.ts:26-27, :101-102, :206; commits d065387 (U48), aa87ea2 (U51), a5c76d7 (U53)
+  - Correção esperada: fixar versão/data na revisão do advogado; teste que guarda um hash do corpo + versão (falha se o corpo muda e a versão não); usar `max(TERMS.version, PRIVACY.version)` ou exigir que sejam iguais.
+  - Critério de aceite (copiado do plano): o teste legal falha ao editar um parágrafo sem mudar `version`.
+  - Dependências: ação do responsável (advogado) para o texto final.
+- **AUD-093** (S3, esforço P, —) — Aviso de sucesso "E-mail trocado. Use o novo para entrar." aparece como erro (tom vermelho)
+  - Onde: web/src/services/remote/session.ts:376 e :397
+  - Correção esperada: guardar `{ text, tone }` em `notice` em vez de comparar texto.
+  - Critério de aceite (copiado do plano): teste de `restore()` com `#access_token=…&type=email_change` verifica `tone: 'default'`.
+  - Dependências: nenhuma.
+- **AUD-094** (S3, esforço P, —) — Posts do portfólio feitos no mesmo dia aparecem do mais antigo para o mais novo (comparador de ordenação inconsistente)
+  - Onde: web/src/services/selectors.ts:155-157 (`postsForWorker`); supabaseMappers.ts:394 (`date: row.posted_on`, só o dia)
+  - Correção esperada: não reordenar quando o dia é igual (`a.date === b.date ? 0 : …`) ou guardar `createdAt` completo no post e ordenar por ele.
+  - Critério de aceite (copiado do plano): teste com 3 posts do mesmo dia mantém a ordem de entrada.
+  - Dependências: nenhuma.
+- **AUD-095** (S3, esforço P, migration, produção) — Envio de fotos/vídeos: sem prazo nem cancelamento, e erros do bucket viram sempre "Não deu para enviar a foto agora"
+  - Onde: web/src/services/remote/storage.ts:40-62 (XHR sem `timeout`/`ontimeout`/`onabort`), :54-57 (qualquer status ≠ 2xx → `falha_demo`), :88 (`EXTENSIONS[blob.type] ?? 'jpg'`); web/src/utils/image.ts:44 (GIF volta como está); migration 20261010000700_z12_fotos.sql:100-107 (buckets só aceitam jpeg/png/webp, e mp4/quicktime/webm no `portfolio`)
+  - Correção esperada: `xhr.timeout` (ex.: 60 s sem progresso) com mensagem "Conexão fraca…"; mapear 401→sessão terminou, 413→"arquivo grande", 415→"formato não aceito (use JPG/PNG)"; validar o tipo contra a lista do bucket antes de enviar.
+  - Critério de aceite (copiado do plano): testes do `storage.ts` com status 401/413/415 e com `ontimeout`.
+  - Dependências: nenhuma.
+- **AUD-096** (S3, esforço P, —) — `checkPassword`/`verifyOtp` não tratam limite de tentativas nem conta suspensa: caem em "Não deu certo agora"
+  - Onde: web/src/services/remote/auth.ts:120-137 (`checkPassword`, usada por `changePassword`, `changeEmail` e pela exclusão de conta), :177-197 (`checkSecurityCode`)
+  - Correção esperada: extrair `authErrorToService(error)` usado por `signIn`, `checkPassword`, `verifyEmailCode` e `checkSecurityCode`.
+  - Critério de aceite (copiado do plano): teste de `checkPassword` com `over_request_rate_limit` espera `code: 'conflito'` com a mensagem de espera.
+  - Dependências: nenhuma.
+- **AUD-097** (S3, esforço P, —) — Qualquer erro do Firebase com a palavra "captcha" vira "Esse jeito de entrar ainda não está ligado"; navegadores embutidos (WhatsApp/Instagram) caem em erro genérico
+  - Onde: web/src/services/remote/firebase.ts:109-131 (`firebaseError`), :178-212 (`signInWithFirebaseGoogle`); `grep -rni "FBAN\|Instagram\|webview" web/src` → nenhuma detecção de navegador embutido
+  - Correção esperada: separar `captcha` (mensagem "Não deu para confirmar que você não é um robô, tente de novo") de `operation-not-allowed`; detectar navegador embutido e mostrar "Abra este link no Chrome/Safari para entrar com o Google".
+  - Critério de aceite (copiado do plano): testes de `firebaseError` para `auth/captcha-check-failed` e `auth/web-storage-unsupported`.
+  - Dependências: nenhuma.
+- **AUD-098** (S3, esforço P, —) — "Ver outros bicos" numa vaga encerrada vai ao login e volta para a mesma vaga
+  - Onde: `pages/shared/PublicJob.tsx:174`, `:104`, `:58-61`
+  - Correção esperada: no ramo `!open`, chamar `enter('/login')` sem `jobId`.
+  - Critério de aceite (copiado do plano): depois do login o usuário chega em `/mural`.
+  - Dependências: nenhuma
+- **AUD-099** (S3, esforço P, —) — Legenda em edição sobrevive ao fechar o visualizador e vai para outro post
+  - Onde: `pages/shared/PostViewer.tsx:25,59,117,130`; `WorkerPosts.tsx:88`
+  - Correção esperada: `useEffect(() => { if (index === null) setEditing(null) }, [index])`.
+  - Critério de aceite (copiado do plano): teste de tela: editar A, fechar, abrir B mostra a legenda de B sem editor aberto.
+  - Dependências: nenhuma
+- **AUD-100** (S3, esforço P, —) — "Publicar trabalho": o erro anterior reaparece ao reabrir a janela
+  - Onde: `pages/shared/WorkerPosts.tsx:89,194-211,266-267`
+  - Correção esperada: no `closeAndReset`, `setFileError(null); publish.reset()`.
+  - Critério de aceite (copiado do plano): reabrir a janela não mostra erro antigo.
+  - Dependências: nenhuma
+- **AUD-101** (S3, esforço P, —) — Contagem do "reenviar código": três cópias, relógios que nunca param, "0:60" no SMS
+  - Onde: `pages/shared/VerifyEmail.tsx:325-336`, `WhatsAppCode.tsx:27-35,105-108`, `PhoneSignIn.tsx:30-35,168`
+  - Correção esperada: um hook `useCountdown` que para em zero, e um `clock()` em `utils/`.
+  - Critério de aceite (copiado do plano): um único hook; sem intervalo ativo depois de zerar.
+  - Dependências: nenhuma
+- **AUD-102** (S3, esforço P, função, responsável, produção) — Trocar WhatsApp: com captcha ligado, "Reenviar código" falha (latente)
+  - Onde: `pages/shared/ChangeWhatsApp.tsx:141` (widget só no passo `numero`) e `:87-98` (`resend` no passo `codigo`); `components/Captcha.tsx:82-86` (`getToken` devolve `undefined` sem widget); `supabase/functions/codigo-whatsapp/index.ts:63` (`captchaOk`)
+  - Correção esperada: mover `{captcha.widget}` para o rodapé fixo.
+  - Critério de aceite (copiado do plano): com captcha ligado, reenviar código funciona.
+  - Dependências: ação do responsável (ligar Turnstile e Twilio) torna o problema real
+- **AUD-103** (S3, esforço P, —) — Link de redefinir senha vencido só avisa depois que a pessoa digita
+  - Onde: `pages/shared/ResetPassword.tsx:31-46`; `services/remote/auth.ts:378-382`
+  - Correção esperada: ao montar, sem sessão de recuperação, mostrar "Esse link venceu" com "Pedir outro link", sem formulário; pôr o erro de força no campo da senha.
+  - Critério de aceite (copiado do plano): link vencido mostra o aviso antes do formulário.
+  - Dependências: nenhuma
+- **AUD-104** (S3, esforço P, —) — "Desfazer" remoção de experiência apaga o que foi adicionado depois
+  - Onde: `pages/shared/ExperiencesField.tsx:60-68`
+  - Correção esperada: reinserir só o item removido, na posição original.
+  - Critério de aceite (copiado do plano): teste de tela do cenário acima.
+  - Dependências: nenhuma
+- **AUD-105** (S3, esforço P, —) — "Desbloquear": todos os botões giram juntos
+  - Onde: `pages/shared/BlockedAccounts.tsx:43-49`
+  - Correção esperada: guardar o `id` em andamento.
+  - Critério de aceite (copiado do plano): só o botão tocado mostra o spinner.
+  - Dependências: nenhuma
+- **AUD-106** (S3, esforço M, —) — O formulário de publicar vaga se perde ao sair da tela ou recarregar, sem aviso
+  - Onde: `pages/recruiter/CreateJob.tsx:94` (usa `useScreenUI`, que apaga o estado ao desmontar, `hooks/useStore.ts:49`); `services/store.ts:30-39` (só guarda o id da sessão no aparelho); `CreateJob.tsx:425-429` (sem seta de voltar ao publicar)
+  - Correção esperada: rascunho em `sessionStorage` com try/catch, ou confirmar ao sair.
+  - Critério de aceite (copiado do plano): recarregar a página no passo 2 restaura os campos.
+  - Dependências: nenhuma
+- **AUD-107** (S3, esforço P, —) — Busca do mural mostra só a primeira página (30), sem "Carregar mais"
+  - Onde: `pages/worker/feed/MobileFeed.tsx:39-53`, `DesktopFeed.tsx:69-80,101-120`, `FeedSheets.tsx:105`
+  - Correção esperada: incluir `LoadMore` e usar "30+".
+  - Critério de aceite (copiado do plano): busca com 31 resultados mostra "Carregar mais".
+  - Dependências: nenhuma
+- **AUD-108** (S3, esforço P, —) — Recarregar "Vaga publicada" mostra "vaga não encontrada"
+  - Onde: `pages/recruiter/JobPublished.tsx:15-17`
+  - Correção esperada: chamar `loadJob(id)` na montagem.
+  - Critério de aceite (copiado do plano): recarregar `/vaga-publicada/:id` mostra a vaga.
+  - Dependências: AUD-027
+- **AUD-109** (S3, esforço P, —) — Candidato aprovado: "Desfazer aprovação" e "Cancelar" são quase iguais
+  - Onde: `pages/recruiter/CandidateActions.tsx:114-141,280-293`
+  - Correção esperada: uma saída só em `pre_selecionado`.
+  - Critério de aceite (copiado do plano): em `pre_selecionado` há uma única ação de sair.
+  - Dependências: nenhuma
+- **AUD-110** (S3, esforço P, —) — Digitar na busca troca a lista pelo esqueleto
+  - Onde: `pages/worker/feed/Feed.tsx:55-62`, `MobileFeed.tsx:103`
+  - Correção esperada: só mostrar o esqueleto se `found` for vazio.
+  - Critério de aceite (copiado do plano): digitar mantém a lista anterior até chegar a nova.
+  - Dependências: nenhuma
+- **AUD-111** (S3, esforço P, —) — "Todas · N" em Minhas vagas conta só as páginas carregadas
+  - Onde: `pages/recruiter/MyJobs.tsx:52-60,82`
+  - Correção esperada: "30+".
+  - Critério de aceite (copiado do plano): com mais de 30 vagas mostra "30+".
+  - Dependências: nenhuma
+- **AUD-112** (S3, esforço P, migration, produção) — /admin: pequenos furos
+  - Onde: `pages/admin/Admin.tsx:161-168,187-195,281-288,356-361,372,413-421,464`; `supabase/migrations/20261015000100_lanc06_backoffice.sql:287,322,363`
+  - Correção esperada: renovar links ao vencer e desabilitar "Aprovar" sem foto; confirmação ao aprovar; aviso de "há mais"; rótulos legíveis.
+  - Critério de aceite (copiado do plano): com links vencidos o botão fica desativado até renovar.
+  - Dependências: nenhuma
+- **AUD-113** (S3, esforço P, —) — O prazo de 30 dias da vaga sem data não é dito a quem publica
+  - Onde: `pages/recruiter/CreateJob.tsx:321-327`
+  - Correção esperada: "fica 30 dias no mural".
+  - Critério de aceite (copiado do plano): texto visível no passo de datas.
+  - Dependências: nenhuma
+- **AUD-114** (S3, esforço P, —) — O GPS do `CityPicker` pode trocar a cidade depois de a folha ser fechada; a lista usa `listbox`/`option` sem setas
+  - Onde: `components/CityPicker.tsx`
+  - Correção esperada: cancelar ao fechar; implementar setas.
+  - Critério de aceite (copiado do plano): teste de cancelamento.
+  - Dependências: nenhuma
+- **AUD-115** (S3, esforço P, —) — Nenhum `img` tem `onError`; o track do carrossel tem `aria-roledescription` sem `role`
+  - Onde: `components/Avatar.tsx`, `JobCover.tsx`, `PhotoCarousel.tsx`
+  - Correção esperada: `onError` com iniciais/ícone; corrigir ARIA.
+  - Critério de aceite (copiado do plano): imagem quebrada mostra o fallback.
+  - Dependências: nenhuma
+- **AUD-116** (S3, esforço P, —) — Número colado com "+55" ou "0" vira outro número e é recusado
+  - Onde: `utils/format.ts:24-35` (`maskPhone` corta nos 11 primeiros dígitos); usado em `Signup.tsx`, `ChangeWhatsApp.tsx:128`, `PhoneSignIn.tsx:122`
+  - Correção esperada: tirar prefixo 55 (12–13 dígitos) ou 0 antes de cortar.
+  - Critério de aceite (copiado do plano): teste dos 4 casos → `(54) 99999-9999`.
+  - Dependências: nenhuma
+- **AUD-117** (S3, esforço P, migration, produção) — Denúncias: alvo livre e denúncia analisada reaberta pelo denunciante
+  - Onde: `web/supabase/migrations/20261013000400_f04_denuncia_bloqueio.sql:51` (`report_content`: `p_target_id` sem formato/tamanho/existência; `on conflict … status='aberta'`)
+  - Correção esperada: `char_length(p_target_id) ≤ 64` e alvo existente; reabrir só após 30 dias ou com motivo novo.
+  - Critério de aceite (copiado do plano): testes SQL dos dois casos.
+  - Dependências: nenhuma
+- **AUD-118** (S3, esforço P, migration, produção) — Aviso "Bico novo" mostra o valor com vírgula americana: R$ 1.500 sai "R$ 1,500"
+  - Onde: `migrations/20261011000700_y28_alerta_bico.sql:66` e `migrations/20261019000100_u01_vaga_simples.sql:149` (versão final): `to_char(new.pay,'FM999G999')`
+  - Correção esperada: `replace(to_char(...), ',', '.')`.
+  - Critério de aceite (copiado do plano): teste com pay=1500 e `body like '%R$ 1.500%'`.
+  - Dependências: nenhuma
+- **AUD-119** (S3, esforço M, migration, produção) — CNPJ alfanumérico (Receita, desde julho/2026) é recusado no cadastro e na verificação
+  - Onde: `migrations/20261011000300_y16_y17_documento.sql:32-54` (`cnpj_valid` apaga o que não é dígito e exige 14); `migrations/20261012000700_l10_cnpj_receita.sql:18`; `mask_document`; `web/src/utils/document.ts:19`; `grep -ri alfanum` no repositório: nada
+  - Correção esperada: aceitar `[0-9A-Z]{14}` com módulo 11 sobre `ascii(c)-48`; ajustar `mask_document`, `document_hash`, `verificar-cnpj` (BrasilAPI) e o front.
+  - Critério de aceite (copiado do plano): `cnpj_valid('12.ABC.345/01DE-35')` = true.
+  - Dependências: nenhuma
+- **AUD-120** (S3, esforço P, migration, produção) — Todo cadastro novo nasce com "São Paulo, SP" e coordenadas de SP; na produção as 4 contas ainda têm
+  - Onde: `migrations/20261010000300_z07_documento_login.sql:149,155`; `migrations/20261011000300_y16_y17_documento.sql:112,118`; a versão final de `create_account_for` no staging ainda tem o texto e -23.5505
+  - Correção esperada: gravar vazio e exigir a cidade em `finish_sign_up`; limpar as contas existentes.
+  - Critério de aceite (copiado do plano): conta nova sem cidade padrão.
+  - Dependências: nenhuma
+- **AUD-121** (S3, esforço P, migration, produção) — Constraints `NOT VALID` do L11 nunca validadas
+  - Onde: `migrations/20261012000300_l11_validacao_perfil.sql:4-13`
+  - Correção esperada: migration com `validate constraint` nas duas.
+  - Critério de aceite (copiado do plano): nenhuma constraint `*_name_length` com `convalidated=false`.
+  - Dependências: nenhuma
+- **AUD-122** (S3, esforço P, —) — Limites de localização diferentes entre as funções: quem mora em Fernando de Noronha não consegue cadastrar o endereço; UF e cidade da empresa não são conferidas
+  - Onde: longitude máxima `-34` em `20261021000600_u51_endereco.sql:22,74` (`addresses_lon_check`, `save_address`) e em `finish_sign_up` (`20261020000200_u12…:30`, `u51:136`, `u62:30`, `u67:28`); longitude máxima `-28` em `job_from_draft` (`u01:61`, `u48:291`, `u52:93`); `u67:36` (`v_city !~ ', [A-Z]{2}$'`)
+  - Correção esperada: uma função `public.in_brazil(lat, lon)` (`lon <= -28`) usada por `save_address`, `finish_sign_up`, `job_from_draft` e pelo CHECK de `addresses`; em `finish_sign_up`, conferir o UF contra a mesma lista de 27 siglas.
+  - Critério de aceite (copiado do plano): teste SQL que grava endereço em Noronha (-3.85, -32.42) e recusa "abc, ZZ".
+  - Dependências: nenhuma.
+- **AUD-123** (S3, esforço M, responsável) — A busca do banco só acha o que está no título, bairro e cidade: os sinônimos são de construção e as vagas novas não têm ofício
+  - Onde: `20261021000400_u49_busca_vagas.sql:67-70` (texto pesquisado: título, bairro, cidade, UF e `oficios.nome + sinonimos` da vaga) e, copiado, `u52`, `u53`, `u65`; `20261019000100_u01_vaga_simples.sql:12` (`oficio_id` pode ser nulo e o app não envia mais); `docs/DECISOES.md` U48 ("A tabela `oficios` do banco não mudou (só vagas antigas a usam)")
+  - Correção esperada: incluir `description` (e `requirements`) no texto pesquisado, ou guardar uma `category` curta na vaga (lista do `data/oficios.ts`) e pesquisar nome e sinônimos dela; migrar o catálogo `oficios` para a lista nova (ids iguais aos do app).
+  - Critério de aceite (copiado do plano): teste SQL em `u49_busca_vagas.sql`: vaga "Diarista para apartamento" aparece para "faxina" e "limpeza".
+  - Dependências: decisão do responsável (muda o U49); AUD-050 (a mesma função).
+- **AUD-124** (S3, esforço ?, migration, produção) — `submit_identity` aceita caminhos de arquivo que não existem, sem limite de tamanho, e o trabalhador fica "em análise" sem ter mandado selfie nem documento
+  - Onde: função `public.submit_identity` (`web/supabase/migrations/20261013000700_f07_identidade.sql`); tabela `identity_submissions`
+  - Correção esperada: na função, exigir `char_length(path) <= 200`, caminhos diferentes, `exists (select 1 from storage.objects where bucket_id='identidade' and name = p_selfie_path)` (o mesmo para o documento) e `owner` igual ao `auth.uid()`; limitar `identity_submissions.selfie_path` e `document_path` por CHECK.
+  - Critério de aceite (copiado do plano): teste SQL em que um caminho inexistente falha com BC422 e um com 3 MB também; o envio real continua passando.
+  - Dependências: —
+- **AUD-125** (S3, esforço P, responsável) — "Não vou poder ir" não tem janela: depois do dia do bico o faltoso troca "falta" por "desistência"
+  - Onde: `tabela TRANSITIONS.desistir` (`web/src/services/applicationMachine.ts:72`) e `application_next_status` (`desistir`: pre_selecionado/contratado, sem data); ramo `desistir` de `transition_application`.
+  - Correção esperada: recusar `desistir` quando `job_started(job)` e a data do último dia já passou (ou, a partir do dia do bico, tratar como falta); ou contar `desistiu` depois do dia como falta em `worker_track_record`. Decidir com os sócios; o mínimo é BC409 com mensagem "O bico já passou. Fale com a empresa." para `contratado` depois de `last_day`.
+  - Critério de aceite (copiado do plano): teste SQL em `y01_y04_ciclo.sql`/novo: `desistir` com `end_date < hoje` falha; `marcar_falta` continua possível.
+  - Dependências: decisão do responsável (regra de produto).
+- **AUD-126** (S3, esforço M, —) — Mural no modo real: o app refiltra e reordena o que o servidor mandou com regras ligeiramente diferentes
+  - Onde: `web/src/pages/worker/feed/Feed.tsx:67-80` (`open` = todas as vagas do store, `passesFilters`, `orderJobs`), `feedUI.ts:140-162`; servidor: `feed_jobs` (u49/u52/u53/u65, staging).
+  - Correção esperada: no modo real, mostrar a lista pela ordem/pelos ids devolvidos por `feed_jobs` (guardar os ids da consulta) e deixar o filtro local só para o demo; ou apagar o filtro por cidade do `passesFilters` quando há raio e documentar que o raio é só dentro da cidade (e então tirar `p_radius_km` do servidor ou juntar `j.city = p_city`).
+  - Critério de aceite (copiado do plano): teste que, com a consulta da tela, compara a lista do app com a ordem de `feed_jobs` para um conjunto de vagas incluindo `dias` nulo e uma vaga de outra cidade dentro do raio.
+  - Dependências: nenhuma.
+- **AUD-127** (S3, esforço P, migration, produção) — "Hoje", "vaga vencida" e "diária começou" usam a data do aparelho; o servidor usa Brasília
+  - Onde: `src/utils/dates.ts:11-16` (`todayISO`); `src/utils/jobInfo.ts:231-234` (`isExpired`); `src/pages/worker/feed/Feed.tsx:68` (o mural esconde "vencidas" por conta própria); `src/services/applications.ts:186-188` (`jobStarted`); `src/pages/recruiter/CandidateActions.tsx:146`; no servidor, `supabase/migrations/20261009000200_bicos_v2_rules.sql:105` (`bicos_today()` = `America/Sa…
+  - Correção esperada: um único "hoje" no cliente = data de Brasília (`Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'})`), de preferência corrigida pelo cabeçalho `Date` do servidor.
+  - Critério de aceite (copiado do plano): `TZ=UTC` e `TZ=Asia/Tokyo` às 22:30 de Brasília dão o mesmo `todayISO` que `America/Sao_Paulo`.
+  - Dependências: O2-001
+- **AUD-128** (S3, esforço P, —) — Favicon e ícone da tela inicial quebram em rotas com mais de um segmento (`/v/:id`, o link compartilhado)
+  - Onde: `web/index.html:27-29` (`href="./icons/…"`)
+  - Correção esperada: `href="/icons/…"`, ou `%BASE_URL%icons/…`.
+  - Critério de aceite (copiado do plano): `icons.cjs` mostra `/icons/…` em todas as rotas.
+  - Dependências: nenhuma
+
+### Bloco 2 — Confiabilidade e observabilidade
+
+**Instruções do bloco 2 (confiabilidade e observabilidade).** O que depender de conta externa (Sentry, monitor, Brevo, healthchecks, Vault do banco) vira "ação do responsável" com passo a passo; a parte de código (prazos, `try/catch`, alertas que reenviam, versão mínima) você faz e prova com teste. Teste de rede: promessa que nunca resolve deve terminar em erro em tempo definido.
+
+- **AUD-036** (S2, esforço M, responsável, produção) — Erros inesperados do servidor viram "Não deu certo agora" sem rastro: nada é enviado ao Sentry e a causa original é jogada fora
+  - Onde: web/src/services/remote/client.ts:66-79 (`toServiceError` termina em `serviceError('falha_demo')`), :88-107 (`request`), :138-161 (`invokeFunction`); web/src/services/errors.ts:20-29 (`ServiceError` não tem `cause`); web/src/services/monitoring.ts:143-163; `grep -rn reportError web/src` → só `ErrorBoundary.tsx:57`
+  - Correção esperada: em `toServiceError`, ao cair no ramo desconhecido (e em `invokeFunction` para 5xx), chamar `reportError` com um erro novo que leve só `code`, `status` e nome da RPC/tabela (sem corpo nem dados), e guardar `cause` no `ServiceError`. Limitar por chave para não gastar as 20 vagas de `monitoring.ts:149`.
+  - Critério de aceite (copiado do plano): teste com falso Supabase devolvendo `{code:'PGRST202'}` espera uma chamada de `reportError` com `rpc` e `PGRST202`, sem dado pessoal.
+  - Dependências: Sentry ligado (ação do responsável: `VITE_SENTRY_DSN`; hoje desligado em produção).
+- **AUD-037** (S2, esforço P, responsável) — Captcha sem tratar `timeout-callback`/`unsupported-callback` do Turnstile: "Entrar" gira até recarregar
+  - Onde: `components/Captcha.tsx:59-67,82-91`; `pages/shared/Login.tsx:183`
+  - Correção esperada: tratar os dois callbacks e rejeitar `getToken()` com erro amigável e prazo.
+  - Critério de aceite (copiado do plano): teste com o widget simulando timeout mostra erro e libera o botão.
+  - Dependências: ação do responsável (ligar Turnstile) torna o problema real
+- **AUD-038** (S2, esforço M, função, responsável, produção) — Pagamento aprovado que não pode ser aplicado, ou que falha no webhook, não avisa ninguém da equipe
+  - Onde: `web/supabase/functions/webhook-pagamento/index.ts:43-46,55-62`; RPC `confirm_boost_payment` (staging: ramo `reembolso_pendente`); `web/docs/DECISOES.md:312-314`; `web/supabase/functions/criar-cobranca/index.ts:91-99`
+  - Correção esperada: (1) webhook: em erro de `confirm_boost_payment` chamar `reportError` e responder 500 apagando a linha de dedupe (o MP reenvia); (2) card em `/admin` (ou alerta no Sentry/e-mail) para `boost_payments.status = 'reembolso_pendente'` e para `payment_webhook_events.result like 'erro:%'`; (3) tratar `refunded`/`charged_back` encerrando o destaque; (4) verificar o `error` de `attach_boost_charge`.
+  - Critério de aceite (copiado do plano): teste da função com `confirm_boost_payment` forçado a falhar devolve 5xx e não deixa a linha de dedupe; um pagamento em `reembolso_pendente` aparece na fila da equipe e gera alerta em até 1 hora.
+  - Dependências: Mercado Pago ligado é "ação do responsável"; o conserto pode ir antes.
+- **AUD-039** (S2, esforço M, migration, função, responsável, produção) — Reembolso prometido não tem fila, nem estado final, nem tratamento de estorno ou chargeback (Mercado Pago)
+  - Onde: `supabase/functions/webhook-pagamento/index.ts:43-53`; `supabase/functions/_shared/mercadopago.ts:21-22`; `supabase/migrations/20261010000200_z02_pagamentos.sql:12-16,165-176`; `src/pages/recruiter/Payments.tsx:25,89`
+  - Correção esperada: adicionar os estados `reembolsado` e `estornado`; fazer o webhook tratar `refunded`/`charged_back` (marcar o pagamento e, no chargeback, encerrar `boost_ends_at`); criar `admin_payment_queue()` e `admin_mark_refunded(id, motivo)` no `/admin`, com `staff_log`; avisar a empresa quando o reembolso for feito.
+  - Critério de aceite (copiado do plano): teste SQL que marca um pagamento `refunded` e checa que `boost_ends_at` encerra e o funil descontou; a fila lista os `reembolso_pendente`; um teste do webhook com `status=refunded` muda o estado.
+  - Dependências: ligar `FEATURES.payments` é ação do responsável
+- **AUD-129** (S3, esforço P, migration, responsável, produção) — Fim de sessão por outro caminho que não o botão "Sair" deixa o aparelho recebendo notificações da conta antiga
+  - Onde: web/src/services/remote/auth.ts:107-114 (só `signOut()` chama `disablePush`); web/src/services/remote/session.ts:454-468 (`sessionEnded`), :433-438 (`dropBrokenSession`), :569-571 (evento `SIGNED_OUT`) — os três chamam `leaveSession()` sem `disablePush`; web/src/services/push.ts:84-88 e supabase/migrations/20261014000300_x03_push.sql:27-49
+  - Correção esperada: chamar `disablePush` (com timeout curto e sem esperar o servidor) dentro de `leaveSession`, e na entrada pedir confirmação (ou não religar) se a assinatura pertencia a outra conta.
+  - Critério de aceite (copiado do plano): teste com falso Supabase: depois de `sessionEnded()` a chamada `delete_push_subscription` foi feita ou `sub.unsubscribe()` executado.
+  - Dependências: push ligado (ação do responsável: VAPID).
+- **AUD-130** (S3, esforço P, —) — Falha de rede ao chamar uma Edge Function (com o aparelho "online") não vira `offline`: a pessoa vê "Não deu certo agora"
+  - Onde: web/src/services/remote/client.ts:41-45 (`isNetworkFailure`) e :138-161 (`invokeFunction`)
+  - Correção esperada: em `invokeFunction`, tratar `result.error.name === 'FunctionsFetchError'` (e `FunctionsRelayError`) como `offline`; ou incluir `FunctionsFetchError` na regex.
+  - Critério de aceite (copiado do plano): o teste de reprodução passa (`code === 'offline'`).
+  - Dependências: nenhuma.
+- **AUD-131** (S3, esforço P, —) — Se o download do supabase-js falhar uma vez, `getSupabase()` guarda a promessa rejeitada e o app não se recupera sem recarregar
+  - Onde: web/src/services/supabase.ts:30-49; web/src/main.tsx:33-38; web/src/App.tsx:122-130; web/src/components/ErrorBoundary.tsx:20-31
+  - Correção esperada: `client = undefined` no `.catch` de `getSupabase`.
+  - Critério de aceite (copiado do plano): teste: `import()` falha na 1ª chamada e funciona na 2ª; a 2ª chamada de `getSupabase()` resolve.
+  - Dependências: nenhuma.
+- **AUD-132** (S3, esforço P, —) — Se salvar o tema falhar, o aviso sempre diz "Sem internet" (mesmo quando a internet está boa)
+  - Onde: web/src/services/theme.ts:97-100
+  - Correção esperada: usar `errorMessage(e)` (services/errors.ts:38).
+  - Critério de aceite (copiado do plano): teste de `setTheme` com RPC falhando com `PGRST202` mostra a mensagem genérica, não a de offline.
+  - Dependências: nenhuma.
+- **AUD-133** (S3, esforço P, migration, função, produção) — Se a linha `storage_public_base` faltar, a conferência das fotos deixa passar tudo e a limpeza diária apaga todas as fotos
+  - Onde: `public.storage_url_ok` (migration `20261010000700_z12_fotos.sql:27`), `public.orphan_storage_objects` (`20261014000400_x09_arquivos_orfaos.sql:37`: `coalesce(…, '')`), `web/supabase/functions/limpar-arquivos/index.ts:25-39` (apaga o que a função devolve, sem conferir proporção)
+  - Correção esperada: nas duas funções, `raise exception` quando a base for nula/vazia; na Edge Function, abortar se a lista de órfãos for > X % do total; opcional: `check (value ~ '^https://.+/storage/v1/object/public/$')` em `app_config` para essa chave.
+  - Critério de aceite (copiado do plano): teste SQL que apaga a linha e espera erro em ambas as funções.
+  - Dependências: nenhuma.
+- **AUD-134** (S3, esforço P, —) — Ordem de travas inconsistente (vaga↔candidatura, pagamento↔vaga): deadlock possível
+  - Onde: `transition_application` trava vaga→candidatura; `application_conclude` (`…y01_y04_ciclo_vaga.sql:59`, usada por `conclude_finished_jobs`/`conclude_my_finished_jobs`) trava candidatura→vaga; `confirm_boost_payment` (`…z02_pagamentos.sql:154`) trava pagamento→vaga e `begin_boost_payment` (`…u48…sql:156`) vaga→pagamentos `aguardando`
+  - Correção esperada: "vaga primeiro" em `application_conclude` e `confirm_boost_payment`.
+  - Critério de aceite (copiado do plano): teste com 2 conexões sem 40P01.
+  - Dependências: nenhuma (soma ao M1-H2)
+- **AUD-135** (S3, esforço P, migration, produção) — Limites diários (candidaturas 30/dia, convites 20/dia, denúncias 20/dia) não são atômicos
+  - Onde: `web/supabase/migrations/20261014000200_x15_rls_desempenho.sql:84`, `20261013000300_f13_convite.sql:24`, `20261013000400_f04_denuncia_bloqueio.sql:51`
+  - Correção esperada: `pg_advisory_xact_lock(hashtextextended('cand:'||worker_id,0))` no início.
+  - Critério de aceite (copiado do plano): 40 chamadas paralelas → no máximo 30.
+  - Dependências: nenhuma
+- **AUD-136** (S3, esforço M, migration, função, produção) — Publicar vaga notifica todos os alertas na mesma transação
+  - Onde: `web/supabase/migrations/20261019000100_u01_vaga_simples.sql:143` (`notify_job_alerts`, AFTER INSERT em `jobs`)
+  - Correção esperada: fila + cron/Edge Function em lotes (ou limite N por vaga ordenado por distância).
+  - Critério de aceite (copiado do plano): `publish_job` < 200 ms com 30 mil alertas.
+  - Dependências: nenhuma
+- **AUD-137** (S3, esforço P, migration, produção) — Migrations "idempotentes" que reescrevem dados/permissões quando rodam de novo
+  - Onde: `migrations/20261012000100_l18_pagamento.sql:24` (`update jobs set payment_method='pix_dia' where payment_method is null`); `migrations/20261010000600_z06_endereco.sql:14-19` (`revoke select on jobs` + lista fixa de colunas); `APLICAR.md:13-14` e `:6-7`; `web/scripts/staging/aplicar-banco.sh:60-72` (`psql -f` por arquivo, sem transação única)
+  - Correção esperada: l18 com `and created_at < '2026-10-12'`; z06 revogar só se o privilégio de tabela ainda existir; ajustar a frase do APLICAR.md; usar `psql --single-transaction`.
+  - Critério de aceite (copiado do plano): rodar a pilha duas vezes no CI e comparar o estado.
+  - Dependências: nenhuma
+- **AUD-138** (S3, esforço P, migration, produção) — A migration pendente que apaga o app antigo está desatualizada e quebraria `signup_taken('documento')` e o cron `bicos-limpar-cadastros`
+  - Onde: `pendentes/20261015000900_lanc07_apagar_app_antigo.sql:28-102`; `migrations/20261020000100_u10_dados_unicos.sql:25`; `migrations/20261021000300_u37_cadastro_google.sql:16` (ambas leem `public.profiles`); `pendentes/LEIA.md:11-13`
+  - Correção esperada: incluir `create or replace` dessas duas funções sem `profiles` e reconferir com `run.mjs --with`.
+  - Critério de aceite (copiado do plano): aplicar a pendente num banco com todas as migrations e rodar todos os testes SQL verde.
+  - Dependências: "pode" do responsável (ver AUD-072)
+- **AUD-139** (S3, esforço P, migration, responsável, produção) — Alerta de cron não enviado ao Sentry conta como "já alertado" por 24 h e nunca é reenviado
+  - Onde: `migrations/20261016000300_lanc12_vigia_cron.sql:124-131` (o dedupe ignora `sent`)
+  - Correção esperada: dedupe só entre `sent=true` e reenviar as pendentes.
+  - Critério de aceite (copiado do plano): com DSN ausente e depois configurado, o alerta pendente é enviado.
+  - Dependências: ação do responsável (criar DSN/heartbeat)
+- **AUD-040** (S2, esforço M, responsável) — Em produção nada avisa ninguém quando algo quebra (e o staging também não): Sentry e monitor de fora desligados, alerta do cron sem destino
+  - Onde: `CLAUDE.md:127-128,156-158`; `web/docs/SUPABASE.md:137-150`; `.github/workflows/site.yml:37-38`; `staging.yml:177`; `web/docs/ADVISORS.md:15`
+  - Correção esperada: tornar Sentry (front e funções) e `bicos_heartbeat_url` bloqueadores do lançamento, com e-mail dos sócios; monitor de disponibilidade grátis no domínio e no `/auth/v1/health`; Sentry real no staging.
+  - Critério de aceite (copiado do plano): `select * from cron_health()` e um erro forçado (IMPLANTACAO:138-141) chegam por e-mail em < 1 h.
+  - Dependências: ação do responsável; AUD-139
+- **AUD-140** (S3, esforço P, função, produção) — Login por CPF/CNPJ: a resposta demora 140 vezes mais quando o documento existe, e 5 pedidos travam o login por documento de qualquer pessoa
+  - Onde: RPC `document_login_email` (staging); `web/supabase/functions/entrar-com-documento/index.ts:43-56`; `web/docs/DECISOES.md:319-340` (Z07)
+  - Correção esperada: na RPC, fazer um `crypt()` contra um hash fixo falso quando a conta não existe (tempo igual); contar tentativas FALHAS por documento+IP (não só por documento); atualizar a Z07 dizendo que U10 abriu essa informação de propósito.
+  - Critério de aceite (copiado do plano): 50 chamadas de cada tipo medidas pela função têm medianas dentro de 10% uma da outra.
+  - Dependências: AUD-005.
+- **AUD-141** (S3, esforço P, —) — Nenhuma chamada a provedor externo tem prazo máximo; o app também não corta a espera
+  - Onde: `fetch` sem `AbortSignal` em `_shared/captcha.ts:23` (Turnstile), `_shared/mercadopago.ts:31`, `_shared/firebase.ts:40` (JWKS), `_shared/monitoring.ts:27` (Sentry, e é `await`ado antes de devolver o 500), `codigo-whatsapp/index.ts:27`, `verificar-cnpj/index.ts:48`; cliente: `web/src/services/remote/client.ts:142` (`functions.invoke` sem `timeout`)
+  - Correção esperada: `AbortSignal.timeout(8000)` em cada `fetch` das funções (captcha e Twilio com falha fechada; BrasilAPI → `pendente`; Sentry → desiste em 2 s sem bloquear a resposta) e `timeout` no `invoke` do cliente com mensagem de "sem sinal".
+  - Critério de aceite (copiado do plano): teste com provedor que não responde: a função devolve em até 10 s com o erro tratado.
+  - Dependências: nenhuma.
+- **AUD-142** (S3, esforço P, —) — O avisador de erros usa `crypto.randomUUID()` sem proteção: em navegador antigo ele próprio dá erro e nada chega ao Sentry
+  - Onde: `src/services/monitoring.ts:124` (`event_id`); chamado por `reportError` (`:143`), `window.onerror` (`:161`) e `src/components/ErrorBoundary.tsx:57`; `vite.config.ts:156` (`target:'es2020'`)
+  - Correção esperada: `crypto.randomUUID?.() ?? <hex de getRandomValues>` e `try/catch` em `reportError`.
+  - Critério de aceite (copiado do plano): o mesmo script mostra 1 pedido com `randomUUID` ausente.
+  - Dependências: AUD-195
+- **AUD-143** (S3, esforço M, responsável) — Sem versão mínima: o app aberto em segundo plano pode ficar semanas na versão antiga falando com RPCs novas
+  - Onde: `vite.config.ts:103` (`registerType:'prompt'`); `src/services/pwa.ts:14-22`; `dist-demo/sw.js` (`skipWaiting` só em `message`); a decisão de pedir confirmação é boa (`DECISOES.md:909`), falta a rede de segurança
+  - Correção esperada: `min_web_release` em `app_config`; se o `RELEASE` do app for menor, mostrar "Atualize para continuar" e chamar `update(true)`; no mínimo, `registration.update()` quando o app volta ao primeiro plano depois de > 24 h.
+  - Critério de aceite (copiado do plano): com `min_web_release` maior, a tela de atualização aparece e um toque recarrega na versão nova.
+  - Dependências: nenhuma
+
+### Bloco 3 — UX e acessibilidade para o público real
+
+**Instruções do bloco 3 (UX e acessibilidade).** Antes de cada tela tirar print 360×800 e 1280×800 (claro e escuro) e depois comparar. Rodar axe (WCAG 2.2 AA) nas telas tocadas, incluindo passos 2+ de formulários. Alvos de toque ≥ 44 px (preferir 48 px nas ações principais) com a classe `tap-target`; foco visível com contraste ≥ 3:1 nos dois temas; nada de cor como única informação. Textos curtos, em "empresa/serviço/local/trabalhador" (nada de obra/construtora/recrutador na tela).
+
+- **AUD-041** (S2, esforço P, —) — Sem caminho para a Ajuda/suporte nas telas onde mais gente trava
+  - Onde: `pages/shared/Login.tsx`, `Signup.tsx`, `VerifyEmail.tsx`, `CompleteProfile.tsx`, `Splash.tsx`, `ForgotPassword.tsx`, `ResetPassword.tsx` (nenhuma tem link); `Help.tsx:1-2` afirma que "the login screen links here too"
+  - Correção esperada: link discreto "Preciso de ajuda" (WhatsApp do suporte via `whatsappUrl(SUPPORT_WHATSAPP)`) no rodapé do Login, no cabeçalho do VerifyEmail e na mensagem de CPF recusado; corrigir o comentário de `Help.tsx`.
+  - Critério de aceite (copiado do plano): de `/login`, `/cadastro/*` e `/verificar-email` há toque visível para o suporte.
+  - Dependências: AUD-007
+- **AUD-042** (S2, esforço P, —) — A linha do candidato é uma `div` com clique, sem teclado nem papel
+  - Onde: `components/CandidateRow.tsx:47-53`; `pages/recruiter/JobManage.tsx:306`
+  - Correção esperada: nome do trabalhador como botão, como o `JobTile` já faz (X05).
+  - Critério de aceite (copiado do plano): Tab chega ao candidato e Enter abre o perfil; axe sem violação.
+  - Dependências: nenhuma
+- **AUD-044** (S2, esforço P, —) — O título da aba nunca muda e o foco volta ao início a cada troca de tela
+  - Onde: `App.tsx:181` (`<AppShell key={seq}>` remonta barra e tela a cada navegação), `App.tsx:74` (`scrollTo`), `web/index.html:6`; `grep -rn "document.title" web/src` não acha atribuição alguma
+  - Correção esperada: `title` em `RouteDef`; ao navegar definir `document.title` e focar `<main tabIndex={-1}>`/`<h1>` (ou região `aria-live`).
+  - Critério de aceite (copiado do plano): Playwright navega 3 telas: títulos distintos e `activeElement` dentro de `<main>`.
+  - Dependências: nenhuma
+- **AUD-045** (S2, esforço M, migration, responsável, produção) — Denúncia de perfil, avaliação ou publicação não tem como tirar o conteúdo do ar
+  - Onde: `web/supabase/migrations/20261015000100_lanc06_backoffice.sql:462-495` (`admin_resolve_report`: só `arquivar`, `ocultar_vaga` e `suspender_conta`); `20261021000500_u48_publico_geral.sql:20-75` (`admin_suspend_account` só esconde as vagas e cancela bicos); políticas `workers`, `reviews`, `worker_posts` = `using (true)` para `authenticated`; `report_target` aceita `vaga | perf…
+  - Correção esperada: `hidden_at` em `worker_posts` e `reviews` e uma flag em `workers`/`companies`; políticas de leitura que ignoram o oculto (exceto para a equipe e o dono); ação `ocultar_conteudo` em `admin_resolve_report`; `admin_suspend_account` deve esconder o perfil público.
+  - Critério de aceite (copiado do plano): teste SQL: após `admin_resolve_report(…, 'ocultar_conteudo')` ou suspensão, outro usuário logado não lê o perfil/post/avaliação (0 linhas).
+  - Dependências: decisão do responsável sobre o que a moderação precisa poder fazer.
+- **AUD-046** (S2, esforço M, migration, responsável, produção) — Quem souber o CPF/CNPJ de outra pessoa trava o cadastro dela e apaga o cadastro pendente dela; não há prova de posse nem contestação
+  - Onde: `migrations/20261010000300_z07_documento_login.sql:84-111` (`claim_document_for`); `migrations/20261011000300_y16_y17_documento.sql:10-63` (só dígito verificador); `migrations/20261012000800_l13_conta_google.sql:35-42`; teste `tests/z07_documento.sql:34-45`
+  - Correção esperada: função da equipe para liberar documento + canal "esse CPF é meu"; só tratar o documento como ocupado com alguma prova (CNPJ ativo, identidade aprovada); registrar em DECISOES.
+  - Critério de aceite (copiado do plano): teste SQL de contestação liberada pela equipe.
+  - Dependências: decisão dos sócios
+- **AUD-047** (S2, esforço P, —) — O selo "Verificada" e o nome da empresa não aparecem onde se decide (card, vaga, confirmar candidatura)
+  - Onde: `components/JobTile.tsx:73-79,113-161` (nome só no `aria-label`); `pages/worker/JobDetail.tsx:212-228` (nome e nota, sem selo); `ConfirmApplication.tsx:70-95`; selo só em `PublicJob.tsx:157` e no perfil da empresa
+  - Correção esperada: selo com texto ao lado do nome da empresa na vaga e na confirmação; nome da empresa numa linha cinza no card (+ selo quando houver).
+  - Critério de aceite (copiado do plano): prints com e sem o selo.
+  - Dependências: ver AUD-009 e AUD-013 (regra de fundo do selo)
+- **AUD-048** (S2, esforço M, —) — "Sua vaga": candidatos ~1.150 px abaixo; a barra fixa oferece "Editar vaga" e "Excluir vaga"
+  - Onde: `pages/recruiter/JobManage.tsx:213-357` (ordem: fotos, selo, título, valor, vagas preenchidas, impulsionar, "Onde e como", candidatos); barra `:359-362`
+  - Correção esperada: com pendentes, lista logo sob o título (ou abas "Candidatos | Detalhes"); barra "Ver candidatos (3)"; "Excluir vaga" para dentro de "Editar vaga".
+  - Critério de aceite (copiado do plano): 1º candidato visível na 1ª tela de 360×800.
+  - Dependências: nenhuma
+- **AUD-049** (S2, esforço M, responsável) — Avisos de candidato novo, aprovação e bico novo só existem dentro do app
+  - Onde: `web/docs/DECISOES.md:1409-1425` (push desligado no lançamento), `CHECKLIST-LANCAMENTO.md:125`, `services/features.ts:36`; promessas em `pages/recruiter/JobPublished.tsx:27`, `pages/worker/ApplicationSent.tsx:158`, `pages/worker/feed/FeedSheets.tsx:141-148`
+  - Correção esperada: e-mail (Brevo já previsto) nos 3 eventos (candidato novo, aprovado, resumo diário do alerta) ou push no piloto; enquanto isso trocar "Avisamos" por "Você vê aqui no app".
+  - Critério de aceite (copiado do plano): e-mail/push recebido nos 3 eventos no staging.
+  - Dependências: ação do responsável (canal, conta, VAPID)
+- **AUD-144** (S3, esforço P, —) — Textos que contradizem o contexto
+  - Onde: `/selecionado/BC-4830` (candidatura em análise) tem título "Você avançou" e corpo "Essa tela não está disponível"; `pages/shared/PublicJob.tsx:97` (trabalhador já logado em `/v/<inexistente>` lê "Entre para ver outros bicos")
+  - Correção esperada: ramos de texto por estado.
+  - Critério de aceite (copiado do plano): textos coerentes nesses dois casos.
+  - Dependências: nenhuma
+- **AUD-146** (S3, esforço P, —) — Em 360 px o status mais importante é cortado
+  - Onde: Minhas candidaturas (chip "Pré-selecionado" vira "Pré-seleci…"; o botão redondo do WhatsApp cobre o chip; `$SCRATCH/prints/B1/B1_minhas_cand_m.png`); mural (título do cartão em 2 colunas vira "Garçom para almoço e…"); datas das vagas salvas truncadas
+  - Correção esperada: status em linha própria/duas linhas; não sobrepor o botão.
+  - Critério de aceite (copiado do plano): status completo visível em 360 px.
+  - Dependências: nenhuma
+- **AUD-147** (S3, esforço P, —) — Ao errar o formulário, o foco não vai para o primeiro erro e a mensagem do título fica escondida sob a barra fixa
+  - Onde: `web/src/pages/recruiter/CreateJob.tsx:148-163,174-209` (nada chama `focus()`/`scrollIntoView` no primeiro campo com erro)
+  - Correção esperada: após `setUi({errors})`, focar o primeiro campo inválido (`document.getElementById(...)?.focus({preventScroll:false})` com `scroll-margin-top` da barra).
+  - Critério de aceite (copiado do plano): teste e2e: tocar Continuar vazio e `document.activeElement.id === 'create-job-titulo'`.
+  - Dependências: nenhuma
+- **AUD-148** (S3, esforço P, —) — No desktop o valor "R$ 150" quebra em duas linhas no cartão "Diária que você ofereceu"
+  - Onde: `web/src/pages/recruiter/JobManage.tsx:127-141` (valor em `font-mono text-4xl` ao lado de um texto de até 11 rem dentro da coluna lateral de 22 rem, `:226`)
+  - Correção esperada: `whitespace-nowrap` no valor e o texto da direita passando para baixo (`flex-wrap`) na coluna estreita.
+  - Critério de aceite (copiado do plano): print a 1280 px com R$ 150 e R$ 5.000 em uma linha só.
+  - Dependências: nenhuma
+- **AUD-149** (S3, esforço P, —) — Alvos de toque pequenos nas telas de entrada e leitura
+  - Onde: `pages/shared/Login.tsx:174` ("Esqueci minha senha", `h-9`, sem `tap-target`) e `:191` (`h-10`); `PhoneSignIn.tsx:141` e `WhatsAppCode.tsx:64` (`h-9`); `VerifyEmail.tsx:305` (`h-10`); `Notifications.tsx:45` (`h-9`); "Denunciar" em `ReviewsScreen.tsx:106-112` e `WorkerPosts.tsx:166-172` (`text-xs`, sem altura nem padding, ~16 px); o × de `ExperiencesField.tsx:103-112` (28 px)…
+  - Correção esperada: `relative tap-target` ou `min-h-11` nesses botões.
+  - Critério de aceite (copiado do plano): axe ou Playwright com alvo de 44 px ou mais nessas telas.
+  - Dependências: nenhuma
+- **AUD-150** (S3, esforço P, —) — Foco/nome acessível ausentes (checkbox, "não lida", selo, progresso)
+  - Onde: `components/Checkbox.tsx:17-26` (usado em Signup 18+/termos, AcceptTerms, DeleteAccount); `pages/shared/Notifications.tsx:75-77`; `WorkerProfileScreen.tsx:114-118`; `components/FlowLayout.tsx:47-59`; `CompanyProfileScreen.tsx:110`; `WorkerProfileScreen.tsx:125`
+  - Correção esperada: `peer-focus-visible:ring-4`; `role="img"` ou texto `sr-only` na bolinha; `aria-label` no selo; `progressbar` e `aria-live`; `h1` nos nomes.
+  - Critério de aceite (copiado do plano): axe sem violação nessas telas e foco visível no checkbox.
+  - Dependências: nenhuma
+- **AUD-043** (S2, esforço P, —) — Sem foco visível em Checkbox, Radio/RadioCard, Switch, PhotoSlot, PhotoManager e carrossel
+  - Onde: `components/Checkbox.tsx`, `Radio.tsx`, `Switch.tsx`, `PhotoSlot.tsx`, `PhotoManager.tsx`, `PhotoCarousel.tsx:198-201`, `JobTile.tsx`, `JobMap.tsx:82`, `WhatsAppButton.tsx`
+  - Correção esperada: `peer-focus-visible:outline` no desenho do controle, anel `brand-500`.
+  - Critério de aceite (copiado do plano): foco visível com contraste ≥ 3:1 em todos esses controles (teste Playwright com Tab).
+  - Dependências: nenhuma (relacionado a AUD-150)
+- **AUD-145** (S3, esforço P, —) — Sem `h1` em várias telas
+  - Onde: `/splash`, `/perfil`, `/trabalhador/:id`, `/construtora/:id` e telas de erro de vaga/avaliação
+  - Correção esperada: `h1` nessas telas.
+  - Critério de aceite (copiado do plano): axe sem violação de `page-has-heading-one`.
+  - Dependências: nenhuma (relacionado a AUD-150)
+- **AUD-151** (S3, esforço P, —) — Os dois campos de horário do passo 2 de publicar vaga não têm nome acessível
+  - Onde: `pages/recruiter/CreateJob.tsx:341-363`; `components/Input.tsx`; `web/scripts/a11y-check.mjs:39`
+  - Correção esperada: `aria-label` nos dois campos e axe no passo 2.
+  - Critério de aceite (copiado do plano): axe sem violação no passo 2.
+  - Dependências: nenhuma
+- **AUD-152** (S3, esforço P, —) — Escolhas visuais sem estado para leitor de tela
+  - Onde: `pages/worker/feed/MobileFeed.tsx:67-78` (ordenar); `pages/recruiter/BoostJob.tsx:93-110` (plano); `pages/worker/VerifyIdentity.tsx:37-59` (foto da identidade fica sem nome); abas `role="tab"` sem painel nem setas em `Admin`, `MyJobs`, `CreateJob`, `BoostPayment`
+  - Correção esperada: um componente `Segmented` com `aria-pressed`/`radiogroup`.
+  - Critério de aceite (copiado do plano): axe sem violação e estado anunciado.
+  - Dependências: nenhuma
+- **AUD-153** (S3, esforço P, —) — `Button loading` perde o nome acessível, encolhe e fica desativado
+  - Onde: `components/Button.tsx`
+  - Correção esperada: manter o rótulo (visualmente oculto) e a largura.
+  - Critério de aceite (copiado do plano): nome acessível preservado em `loading`.
+  - Dependências: nenhuma
+- **AUD-154** (S3, esforço P, —) — `PhotoSlot` com foto escolhida tem campo de arquivo sem nome; remover do `PhotoManager` tem 28 px
+  - Onde: `components/PhotoSlot.tsx`, `PhotoManager.tsx`
+  - Correção esperada: `aria-label` e `tap-target`.
+  - Critério de aceite (copiado do plano): axe e alvo ≥ 44 px.
+  - Dependências: nenhuma
+- **AUD-155** (S3, esforço P, —) — `Rating showValue={false}` não tem texto equivalente
+  - Onde: `components/Rating.tsx`; `pages/shared/ReviewsScreen.tsx:89`
+  - Correção esperada: `aria-label="Nota 4,5 de 5"` ou texto `sr-only`.
+  - Critério de aceite (copiado do plano): a nota é anunciada.
+  - Dependências: nenhuma
+- **AUD-156** (S3, esforço P, —) — Erro não ligado ao campo em `Select`, `CodeInput` e `AboutField`; o CEP aponta para um id que some
+  - Onde: `components/Select.tsx`, `CodeInput.tsx`, `AboutField.tsx`, `AddressFields.tsx:125,148`
+  - Correção esperada: `aria-invalid` e `aria-describedby` com id estável.
+  - Critério de aceite (copiado do plano): axe e teste de leitura da árvore de acessibilidade.
+  - Dependências: nenhuma
+- **AUD-157** (S3, esforço P, —) — Contrastes abaixo de WCAG AA
+  - Onde: botão WhatsApp 4,31:1; botão accent 3,98:1; placeholder 3,11:1; borda de campo e trilho do Switch 1,67:1; linha de candidato apagada 2,54:1 (`styles/tokens.css` e componentes)
+  - Correção esperada: ajustar tokens para ≥ 4,5:1 (texto) e ≥ 3:1 (componentes).
+  - Critério de aceite (copiado do plano): teste automatizado de contraste dos tokens.
+  - Dependências: nenhuma
+- **AUD-158** (S3, esforço P, —) — Toast some em 4 s, inclusive erro e "Desfazer", sem pausar
+  - Onde: `services/toast.ts`; `components/ToastHost.tsx`
+  - Correção esperada: pausar ao toque/foco e prolongar erros.
+  - Critério de aceite (copiado do plano): erro permanece até a pessoa fechar ou 10 s.
+  - Dependências: nenhuma
+- **AUD-159** (S3, esforço P, —) — `NotificationsPanel` não move nem devolve o foco; selo do sino fora do nome acessível; "Não lida" em `span` com `aria-label`
+  - Onde: `components/NotificationsPanel.tsx`
+  - Correção esperada: mover o foco ao abrir e devolver ao fechar; incluir a contagem no nome do botão.
+  - Critério de aceite (copiado do plano): teste de foco.
+  - Dependências: nenhuma
+- **AUD-160** (S3, esforço P, —) — `alertdialog` sem `aria-describedby`; erro do `SignOutDialog` entra no lugar da descrição, sem `role="alert"`
+  - Onde: `components/Modal.tsx`, `SignOutDialog.tsx`
+  - Correção esperada: `aria-describedby` e `role="alert"` no erro.
+  - Critério de aceite (copiado do plano): leitor anuncia título e descrição.
+  - Dependências: nenhuma
+- **AUD-161** (S3, esforço P, —) — `h3` fixo em `EmptyState`, `ErrorState` e `ReviewUnavailable`; `JobNotFound` é tela sem saída
+  - Onde: `components/EmptyState.tsx`, `ErrorState.tsx`, `NotFound.tsx`
+  - Correção esperada: nível configurável e botão "Voltar ao mural".
+  - Critério de aceite (copiado do plano): axe sem violação de ordem de título; saída visível.
+  - Dependências: nenhuma
+- **AUD-162** (S3, esforço P, —) — Com "reduzir movimento" o ícone de carregando fica parado
+  - Onde: `styles/base.css:117-124` (`animation-duration: 0.01ms !important` sem mexer na repetição), `:91-93`, `:110-115`
+  - Correção esperada: no `@media` dar ao spinner rotação lenta/pulso e `animation-iteration-count: 1` ao resto.
+  - Critério de aceite (copiado do plano): com `reduce` o spinner muda de estado em 2 s.
+  - Dependências: nenhuma
+- **AUD-163** (S3, esforço M, migration, responsável, produção) — Apagar a conta apaga também as denúncias, os bloqueios e o registro de suspensão: quem foi denunciado some e volta limpo com o mesmo CPF
+  - Onde: `web/supabase/migrations/20261021000500_u48_publico_geral.sql:104-108` e `:140-144` (`delete from public.reports … target_type 'perfil'/'post'/'avaliacao'/'vaga'`), mesma regra em `20261020000300_u24_exclusao_completa.sql:39-43,75-79`; `blocks_blocker_id_fkey` e `blocks_blocked_id_fkey` → `auth.users` com `on delete cascade`; `accounts` (com `suspended_at`, `document_hash`) …
+  - Correção esperada: ao excluir, manter um registro mínimo e sem dado pessoal em claro: `document_hash` + data + se havia denúncia procedente/suspensão (tabela própria, só `service_role`), e usá-lo no cadastro para avisar a equipe (não precisa barrar sozinho); manter as denúncias abertas/procedentes anonimizadas (sem `reporter_id`) por um prazo; descrever isso na política de privacidade. Alternativa mais simples: recusar `delete_my_account` enquanto houver denúncia aberta contra a conta e pedir contato com o suporte.
+  - Critério de aceite (copiado do plano): teste SQL em que a conta com denúncia procedente é excluída e `signup_taken('documento', …)`/cadastro novo gera marca para a equipe (ou a exclusão é recusada); o texto da política cita o registro mínimo.
+  - Dependências: decisão do responsável e revisão do advogado (política de privacidade); "ação do responsável".
+- **AUD-164** (S3, esforço P, responsável) — E-mail "Magic link" fala em excluir a conta, mas qualquer pessoa com a chave pública pode disparar para qualquer e-mail cadastrado
+  - Onde: `web/supabase/email-templates/link-de-acesso.html:36-41,95-96`; `web/scripts/configurar-auth.mjs:67-68`; `web/src/services/remote/auth.ts:162` (`signInWithOtp` no navegador)
+  - Correção esperada: texto neutro ("Seu código de segurança da Bicos") sem citar exclusão; conferir no painel que o captcha do Auth está ligado em "Enviar OTP/magic link".
+  - Critério de aceite (copiado do plano): o e-mail não menciona exclusão; chamada a `/auth/v1/otp` sem token do captcha devolve 400.
+  - Dependências: ação do responsável (captcha no Auth).
+- **AUD-165** (S3, esforço P, responsável) — Nenhuma tela do app avisa contra golpe (dinheiro/PIX antecipado, "taxa")
+  - Onde: ausência em `pages/worker/JobDetail.tsx`, `ConfirmApplication.tsx`, `ApplicationSent.tsx`, `Selected.tsx:94-97`, `pages/shared/Help.tsx:18-73`; só `services/legal.ts:78` (Termos) e `services/safety.ts:14` (motivo de denúncia)
+  - Correção esperada: linha fixa "Nunca pague para trabalhar. Se pedirem dinheiro antes, não faça e denuncie" com botão "Denunciar" em "Você avançou", no "Aprovado" da empresa e na confirmação; pergunta nova na Ajuda.
+  - Critério de aceite (copiado do plano): texto nos 3 pontos (print) e na Ajuda.
+  - Dependências: texto aprovado pelos sócios (relacionado a AUD-009)
+- **AUD-166** (S3, esforço P, —) — Aprovar e Recusar candidato: dois ícones de 40×40 px, sem texto, lado a lado
+  - Onde: `components/CandidateRow.tsx:107-117` (`IconButton size="sm"`, `gap-1`); `components/IconButton.tsx:11`
+  - Correção esperada: botões "Aprovar"/"Recusar" com texto, 48 px e espaço entre eles.
+  - Critério de aceite (copiado do plano): alvos ≥ 48 px e ≥ 8 px de distância (`t7.cjs`).
+  - Dependências: nenhuma (relacionado a AUD-042)
+- **AUD-167** (S3, esforço P, —) — Vocabulário que ainda diverge na tela (lista com arquivo:linha em `termos.md` §2)
+  - Onde: `pages/shared/Signup.tsx:124` ("Cadastro de recrutador"); `layouts/navItems.ts:17` × `pages/worker/MyApplications.tsx:235` × `Help.tsx:48` (aba "Vagas" = "Minhas candidaturas"; o mural é "Início"); `utils/applicationStatus.ts:390-397` × `:449-451` ("Pré-selecionado" × "Aprovado"); `pages/recruiter/JobManage.tsx:153,401,414` ("vaga" = anúncio e = lugar); `ConfirmApplication.t…
+  - Correção esperada: coluna "Sugestão" de `termos.md`.
+  - Critério de aceite (copiado do plano): `rg` nas formas antigas sem resultado.
+  - Dependências: nenhuma (consolidar com C4-010, C3-012, C6-007)
+- **AUD-168** (S3, esforço P, —) — A cidade do mural só aparece dentro da folha "Filtros"
+  - Onde: `pages/worker/feed/MobileFeed.tsx:197-207` (logo, sino, busca); cidade só em `FeedSheets.tsx` ("Onde você quer trabalhar")
+  - Correção esperada: linha "cidade" tocável sob a busca (como o endereço no topo do iFood).
+  - Critério de aceite (copiado do plano): print do mural com a cidade visível e tocável.
+  - Dependências: nenhuma
+- **AUD-169** (S3, esforço P, —) — Com fonte a 200 %, a barra de baixo vira "I…", "V…", "P…" e os títulos das vagas ficam com uma palavra
+  - Onde: `src/layouts/AppNav.tsx:131` (`truncate` no rótulo das abas); `src/components/JobTile.tsx` (título `truncate`)
+  - Correção esperada: rótulos em 2 linhas (`line-clamp-2`) e grade de 1 coluna quando o `font-size` do `html` > 20 px.
+  - Critério de aceite (copiado do plano): o mesmo print com os rótulos legíveis.
+  - Dependências: AUD-157
+- **AUD-170** (S3, esforço P, —) — Todo botão de salvar vaga se chama só "Salvar vaga" (26 iguais no mural)
+  - Onde: `src/components/SaveFlag.tsx:5-12`; `src/components/JobTile.tsx:110`
+  - Correção esperada: `Salvar vaga: ${título}` e `Remover dos salvos: ${título}`.
+  - Critério de aceite (copiado do plano): nomes únicos no `ariaSnapshot` do mural.
+  - Dependências: nenhuma
+
+### Bloco 4 — Desempenho
+
+**Instruções do bloco 4 (desempenho).** Meça antes e depois com os scripts da auditoria (`web/docs/auditoria/medicoes.md` e os `.cjs` citados nos achados) e registre a tabela no relatório. Não aceite piora em Lighthouse/axe. O app tem que continuar abrindo offline depois da primeira visita.
+
+- **AUD-050** (S2, esforço P, migration, produção) — `feed_jobs` não limita o texto da busca: poucos KB de palavras repetidas prendem o banco por segundos (custo cresce com palavras × vagas)
+  - Onde: `web/supabase/migrations/20261021000400_u49_busca_vagas.sql:22,29-34,64-72` (mesmo corpo em u52:299-351, u53:20-72, u65:17-71); chamada do app `web/src/services/remote/data.ts:193` (`p_search: q.search.trim() || null`)
+  - Correção esperada: no começo da função, `left(p_search, 60)` e no máximo 6 palavras distintas (`select distinct … limit 6`); calcular o texto dobrado da vaga uma vez por linha (coluna calculada num CTE/`lateral`) e comparar as palavras contra ele; opcional: índice `pg_trgm` na coluna dobrada quando o volume pedir.
+  - Critério de aceite (copiado do plano): o mesmo `explain analyze` com 20000 palavras fica abaixo de 100 ms (texto cortado), e um teste SQL em `u49_busca_vagas.sql` chama a busca com 5000 palavras e confere que responde igual à busca com as 6 primeiras.
+  - Dependências: nenhuma.
+- **AUD-051** (S2, esforço M, —) — Mural: a 1ª foto de cada cartão carrega de uma vez em 1600 px, e as duas versões (celular e computador) ficam montadas
+  - Onde: `src/components/PhotoCarousel.tsx:209-216` (`loading={i===0?'eager':'lazy'}`, sem `width/height`/`sizes`); `src/utils/image.ts:8` (`MAX_SIDE=1600`, ~250 KB); `src/pages/worker/feed/Feed.tsx:94-95` (`<MobileFeed/>` e `<DesktopFeed/>` juntos); `src/components/JobTile.tsx:69` (`useDb()` no cartão); nenhuma URL `render/image` em `src/`
+  - Correção esperada: (a) `loading="lazy"` e `decoding="async"` em todas as fotos de cartão; (b) gerar no envio uma miniatura de ~480 px; (c) renderizar só o layout ativo, com `matchMedia(770px)`.
+  - Critério de aceite (copiado do plano): com 30 vagas com foto, a rede do mural até o primeiro scroll é ≤ 1,5 MB, e `.tile-grid` aparece 1 vez.
+  - Dependências: nenhuma
+- **AUD-052** (S2, esforço M, —) — `.in('…', [centenas de ids])` monta URLs de 8 a 19 KB: "Minhas vagas" de empresa movimentada pode falhar
+  - Onde: `src/services/remote/data.ts:74-86` (`eventsOf`), `:46-60` (`companiesById`, `workersById`, `jobsById`), `:402-408` (`putCompanyJobs`: todas as candidaturas das vagas abertas + 30 encerradas, sem limite), `:117-125`
+  - Correção esperada: dividir os ids em lotes de ≤ 50, ou trazer eventos e trabalhadores por RPC (POST); paginar `putCompanyJobs` de 30 em 30.
+  - Critério de aceite (copiado do plano): com o Supabase falso, 600 candidaturas não geram URL > 4 KB.
+  - Dependências: nenhuma
+- **AUD-172** (S3, esforço M, —) — A versão de produção leva dentro os dados de demonstração e a senha da conta de exemplo
+  - Onde: `web/src/services/store.ts:8` e `selectors.ts:3` (`import … data/seed`), `auth.ts:7,44` (`ACCOUNTS`, `DEMO_PASSWORD`), `mode.ts:9` (`IS_DEMO` é `!isSupabaseConfigured()`, calculado em tempo de execução, não uma constante de build); `vite.config.ts:151` só faz `define` no demo.
+  - Correção esperada: `IS_DEMO` virar constante de build (`define` ou expressão literal de `import.meta.env`) e o seed/contas carregados só com `import()` dentro de `if (IS_DEMO)`; conferir com o mesmo `grep` no CI (falhar se achar `bicos123` no build real).
+  - Critério de aceite (copiado do plano): o `grep` acima não acha `bicos123`, "Meridiano" nem `@bicos.demo` no build real; tamanho do chunk principal menor.
+  - Dependências: nenhuma.
+- **AUD-171** (S3, esforço M, —) — Lista do IBGE (≈64 KB gz) no pacote principal e prefetch de todas as telas pesam na primeira visita
+  - Onde: `services/remote/data.ts:10` (import estático de `cityByLabel`) → `services/cities.ts:3` → `data/cidades.ts`; `routes.ts:204-206` + `App.tsx:146-149` (`preloadAllScreens` no ocioso, sem olhar `saveData`)
+  - Correção esperada: busca de cidade assíncrona (`import()`/fatiar por UF); prefetch só do papel da sessão e pulando `saveData`/conexão lenta.
+  - Critério de aceite (copiado do plano): principal < 140 KB gz, sem `cidades` no principal.
+  - Dependências: AUD-172
+- **AUD-173** (S3, esforço P, —) — O service worker baixa 0,88 MB de uma vez na primeira visita (heic2any, mapa, Firebase, tela da equipe, fontes pouco usadas)
+  - Onde: `vite.config.ts:127` (`globPatterns: ['**/*.{js,css,html,woff2,svg}','icons/*.png']`, sem `globIgnores`); `:103` (`registerType:'prompt'`); `src/services/pwa.ts:11-23`; `dist-demo/sw.js`
+  - Correção esperada: `globIgnores` para `heic2any-*`, `MapCanvas-*`, `firebaseSdk-*`, `Admin-*`, `icons/og.png` e `space-mono-*`; `runtimeCaching` `StaleWhileRevalidate` para `/assets/*`.
+  - Critério de aceite (copiado do plano): `cold.cjs` aos 25 s com ≤ 400 KB e ≤ 60 pedidos; o app continua abrindo offline depois da primeira visita.
+  - Dependências: AUD-171
+- **AUD-174** (S3, esforço M, —) — O mural espera até 5 idas e voltas ao banco, uma depois da outra, antes de desenhar
+  - Onde: `src/services/remote/data.ts:179-232` (`loadFeed`) e `:304-330` (`loadMyApplications`)
+  - Correção esperada: `savedIds()` em paralelo com `feed_jobs`; aplicar a 1ª página assim que chegar, e a checagem de "stale" em segundo plano; uma RPC `feed_with_context` leva a 1 viagem.
+  - Critério de aceite (copiado do plano): ≤ 2 viagens em série no teste com `fakeSupabase.ts`.
+  - Dependências: nenhuma
+- **AUD-175** (S3, esforço P, —) — PIX: um relógio de 1 s refaz a tela inteira e a consulta a cada 5 s não para com a aba escondida
+  - Onde: `src/pages/recruiter/BoostPayment.tsx:49-55` (`useSecondsLeft`: `setInterval` sempre ligado, mesmo sem pagamento aguardando) e `:80-85` (`getPayment` a cada 5 s)
+  - Correção esperada: ligar o relógio só com `status==='aguardando'`, isolar o contador num componente, pausar com `visibilitychange` e recuar (5→15→30 s).
+  - Critério de aceite (copiado do plano): sem re-render do formulário a cada segundo (React Profiler) e 0 consultas com a aba escondida.
+  - Dependências: nenhuma
+- **AUD-176** (S3, esforço M, —) — Vídeo de até 50 MB sobe sem compressão, sem prazo e sem como cancelar
+  - Onde: `src/services/remote/storage.ts:27` (`MAX_VIDEO_BYTES=50MB`), `:44-62` (XHR sem `timeout`/`abort`; só `onerror`, em `:58`), `:76-87` (vídeo não passa por `compressImage`)
+  - Correção esperada: limite de 20 MB ou 30 s, `xhr.timeout=120000` com mensagem, botão Cancelar com `xhr.abort()`.
+  - Critério de aceite (copiado do plano): com um XHR falso que nunca termina, a tela sai do estado ocupado em 120 s.
+  - Dependências: AUD-034, AUD-141
+
+### Bloco 5 — Código, testes e processo
+
+**Instruções do bloco 5 (código, testes e processo).** Mudanças de CI e de proteção de branch primeiro numa branch/PR de teste; ligar a proteção do `master` por último e **só com "pode"** (é configuração do repositório). Testes novos devem ser determinísticos (sem dependência de hora/fuso/ordem) e rodar nos fusos `UTC`, `America/Sao_Paulo` e `Asia/Tokyo`.
+
+- **AUD-053** (S2, esforço M, —) — Nada segura um commit com CI vermelho: master sem proteção, staging e site de teste não esperam o CI, e o plano de produção liga o Cloudflare Pages ao master
+  - Onde: `.github/workflows/web.yml:8-18`; `staging.yml:10-14`; `site.yml:8-12`; `web/docs/CHECKLIST-LANCAMENTO.md:83`; `web/docs/IMPLANTACAO.md:98-104`; `CLAUDE.md:37-42`; `web/scripts/deploy.sh:23-24`
+  - Correção esperada: proteger o master exigindo os checks `checks` e `sql`; staging e site via `workflow_run` (sucesso) ou `needs`; no Cloudflare Pages usar Direct Upload (`deploy.sh producao`) ou branch `producao` com merge manual, nunca o master; `deploy.sh producao` rodar lint+testes e conferir árvore limpa.
+  - Critério de aceite (copiado do plano): push com teste quebrado não dispara migration, função nem Pages; o runbook diz qual gatilho publica.
+  - Dependências: O1-008
+- **AUD-177** (S3, esforço M, —) — Testes SQL sem as regras mais importantes de autorização, Storage e pagamento
+  - Onde: `tests/z01_candidaturas.sql`, `tests/seguranca.sql:38`, `tests/l22_desfazer_recusa.sql`, `tests/z12_fotos.sql:22-24`, `tests/z02_pagamentos.sql`, `tests/x01_mural.sql`, `tests/y01_y04_ciclo.sql`, `tests/l10_cnpj.sql`, `tests/l11_validacao_perfil.sql`, `tests/l13_conta_google.sql`, `tests/f12_presenca.sql`, `tests/y24_verificacao.sql`
+  - Correção esperada: `authz_cruzado.sql` com 2 empresas e 2 trabalhadores; teste de Storage com `insert into storage.objects` como authenticated; completar os demais itens.
+  - Critério de aceite (copiado do plano): cada item acima com teste negativo.
+  - Dependências: nenhuma
+- **AUD-054** (S2, esforço M, função, produção) — Nenhuma Edge Function tem teste; a assinatura do webhook de pagamento e as 10 funções só são conferidas com chamadas sem login
+  - Onde: `web/supabase/functions/*/index.ts` (10 funções, 1.279 linhas com `_shared/`); `web/supabase/functions/_shared/mercadopago.ts:60-83` (`validSignature`); `web/scripts/staging/conferir-funcoes.sh:27-37`; `web/e2e/fluxos/08-cadastro-google.spec.ts:1-5,57-66`; `web/e2e/local/servidor.mjs:11`
+  - Correção esperada: (1) `deno test` no CI (já há `setup-deno`) com testes de `validSignature` (assinatura certa, errada, `ts` velho, `ts` em ms, sem segredo), `captcha`, `requestUser`; (2) um teste por handler com `Request` simulado e cliente administrativo falso, começando por `webhook-pagamento` (idempotente, valor errado, pagamento de outra empresa), `criar-cobranca`, `excluir-conta`; (3) no E2E, `entrar-com-firebase` com um ID token de teste assinado pelo emulador do Firebase ou, no mínimo, o ramo `sem-conta` pelo `fetch`.
+  - Critério de aceite (copiado do plano): `deno test supabase/functions` verde no CI; pelo menos 5 casos de `validSignature`; cada `index.ts` com um teste de recusa e um de sucesso.
+  - Dependências: nenhuma (relacionado a AUD-177, que lista o lado SQL dos pagamentos)
+- **AUD-178** (S3, esforço P, —) — Testes que só passam em banco vazio e mexem no banco inteiro
+  - Onde: `tests/x01_mural.sql:26-29,45` (array exato e `count(*)=5` sobre todas as vagas); `tests/y01_y04_ciclo.sql:42,49-50,62,67` (`conclude_finished_jobs()` sem argumento; contagem de avisos por título sem filtrar a conta); `tests/f12_presenca.sql:31-32` (`remind_presence() = 1` global)
+  - Correção esperada: filtrar pelos ids do teste e usar `conclude_finished_jobs(p_worker, p_company)`; corrigir a frase do CLAUDE.md §5.
+  - Critério de aceite (copiado do plano): rodar a suíte num banco com dados de exemplo continua verde.
+  - Dependências: nenhuma
+- **AUD-179** (S3, esforço P, função, produção) — Pequenas folgas na validação: assinatura do webhook com `ts` não numérico, `APP_ORIGIN` aceita `https://*.com`
+  - Onde: `web/supabase/functions/_shared/mercadopago.ts:76`; `web/supabase/functions/_shared/origin.ts:17-20`
+  - Correção esperada: `if (!Number.isFinite(ts)) return false;` e exigir pelo menos 3 rótulos depois de `*.` (ex.: `*.algo.pages.dev`), com teste em `edgeOrigin.test.ts`.
+  - Critério de aceite (copiado do plano): os dois casos acima passam a ser recusados em teste.
+  - Dependências: nenhuma.
+- **AUD-180** (S3, esforço P, —) — Os artefatos do E2E (relatório e rastros do Playwright) ficam em repositório público, sem retenção curta
+  - Onde: `.github/workflows/web.yml:198-207` (também sobe `web/e2e/resultados/artefatos`); `.github/workflows/staging.yml:193-200` (sobe `web/e2e/resultados/relatorio`); `web/e2e/playwright.config.ts` (`trace: 'retain-on-failure'`, `screenshot: 'only-on-failure'`)
+  - Correção esperada: `retention-days: 3`; subir só o resumo (sem `artefatos`/trace) em repositório público; `trace: 'off'` ou `'on-first-retry'` com mascaramento; usar um e-mail de projeto em `E2E_EMAIL_BASE`.
+  - Critério de aceite (copiado do plano): nenhum artefato público contém `trace.zip`; `retention-days` definido nas duas ações.
+  - Dependências: nenhuma (relacionado a AUD-082)
+- **AUD-181** (S3, esforço P, produção) — O staging acumula lixo de teste e dado de gente real, sem rotina de limpeza
+  - Onde: staging `setyxomsbfrkneqqfoam`; `web/e2e/limpeza.ts`; `anonymize_account` (Y15, anterior ao U24) - Prova (contagens no staging): 223 linhas em `workers` e 30 em `companies` sem conta, todas "Conta excluída", de 19 e 20/10 (resto da anonimização anterior ao U24); 12 linhas em `profiles` legada (o gatilho copia nome e e-mail); 12 contas, 11 delas `@gmail.com`, criadas até 28/1…
+  - Correção esperada: `delete from workers/companies` dos órfãos "Conta excluída"; um cron (ou passo do `staging.yml`) que apague contas de teste com mais de N dias; esvaziar `profiles` legada no staging.
+  - Critério de aceite (copiado do plano): `select count(*)` dos órfãos = 0 e uma rotina agendada registrada.
+  - Dependências: nenhuma (relacionado a AUD-072, AUD-024)
+- **AUD-182** (S3, esforço ?, —) — O E2E nunca executa de verdade 5 das 10 Edge Functions, simula o Google com `createUser` e finge o CNPJ e o mapa; também não tem visitante nem pagamento (aspecto novo de AUD-054 e AUD-189)
+  - Onde: `web/e2e/fluxos/08-cadastro-google.spec.ts:49-66`; `web/e2e/apoio.ts:245-269`; `web/e2e/fluxos/` (todos os specs); `web/e2e/local/servidor.mjs:11`
+  - Correção esperada: spec de visitante em `/v/:id` e `/ajuda`; spec de impulso com um servidor falso do Mercado Pago, que assina o webhook com HMAC e confirma o `boost_ends_at`; testes de `entrar-com-firebase` chamando `verifyFirebaseToken` com `fetcher` e JWKS injetados, que a função já aceita; `verificar-cnpj` com `BRASILAPI_URL` apontando para um servidor falso (a função já lê essa variável); subir mais funções no `servidor.mjs`.
+  - Critério de aceite (copiado do plano): o `web.yml` roda um spec de pagamento e outro de visitante; cada função tem ao menos uma chamada real no E2E ou um teste unitário.
+  - Dependências: —
+- **AUD-183** (S3, esforço M, —) — O corpo demo deixa passar o que o banco recusa (candidatura, convite, presença, aviso, cadastro, avaliação)
+  - Onde: demo `web/src/services/applications.ts:282-316` (`submitApplication`) e `:502-530` (`confirmPresence`); `invites.ts:55-84` (`inviteWorker`); `alerts.ts:121-143` (`saveJobAlert`); `auth.ts:161-176` (`isFreeForSignUp`) e `:205-218` (`createAccount`); `reviews.ts:101` (tags); `payments.ts:44-50` (`boostBlocker`). Banco: `submit_application`, `limit_application_spam`, `refuse_bl…
+  - Correção esperada: (a) levar para o demo as regras baratas (perfil completo, bloqueio, convite 20/dia, presença de bico passado, tags permitidas, conta não confirmada não segura documento); (b) acrescentar um teste de contrato que roda os mesmos cenários nos dois modos, ou, no mínimo, uma lista de mensagens/condições por função em `CONTRATO-BACKEND.md` conferida por teste; (c) não precisa replicar spam/suspensão no demo se ficar documentado.
+  - Critério de aceite (copiado do plano): cenários `candidatar com perfil incompleto`, `candidatar a empresa bloqueada`, `convidar 21 vezes`, `confirmar presença de bico passado` dão o mesmo código (`conflito`/`nao_autorizado`) nos dois modos em teste.
+  - Dependências: nenhuma.
+- **AUD-184** (S3, esforço P, —) — Acessibilidade e desempenho no CI medem a demonstração, e duas telas varridas pelo axe são "Página não encontrada"
+  - Onde: `web/scripts/a11y-check.mjs:27,33`; `web/src/routes.ts:154-155`; `.github/workflows/web.yml:47-48,89-109`; `web/vite.config.ts:155`; `web/scripts/lighthouse-check.mjs:6`; `web/docs/RELATORIO-FINAL.md:21-23`
+  - Correção esperada: corrigir os 2 caminhos; falhar se o h1 for "Página não encontrada" ou a URL final divergir; servir também o build real (modo staging/E2E) e incluir páginas públicas; subir meta de desempenho para ~90.
+  - Critério de aceite (copiado do plano): renomear uma rota sem mudar o script deixa o CI vermelho; o axe lista as páginas públicas.
+  - Dependências: nenhuma
+- **AUD-185** (S3, esforço P, produção) — O `--mostrar` do configurar-auth.mjs não mostra o estado atual, mas o roteiro usa isso como "desfazer" do Auth
+  - Onde: `web/scripts/configurar-auth.mjs:10,90-103`; `web/docs/IMPLANTACAO.md:96`
+  - Correção esperada: antes do PATCH fazer `GET …/config/auth`, salvar em arquivo fora do repositório (a API não devolve segredos) e imprimir o diff "atual → novo"; documentar que o rollback é reaplicar esse arquivo.
+  - Critério de aceite (copiado do plano): `--mostrar` com token imprime atual → novo por campo; o roteiro cita o arquivo de backup.
+  - Dependências: nenhuma (ponto bom no mesmo script: recusa produção sem `CONFIRMO_PRODUCAO=sim`, :25)
+- **AUD-186** (S3, esforço M, responsável) — O "backup manual antes de qualquer mudança" do X30 é uma frase: sem script, sem teste de restauração e sem cópia da chave que decifra os CPFs
+  - Onde: `web/docs/DECISOES.md:2488-2495`; `web/docs/IMPLANTACAO.md:9-19,143-146`; `web/scripts/exportar-app-antigo.sh:17-21`; `web/docs/LGPD.md:65`
+  - Correção esperada: `scripts/backup-producao.sh` (pg_dump + data/hora + `umask 077` + conferência de tamanho), ensaio de restauração no staging registrado em documento, e registrar onde a chave do documento fica guardada fora do Supabase (cofre dos sócios).
+  - Critério de aceite (copiado do plano): o roteiro chama o script; existe registro "restaurado no staging em <data>, N tabelas, CPF decifrado ok".
+  - Dependências: ação do responsável (cofre; decisão Pro do X30)
+- **AUD-187** (S3, esforço P, —) — Dependências e actions: 9 vulnerabilidades em ferramentas de desenvolvimento sem `npm audit` no CI, sem Dependabot, actions por tag, Node 22 abaixo do que o Firebase pede
+  - Onde: `.github/workflows/web.yml` (sem audit; `uses: …@v4`); `web/package.json:25-26`; `.github/` (sem `dependabot.yml`); `web.yml:101`
+  - Correção esperada: passo `npm audit --omit=dev --audit-level=high` no CI; Dependabot semanal (npm e actions); `permissions: contents: read` nos 2 workflows; `engines`/`.nvmrc` coerentes com o Firebase.
+  - Critério de aceite (copiado do plano): CI falha com dependência de produção vulnerável; `npm ci` sem EBADENGINE.
+  - Dependências: nenhuma
+- **AUD-188** (S3, esforço P, produção) — Scripts de deploy: a trava de produção do deploy.sh é uma variável de ambiente, publica o que está no disco e não confere que o build é o da produção
+  - Onde: `web/scripts/deploy.sh:17-19,23-24,27,33`; `web/scripts/sentry-sourcemaps.mjs:21-25`; `web/scripts/staging/aplicar-banco.sh:19-21,71-75`; `web/scripts/exportar-app-antigo.sh:13-16,20`
+  - Correção esperada: `deploy.sh producao`: `git status --porcelain` vazio, commit conferido, `npm run lint && npm test`, exigir o ref da produção no JS, tag `deploy-AAAAMMDD-HHMM`, `--commit-dirty=false`; `umask 077` no export.
+  - Critério de aceite (copiado do plano): rodar com `.env.production.local` do staging aborta; árvore suja aborta.
+  - Dependências: AUD-053
+- **AUD-189** (S3, esforço M, —) — As telas só são abertas no build de demonstração (axe e rolagem); o modo real só é visto pelo E2E pós-merge, sem visitante, sem rede ruim e só em Chromium Pixel 7
+  - Onde: `web/vite.config.ts` (`test.environment: 'node'`, `include: ['src/**/*.test.ts']`); `web/e2e/playwright.config.ts:19-21` (`devices['Pixel 7']`); `web/e2e/fluxos/*`
+  - Correção esperada: (1) um Playwright "sem backend" no job `checks` (sem segredos): build real (`--mode staging` já existe) com `page.route` respondendo ao Supabase; casos: visitante em `/v/<slug>`, `/ajuda`, `/login`, `/mural` sem conta, rede offline (`context.setOffline`) e 3G lento; (2) perfil extra no `playwright.config.ts` (Android pequeno 360×640 com `cpuThrottling` + WebKit); (3) testes de componente com jsdom para `Modal/Sheet/Button/Input` (ver C5-020); (4) subir um piso de cobertura no CI (hoje não há medição).
+  - Critério de aceite (copiado do plano): o caso "visitante abre o link público" falha no commit anterior ao conserto do AUD-007 e passa depois; relatório de cobertura publicado no CI com piso por pasta.
+  - Dependências: AUD-007, C5-020 (este achado é o lado de testes dos dois)
+- **AUD-190** (S3, esforço P, —) — O job `e2e` do `web.yml` passa vazio e duplica o do `staging.yml`; LEIA.md, E2E.md e relatorio.ts descrevem o que não roda
+  - Onde: `.github/workflows/web.yml:142-207`; `.github/workflows/staging.yml:128-201`; `web/e2e/LEIA.md:4,21-27`; `web/docs/E2E.md:3,7`; `web/e2e/relatorio.ts:8-16`; `web/e2e/local/servidor.mjs:11`
+  - Correção esperada: apagar o job `e2e` do `web.yml`; atualizar `LEIA.md` para o fluxo do `staging.yml`; incluir `f8` em `relatorio.ts`; trocar "13 testes" por contagem calculada; ou remover a seção "Local" se não for mais mantida.
+  - Critério de aceite (copiado do plano): só um job `e2e`; `E2E.md` gerado lista os 8 fluxos e a contagem real.
+  - Dependências: nenhuma
+- **AUD-191** (S3, esforço P, —) — O E2E deixa lixo e mexe em dados que não são dele no staging
+  - Onde: `web/e2e/fluxos/04-diaria-avaliacao.spec.ts:46`; `web/e2e/fluxos/07-equipe.spec.ts:144-154`; `web/e2e/limpeza.ts:17-30`; `web/e2e/apoio.ts:59-64`; `web/e2e/playwright.config.ts:17`
+  - Correção esperada: usar `conclude_finished_jobs` com filtro (como sugerido no AUD-178) ou conferir só a vaga do teste; no `limpeza.ts` contar sucessos e falhar (ou avisar) se algum `deleteUser` der erro, e apagar `staff_actions` das contas do teste pela service_role; `globalSetup` que apaga `estado.json`.
+  - Critério de aceite (copiado do plano): depois de uma execução, `select count(*) from staff_actions` volta ao valor de antes; a limpeza sai com erro se uma conta não foi apagada.
+  - Dependências: AUD-178
+- **AUD-192** (S3, esforço P, —) — Os testes Vitest não restauram globais/ambiente sozinhos: uma asserção que falha contamina os testes seguintes
+  - Onde: `web/vite.config.ts` (`test:` sem `unstubGlobals`, `unstubEnvs`, `restoreMocks`); `web/src/__tests__/remote.test.ts:655,931,1030,1230,1242,1311,1489` (cada `vi.stubGlobal/stubEnv` é desfeito na última linha do próprio teste); o `describe('remote: data and actions', …)` (linhas 503-1333) não tem `afterEach`; `firebaseSignIn.test.ts:93` (tem `afterEach`, bom)
+  - Correção esperada: `test: { unstubGlobals: true, unstubEnvs: true, restoreMocks: true }` no `vite.config.ts` e trocar as esperas fixas por `vi.waitFor`.
+  - Critério de aceite (copiado do plano): forçar uma falha no meio do teste de pagamento não derruba o teste 1233.
+  - Dependências: nenhuma
+- **AUD-193** (S3, esforço P, —) — Asserções frouxas, ramos condicionais e um arquivo com nome enganoso
+  - Onde: `web/src/__tests__/supabase.test.ts:187-196`; `contacts.test.ts:105-106`; `services.test.ts:404`; `applications.test.ts:304-308`; `remote.test.ts:975,1444`; `utils.parity.test.ts:1-3`; `address.test.ts:70`
+  - Correção esperada: trocar `if (...) return` por `expect(app).toBeDefined()` + falha explícita; renomear para `format.test.ts`; criar uma tabela única de vetores de CPF/CNPJ (JSON) lida pelo Vitest, pelo E2E e colada no teste SQL.
+  - Critério de aceite (copiado do plano): nenhum `if` envolvendo `expect`/`return` precoce nos testes; um conjunto de vetores usado nas três camadas.
+  - Dependências: nenhuma
+- **AUD-194** (S3, esforço P, —) — O harness dos testes SQL: `fails()` só confere o SQLSTATE e `run.mjs` sai com 0 sem `DATABASE_URL`
+  - Onde: `web/supabase/tests/_helpers.sql:84-98`; `web/supabase/tests/run.mjs:41-44`; `.github/workflows/web.yml:124-127`
+  - Correção esperada: `fails(sql, sqlstate, trecho_da_mensagem default null)` e usar nos testes de BC409/BC422; em `run.mjs` sair 2 se `DATABASE_URL` vazio e `CI=true`; recusar arquivo com `commit`.
+  - Critério de aceite (copiado do plano): teste que muda a regra recusante e mantém o código passa a falhar.
+  - Dependências: AUD-177, AUD-177 (cobertura negativa que falta)
+- **AUD-195** (S3, esforço P, responsável) — Não existe alvo de navegadores: o build promete uma coisa e o código e o CSS exigem outra
+  - Onde: `web/package.json` (sem `browserslist`); `vite.config.ts:156`; `CLAUDE.md` e `web/docs` não dizem quais celulares são suportados
+  - Correção esperada: decidir e documentar (ex.: "Chrome/WebView ≥ 100, Safari ≥ 15.4"), pôr em `browserslist` e `build.target`, e rodar o E2E em WebKit no CI.
+  - Critério de aceite (copiado do plano): seção "Navegadores suportados" no README e job WebKit verde.
+  - Dependências: AUD-142; decisão dos sócios
+
+### Bloco 6 — Documentação e higiene
+
+**Instruções do bloco 6 (documentação e higiene).** Gere números por comando (contagem de testes, migrations, RPCs) em vez de escrevê-los à mão. Cada afirmação factual precisa de um comando que a confira. Documentos históricos: mover para `web/docs/historico/` com aviso ou apagar, **conforme a decisão dos sócios** (LIMPEZA.md D2).
+
+- **AUD-196** (S3, esforço P, migration, produção) — Higiene: duplicações e comentários/documentos desatualizados
+  - Onde: (a) três listas de meses: `utils/dates.ts:5`, `format.ts:74`, `jobInfo.ts:161`; (b) duas `fold` diferentes: `utils/text.ts:2` e `addressText.ts:4`; (c) `types/supabase.ts:1-5` diz que o SQL é "rascunho" e que o back end escreve as migrations a partir dele (hoje é o contrário); declara 18 de 39 tabelas e 50 de 147 RPCs; o drift-check (l.613-644) só vê colunas declaradas (falt…
+  - Correção esperada: um `MONTHS`, renomear uma `fold`, atualizar cabeçalhos, unificar a tela 404.
+  - Critério de aceite (copiado do plano): sem duplicata nem cabeçalho errado.
+  - Dependências: nenhuma
+- **AUD-197** (S3, esforço P, —) — `seguranca.sql` e a documentação afirmam proteção que não existe mais (endereço, nota, selo, impulso "não saem por select")
+  - Onde: `web/supabase/tests/seguranca.sql:1-2,21-22` (cabeçalho "nenhuma conta comum lê … endereço da obra"; teste de `get_job_addresses` = 0 linhas); `CLAUDE.md` §4 "grants por coluna (WhatsApp, endereço, documento, nota, selo e impulso não saem por `select`)"; `web/docs/SUPABASE.md:51-53` ("não saem nem mudam por select/update")
+  - Correção esperada: reescrever o cabeçalho e a asserção do teste (colunas realmente fechadas: `whatsapp`, `document_*`, `hidden_*`, `cnpj_check`, `identity_reason`, `suspended_reason`; colunas que não podem ser alteradas: `rating`, `verified`, `boost_ends_at`…) e corrigir CLAUDE.md/SUPABASE.md.
+  - Critério de aceite (copiado do plano): o teste falha se alguma dessas colunas fechadas virar legível por `authenticated`/`anon`.
+  - Dependências: AUD-002 (se o endereço voltar a fechar, o teste atual volta a fazer sentido).
+- **AUD-198** (S3, esforço P, migration, produção) — Documentos descrevem o banco de antes (staging "sem migrations", 48 arquivos, 42/54 RPCs)
+  - Onde: `CLAUDE.md` §4 ("Staging … 0 migrations no histórico", "48 arquivos, 09/10 → 16/10", "pendentes na produção: lanc06…lanc13 e as r*", "42 RPCs para authenticated"); `web/docs/ADVISORS.md:13` (54 avisos `authenticated_security_definer_function_executable`); `web/docs/SUPABASE.md:51-53`
+  - Correção esperada: atualizar os três textos e acrescentar ao CI/`conferir-migrations.sh` a contagem esperada (ou remover os números).
+  - Critério de aceite (copiado do plano): os números do texto batem com `list_migrations` e `get_advisors`.
+  - Dependências: nenhuma.
+- **AUD-055** (S2, esforço M, migration, produção) — O roteiro de produção (IMPLANTACAO.md) parou na migration u12: 13 migrations ficam de fora, sem "desfazer", e há passos que não funcionam como escritos
+  - Onde: `web/docs/IMPLANTACAO.md:28,35-40,47-48,51-64,69-72,98-106`; `web/supabase/APLICAR.md:52,464-470,618-632`; `web/scripts/staging/publicar-funcoes.sh:2,17-18`; `web/.env.example`; `web/build/env.ts`; `CLAUDE.md:156`
+  - Correção esperada: regenerar o passo 4 a partir do APLICAR.md; "Desfazer/backup obrigatório" nas destrutivas; uma única ferramenta (ex.: `supabase db push` depois do `repair`); completar Firebase e lista de 10 funções; citar o arquivo no CLAUDE.md §8.
+  - Critério de aceite (copiado do plano): teste/CI que compara os #n do APLICAR.md com o IMPLANTACAO.md e falha se divergir; CLAUDE.md aponta para o roteiro.
+  - Dependências: AUD-198 (números), AUD-138 (trava de backup da migration destrutiva)
+- **AUD-199** (S3, esforço P, migration, produção) — Textos e comentários que ficaram para trás depois do U48/U53/U24 (inclui um "construtora" no aviso de suspensão)
+  - Onde: `20261021000500_u48_publico_geral.sql:70` (`coalesce(…companies.name…, 'construtora')` dentro do aviso "… na construtora foi cancelado pela equipe…", visível no staging em `admin_suspend_account`); `20261021000700_u52_dias_e_local.sql:6` ("o número da casa continua escondido como o resto do endereço") e `20261021000600_u51_endereco.sql:8-10` (ponto "100 a 200 m", sem valor d…
+  - Correção esperada: trocar o valor padrão por 'a empresa'; atualizar os comentários na próxima migration que tocar nessas funções; trocar a lista de frases do teste U48 por uma busca de padrão (`prosrc ~* '\mconstrutora\M'` fora de aspas simples de identificadores internos) com a lista de exceções.
+  - Critério de aceite (copiado do plano): `select proname from pg_proc where prosrc ~ 'Construtora|obra|EPI'` vazio; o teste U48 falha se alguém reintroduzir o texto.
+  - Dependências: nenhuma.
+- **AUD-200** (S3, esforço P, função, produção) — Variáveis do Firebase não estão documentadas nos exemplos de ambiente
+  - Onde: `web/.env.example` (46 linhas, nenhuma `VITE_FIREBASE_*`); `web/src/env.d.ts:19-22`, `web/src/services/features.ts:15-18` (usam as 4); `web/supabase/functions/.env.staging.example` (sem `FIREBASE_PROJECT_ID`, que `entrar-com-firebase/index.ts:30,36` exige — sem ele a função responde 503 `desligado`); `web/docs/SUPABASE.md:17` ("Todas as variáveis estão explicadas em web/.env…
+  - Correção esperada: acrescentar `VITE_FIREBASE_API_KEY/AUTH_DOMAIN/PROJECT_ID/APP_ID` ao `.env.example` e `FIREBASE_PROJECT_ID` ao `.env.staging.example`; trocar o `mailto:` por um endereço de função (ex.: `suporte@…`) na doc.
+  - Critério de aceite (copiado do plano): o teste que confere `.env.example` (se existir) ou um `grep` no CI falha quando uma variável lida por `env.d.ts` não está no exemplo.
+  - Dependências: nenhuma.
+- **AUD-201** (S3, esforço P, responsável) — O checklist de lançamento não tem dono nem prazo em nenhum item, e o estado "feito/falta" está desatualizado
+  - Onde: `web/docs/CHECKLIST-LANCAMENTO.md` (linhas 18,20,47-48,77,83,139-140,223); `web/docs/DECISOES.md:2484-2501`; `web/docs/VOLUME.md:47`; `web/docs/TESTE-MANUAL.md`
+  - Correção esperada: colunas "Dono" e "Até quando"; seção "Bloqueia o lançamento" no topo (Pro, advogado, dados da empresa, DNS, Brevo SPF/DKIM, Turnstile, Sentry/healthchecks, WhatsApp do suporte); marcar o que já foi feito; registrar a data do teste manual.
+  - Critério de aceite (copiado do plano): cada `[ ]` com nome e data; o topo lista os bloqueadores e é a única definição de "pronto".
+  - Dependências: ação do responsável (decidir donos)
+- **AUD-202** (S3, esforço P, responsável) — Documentos da migração antiga e relatórios velhos confundem: mandam rodar comandos que não existem e descrevem telas que saíram
+  - Onde: `web/docs/VALIDACAO.md:7,13,45,65,73,83`; `MAPEAMENTO.md:7-12`; `RELATORIO_PARIDADE.md` (728 linhas); `RELATORIO-FINAL.md:12-26`; `E2E.md` + `e2e-prints/*`; `CONTRATO-BACKEND.md:49,189`; `README.md:59-64`; `web/README.md:66,77-89`; `LIMPEZA.md:253-256`
+  - Correção esperada: executar o D2 (apagar ou mover para `docs/historico/` com aviso); não versionar E2E.md/prints gerados (usar o artefato do CI) ou regerar; atualizar README.md e web/README.md.
+  - Critério de aceite (copiado do plano): `links.mjs` sem citações quebradas; nenhum documento manda rodar comando inexistente.
+  - Dependências: decisão do responsável (D2 do LIMPEZA)
+
+### Bloco 7 — Melhorias de produto (agora)
+
+**Instruções do bloco 7 (melhorias).** Só depois dos blocos 0 a 2 e conforme as decisões 8, 15 e 16. Cada melhoria é independente, pequena e com print antes/depois e critério de aceite medido. Se crescer, pare e reporte.
+
+- **AUD-203** (M, esforço P, —) — Compartilhar vaga só oferece WhatsApp; sem "Copiar link"
+  - Onde: `utils/share.ts` (`navigator.share` ou `wa.me`)
+  - Correção esperada: botão "Copiar link".
+  - Critério de aceite (copiado do plano): botão copia o link `/v/<slug>`.
+  - Dependências: AUD-007
+- **AUD-204** (M, esforço M, responsável) — Link da vaga no WhatsApp mostra sempre a mesma pré-visualização
+  - Onde: `web/index.html:33-45` (og:* fixos, `og:url`=`__SITE_URL__/`); `pages/shared/PublicJob.tsx` (sem `<title>` dinâmico); `web/public/` (sem pré-renderização)
+  - Correção esperada: Pages Function ou Worker em `/v/*` que consulta `public_job_card` e devolve o HTML com `og:title/description` da vaga, sem endereço.
+  - Critério de aceite (copiado do plano): `curl -A WhatsApp /v/<slug>` traz `og:title` com a vaga.
+  - Dependências: AUD-007 e a decisão de hospedagem
+- **AUD-205** (M, esforço P, —) — Cadastro: cada "Continuar" fecha o teclado
+  - Onde: `pages/shared/Signup.tsx:285-295,595-612` (`key={field.id}`); `hooks/useTextField.ts:7-11,28-33`
+  - Correção esperada: focar o novo campo também no toque; medir em aparelho.
+  - Critério de aceite (copiado do plano): o teclado fica aberto entre os passos do cadastro.
+  - Dependências: nenhuma
+- **AUD-206** (M, esforço P, função, produção) — Valor pago não é conferido antes de confirmar o impulso
+  - Onde: `web/supabase/functions/webhook-pagamento/index.ts:43-45` (confirma por `status==='approved'` + `external_reference`); `confirm_boost_payment(p_payment_id)` sem valor
+  - Correção esperada: `confirm_boost_payment(p_payment_id, p_amount_cents, p_provider_payment_id)` com BC409 se não bater, antes de ligar o Mercado Pago.
+  - Critério de aceite (copiado do plano): valor menor → BC409 e pagamento segue `aguardando`.
+  - Dependências: nenhuma
+- **AUD-207** (M, esforço P, migration, produção) — `feed_jobs` não usa `blocked_between`; só o app filtra bloqueados
+  - Onde: `migrations/20261016000400_lanc13_mural_volume.sql:24-89`
+  - Correção esperada: acrescentar o filtro no servidor.
+  - Critério de aceite (copiado do plano): teste SQL: conta bloqueada não vê a vaga no `feed_jobs`.
+  - Dependências: nenhuma
+- **AUD-208** (M, esforço P, função, responsável, produção) — Roteiro de aplicação na produção: dados atuais não correm risco, mas há 9 colunas apagadas sem volta, 2 funções removidas e ordem rígida
+  - Onde: `u06` (`drop function close_job`), `u12` (`drop column workers.oficio_id, specialties, companies.tipo_obra`), `u32` (`availability, years_experience, desired_pay, travel_km`), `u63` (`companies.contact_name`), `u65` (`drop function feed_jobs(12 args)`), `u62` (`delete from addresses` de empresas), `u10` (zera WhatsApp repetido), `u37` (limpeza de logins Google sem conta)
+  - Correção esperada: antes do "pode": (1) `pg_dump` manual; (2) aplicar em ordem `lanc06 … r04, u01 … u67` (os `u*` usam funções de `lanc06`, `lanc07`, `r03`, `r04`) e só depois publicar as Edge Functions `verificar-cadastro` (precisa de `signup_taken`, U10) e `entrar-com-firebase`; (3) repetir as contagens acima logo antes (se alguém criar dados reais entre hoje e lá, `u10`, `u12`, `u32` e `u63` passam a apagar ou zerar dado de verdade); (4) publicar o app novo junto com o U06/U65 (o app antigo ainda chama `close_job`); (5) rodar `supabase/tests/*.sql` na produção (cada teste termina em `rollback`) e o advisor de segurança depois.
+  - Critério de aceite (copiado do plano): lista acima executada e registrada em `CHECKLIST-LANCAMENTO.md`.
+  - Dependências: "ação do responsável" (o "pode" e o backup).
+- **AUD-209** (M, esforço P, —) — Folgas na CSP e nos cabeçalhos
+  - Onde: `web/public/_headers:8`
+  - Correção esperada: gerar `_headers` na build com o host do Supabase da própria build; adicionar `report-to` para o Sentry; manter o teste que confere cada diretiva (inclui o AUD-034).
+  - Critério de aceite (copiado do plano): a CSP da build de produção só tem o host do projeto; uma violação deliberada aparece no Sentry.
+  - Dependências: AUD-034.
+- **AUD-210** (M, esforço P, função, produção) — Não existe "Sair de todos os aparelhos" e a redefinição de senha só encerra a sessão deste aparelho
+  - Onde: `web/src/services/remote/auth.ts:112` e `web/src/services/remote/session.ts:435,461,514` (todo `signOut({ scope: 'local' })`); `resetPassword` (`auth.ts:376-392`) e `changePassword` (`auth.ts:431-436`)
+  - Correção esperada: botão "Sair de todos os aparelhos" em Configurações (`signOut({ scope: 'global' })`) e chamar o mesmo ao terminar `resetPassword`; confirmar no staging se `updateUser({password})` já revoga as outras sessões.
+  - Critério de aceite (copiado do plano): com duas sessões da mesma conta, "Sair de todos" faz a segunda receber 401 na próxima renovação.
+  - Dependências: nenhuma. ## Referências cruzadas (achados de outros agentes que cobrem pontos da minha frente) - Excluir conta não apaga `identidade/` e a limpeza (`limpar-arquivos`) não roda: **AUD-001 e AUD-006**. Prova minha, a somar: `excluir-conta/index.ts:18` lista só `avatars`, `portfolio`, `vagas`; `query_logs` da produção em 24 h tem 1 chamada, `limpar-arquivos` → 401 (cron das 04:40, sem `CLEANUP_SECRET`). - Limpeza apaga tudo se `app_config.storage_public_base` estiver errado, sem freio de proporção: **AUD-133** (a RPC `orphan_storage_objects` e a função `limpar-arquivos` não têm trava; minha correção sugerida: abortar e alertar se os "órfãos" passarem de ~20% dos objetos). - Conta suspensa ainda grava até o token vencer: **AUD-022 / AUD-022**. Confirmei que `admin_suspend_account` põe `banned_until` +100 anos e apaga `auth.sessions` (login e renovação recusados). - Hash SHA-256 do documento sem segredo: **AUD-019** (também vale para as chaves `doc:` de `auth_attempts`). - Coordenadas da casa para o OSRM: **AUD-014 / AUD-014** (na CSP, `router.project-osrm.org` e `routing.openstreetmap.de` estão liberados em `connect-src`, coerente com o código). - Falha de rede em Edge Function vira "Não deu certo agora": **AUD-130 / AUD-130** (o lado do navegador do meu AUD-141).
+- **AUD-211** (M, esforço M, responsável) — Política em linguagem jurídica para um público de celular simples
+  - Onde: `web/src/services/legal.ts:134-141` ("legítimo interesse, art. 7º, IX", "art. 11, I"), seção 5 (lista longa de operadores numa só linha)
+  - Correção esperada: no topo da política, um quadro de 6 linhas ("O que guardamos / por quê / quem vê / por quanto tempo / como apagar / com quem falar") e os artigos de lei para o fim, em "Bases legais". O advogado revê junto com AUD-016.
+  - Critério de aceite (copiado do plano): o quadro existe nos dois lugares (`legal.ts` e `/legal/*.md`); teste de legibilidade manual com 3 pessoas.
+  - Dependências: AUD-016.
+- **AUD-212** (M, esforço P, —) — Melhoria: matriz de fusos e medição de cobertura no CI (agora)
+  - Onde: `.github/workflows/web.yml` (job `checks`, passo `npm test`)
+  - Correção esperada: `strategy.matrix.tz: [UTC, America/Sao_Paulo, Asia/Tokyo]` no passo `npm test`, mais `vitest run --coverage` com piso por pasta (services 80%).
+  - Critério de aceite (copiado do plano): passo `npm test` rodando nos três fusos.
+  - Dependências: AUD-127
+- **AUD-213** (M, esforço M, —) — Deixar ver bicos antes de criar a conta
+  - Onde: `pages/shared/Splash.tsx:4-25`; `/v/:id` só abre com link
+  - Correção esperada: "Ver bicos perto de mim" (cidade em 1 pergunta) com lista pública só bairro/cidade (regra do `public_job_card`); "Criar minha conta" vira o principal.
+  - Critério de aceite (copiado do plano): visitante vê a lista pública sem conta.
+  - Dependências: AUD-007, AUD-002 (decidir o que é público)
+- **AUD-214** (M, esforço M, responsável) — Endereço completo só depois do primeiro bico
+  - Onde: `pages/shared/CompleteProfile.tsx:207-236` (CEP, cidade, rua, bairro obrigatórios)
+  - Correção esperada: pedir o endereço ao tocar na distância ou na 1ª candidatura.
+  - Critério de aceite (copiado do plano): cadastro sem endereço chega ao mural.
+  - Dependências: decisão dos sócios
+- **AUD-215** (M, esforço M, —) — Linha do tempo da candidatura (padrão do pedido do iFood)
+  - Onde: `pages/worker/ApplicationStatusCard.tsx:9-31`; `utils/applicationStatus.ts:388-390` (`enviada` e `em_analise` iguais: "Em análise")
+  - Correção esperada: passos Enviada → Vista → Aprovada → Concluída com hora.
+  - Critério de aceite (copiado do plano): card mostra os passos.
+  - Dependências: nenhuma
+- **AUD-216** (M, esforço M, —) — "Chamar de novo" quem trabalhou bem
+  - Onde: `pages/recruiter/JobClosed.tsx` (resumo); `pages/shared/WorkerProfileScreen.tsx:200` (único "Convidar para uma vaga"); `MyJobs.tsx:221-229` ("Publicar de novo" só como ícone ↻ 36–40 px)
+  - Correção esperada: bloco "Quem já trabalhou com você" na criação de vaga e no resumo da vaga encerrada.
+  - Critério de aceite (copiado do plano): da vaga encerrada chega-se ao convite em 2 toques.
+  - Dependências: nenhuma
+- **AUD-217** (M, esforço P, —) — O alerta "Avisar quando aparecer bico novo" vira passo do cadastro e do mural vazio
+  - Onde: `pages/worker/feed/FeedSheets.tsx:115-163` (último item da folha Filtros)
+  - Correção esperada: oferecer o alerta no mural vazio e no fim do cadastro.
+  - Critério de aceite (copiado do plano): mural vazio mostra o botão do alerta.
+  - Dependências: AUD-030, AUD-049
+- **AUD-218** (M, esforço M, —) — Card do mural mais denso e informativo
+  - Onde: `components/JobTile.tsx:87-112`, grade de 2 colunas
+  - Correção esperada: capa 16:9 quando só há ilustração; nome da empresa no card.
+  - Critério de aceite (copiado do plano): ≥ 4 bicos por tela em 360×800.
+  - Dependências: AUD-047
+- **AUD-219** (M, esforço P, —) — Candidatura em um toque com "Desfazer"
+  - Onde: `pages/worker/JobDetail.tsx:123` → `ConfirmApplication.tsx:104-111` → `ApplicationSent.tsx`
+  - Correção esperada: candidatar com um toque e "Desfazer" por alguns segundos.
+  - Critério de aceite (copiado do plano): candidatura do detalhe em 1 toque.
+  - Dependências: AUD-027
+
+## 5. Verificação final (depois do bloco 7)
+
+Rode **todas as checagens da auditoria de novo e compare antes × depois** em uma tabela no relatório:
+
+1. `cd web && npm ci && npm run typecheck && npm run lint && npm run format:check && npm test` — **antes: 287 testes em 35 arquivos, todos verdes**; depois: mais (cada AUD de bug/segurança tem teste novo). Repita `npm test` com `TZ=UTC`, `TZ=Asia/Tokyo` e `--sequence.shuffle`.
+2. Builds: `npm run build:demo`, `npm run build:standalone`, `npm run build` sem variáveis (**deve falhar**) e o build real de staging; tamanhos de chunk (antes: `index` 653 KB / 202 KB gz, `heic2any` 1.353 KB, precache do SW 123 entradas / 3.076 KiB, standalone 3.325 KB).
+3. Lighthouse mobile (4G lento, CPU 4×, mediana de 3) em `/`, `/login`, `/cadastro/trabalhador`, `/v/<slug>` e `/mural` (antes: 96–99, 90–98, 74–86) e axe WCAG 2.2 AA nas telas certas (antes: 128 varreduras sem violação; o script do CI varria 2 rotas 404).
+4. Testes SQL: job `sql` do CI verde (ou local com a imagem oficial); `aplicar-tudo.mjs` e tipos em dia; `deno check` e `deno lint` das funções.
+5. Advisors de segurança e desempenho do **staging** e da **produção** (só leitura) — antes (produção): 14 tabelas com RLS sem política (INFO esperado), `pg_net` no `public`, 1 RPC `anon`, 42 `authenticated`; sem ERROR. Nenhum ERROR novo.
+6. **E2E no staging** (`staging.yml` › `e2e` verde, não pulado) cobrindo cadastro, publicar com foto, candidatura → aprovação → WhatsApp liberado, presença → avaliação, denúncia/bloqueio, exportar e excluir conta (conferindo que selfie/documento somem), link público de visitante e login.
+7. **Prints** das telas afetadas, antes × depois, 360×800 e 1280×800.
+8. **Revisão independente**: abra um subagente novo, que não viu seu raciocínio, e peça que tente **reabrir cada AUD marcado como resolvido** (reproduzir o defeito original, procurar regressão nos itens da seção "bom e deve ser preservado"). O que ele reabrir volta para a fila.
+
+## 6. Entrega
+
+- Arquivo `web/docs/RELATORIO-CORRECAO.md` cuja **primeira linha** é exatamente **`Todos os S0 e S1 resolvidos: sim`** ou **`Todos os S0 e S1 resolvidos: não`** (com a lista do que falta). Depois: um quadro com **cada AUD** como `resolvido` / `depende do responsável` / `adiado (motivo)`, com o **commit**, a **prova** (teste que falhava → passa, consulta, print) e, para os `produção`, o comando exato que ficou aguardando "pode".
+- Atualize `web/docs/CHECKLIST-LANCAMENTO.md` (donos e prazos, ações do responsável), `CLAUDE.md` (números e fatos conferidos por comando) e `web/docs/DECISOES.md` (decisões não óbvias, formato `## AUD-xxx — título`).
+- Abra **PR de `claude/correcao` para `claude/auditoria`** (a branch de origem) **sem merge** até o "pode" dos sócios. Descreva o PR em português, com o resumo do relatório. Não crie PR para o `master`.
+
+## 7. Critério de pronto (explícito e verificável)
+
+A rodada só está pronta quando **todas** as frases abaixo forem verdadeiras e provadas no relatório:
+
+- Todos os S0 e S1 estão `resolvido` ou `depende do responsável` com a ação documentada (nenhum `adiado` sem motivo aceito).
+- Para cada AUD de bug/segurança existe um teste que falhava antes e passa agora.
+- `typecheck`, `lint`, `format:check`, `npm test` (3 fusos) e o CI da branch (`checks` e `sql`) estão verdes; o E2E do staging rodou e passou (não foi pulado).
+- Nenhuma regressão: os itens da seção 6 da `AUDITORIA-COMPLETA.md` continuam verdadeiros; Lighthouse e axe não pioraram; nenhum advisor novo de nível ERROR.
+- Nada foi aplicado na produção sem "pode" e sem comando exato mostrado; nenhum segredo ou dado pessoal entrou no repositório, nos logs ou no relatório.
+- O subagente revisor independente não conseguiu reabrir nenhum AUD (ou os que reabriu foram refeitos e provados).
+- `web/docs/RELATORIO-CORRECAO.md` existe com a primeira linha exigida e o PR está aberto, sem merge.
