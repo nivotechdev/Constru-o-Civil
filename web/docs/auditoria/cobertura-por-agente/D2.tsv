@@ -1,0 +1,185 @@
+caminho	linhas	como	achados	nota
+public.accept_terms(p_version text)	19	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-010	versao livre (provado com 99.9); exec=authenticated; search_path=fixo
+public.account_from_old_profile(p_user_id uuid)	36	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.account_history(p_account uuid)	25	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.accounts_whatsapp_verified()	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.add_staff_member(p_email text, p_role text)	18	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-015	role admin/moderador nunca lida; exec=so postgres/service_role; search_path=fixo
+public.admin_actions(p_limit integer)	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_company_queue()	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_decide_company(p_company uuid, p_status company_verification, p_reason text)	19	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_decide_identity(p_worker uuid, p_status text, p_reason text)	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_hide_job(p_job text, p_reason text)	27	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_identity_queue()	24	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_report_queue(p_status text)	23	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_resolve_report(p_report uuid, p_action text, p_reason text)	39	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_suspend_account(p_account uuid, p_reason text)	71	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	M1-001	ok no proprio fluxo; RPCs nao olham suspensao (M1-001); exec=authenticated; search_path=fixo
+public.admin_unhide_job(p_job text, p_reason text)	15	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.admin_unsuspend_account(p_account uuid, p_reason text)	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.anonymize_account(p_account accounts, p_reason text)	79	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-003	nao apaga avaliacoes escritas pela conta; exec=so postgres/service_role; search_path=fixo
+public.answer_invite(p_job_id text, p_accept boolean)	29	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.application_conclude(p_app_id uuid, p_actor application_actor)	25	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-006,D2-011	trava candidatura e depois vaga; exec=so postgres/service_role; search_path=fixo
+public.application_next_status(p_action text, p_from application_status, p_actor applicatio)	22	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.application_step(p_app_id uuid, p_action text, p_actor application_actor, p_r)	30	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.attach_boost_charge(p_payment_id uuid, p_provider_payment_id text, p_pix_code te)	24	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.begin_boost_payment(p_account uuid, p_job_id text, p_plan boost_plan, p_method p)	41	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-011	trava vaga->pagamento; exec=so postgres/service_role; search_path=fixo
+public.bicos_today()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.block_account(p_account uuid)	25	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-004	nao cancela pre_selecionado/contratado; exec=authenticated; search_path=fixo
+public.blocked_between(p_a uuid, p_b uuid)	9	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.boost_blocker(p_job jobs)	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.boost_plan_cents(p_plan boost_plan)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.boost_plan_hours(p_plan boost_plan)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.boostable_job(p_job_id text)	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.buscar_perfis(termo text)	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.call_storage_cleanup()	22	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.change_whatsapp(p_whatsapp text)	35	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.check_cron_failures()	58	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.check_job_photos_v2()	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-001;D1-006	prefixo ok; tamanho da URL livre; NULL se faltar app_config; exec=so postgres/service_role; search_path=fixo
+public.check_post_media_v2()	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.check_profile_images_v2()	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.claim_document_for(p_user_id uuid, p_digits text)	32	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.claim_document_v2()	32	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.claim_whatsapp_for(p_user_id uuid, p_phone text)	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.cleanup_unconfirmed_profile_v2()	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.cnpj_valid(p_document text)	27	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=anon+authenticated; search_path=fixo
+public.company_cnpj_for_check(p_company uuid)	17	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.company_owner_member()	14	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.company_whatsapp_v2()	12	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.conclude_finished_jobs(p_worker uuid, p_company uuid)	62	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-011	so service_role; ordem de locks; exec=so postgres/service_role; search_path=fixo
+public.conclude_my_finished_jobs()	12	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-011	roda a cada abertura de tela; ordem de locks; exec=authenticated; search_path=fixo
+public.concluir_candidatura(p_candidatura_id uuid)	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.confirm_boost_payment(p_payment_id uuid)	44	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-011,D2-016	trava pagamento->vaga; nao confere valor; exec=so postgres/service_role; search_path=fixo
+public.confirm_presence(p_job_id text)	33	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.contato_whatsapp(p_candidatura_id uuid)	43	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.cpf_valid(p_document text)	25	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=anon+authenticated; search_path=fixo
+public.create_account_for(p_user_id uuid, p_email text, p_role app_role, p_name text, )	60	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-010	terms_version vem do metadata; exec=so postgres/service_role; search_path=fixo
+public.create_my_account(p_role app_role, p_name text, p_document text, p_whatsapp te)	41	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.criar_perfil_ao_cadastrar()	35	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D5-012	gatilho legado copia nome/e-mail para profiles; exec=so postgres/service_role; search_path=fixo
+public.cron_health()	28	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.decidir_candidatura(p_candidatura_id uuid, p_decisao text)	46	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.delete_job(p_job_id text)	35	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.delete_job_alert()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.delete_my_account(p_confirm_commitments boolean)	47	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-003	login recente ok; limpeza incompleta via anonymize_account; exec=authenticated; search_path=fixo
+public.delete_push_subscription(p_endpoint text)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.document_available(p_document text)	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.document_hash(p_document text)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D5-008	SHA-256 sem segredo (ver D5-008); exec=so postgres/service_role; search_path=fixo
+public.document_login_email(p_document text, p_password text)	24	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.document_valid_for(p_role app_role, p_document text)	11	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=anon+authenticated; search_path=fixo
+public.email_verificado()	11	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.ensure_my_account()	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.excluir_minha_conta()	20	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.expirar_vagas_vencidas()	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.expire_pix_payments()	12	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.export_my_data()	58	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D5-007	incompleto (ver D5-007); sem IDOR; exec=authenticated; search_path=fixo
+public.exportar_meus_dados()	35	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.fail_boost_payment(p_payment_id uuid, p_status payment_status, p_detail text)	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.fechar_vaga(p_vaga_id uuid)	30	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.feed_jobs(p_city text, p_uf text, p_lat double precision, p_lon double)	90	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-001,D2-009;D1-001	paginacao por cursor ok (provado); expoe endereco exato (D1-001); p_radius_km*1000 estoura; p_search sem teto; exec=authenticated; search_path=fixo
+public.finish_sign_up(p jsonb)	43	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.first_name(p_name text)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.fold_text(p text)	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.funnel_daily(p_from date, p_to date)	30	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.get_contact(p_application_id uuid)	39	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-002,D2-004	nao olha bloqueio; resto ok (status, lados, suspensao); exec=authenticated; search_path=fixo
+public.get_job_addresses(p_job_ids text[])	18	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.get_payment(p_payment_id uuid)	20	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.handle_new_user_v2()	25	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.impedir_troca_de_tipo()	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.initials_of(p_name text)	14	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.invite_worker(p_job_id text, p_worker_id uuid)	36	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-012	20/dia sem lock; resto ok; exec=authenticated; search_path=fixo
+public.is_my_job(p_job_id text)	11	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.is_staff()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-015	ok; sem diferenca de papel; exec=authenticated; search_path=fixo
+public.job_close_applications(p_job jobs)	22	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_close_if_team_done(p_job_id text)	19	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_extras_from_draft(p jsonb, OUT method text, OUT note text)	26	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_from_draft(p jsonb, p_original_start date)	129	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-001,D2-007,D2-009	falha: street/number/complement/neighborhood/city sem limite; casts crus 22P02; urgent aceito; exec=so postgres/service_role; search_path=fixo
+public.job_holding(p_job_id text)	9	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_is_open(p_job jobs)	9	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_last_day(p_job jobs)	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_reopen_auto_rejected(p_job_id text, p_reason text)	33	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_runs_on(p_job jobs, p_day date)	15	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.job_started(p_job jobs)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-006	true sempre quando data a combinar; exec=so postgres/service_role; search_path=fixo
+public.job_stats(p_job_ids text[])	14	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-008	contagens de qualquer vaga; array sem teto; exec=authenticated; search_path=fixo
+public.job_title(p_job jobs)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.jobs_set_area_point()	22	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.limit_application_spam()	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-012	contagem e insert sem lock; exec=so postgres/service_role; search_path=fixo
+public.limpar_cadastros_nao_confirmados()	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.mark_identity_decided()	15	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.mark_whatsapp_verified(p_phone text, p_user uuid)	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.mask_document(p_digits text)	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.meu_documento()	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.meu_tipo()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.my_company_id()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.my_identity()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.my_job_ids()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.my_unread_count()	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.my_worker_id()	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.new_public_slug()	9	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.notification_group(p_kind notification_kind)	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=anon+authenticated; search_path=fixo
+public.notify(p_worker uuid, p_company uuid, p_kind notification_kind, p_t)	18	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.notify_job_alerts()	32	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-014	fan-out sincrono: 1,23 s para 5000 alertas; exec=so postgres/service_role; search_path=fixo
+public.on_auth_user_deleted()	21	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.orphan_storage_objects(p_limit integer)	39	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D1-006,D5-001	base vazia -> tudo orfao; exec=so postgres/service_role; search_path=fixo
+public.own_job_for_update(p_job_id text)	19	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.perfil_publico(p_id uuid)	27	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.postar_avaliacao(p_candidatura_id uuid, p_nota integer, p_comentario text)	39	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.public_job_card(p_slug text)	47	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=anon+authenticated; search_path=fixo
+public.publish_job(p jsonb)	36	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-001,D2-002,D2-007	falha: sem teto de vagas por empresa; empresa pendente publica; exec=authenticated; search_path=fixo
+public.purge_auth_attempts()	17	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.purge_unconfirmed_signups()	20	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.push_new_notification()	32	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.rate_limit_hit(p_key text, p_max integer, p_window interval)	14	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.recount_rating()	17	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.refuse_blocked_application()	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.refuse_blocked_invite()	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.refuse_suspended_application()	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.refuse_suspended_job()	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.reiniciar_cadastro_pendente_documento(p_documento text)	19	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.reiniciar_cadastro_pendente_email(p_email text)	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.remind_presence()	31	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.remove_staff_member(p_email text)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.report_content(p_target_type report_target, p_target_id text, p_reason text)	25	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-012,D2-013	target_id livre; reabre denuncia analisada; 20/dia sem lock; exec=authenticated; search_path=fixo
+public.report_target_info(p_type report_target, p_id text)	54	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.reset_presence_on_new_dates()	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.salvar_documento(documento_texto text)	20	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.save_address(p_account uuid, p jsonb)	65	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.save_job_alert(p_city text, p_uf text, p_lat double precision, p_lon double)	28	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-009	lat/lon nulos -> 23502 cru; city sem limite; exec=authenticated; search_path=fixo
+public.save_notification_prefs(p_muted text[], p_push text[])	20	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.save_push_subscription(p_endpoint text, p_p256dh text, p_auth text, p_user_agent te)	27	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.scrub_error_text(p_text text)	12	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.send_sentry_event(p_message text, p_tags jsonb)	33	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.session_authenticated_at()	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.set_company_verification(p_company uuid, p_status company_verification)	20	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.set_identity_status(p_worker uuid, p_status text, p_reason text)	26	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.set_job_photos(p_job_id text, p_photos text[])	11	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.set_my_address(p jsonb)	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.set_my_theme(p_theme text)	17	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.short_datetime_br(p_at timestamp with time zone)	11	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.signup_taken(p_kind text, p_value text)	27	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.staff_guard()	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-015	qualquer staff faz tudo; exec=so postgres/service_role; search_path=fixo
+public.staff_log(p_action text, p_target_type text, p_target_id text, p_reaso)	9	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.storage_url_ok(p_url text, p_bucket text, p_owner uuid)	12	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D1-006	NULL sem app_config (ver D1-006); exec=so postgres/service_role; search_path=fixo
+public.submit_application(p_job_id text)	44	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.submit_identity(p_selfie_path text, p_document_path text, p_consent_version )	32	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-010	consent_version livre; caminho so com prefixo do uid; exec=authenticated; search_path=fixo
+public.submit_review(p_application_id uuid, p_direction review_direction, p_value)	65	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-003,D2-006	autor so em author_label; sem tempo minimo apos concluir; exec=authenticated; search_path=fixo
+public.sync_account_auth_v2()	14	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.sync_company_verified()	17	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-005	selo nao depende do nome; exec=so postgres/service_role; search_path=fixo
+public.sync_worker_verified()	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-005	selo nao depende do nome; exec=so postgres/service_role; search_path=fixo
+public.touch_job_v2()	10	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.transition_application(p_job_id text, p_worker_id uuid, p_action text, p_reason tex)	138	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-002,D2-004,D2-006,D2-008,D2-011;M1-001	oraculo BC401/BC404; nao olha bloqueio nem suspensao; locks vaga->candidatura; exec=authenticated; search_path=fixo
+public.travar_autor_da_vaga()	16	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok (legado, sem uso; ACL fechada); exec=so postgres/service_role; search_path=fixo
+public.unblock_account(p_account uuid)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.undo_reject(p_job_id text, p_worker_id uuid)	36	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.update_job(p_job_id text, p jsonb)	70	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-001	campos de endereco sem limite (mesma causa); resto ok (dono, aberta, slots>=aprovados); exec=authenticated; search_path=fixo
+public.valid_experiences(p text[])	12	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.whatsapp_recently_verified(p_phone text)	11	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=so postgres/service_role; search_path=fixo
+public.whatsapp_valid(p_phone text)	8	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=anon+authenticated; search_path=fixo
+public.withdraw_application(p_job_id text)	23	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)		ok; exec=authenticated; search_path=fixo
+public.worker_initials_v2()	11	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-005	so recalcula iniciais; exec=so postgres/service_role; search_path=fixo
+public.worker_track_record(p_worker_ids uuid[])	13	lido por inteiro (pg_get_functiondef no staging; corpo igual a ultima migration)	D2-008	qualquer empresa le faltas/desistencias de qualquer trabalhador; exec=authenticated; search_path=fixo
+objeto: grants por coluna (information_schema.column_privileges)	-	conferido contra a fonte	D1-001,D1-003,D2-005	UPDATE de name em workers/companies sem gatilho de selo; resto ver D1
+objeto: politicas RLS (pg_policies, 31)	-	conferido contra a fonte	D1-001	jobs sem filtro de closed; applications/application_events/notifications/boost_payments por dono: ok
+objeto: gatilhos public/auth (pg_trigger)	-	conferido contra a fonte	D2-001,D2-005,D2-012,D2-014,D5-012	BEFORE INSERT em applications (bloqueio, suspensao, spam); AFTER INSERT jobs (alertas); sem gatilho de nome/selo
+objeto: cron.job staging (7 jobs)	-	conferido contra a fonte	D5-001	concluir-diarias, vencer-pix, lembrar-presenca, limpar-cadastros, limpar-tentativas, limpar-arquivos, vigiar-cron: comandos ok
+objeto: ACL de funcoes (62 authenticated, 1 anon, 5 puras PUBLIC)	-	conferido contra a fonte	D2-015	funcoes de equipe/servico nao executaveis por authenticated: ok
+objeto: schema public CREATE para authenticated/anon	-	conferido contra a fonte		false: sem sequestro de search_path
+objeto: producao x staging (catalogo, 143 x 176 funcoes)	-	conferido contra a fonte		producao atras (close_job, public_job_card(p_job_id), feed_jobs 12 args): sem overload apos upgrade (drop function nas migrations)
+objeto: indices usados pelas RPCs (pg_indexes)	-	conferido contra a fonte		applications(job_id) parcial, jobs(uf,city,last_day) parcial, unique parcial de boost aguardando: ok

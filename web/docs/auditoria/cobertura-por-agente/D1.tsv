@@ -1,0 +1,30 @@
+caminho	linhas	como	achados	nota
+web/supabase/migrations/20261009000100_bicos_v2_schema.sql	323	lido por inteiro	D1-003	ok (superada por migrations posteriores; estado final medido no staging)
+web/supabase/migrations/20261009000200_bicos_v2_rules.sql	1361	lido por inteiro	D1-004	ok: políticas e funções originais; muitas redefinidas depois, estado final medido no staging
+web/supabase/migrations/20261009000300_bicos_v2_data.sql	80	lido por inteiro	D1-007	ok: policy de select do bucket vagas saiu depois (sem listagem hoje)
+web/supabase/migrations/20261014000100_x13_avisos_seguranca.sql	102	lido por inteiro		ok: anon só executa public_job_card; default privileges lidos só no arquivo
+web/supabase/migrations/20261014000200_x15_rls_desempenho.sql	115	lido por inteiro		ok: políticas com my_job_ids; cron da limpeza foi corrigido pela x22
+web/supabase/tests/seguranca.sql	52	lido por inteiro	D1-002	falha: asserção de endereço não cobre as colunas hoje abertas (U53)
+web/supabase/tests/x13_avisos_seguranca.sql	36	lido por inteiro		ok
+web/supabase/tests/x15_rls_spam.sql	44	lido por inteiro		ok
+web/supabase/APLICAR-TUDO.sql	7931	conferido contra a fonte		ok: scripts/aplicar-tudo.mjs rodado numa cópia em scratchpad/d1work gera arquivo idêntico (64 migrations)
+web/src/types/database.generated.ts	1944	conferido contra a fonte		ok: generate_typescript_types do staging = 39 tabelas, colunas, 147 funções e argumentos, 13 enums iguais; só geography (area_geog/localizacao) sem '| null' no remoto (cosmético)
+objeto: staging x arquivos (supabase_migrations)		provado/medido		ok — 67 versões do staging = 67 arquivos (mesmos nomes e ordem)
+objeto: produção x repositório (histórico)		provado/medido	D1-009,D1-001	falha: produção atrás; U53 muda exposição do endereço quando aplicada — 54 linhas; faltam 25 migrations (lanc06,07,09,10,12,13,r03,r04,u01,06,10,12,24,30,32,37,48,49,51,52,53,62,63,65,67); rules/data aplicadas em pedaços
+objeto: 39 tabelas public (RLS ligada, force=false por desenho)		provado/medido		ok — staging e produção (prod tem 32 das 39)
+objeto: políticas public (29 no staging, 26 na prod)		provado/medido	D1-004	ok/falha conforme achado — lidas de pg_policies; nenhuma for all; using(true) só ofícios(anon) e leitura de logados
+objeto: grants por coluna anon/authenticated (todas as tabelas)		provado/medido	D1-001,D1-002,D1-008	falha: endereço da vaga e identity_status abertos — has_column_privilege em information_schema.columns
+objeto: tabelas legadas x7		provado/medido		ok — RLS sem política, sem grant (42501); prod igual
+objeto: FKs e ON DELETE (todas as FKs do public)		provado/medido		ok (ver hipóteses: consentimento/denúncias apagados em cascata) — todas as colunas de FK têm índice; cascatas coerentes com U24
+objeto: gatilhos public/auth/storage (staging)		provado/medido	D1-003	falha parcial — lidos de pg_trigger; sem gatilho de limite de linhas em worker_posts
+objeto: funções public (permissões/search_path)		provado/medido		ok — todas com search_path fixo; anon executa só public_job_card entre as security definer
+objeto: Storage buckets avatars/portfolio/vagas/identidade		provado/medido	D1-007	ok/falha D1-007 — públicos x3, identidade privado; limites e mime types lidos; sem listagem
+objeto: políticas storage.objects (9 no staging, 8 na prod)		provado/medido	D1-007	ok — pasta do dono + lado da conta; leitura de identidade só pela equipe
+objeto: app_config.storage_public_base + storage_url_ok + orphan_storage_objects		provado/medido	D1-006	falha (fail-open/destrutivo se ausente) — presente no staging e na produção
+objeto: advisors segurança staging		provado/medido	D1-009	ok (docs dizem 54) — 19 INFO sem política, 1 anon SDF, 56 authenticated SDF, leaked password; sem ERROR
+objeto: advisors desempenho staging		provado/medido		ok — 2 sem PK (application_attempts, public_link_hits), 8 índices sem uso
+objeto: advisors prod (seg/desempenho)		provado/medido		ok (igual à doc) — 14 INFO, pg_net em public (WARN), 1 anon SDF, 42 authenticated SDF; 1 sem PK, 17 índices sem uso
+objeto: extensões (staging/prod)		provado/medido		ok — staging: pg_net, postgis, pgcrypto, uuid-ossp, pg_stat_statements em extensions, pg_cron, vault; prod: pg_net em public; pg_graphql não instalado
+objeto: testes práticos de RLS no staging (transação revertida)		provado/medido	D1-001,D1-003,D1-005	ok/falha conforme achado — 2 rodadas com cerca de 50 sondagens de leitura e 60 de escrita/suspensão, papéis anon, trabalhador de fora, dono, empresa de fora, suspenso
+objeto: cron jobs (7) e default privileges/search_path de papéis		provado/medido		n/v — n/v: lidos só nos arquivos de migration (cron.schedule em z07,z08,f12,x15,x09,x22,lanc12); a ferramenta de SQL do staging parou de responder (pedido de confirmação sem resposta) antes de consultar cron.job e pg_default_acl
+objeto: Realtime (publicação)		provado/medido		n/v — n/v no catálogo; migrations adicionam só notifications e account_prefs, ambas com RLS

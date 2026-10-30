@@ -1,0 +1,34 @@
+caminho	linhas	como	achados	nota
+rota /splash (visitante, 360)	—	print 00 + leitura de Splash.tsx	P1-013	ok; sem bico visível antes da conta
+rota /login (visitante, 360)	—	print 90 + leitura de Login.tsx	P1-009	ok; alvos 36–40 px; ajuda sem link: C3-003 (não repetido)
+rota /escolha-perfil (360)	—	print 50 + ChooseProfile.tsx	—	ok
+rota /cadastro/trabalhador (6 passos, 360)	—	prints 51–55 (roteiro t5) + Signup.tsx	P1-014	ok; preservar (uma pergunta por tela)
+rota /cadastro/recrutador (360)	—	print 92 + Signup.tsx:124	P1-011	"Cadastro de recrutador" na tela
+rota /verificar-email (360)	—	print 56 + VerifyEmail.tsx	P1-011	ok; Ajuda diz "link" (Help.tsx:29)
+rota /completar-perfil/trabalhador (2 passos, 360)	—	prints 57–60 + CompleteProfile.tsx	P1-014	endereço obrigatório antes do mural
+rota /mural trabalhador (360 e 1280)	—	prints 10–14, 95, 61 + Feed/MobileFeed/FeedParts/FeedSheets	P1-001, P1-012, P1-018, P1-019, P1-010	mural vazio com texto errado (confirmado)
+rota /vaga/:id trabalhador (360)	—	prints 20, 20b, 21b + JobDetail.tsx	P1-003, P1-002	sem selo da empresa; sem aviso de golpe
+rota /confirmar/:id e /enviado/:id (360)	—	prints 22, 23 + ConfirmApplication/ApplicationSent	P1-020, P1-011	dois toques de confirmação
+rota /minhas-candidaturas (360)	—	prints 24, 25 + MyApplications/JobTile/applicationStatus	P1-007, P1-015, P1-011	etiqueta cortada
+rota /selecionado/:id (360)	—	print 30 + Selected.tsx	P1-002, P1-011	sem aviso de golpe; "A {nome}"
+rota /perfil e /perfil/editar (360)	—	prints 31, 32	P1-009, P1-021	sem renda acumulada
+rota /perfil/verificar (360, conta já verificada)	—	print 33 (estado "Verificado"; passos de envio só lidos em código)	—	n/v estado não verificado em tela (demo mostra só verificado)
+rota /configuracoes, /configuracoes/avisos (360)	—	prints 34, 35	P1-006, P1-018	ok
+rota /ajuda (360)	—	print 36 + Help.tsx	P1-002, P1-011	sem tópico de segurança; texto "link"
+rota /notificacoes (360)	—	print 37	P1-006	ok
+rota /vagas-salvas (360)	—	print 38	—	ok
+rota /construtora/:id visto pelo trabalhador (360)	—	print 39	P1-003	selo só aqui
+rota /avaliar/:id (360)	—	prints 93, 94 (Ajudante de mudança)	P1-009	chips 36 px; ReviewForm lido
+rota /v/:id (visitante, 360)	—	print 91 + PublicJob.tsx	P1-013, P1-016	bom: selo e CTA
+rota /mural empresa (360)	—	print 70	—	ok
+rota /criar-vaga passos 1 e 2 (360)	—	prints 71–75 (roteiro t6) + CreateJob.tsx	—	descrição obrigatória só aparece como erro (caminho.md)
+rota /vaga-publicada/:id (360)	—	print 76 + JobPublished.tsx	P1-016	sem "Divulgar"
+rota /minhas-vagas (360)	—	print 80 + MyJobs.tsx	P1-017	"Publicar de novo" só como ícone
+rota /vaga-gerenciar/:id com candidatos (360)	—	prints 81–84 (roteiro t7) + JobManage.tsx + CandidateRow.tsx	P1-004, P1-005, P1-008	confirmado
+rota /trabalhador/:id/:jobId (empresa, 360)	—	prints 85, 86 + CandidateActions.tsx	P1-005	ficha boa (preservar)
+rota /empresa (360)	—	print 87	—	ok
+rota /fechado/:id (resumo, 360)	—	print 100 + JobClosed.tsx	P1-017	equipe sem link para o perfil
+rota /avaliar-trabalhador/:jobId/:workerId (360)	—	print 89 (estado indisponível); RateWorker.tsx + ReviewForm.tsx lidos	P1-009	n/v formulário preenchido da empresa (demo sem diária pendente de avaliação)
+rota /impulsionar/* e /pagamentos	—	leitura de JobPublished/JobManage (escondido sem FEATURES.payments)	—	n/v telas de pagamento fora do escopo do lançamento
+tema escuro (360)	—	print 98–99 não gerados (script travou); só leitura	P1-010 (H2)	n/v contraste do escuro
+termos (grep em pages, components, services, utils, layouts)	—	rg	P1-011	termos.md
