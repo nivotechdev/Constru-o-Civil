@@ -24,14 +24,13 @@ outros cinco S1 e o S0 do bloco 0 estão resolvidos no código e nos testes; as 
 | AUD-012 | S2        | resolvido (decisão 11: tetos e `urgent`)                                                 | `aud012_tetos_de_vagas.sql` falhava; agora passa                                                        |
 | AUD-022 | S2        | resolvido                                                                                | `aud022_oculta_e_suspensa.sql` falhava; agora passa                                                     |
 
-Os demais itens do bloco 0 (AUD-009, 011, 013, 015, 016, 017, 019, 021, 023, 024 e os S3 do bloco) **não foram feitos**.
+Os demais itens do bloco 0 (AUD-009, 011, 013, 015, 016, 017, 019, 021, 023, 024 e os demais S3 do bloco) **não foram feitos**.
 Os que dependem de advogado/contador (AUD-015, 016, 069, 070, 073, 081, 163) aguardam a resposta sobre o "piloto enxuto".
 
 ## Verificações locais (antes de cada push)
 
-`npm run typecheck`, `lint`, `format:check`, `npm test` (298 testes), `deno check` das 10 funções (Deno 2.5.4 instalado
-no ambiente) e os 70 testes SQL no banco local: todos verdes. O CI do GitHub roda a cada push; o último resultado
-conferido está no fim deste arquivo quando houver.
+`npm run typecheck`, `lint`, `format:check`, `npm test` (299 testes), `deno check` das 10 funções (Deno 2.5.4 instalado
+no ambiente) e os 70 testes SQL no banco local: todos verdes. O CI do GitHub roda a cada push (os pushes seguidos cancelam o anterior).
 
 ## Pendências e riscos
 
@@ -39,3 +38,10 @@ conferido está no fim deste arquivo quando houver.
   quando o responsável der o "pode" ou aplicar pelo `scripts/staging/aplicar-banco.sh`.
 - AUD-002 muda o fluxo central do app (endereço de casa só depois da aprovação) e foi autorizado pela decisão 1.
 - A ordem de aplicação na produção continua sendo uma janela única (decisão 18); nada disso foi aplicado lá.
+
+## CI
+
+Commit `08e0bd0` (AUD-001, 002, 003, 004, 005, 006, 010, 012, 014, 020, 022): job `sql` ✔ (67 testes SQL,
+`APLICAR-TUDO.sql` e tipos em dia) e job `checks` ✔ (typecheck, lint, format, 297 testes, `deno check`, builds,
+Lighthouse, axe, cadastro sem rolagem). O job `e2e` segue pulado, como antes (AUD de processo no bloco 5).
+Os commits seguintes (AUD-018, 008, 082) foram enviados depois; o resultado deles precisa ser conferido.
