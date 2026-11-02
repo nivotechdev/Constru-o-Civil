@@ -37,6 +37,8 @@ jobs:
       # Sem Sentry no staging por enquanto: endereço que não existe (.invalid), só para o build aceitar.
       VITE_SENTRY_DSN: https://publica@sentry.invalid/1
       VITE_SENTRY_ENVIRONMENT: staging
+      # AUD-024: este site é de teste — faixa fixa no app, fora dos buscadores.
+      VITE_AMBIENTE_TESTE: "1"
       VITE_SUPORTE_WHATSAPP: ${{ vars.SUPORTE_WHATSAPP || '11999999999' }}
       VITE_SUPORTE_EMAIL: ${{ vars.SUPORTE_EMAIL }}
       # U18: o botão do Google aparece quando o Google está configurado no staging (as mesmas secrets do staging.yml).
@@ -57,6 +59,11 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run build:staging
+      - name: Site de teste fora dos buscadores (AUD-024)
+        run: |
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+          sed -i 's#<head>#<head><meta name="robots" content="noindex, nofollow">#' dist/index.html
+          grep -q 'noindex' dist/index.html
       - name: Não publicar a demonstração (armadilha 1)
         run: grep -rqE 'https://setyxomsbfrkneqqfoam\.supabase\.co' dist/assets/*.js
       # O Pages não tem "rewrite": qualquer endereço do app (/Constru-o-Civil/mural, /v/…) cai no 404.html,

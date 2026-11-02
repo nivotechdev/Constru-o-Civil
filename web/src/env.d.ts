@@ -24,6 +24,7 @@ interface ImportMetaEnv {
   readonly VITE_CODIGO_WHATSAPP?: string;
   readonly VITE_VIDEO_PORTFOLIO?: string;
   readonly VITE_VERIFICACAO_IDENTIDADE?: string;
+  readonly VITE_AMBIENTE_TESTE?: string;
   /** Web Push public VAPID key; without it, push notifications are hidden. */
   readonly VITE_VAPID_PUBLIC_KEY?: string;
   /** Sentry DSN for error reports (optional). */

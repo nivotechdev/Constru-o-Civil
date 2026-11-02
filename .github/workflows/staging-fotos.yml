@@ -20,6 +20,8 @@ permissions:
 jobs:
   fotos:
     runs-on: ubuntu-latest
+    # AUD-023: os segredos do staging ficam num environment restrito à branch master (configuração no GitHub).
+    environment: staging
     timeout-minutes: 30
     defaults:
       run:

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { BusyOverlay } from './components/BusyOverlay';
 import { Button } from './components/Button';
 import { OfflineBanner } from './components/OfflineBanner';
+import { TestEnvironmentBanner } from './components/TestEnvironmentBanner';
 import { ResultIcon } from './components/ResultIcon';
 import { SignOutDialog } from './components/SignOutDialog';
 import { ToastHost } from './components/ToastHost';
@@ -91,6 +92,7 @@ export function App() {
   const boot = useSyncExternalStore(subscribeBoot, getBootStatus);
   return (
     <ErrorBoundary fullScreen>
+      <TestEnvironmentBanner />
       <OfflineBanner />
       {boot === 'starting' ? <BootSplash /> : boot === 'offline' ? <OfflineStart /> : <Routes />}
       <ToastHost />
