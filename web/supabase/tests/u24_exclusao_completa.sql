@@ -2,6 +2,9 @@
 -- impulsos, denúncias sobre elas) e as avaliações dos dois lados; o trabalhador sai de todos os bicos e leva vagas
 -- salvas, publicações, alertas e avaliações. As notas e os bicos feitos do outro lado são refeitos.
 begin;
+-- Piloto enxuto: pagamento e verificação de identidade vêm desligados; este teste liga os dois.
+insert into public.app_config (key, value) values ('payments_enabled', 'sim'), ('identity_enabled', 'sim')
+  on conflict (key) do update set value = excluded.value;
 select pg_temp.new_user('95000000-0000-0000-0000-0000000000c1', 'recrutador', 'Obra Que Sai', '11.222.333/0001-81');
 select pg_temp.new_user('95000000-0000-0000-0000-0000000000c2', 'recrutador', 'Obra Que Fica', '45.723.174/0001-10');
 select pg_temp.new_user('95000000-0000-0000-0000-0000000000a1', 'trabalhador', 'Ana Que Fica');
@@ -30,6 +33,8 @@ insert into public.boost_payments (job_id, company_id, plan, method, amount_cent
 values ((select v from t_ids where k = 'aberta'), '95000000-0000-0000-0000-0000000000c1', '24h', 'pix', 990);
 insert into public.reports (reporter_id, target_type, target_id, reason)
 values ('95000000-0000-0000-0000-0000000000a1', 'vaga', (select v from t_ids where k = 'aberta'), 'golpe');
+-- Piloto enxuto: com denúncia em aberto a exclusão espera a equipe; aqui a denúncia já foi analisada.
+update public.reports set status = 'analisada';
 select pg_temp.ok((select rating = 2 and review_count = 1 from public.workers where id = '95000000-0000-0000-0000-0000000000a1'),
                   'antes: Ana tem a nota 2 da construtora que sai');
 

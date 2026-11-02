@@ -1,6 +1,9 @@
 -- Z02/Y13 — não existe forma de impulsionar sem pagar: as simulações sumiram, uma conta comum não
 -- chama as funções de cobrança, e a confirmação (só service_role) é idempotente e revalida a vaga.
 begin;
+-- Piloto enxuto: pagamento e verificação de identidade vêm desligados; este teste liga os dois.
+insert into public.app_config (key, value) values ('payments_enabled', 'sim'), ('identity_enabled', 'sim')
+  on conflict (key) do update set value = excluded.value;
 
 select pg_temp.new_user('20000000-0000-0000-0000-0000000000c1', 'recrutador', 'Construtora Paga');
 select pg_temp.new_user('20000000-0000-0000-0000-0000000000c2', 'recrutador', 'Outra Construtora');

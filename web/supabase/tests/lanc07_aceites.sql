@@ -1,5 +1,8 @@
 -- L07 (lançamento) — aceites com versão e data; novo aceite; consentimento da verificação de identidade.
 begin;
+-- Piloto enxuto: pagamento e verificação de identidade vêm desligados; este teste liga os dois.
+insert into public.app_config (key, value) values ('payments_enabled', 'sim'), ('identity_enabled', 'sim')
+  on conflict (key) do update set value = excluded.value;
 select pg_temp.new_user('87000000-0000-0000-0000-0000000000a1', 'trabalhador', 'Aceita Termos');
 select pg_temp.ok((select count(*) from public.terms_acceptances where account_id = '87000000-0000-0000-0000-0000000000a1') = 2,
                   'cadastro registra o aceite dos termos e da política');

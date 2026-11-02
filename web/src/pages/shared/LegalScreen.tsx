@@ -16,8 +16,8 @@ function LegalScreen({ doc }: { doc: LegalDocument }) {
             <div className="flex items-start gap-2.5 p-3.5 rounded-card bg-warning-50 border border-warning-100 text-sm text-concrete-800">
               <Icon name="triangle-alert" size={18} color="var(--amber-500)" />
               <span>
-                <strong>Rascunho para revisão jurídica.</strong> Este texto é um modelo e ainda vai ser revisado antes
-                do lançamento.
+                <strong>Versão do piloto.</strong> Estes textos ainda não foram revisados por advogado. Se algo não
+                estiver claro, fale com a gente pela Ajuda.
               </span>
             </div>
           )}

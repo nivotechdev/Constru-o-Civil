@@ -1491,6 +1491,7 @@ export type Database = {
     Functions: {
       accept_terms: { Args: { p_version: string }; Returns: undefined };
       account_from_old_profile: { Args: { p_user_id: string }; Returns: undefined };
+      account_has_open_case: { Args: { p_account: Database['public']['Tables']['accounts']['Row'] }; Returns: boolean };
       account_history: { Args: { p_account: string }; Returns: Json };
       add_staff_member: { Args: { p_email: string; p_role?: string }; Returns: string };
       admin_actions: {
@@ -1697,6 +1698,7 @@ export type Database = {
         Args: { p_payment_id: string; p_status: Database['public']['Enums']['payment_status']; p_detail?: string };
         Returns: Database['public']['Tables']['boost_payments']['Row'];
       };
+      feature_on: { Args: { p_key: string }; Returns: boolean };
       fechar_vaga: { Args: { p_vaga_id: string }; Returns: undefined };
       feed_jobs: {
         Args: {
@@ -1828,6 +1830,7 @@ export type Database = {
       public_job_card: { Args: { p_slug: string }; Returns: Json };
       publish_job: { Args: { p: Json }; Returns: string };
       purge_auth_attempts: { Args: Record<PropertyKey, never>; Returns: number };
+      purge_staff_actions: { Args: Record<PropertyKey, never>; Returns: number };
       purge_unconfirmed_signups: { Args: Record<PropertyKey, never>; Returns: number };
       raise_cron_alert: { Args: { p_job: string; p_message: string }; Returns: boolean };
       rate_limit_hit: { Args: { p_key: string; p_max: number; p_window: string }; Returns: boolean };

@@ -1,5 +1,8 @@
 -- X09 — o que pode sair do Storage: sem uso há mais de 1 dia; identidade 30 dias depois da decisão.
 begin;
+-- Piloto enxuto: pagamento e verificação de identidade vêm desligados; este teste liga os dois.
+insert into public.app_config (key, value) values ('payments_enabled', 'sim'), ('identity_enabled', 'sim')
+  on conflict (key) do update set value = excluded.value;
 select pg_temp.new_user('7d000000-0000-0000-0000-0000000000a9', 'trabalhador', 'Ana Arquivos');
 create temp table t_base as select value as url from public.app_config where key = 'storage_public_base';
 insert into storage.objects (bucket_id, name, created_at) values

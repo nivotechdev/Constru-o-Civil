@@ -32,7 +32,6 @@ describe('textos legais (L07)', () => {
       '30 dias',
       'Supabase',
       'Cloudflare',
-      'Mercado Pago',
       'Twilio',
       'Sentry',
       'Brevo',

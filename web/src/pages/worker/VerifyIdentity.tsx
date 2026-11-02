@@ -5,6 +5,7 @@ import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Checkbox } from '../../components/Checkbox';
+import { EmptyState } from '../../components/EmptyState';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { QueryView } from '../../components/QueryView';
@@ -13,6 +14,7 @@ import { useAction } from '../../hooks/useAction';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
 import { demoApproveIdentity, identityOf, loadMyIdentity, submitIdentity } from '../../services/identity';
+import { FEATURES } from '../../services/features';
 import { IDENTITY_CONSENT } from '../../services/legal';
 import { IS_DEMO } from '../../services/mode';
 import { goBack } from '../../services/router';
@@ -61,6 +63,27 @@ function PhotoInput({
 }
 
 export default function VerifyIdentity() {
+  if (!FEATURES.identity) return <IdentityUnavailable />;
+  return <VerifyIdentityForm />;
+}
+
+/** Piloto enxuto: the identity check is off at first launch. */
+function IdentityUnavailable() {
+  return (
+    <div className="flex flex-col">
+      <BackBar title="Verificar identidade" onBack={() => goBack('/perfil')} />
+      <EmptyState
+        icon="shield-check"
+        title="Ainda não está disponível"
+        description="A verificação de identidade vai chegar em breve. Por enquanto, você já pode se candidatar aos bicos."
+        actionLabel="Voltar ao perfil"
+        onAction={() => goBack('/perfil')}
+      />
+    </div>
+  );
+}
+
+function VerifyIdentityForm() {
   const db = useDb();
   const worker = currentWorker(db);
   const query = useQuery('my-identity', loadMyIdentity);

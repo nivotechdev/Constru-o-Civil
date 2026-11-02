@@ -8,6 +8,7 @@ import { NotFound } from '../../components/NotFound';
 import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
+import { FEATURES } from '../../services/features';
 import { loadWorkerProfile } from '../../services/profiles';
 import { Rating } from '../../components/Rating';
 import { useDb, useRole } from '../../hooks/useStore';
@@ -221,7 +222,7 @@ export default function WorkerProfileScreen({ params }: ScreenProps) {
 // F07: the worker's own call to verify the identity, with where it stands.
 function IdentityCard({ worker }: { worker: Worker }) {
   const status = identityOf(worker);
-  if (status === 'verificado') return null;
+  if (!FEATURES.identity || status === 'verificado') return null;
   const text =
     status === 'em_analise'
       ? 'Sua identidade está em análise. Avisamos quando terminar.'

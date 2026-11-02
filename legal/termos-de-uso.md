@@ -2,7 +2,7 @@
 
 **Versão 2.0 · atualizada em 15/10/2026**
 
-> **Rascunho para revisão jurídica.** Gerado de `web/src/services/legal.ts` — edite lá, não aqui. Os
+> **Versão do piloto (ainda sem revisão de advogado).** Gerado de `web/src/services/legal.ts` — edite lá, não aqui. Os
 > campos `{{...}}` são preenchidos pela empresa (ver `web/docs/CHECKLIST-LANCAMENTO.md`).
 
 ## 1. Quem somos
@@ -43,7 +43,7 @@ O selo indica que conferimos os documentos, não garante o trabalho de ninguém.
 
 Para o trabalhador, a Bicos é sempre grátis. Publicar vaga também é grátis.
 
-Quem contrata paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.
+Por enquanto a Bicos não cobra nada de ninguém. Se um dia houver cobrança (por exemplo, para destacar uma vaga), os Termos serão atualizados antes e você será avisado.
 
 O pagamento da diária é feito direto por quem contrata ao trabalhador, como combinado entre eles.
 

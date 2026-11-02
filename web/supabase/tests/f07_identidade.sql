@@ -1,5 +1,8 @@
 -- F07 — enviar identidade, a equipe decide, o selo acompanha.
 begin;
+-- Piloto enxuto: pagamento e verificação de identidade vêm desligados; este teste liga os dois.
+insert into public.app_config (key, value) values ('payments_enabled', 'sim'), ('identity_enabled', 'sim')
+  on conflict (key) do update set value = excluded.value;
 select pg_temp.new_user('80400000-0000-0000-0000-0000000000a1', 'trabalhador', 'Quer O Selo');
 select pg_temp.login('80400000-0000-0000-0000-0000000000a1');
 select pg_temp.fails($$select public.submit_identity('outro/selfie.jpg', 'outro/doc.jpg', '1.0')$$, 'BC422');

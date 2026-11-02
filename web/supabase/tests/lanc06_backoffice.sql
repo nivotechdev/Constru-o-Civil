@@ -1,5 +1,8 @@
 -- L06 (lançamento) — back-office: só a equipe lê e chama o admin; filas, decisões, auditoria e suspensão.
 begin;
+-- Piloto enxuto: pagamento e verificação de identidade vêm desligados; este teste liga os dois.
+insert into public.app_config (key, value) values ('payments_enabled', 'sim'), ('identity_enabled', 'sim')
+  on conflict (key) do update set value = excluded.value;
 select pg_temp.new_user('86000000-0000-0000-0000-0000000000e1', 'trabalhador', 'Pessoa Da Equipe');
 select pg_temp.new_user('86000000-0000-0000-0000-0000000000a1', 'trabalhador', 'Quer O Selo');
 select pg_temp.new_user('86000000-0000-0000-0000-0000000000a2', 'trabalhador', 'Denunciado');

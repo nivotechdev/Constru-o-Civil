@@ -37,6 +37,11 @@ export const FEATURES = {
    * bucket is public. Turn on only after the server cleans the file (VITE_VIDEO_PORTFOLIO=1).
    */
   video: IS_DEMO || on(env.VITE_VIDEO_PORTFOLIO),
+  /**
+   * Identity check with selfie and document (F07): off in real mode for the first launch (piloto enxuto) — it is the
+   * most sensitive data of the app. Turn on with VITE_VERIFICACAO_IDENTIDADE=1 and app_config.identity_enabled = 'sim'.
+   */
+  identity: IS_DEMO || on(env.VITE_VERIFICACAO_IDENTIDADE),
   /** Notifications on the phone (Web Push). */
   push: !IS_DEMO && Boolean(env.VITE_VAPID_PUBLIC_KEY)
 } as const;

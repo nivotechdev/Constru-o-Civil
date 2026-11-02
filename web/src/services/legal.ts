@@ -67,7 +67,7 @@ export const TERMS: LegalDocument = {
       title: '6. Pagamentos',
       body: [
         'Para o trabalhador, a Bicos é sempre grátis. Publicar vaga também é grátis.',
-        'Quem contrata paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.',
+        'Por enquanto a Bicos não cobra nada de ninguém. Se um dia houver cobrança (por exemplo, para destacar uma vaga), os Termos serão atualizados antes e você será avisado.',
         'O pagamento da diária é feito direto por quem contrata ao trabalhador, como combinado entre eles.'
       ]
     },
@@ -115,7 +115,7 @@ export const PRIVACY: LegalDocument = {
         'Perfil: cidade, experiência, texto de apresentação, fotos de perfil e capa, portfólio. Empresa: nome, logo, cidade, CNPJ e o que a Receita Federal informa sobre ele.',
         'Vagas: endereço do serviço, datas, horário, valor, fotos e requisitos.',
         'Uso: candidaturas e o histórico de cada uma, presença confirmada, diárias concluídas, avaliações, vagas salvas, convites, alertas de vaga, notificações, denúncias e bloqueios.',
-        'Pagamentos do impulso: valor, plano e situação do pagamento. Os dados do cartão vão direto para o Mercado Pago; não ficam com a gente.',
+        'Pagamentos: por enquanto a Bicos não cobra nada e não guarda dado de pagamento. Se passarmos a cobrar, esta Política será atualizada antes.',
         'Endereço: CEP, rua, bairro e cidade (sem o número da casa), para mostrar a distância até cada bico e abrir o mural na sua cidade. Fica só com você: no perfil aparece só a cidade, e as empresas veem só um ponto aproximado (cerca de 1 km).',
         'Localização do aparelho: só se você tocar em "Usar minha localização" no mural, para mostrar os bicos perto de onde você está. Não guardamos o seu caminho.',
         'Dados técnicos: endereço IP nas tentativas de login (para barrar robôs), registro do aparelho para notificações (se você ligar) e relatórios de erro sem nome, e-mail, documento ou telefone.'
@@ -124,6 +124,7 @@ export const PRIVACY: LegalDocument = {
     {
       title: '3. Selfie e foto do documento (dado sensível)',
       body: [
+        'Esta etapa ainda não está ativa. Se for ativada, vale o que está escrito aqui.',
         'São pedidas só a quem quer o selo "Verificado", com consentimento próprio e destacado na tela de verificação (LGPD, art. 11, I). A foto do rosto é dado biométrico, um dado pessoal sensível.',
         'Finalidade: conferir que você é quem diz ser e evitar fraude. Não usamos para mais nada.',
         'Quem vê: só as pessoas da equipe de verificação da Bicos, e cada decisão fica registrada com quem decidiu e quando. As fotos ficam em área privada, sem endereço público.',
@@ -135,7 +136,7 @@ export const PRIVACY: LegalDocument = {
       body: [
         'Para prestar o serviço que você pediu (LGPD, art. 7º, V): criar e manter a conta, mostrar vagas, ligar empresas e trabalhadores, liberar o WhatsApp depois da aprovação, mostrar o endereço do serviço (de um comércio, na vaga com o mapa; de uma casa ou apartamento, só a quem foi aprovado), avaliações e avisos.',
         'Para a segurança de todos (legítimo interesse, art. 7º, IX): captcha, limite de tentativas, denúncias, bloqueios, moderação e verificação da empresa pelo CNPJ (dado público).',
-        'Para cumprir a lei (art. 7º, II): registros de pagamento e de acesso pelo tempo que a lei exigir.',
+        'Para cumprir a lei (art. 7º, II): os registros técnicos de acesso que o provedor de hospedagem guarda.',
         'Com o seu consentimento (art. 7º, I e art. 11, I): selfie e documento, notificações no celular e localização do aparelho.',
         'Para entender o uso sem identificar ninguém: contamos cadastros, vagas e contratações por dia, só em números totais. Não vendemos seus dados e não usamos para publicidade.'
       ]
@@ -144,8 +145,8 @@ export const PRIVACY: LegalDocument = {
       title: '5. Com quem compartilhamos',
       body: [
         'Com a outra parte da diária, só o necessário: o perfil e, depois da aprovação, o WhatsApp. O endereço de um comércio fica visível na vaga para quem tem conta; o de uma casa ou apartamento, só para quem a empresa aprovou.',
-        'Com empresas que operam o serviço para nós (operadores), sob contrato e só para isso: Supabase (banco de dados, arquivos e login; servidores em São Paulo, empresa nos EUA), Cloudflare (hospedagem do site e captcha; rede mundial), Mercado Pago (pagamentos; Brasil), Twilio (código por WhatsApp ou SMS; EUA), Sentry (relatórios de erro sem dados pessoais; EUA), Brevo (envio de e-mails; França) e Google (login, se você escolher; EUA). A consulta do CNPJ usa a BrasilAPI (dados públicos da Receita). Para achar um endereço, o que você digita (CEP, rua, bairro, cidade) é consultado na BrasilAPI e no ViaCEP (Correios) e no OpenStreetMap (Nominatim e Photon), sem o seu nome nem a sua conta. O mapa da vaga é carregado do OpenStreetMap, que recebe a área do mapa que você abre e o seu endereço de internet (IP); o seu endereço salvo não vai para o mapa nem para nenhum serviço de rota, e a distância mostrada é em linha reta.',
-        'Alguns desses operadores ficam fora do Brasil. A transferência segue o art. 33 da LGPD ({{BASE_TRANSFERENCIA_INTERNACIONAL}}).',
+        'Com empresas que operam o serviço para nós (operadores), sob contrato e só para isso: Supabase (banco de dados, arquivos e login; servidores em São Paulo, empresa nos EUA), Cloudflare (hospedagem do site e captcha; rede mundial), Twilio (código por WhatsApp ou SMS; EUA), Sentry (relatórios de erro sem dados pessoais; EUA), Brevo (envio de e-mails; França) e Google (login, se você escolher; EUA). A consulta do CNPJ usa a BrasilAPI (dados públicos da Receita). Para achar um endereço, o que você digita (CEP, rua, bairro, cidade) é consultado na BrasilAPI e no ViaCEP (Correios) e no OpenStreetMap (Nominatim e Photon), sem o seu nome nem a sua conta. O mapa da vaga é carregado do OpenStreetMap, que recebe a área do mapa que você abre e o seu endereço de internet (IP); o seu endereço salvo não vai para o mapa nem para nenhum serviço de rota, e a distância mostrada é em linha reta.',
+        'Alguns desses operadores ficam fora do Brasil. A transferência segue o art. 33 da LGPD (cláusulas contratuais padrão dos próprios operadores, art. 33, II, alínea "b").',
         'Com autoridades, quando a lei ou uma ordem judicial exigir.'
       ]
     },
@@ -154,7 +155,7 @@ export const PRIVACY: LegalDocument = {
       body: [
         'Conta, perfil, vagas, candidaturas e avaliações: enquanto a conta existir. Ao excluir a conta, apagamos na hora seus dados, arquivos, vagas, candidaturas e as avaliações que você recebeu. As avaliações que você escreveu ficam sem o seu nome e sem o comentário; só a nota continua, na média de quem foi avaliado.',
         'Cadastro que nunca confirmou o e-mail: 7 dias. Tentativas de login com IP e códigos do WhatsApp: 1 dia. Selfie e documento: 30 dias depois da decisão.',
-        'Pagamentos: {{PRAZO_PAGAMENTOS}}, por obrigação fiscal. Registros de acesso: {{PRAZO_REGISTROS_ACESSO}} (Marco Civil da Internet, art. 15). Registro das decisões da equipe (moderação e verificação): {{PRAZO_AUDITORIA}}. Relatórios de erro: 30 dias.'
+        'Pagamentos: a Bicos não cobra nada neste momento. Registros técnicos de acesso (IP, data e hora): ficam nos servidores do provedor de hospedagem, pelo tempo que ele os guarda. Registro das decisões da equipe (moderação e verificação): 1 ano. Relatórios de erro: 30 dias.'
       ]
     },
     {
@@ -216,7 +217,7 @@ export function legalMarkdown(doc: LegalDocument): string {
     ...(LEGAL_REVIEWED
       ? []
       : [
-          '> **Rascunho para revisão jurídica.** Gerado de `web/src/services/legal.ts` — edite lá, não aqui. Os',
+          '> **Versão do piloto (ainda sem revisão de advogado).** Gerado de `web/src/services/legal.ts` — edite lá, não aqui. Os',
           '> campos `{{...}}` são preenchidos pela empresa (ver `web/docs/CHECKLIST-LANCAMENTO.md`).',
           ''
         ]),

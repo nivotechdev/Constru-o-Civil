@@ -23,6 +23,7 @@ interface ImportMetaEnv {
   /** "1" when the WhatsApp/SMS code (Edge Function codigo-whatsapp) has a provider configured. */
   readonly VITE_CODIGO_WHATSAPP?: string;
   readonly VITE_VIDEO_PORTFOLIO?: string;
+  readonly VITE_VERIFICACAO_IDENTIDADE?: string;
   /** Web Push public VAPID key; without it, push notifications are hidden. */
   readonly VITE_VAPID_PUBLIC_KEY?: string;
   /** Sentry DSN for error reports (optional). */
