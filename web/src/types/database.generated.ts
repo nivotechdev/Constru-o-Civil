@@ -1583,6 +1583,7 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['applications']['Row'];
       };
+      assert_company_active: { Args: { p_company: string }; Returns: undefined };
       attach_boost_charge: {
         Args: {
           p_payment_id: string;
