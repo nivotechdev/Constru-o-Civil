@@ -4,6 +4,9 @@ begin;
 
 select pg_temp.new_user('96000000-0000-0000-0000-0000000006c1', 'recrutador', 'Empresa Dias', '51.826.049/0001-39');
 update public.accounts set profile_completed_at = now() where id = '96000000-0000-0000-0000-0000000006c1';
+-- AUD-012: este teste publica muitas vagas com a mesma empresa; o teto por dia (3) fica fora do caminho aqui.
+insert into public.app_config (key, value) values ('jobs_per_day_unverified', '100')
+  on conflict (key) do update set value = excluded.value;
 
 create temp table t_draft (p jsonb);
 grant all on t_draft to authenticated;
