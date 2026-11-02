@@ -40,7 +40,9 @@ no ambiente) e os 70 testes SQL no banco local: todos verdes. O CI do GitHub rod
 
 ## CI
 
-Commit `08e0bd0` (AUD-001, 002, 003, 004, 005, 006, 010, 012, 014, 020, 022): job `sql` ✔ (67 testes SQL,
-`APLICAR-TUDO.sql` e tipos em dia) e job `checks` ✔ (typecheck, lint, format, 297 testes, `deno check`, builds,
-Lighthouse, axe, cadastro sem rolagem). O job `e2e` segue pulado, como antes (AUD de processo no bloco 5).
-Os commits seguintes (AUD-018, 008, 082) foram enviados depois; o resultado deles precisa ser conferido.
+- `08e0bd0` (AUD-001, 002, 003, 004, 005, 006, 010, 012, 014, 020, 022) e `bebc44e` (AUD-018, 008, 082): verdes.
+- `1206dce` (AUD-023/024) ficou vermelho no lint por duas expressões regulares com espaços repetidos nos meus testes;
+  corrigido no `d5c926b`. Aprendizado: o script local de checagem passou a mostrar a falha do lint em vez de escondê-la.
+- `d5c926b` (todo o bloco 0 até aqui): `sql` ✔ (80 testes SQL, `APLICAR-TUDO.sql` e tipos em dia) e `checks` ✔
+  (typecheck, lint, format, 321 testes, `deno check`, builds, Lighthouse, axe, cadastro sem rolagem). O job `e2e` segue
+  pulado, como antes (tratado no bloco 5).
