@@ -211,6 +211,17 @@ describe('portfolio files (F16)', () => {
     expect(await portfolioFileProblem({ type: 'video/mp4', size: 51 * MB })).toMatch(/50 MB/);
     expect(await portfolioFileProblem({ type: 'application/pdf', size: MB })).toBe('Escolha uma foto ou um vídeo.');
   });
+
+  it('AUD-008: with videos off (real mode) a video is refused and a photo still goes', async () => {
+    const { portfolioFileProblem } = await import('../utils/media');
+    const MB = 1024 * 1024;
+    expect(await portfolioFileProblem({ type: 'video/mp4', size: MB }, false)).toBe(
+      'Por enquanto só dá para enviar foto. Escolha uma foto.'
+    );
+    expect(await portfolioFileProblem({ type: 'video/quicktime', size: MB }, false)).toMatch(/só dá para enviar foto/);
+    expect(await portfolioFileProblem({ type: 'image/jpeg', size: MB }, false)).toBeNull();
+    expect(await portfolioFileProblem({ type: 'video/mp4', size: MB }, true)).toBeNull();
+  });
 });
 
 describe('W02: a job already going on', () => {

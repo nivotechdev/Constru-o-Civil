@@ -20,6 +20,7 @@ import { resetFileInput } from '../../utils/fileInput';
 import { formatPostDate } from '../../utils/format';
 import { ReportSheet } from '../../components/SafetyMenu';
 import { PostViewer } from './PostViewer';
+import { FEATURES } from '../../services/features';
 import { MAX_CAPTION, portfolioFileProblem } from '../../utils/media';
 
 const POSTS_KEY = 'worker-posts';
@@ -218,7 +219,7 @@ function Composer({ ui, setUi }: ComposerProps) {
       >
         <input
           type="file"
-          accept="image/*,video/*"
+          accept={FEATURES.video ? 'image/*,video/*' : 'image/*'}
           className="sr-only"
           onChange={(e) => {
             const file = e.target.files && e.target.files[0];

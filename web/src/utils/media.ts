@@ -1,5 +1,7 @@
 // F16: what the portfolio accepts — a photo of up to 10 MB (compressed before sending) or a video of up to
 // 60 seconds and 50 MB (the Storage bucket refuses more).
+import { FEATURES } from '../services/features';
+
 export const MAX_PHOTO_MB = 10;
 export const MAX_VIDEO_MB = 50;
 export const MAX_VIDEO_SECONDS = 60;
@@ -26,9 +28,15 @@ function videoSeconds(file: File): Promise<number | null> {
 }
 
 /** The problem with a picked file, or `null` when it can be posted. */
-export async function portfolioFileProblem(file: Pick<File, 'type' | 'size'> & Partial<File>): Promise<string | null> {
+export async function portfolioFileProblem(
+  file: Pick<File, 'type' | 'size'> & Partial<File>,
+  videoAllowed: boolean = FEATURES.video
+): Promise<string | null> {
   const mb = file.size / (1024 * 1024);
   if (file.type.startsWith('video/')) {
+    // AUD-008: a video carries the phone's location in its metadata and goes to a public bucket; photos are cleaned
+    // before sending, videos are not. Videos stay off in real mode until they are cleaned on the server.
+    if (!videoAllowed) return 'Por enquanto só dá para enviar foto. Escolha uma foto.';
     if (mb > MAX_VIDEO_MB) return `Vídeo de até ${MAX_VIDEO_MB} MB. Escolha um mais curto.`;
     const seconds = typeof document !== 'undefined' ? await videoSeconds(file as File) : null;
     if (seconds !== null && seconds > MAX_VIDEO_SECONDS + 0.5)

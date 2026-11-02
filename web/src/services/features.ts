@@ -32,6 +32,11 @@ export const FEATURES = {
   phoneLogin: firebase,
   /** The WhatsApp number confirmed by a code. */
   whatsappCode: IS_DEMO || on(env.VITE_CODIGO_WHATSAPP),
+  /**
+   * Videos in the portfolio (AUD-008): off in real mode — a video carries the phone's GPS in its metadata and the
+   * bucket is public. Turn on only after the server cleans the file (VITE_VIDEO_PORTFOLIO=1).
+   */
+  video: IS_DEMO || on(env.VITE_VIDEO_PORTFOLIO),
   /** Notifications on the phone (Web Push). */
   push: !IS_DEMO && Boolean(env.VITE_VAPID_PUBLIC_KEY)
 } as const;
