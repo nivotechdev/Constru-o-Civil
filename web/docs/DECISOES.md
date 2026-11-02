@@ -313,7 +313,7 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   avisada ("Pagamento será devolvido") e a devolução é feita pelo painel do Mercado Pago (F11 mostra o
   status). Reembolso automático fica para quando houver conta no provedor.
 - **Os dados do cartão da demonstração** ficam no estado da própria tela (somem ao sair), nunca no store (Y14).
-- **Suporte**: WhatsApp `54 9473-1661` e `nivotech.dev@gmail.com`, como informado. O número parece ter um
+- **Suporte**: o WhatsApp e o e-mail de suporte, como informado. O número parece ter um
   dígito a menos para um celular (são 10 dígitos com o DDD); confira e ajuste em `VITE_SUPORTE_WHATSAPP`.
 
 ## Z07 — Ninguém descobre quem tem conta pelo CPF/CNPJ
@@ -1008,7 +1008,7 @@ Decisões da rodada que deixa o app pronto para uso real (prompt "bicos-v2"). Ca
   abre o app na tela certa (`public/push-sw.js`, importado pelo service worker do X02).
 - **Escondido até configurar** (`VITE_VAPID_PUBLIC_KEY`). Para ligar: gerar as chaves
   (`npx web-push generate-vapid-keys`); em Edge Functions › Secrets, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
-  `VAPID_SUBJECT` (`mailto:nivotech.dev@gmail.com`) e `PUSH_WEBHOOK_SECRET` (um texto aleatório longo);
+  `VAPID_SUBJECT` (`mailto:[e-mail de suporte]`) e `PUSH_WEBHOOK_SECRET` (um texto aleatório longo);
   publicar `enviar-push` com `--no-verify-jwt`; ligar a extensão **pg_net**; no SQL Editor, guardar no Vault
   a URL da função e o mesmo segredo:
   `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');`
@@ -1397,7 +1397,7 @@ mudou de nome).
 
 ## L11 (lançamento) — WhatsApp do suporte obrigatório e conferido
 
-**Problema**: o número do suporte tinha um padrão no código (`5494731661`, 10 dígitos — um a menos para celular) e
+**Problema**: o número do suporte tinha um padrão no código (`1190000000`, 10 dígitos — um a menos para celular) e
 o botão "Falar no WhatsApp" da Ajuda levaria a um número que não existe.
 
 **O que foi feito**: `VITE_SUPORTE_WHATSAPP` entrou nas variáveis obrigatórias do build de produção (L01), com

@@ -49,4 +49,5 @@ export const VAPID_PUBLIC_KEY = env.VITE_VAPID_PUBLIC_KEY ?? '';
  * valid mobile (build/env.ts); the demo has none and the Help screen offers only the e-mail.
  */
 export const SUPPORT_WHATSAPP = (env.VITE_SUPORTE_WHATSAPP ?? '').replace(/\D/g, '');
-export const SUPPORT_EMAIL = 'nivotech.dev@gmail.com';
+/** Support e-mail (AUD-082): from the environment, never written in the code (the repository is public). */
+export const SUPPORT_EMAIL = env.VITE_SUPORTE_EMAIL ?? (IS_DEMO ? 'suporte@bicos.demo' : '');

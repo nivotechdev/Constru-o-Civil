@@ -91,12 +91,14 @@ export default function Help() {
             </span>
             <div className="flex flex-col sm:flex-row gap-2">
               {whatsapp ? <WhatsAppButton href={whatsapp} size="lg" fullWidth /> : null}
-              <SupportLink
-                href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Ajuda com a Bicos')}`}
-                icon={<Icon name="mail" size={20} />}
-              >
-                Mandar e-mail
-              </SupportLink>
+              {SUPPORT_EMAIL ? (
+                <SupportLink
+                  href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Ajuda com a Bicos')}`}
+                  icon={<Icon name="mail" size={20} />}
+                >
+                  Mandar e-mail
+                </SupportLink>
+              ) : null}
             </div>
           </div>
         </Card>

@@ -7,7 +7,7 @@ import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
 import { withNotification } from './notifications';
 import { currentCompanyId, isJobClosed } from './selectors';
-import { FEATURES } from './features';
+import { FEATURES, SUPPORT_EMAIL } from './features';
 import * as store from './store';
 import { isExpired } from '../utils/jobInfo';
 import { validateCard, type CardInput } from '../utils/card';
@@ -280,7 +280,7 @@ export function receiptText(payment: BoostPayment, job: Job | undefined, company
     `Confirmado em: ${when(payment.confirmedAt)}`,
     `Destaque até: ${when(payment.boostEndsAt)}`,
     '',
-    'NivoTech · nivotech.dev@gmail.com',
+    SUPPORT_EMAIL ? `NivoTech · ${SUPPORT_EMAIL}` : 'NivoTech',
     'Este recibo não substitui nota fiscal.'
   ].join('\n');
 }

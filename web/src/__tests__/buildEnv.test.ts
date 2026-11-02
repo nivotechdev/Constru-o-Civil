@@ -67,9 +67,9 @@ describe('WhatsApp do suporte (L11)', () => {
   });
 
   it('refuses the old default and anything that is not a mobile with DDD', () => {
-    for (const bad of ['5494731661', '987654321', '1132654321', '01987654321', '551198765432'])
+    for (const bad of ['1190000000', '987654321', '1132654321', '01987654321', '551198765432'])
       expect(brMobileProblem(bad)).toBe('precisa ser um celular com DDD (ex.: 11 98765-4321)');
-    expect(productionEnvProblems({ ...FULL, VITE_SUPORTE_WHATSAPP: '5494731661' })).toEqual([
+    expect(productionEnvProblems({ ...FULL, VITE_SUPORTE_WHATSAPP: '1190000000' })).toEqual([
       'VITE_SUPORTE_WHATSAPP — precisa ser um celular com DDD (ex.: 11 98765-4321)'
     ]);
   });

@@ -223,7 +223,7 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase
    some com `LEGAL_REVIEWED = true` (depois do advogado). Mudar `TERMS.version` faz todo mundo aceitar de novo
    (`/aceitar-termos`); cada aceite fica em `terms_acceptances` (L07).
 7. Resolvido no L11: `VITE_SUPORTE_WHATSAPP` é obrigatório no build de produção e precisa ser celular com DDD (o padrão
-   antigo `5494731661` saiu). `whatsappUrl` decide o `55` pelo tamanho (DDD 55 também começa com 55).
+   antigo `1190000000` saiu). `whatsappUrl` decide o `55` pelo tamanho (DDD 55 também começa com 55).
 8. O conector do Supabase pede aprovação manual para mudanças: em sessão sem humano presente, prepare o SQL e pare.
 9. Plano Free: sem backup diário e o projeto pausa por inatividade. Nada destrutivo em produção sem backup manual antes
    (`pg_dump` ou export pelo painel).

@@ -160,7 +160,7 @@ Para ligar depois (tudo **ação do responsável**, nessa ordem):
    a privada (cofre de senhas).
 2. Gerar o segredo do webhook: `openssl rand -hex 32` (ou um gerador de senha com 64 caracteres).
 3. Edge Functions › Secrets (https://supabase.com/dashboard/project/ppnxdajiihsjaojxokzh/functions/secrets):
-   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:nivotech.dev@gmail.com` e
+   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:<e-mail de suporte>` e
    `PUSH_WEBHOOK_SECRET` = o segredo do passo 2.
 4. SQL Editor (com o mesmo segredo do passo 2):
    `select vault.create_secret('https://ppnxdajiihsjaojxokzh.supabase.co/functions/v1/enviar-push', 'bicos_push_url');`

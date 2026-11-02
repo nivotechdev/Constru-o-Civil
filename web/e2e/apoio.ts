@@ -25,7 +25,7 @@ export const ENV = {
   anonKey: () => need('E2E_ANON_KEY'),
   serviceKey: () => need('E2E_SERVICE_ROLE_KEY'),
   /** Caixa com "+" (Gmail): cada conta de teste recebe e-mail de verdade sem rebater. */
-  emailBase: process.env.E2E_EMAIL_BASE ?? 'nivotech.dev@gmail.com',
+  emailBase: process.env.E2E_EMAIL_BASE ?? 'e2e@bicos.invalid',
   /** Local: o Turnstile de verdade não carrega sem internet — usa um falso com o token de teste da Cloudflare. */
   fakeTurnstile: process.env.E2E_FAKE_TURNSTILE === '1',
   password: 'Bicos-e2e-2026',

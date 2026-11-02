@@ -29,7 +29,7 @@ const localOrHttps = (value: string) =>
 
 /**
  * L11: a Brazilian mobile with its area code — DDD + 9 digits, with or without the 55 and the punctuation.
- * The support number used to default to 5494731661 (one digit short); now it must be given and be right.
+ * The support number used to default to 1190000000 (one digit short); now it must be given and be right.
  */
 export function brMobileProblem(value: string): string | null {
   const digits = value.replace(/\D/g, '');

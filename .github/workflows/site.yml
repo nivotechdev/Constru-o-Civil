@@ -37,7 +37,8 @@ jobs:
       # Sem Sentry no staging por enquanto: endereço que não existe (.invalid), só para o build aceitar.
       VITE_SENTRY_DSN: https://publica@sentry.invalid/1
       VITE_SENTRY_ENVIRONMENT: staging
-      VITE_SUPORTE_WHATSAPP: "54994731661"
+      VITE_SUPORTE_WHATSAPP: ${{ vars.SUPORTE_WHATSAPP || '11999999999' }}
+      VITE_SUPORTE_EMAIL: ${{ vars.SUPORTE_EMAIL }}
       # U18: o botão do Google aparece quando o Google está configurado no staging (as mesmas secrets do staging.yml).
       VITE_LOGIN_GOOGLE: ${{ secrets.GOOGLE_CLIENT_ID != '' && '1' || '0' }}
       # U28: Google e celular pelo Firebase Authentication (projeto bicoapp-6cc68). São os identificadores públicos do
