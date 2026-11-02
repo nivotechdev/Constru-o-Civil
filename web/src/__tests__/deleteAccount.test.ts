@@ -82,4 +82,58 @@ describe('deleting the account', () => {
     expect(db.companies.meridiano).toBeUndefined();
     expect(db.notifications.some((n) => n.workerId === 'jorge' && n.kind === 'contratacao_cancelada')).toBe(true);
   });
+  it('AUD-004: what the account wrote stays without its name and comment; the rating stays in the average', async () => {
+    const review = (applicationId: string, authorLabel: string) => ({
+      id: 'r-' + applicationId,
+      applicationId,
+      direction: 'para_construtora' as const,
+      authorLabel,
+      value: 4,
+      tags: ['Pagou no dia'],
+      comment: 'Pagaram atrasado',
+      createdAt: '2026-10-01T10:00:00.000Z'
+    });
+    // The worker's review of the company (written by Jorge on his candidacy a1) …
+    await settle(m.auth.signIn('trabalhador@bicos.demo', 'bicos123'));
+    const before = m.store.getDb().companies.meridiano;
+    m.store.updateCompany('meridiano', {
+      reviews: [review('a1', 'Jorge M.'), ...before.reviews],
+      reviewCount: before.reviewCount + 1,
+      rating: before.rating
+    });
+    expect((await settle(m.account.deleteAccount({ password: 'bicos123' }, true))).ok).toBe(true);
+    const kept = m.store.getDb().companies.meridiano;
+    const mine = kept.reviews.find((r) => r.id === 'r-a1');
+    expect(mine).toMatchObject({ authorLabel: 'Conta excluída', comment: '', value: 4, tags: ['Pagou no dia'] });
+    expect(kept.reviewCount).toBe(before.reviewCount + 1);
+    expect(JSON.stringify(kept.reviews)).not.toContain('Pagaram atrasado');
+  });
+
+  it('AUD-004: the company that leaves keeps its reviews of workers without name and comment', async () => {
+    await settle(m.auth.signIn('empresa@bicos.demo', 'bicos123'));
+    const jorge = m.store.getDb().workers.jorge;
+    m.store.updateWorker('jorge', {
+      reviews: [
+        {
+          ...jorge.reviews[0],
+          id: 'r-a1',
+          applicationId: 'a1',
+          direction: 'para_trabalhador',
+          authorLabel: 'Eventos Meridiano',
+          comment: 'Chegou cedo',
+          value: 5
+        },
+        ...jorge.reviews
+      ],
+      reviewCount: jorge.reviewCount + 1
+    });
+    expect((await settle(m.account.deleteAccount({ password: 'bicos123' }, true))).ok).toBe(true);
+    const kept = m.store.getDb().workers.jorge;
+    expect(kept.reviews.find((r) => r.id === 'r-a1')).toMatchObject({
+      authorLabel: 'Empresa (conta excluída)',
+      comment: '',
+      value: 5
+    });
+    expect(kept.reviewCount).toBe(jorge.reviewCount + 1);
+  });
 });

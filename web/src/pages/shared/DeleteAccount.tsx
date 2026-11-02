@@ -120,7 +120,8 @@ export default function DeleteAccount() {
               <span className="font-semibold text-danger-500">Essa ação não pode ser desfeita</span>
               <span className="text-sm text-concrete-600">
                 Tudo o que é seu na Bicos é apagado de vez: perfil, fotos, contatos, notificações e as avaliações que
-                você fez e recebeu.{' '}
+                você recebeu. As que você escreveu ficam sem o seu nome e sem o comentário; só a nota continua, na média
+                de quem foi avaliado.{' '}
                 {worker
                   ? 'Você sai de todos os bicos e candidaturas, e suas vagas salvas e publicações somem.'
                   : 'Todas as vagas que você publicou somem, com os candidatos e os impulsionamentos.'}

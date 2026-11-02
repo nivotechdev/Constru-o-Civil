@@ -30,20 +30,17 @@ export async function loadDeletionImpact(): Promise<void> {
   concludeFinishedJobs();
 }
 
-/** U24: a profile without the reviews of the candidacies that were deleted; the rating is redone without them. */
-function withoutReviews<P extends { rating: number; reviewCount: number; reviews: Review[] }>(
-  profile: P,
-  gone: Set<string>
-): P {
-  const removed = profile.reviews.filter((r) => r.applicationId && gone.has(r.applicationId));
-  if (!removed.length) return profile;
-  const count = Math.max(0, profile.reviewCount - removed.length);
-  const sum = profile.rating * profile.reviewCount - removed.reduce((t, r) => t + r.value, 0);
+/**
+ * AUD-004: the reviews the leaving account WROTE (on candidacies in `gone`) lose the author's name and the comment;
+ * the rating stays in the other side's average.
+ */
+function anonymizedReviews<P extends { reviews: Review[] }>(profile: P, gone: Set<string>, label: string): P {
+  if (!profile.reviews.some((r) => r.applicationId && gone.has(r.applicationId))) return profile;
   return {
     ...profile,
-    reviews: profile.reviews.filter((r) => !removed.includes(r)),
-    reviewCount: count,
-    rating: count ? Math.round((sum / count) * 10) / 10 : 0
+    reviews: profile.reviews.map((r) =>
+      r.applicationId && gone.has(r.applicationId) ? { ...r, authorLabel: label, comment: '' } : r
+    )
   };
 }
 
@@ -163,8 +160,10 @@ export async function deleteAccount(
         savedJobIds: [],
         jobAlerts: alerts,
         workers,
-        // The companies it reviewed: their rating without those reviews.
-        companies: Object.fromEntries(Object.entries(next.companies).map(([id, c]) => [id, withoutReviews(c, gone)]))
+        // The companies it reviewed keep the rating, without its name and comment (AUD-004).
+        companies: Object.fromEntries(
+          Object.entries(next.companies).map(([id, c]) => [id, anonymizedReviews(c, gone, 'Conta excluída')])
+        )
       };
     } else if (session.companyId) {
       const companyId = session.companyId;
@@ -201,11 +200,12 @@ export async function deleteAccount(
         invites: next.invites?.filter((i) => i.companyId !== companyId),
         savedJobIds: next.savedJobIds.filter((id) => !jobIds.has(id)),
         companies,
-        // The workers it reviewed: their rating without those reviews, and the bicos done with it out of the count.
+        // The workers it reviewed keep the rating, without its name and comment (AUD-004); the bicos done with it
+        // leave the count.
         workers: Object.fromEntries(
           Object.entries(next.workers).map(([id, w]) => {
             const done = goneApps.filter((a) => a.workerId === id && a.status === 'concluida').length;
-            const cleared = withoutReviews(w, gone);
+            const cleared = anonymizedReviews(w, gone, 'Empresa (conta excluída)');
             return [id, done ? { ...cleared, jobsDone: Math.max(0, cleared.jobsDone - done) } : cleared];
           })
         )
