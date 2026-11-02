@@ -22,8 +22,8 @@ export default function Privacy() {
       <BackBar title="Privacidade e dados" onBack={() => goBack('/configuracoes')} />
       <div className="flex flex-col gap-5 px-4 sm:px-0">
         <p className="text-sm text-concrete-600">
-          De acordo com a LGPD, você pode baixar uma cópia de tudo o que a Bicos guarda sobre você, ou excluir sua conta
-          e seus dados por completo.
+          De acordo com a LGPD, você pode baixar uma cópia dos seus dados na Bicos, ou excluir sua conta e seus dados
+          por completo. A cópia não traz o que é de outras pessoas (como denúncias feitas contra você).
         </p>
 
         <Card padding="md">
