@@ -1619,6 +1619,7 @@ export type Database = {
         Returns: { id: string; nome: string; tipo: string; foto_url: string; biografia: string }[];
       };
       call_storage_cleanup: { Args: Record<PropertyKey, never>; Returns: undefined };
+      can_view_worker: { Args: { p_worker: string }; Returns: boolean };
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       check_cron_failures: { Args: Record<PropertyKey, never>; Returns: number };
       check_cron_http_calls: { Args: Record<PropertyKey, never>; Returns: number };

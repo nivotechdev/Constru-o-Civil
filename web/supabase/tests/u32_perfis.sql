@@ -28,6 +28,10 @@ select pg_temp.login('97000000-0000-0000-0000-0000000000a1');
 select pg_temp.ok((select experiences[1] = 'Pintura' from public.workers where id = '97000000-0000-0000-0000-0000000000a1'),
   'outra conta não mexe nas experiências de ninguém');
 
+-- AUD-021: a construtora lê o perfil de quem se candidatou a uma vaga dela.
+select pg_temp.logout();
+insert into public.applications (job_id, worker_id, status)
+  values (pg_temp.new_job('97000000-0000-0000-0000-0000000000c1'), '97000000-0000-0000-0000-0000000000a1', 'enviada');
 select pg_temp.login('97000000-0000-0000-0000-0000000000c1');
 update public.companies set about = 'Construtora de Caxias do Sul desde 2010.' where id = '97000000-0000-0000-0000-0000000000c1';
 select pg_temp.ok((select about like 'Construtora%' from public.companies where id = '97000000-0000-0000-0000-0000000000c1'),
