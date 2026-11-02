@@ -24,11 +24,11 @@ outros cinco S1 e o S0 do bloco 0 estão resolvidos no código e nos testes; as 
 | AUD-012 | S2        | resolvido (decisão 11: tetos e `urgent`)                                                 | `aud012_tetos_de_vagas.sql` falhava; agora passa                                                        |
 | AUD-022 | S2        | resolvido                                                                                | `aud022_oculta_e_suspensa.sql` falhava; agora passa                                                     |
 
-Ainda **não feitos** no bloco 0: AUD-023, AUD-024 (workflows, dependem dos sócios em parte) e os S3 56 a 82 que sobraram (057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 071, 072, 074, 075, 076, 077, 078, 079, 080, 081). Os itens jurídicos foram tratados pelo "piloto enxuto" confirmado pelos sócios em 02/11/2026 (sem advogado nem contador; impulsionar inativo).
+Ainda **não feitos** no bloco 0 (todos S3): AUD-056, 057, 058, 059, 060, 062, 063, 064, 065, 066, 067, 068, 071, 074, 075, 076, 077, 078, 079, 080. Vários perdem urgência com o piloto enxuto (057, 071, 078, 079 e 066 dependem de selfie, identidade ou push, hoje desligados). Os itens jurídicos foram tratados pelo "piloto enxuto" confirmado pelos sócios em 02/11/2026 (sem advogado nem contador; impulsionar inativo).
 
 ## Verificações locais (antes de cada push)
 
-`npm run typecheck`, `lint`, `format:check`, `npm test` (313 testes), `deno check` das 10 funções (Deno 2.5.4 instalado
+`npm run typecheck`, `lint`, `format:check`, `npm test` (321 testes), `deno check` das 10 funções (Deno 2.5.4 instalado
 no ambiente) e os 70 testes SQL no banco local: todos verdes. O CI do GitHub roda a cada push (os pushes seguidos cancelam o anterior).
 
 ## Pendências e riscos
