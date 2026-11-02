@@ -99,8 +99,10 @@ select pg_temp.logout();
 select pg_temp.ok(pg_temp.status_of((select v from t_ids where k = 'hoje'), '10000000-0000-0000-0000-0000000000a3') = 'concluida',
   'concluir no dia do bico');
 select pg_temp.ok(public.job_holding((select v from t_ids where k = 'hoje')) = 1, 'concluída ocupa a posição (Y02)');
-select pg_temp.ok((select jobs_done from public.workers where id = '10000000-0000-0000-0000-0000000000a3') = 1,
-  'jobs_done soma 1');
+-- AUD-011: concluída pela empresa sem a presença confirmada, a diária não soma em jobs_done (concluída pelo sistema ou
+-- com a presença confirmada, soma: ver aud011_reputacao.sql).
+select pg_temp.ok((select jobs_done from public.workers where id = '10000000-0000-0000-0000-0000000000a3') = 0,
+  'sem presença confirmada, jobs_done não soma');
 select pg_temp.ok((select closed from public.jobs where id = (select v from t_ids where k = 'hoje')),
   'a equipe toda concluiu: a vaga encerra sozinha (Y01)');
 select pg_temp.login('10000000-0000-0000-0000-0000000000a1');

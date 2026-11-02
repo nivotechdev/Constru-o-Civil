@@ -1827,6 +1827,10 @@ export type Database = {
       purge_unconfirmed_signups: { Args: Record<PropertyKey, never>; Returns: number };
       raise_cron_alert: { Args: { p_job: string; p_message: string }; Returns: boolean };
       rate_limit_hit: { Args: { p_key: string; p_max: number; p_window: string }; Returns: boolean };
+      reciprocal_review_pairs: {
+        Args: Record<PropertyKey, never>;
+        Returns: { company_id: string; worker_id: string; reviews: number }[];
+      };
       reiniciar_cadastro_pendente_documento: { Args: { p_documento: string }; Returns: boolean };
       reiniciar_cadastro_pendente_email: { Args: { p_email: string }; Returns: boolean };
       remind_presence: { Args: Record<PropertyKey, never>; Returns: number };
