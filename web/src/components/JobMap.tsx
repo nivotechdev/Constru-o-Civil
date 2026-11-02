@@ -1,18 +1,16 @@
 // U53/U54/U57: "Onde vai ser" — the job's place and the worker's home (the address saved in their profile, never the
-// phone's position), the road between them and its real length and time (a driving route, as Google Maps writes it).
+// phone's position) and the straight-line distance between them. AUD-014: no driving route — the home's point is
+// never sent to a routing server.
 // The picture is still; one button opens it full screen, where it moves. The map (Leaflet) is a separate chunk that
 // loads only when the section comes near the screen.
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { GeoPoint } from '../types/models';
 import { distanceKm, formatKm } from '../utils/geo';
-import { drivingRoute, formatDriveTime, formatRoadKm, type DrivingRoute } from '../services/route';
 import { useModal } from '../hooks/useModal';
 import { navigate } from '../services/router';
 import { Icon } from './icons/Icon';
 
 const MapCanvas = lazy(() => import('./MapCanvas'));
-
-type Road = { key: string; route: DrivingRoute | null } | null;
 
 type Props = {
   job: GeoPoint;
@@ -25,7 +23,6 @@ type Props = {
 
 export function JobMap({ job, place, home, askHome = false }: Props) {
   const [visible, setVisible] = useState(false);
-  const [road, setRoad] = useState<Road>(null);
   const [open, setOpen] = useState(false);
   const modal = useModal(open, () => setOpen(false));
   const box = useRef<HTMLDivElement>(null);
@@ -45,32 +42,11 @@ export function JobMap({ job, place, home, askHome = false }: Props) {
   }, []);
 
   const origin = home;
-  const key = origin ? `${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}>${job.lat},${job.lon}` : '';
-
-  // The road from the origin to the job (the real distance and time); no answer leaves the straight line.
-  useEffect(() => {
-    if (!origin || !visible) return;
-    const ctl = new AbortController();
-    drivingRoute(origin, job, ctl.signal).then((route) => !ctl.signal.aborted && setRoad({ key, route }));
-    return () => ctl.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, visible]);
-
-  const answered = road !== null && road.key === key;
-  const route = answered ? road.route : null;
-  const calculating = Boolean(origin) && !answered;
   const straightKm = origin ? distanceKm(origin, job) : null;
 
   const distanceLine = origin ? (
     <div className="text-concrete-900" aria-live="polite">
-      {route ? (
-        <span>
-          A <strong className="font-bold">{formatRoadKm(route.meters)}</strong> da sua casa
-          <span className="text-concrete-700"> · {formatDriveTime(route.seconds)} de carro</span>
-        </span>
-      ) : calculating ? (
-        <span className="text-concrete-700">Calculando o caminho…</span>
-      ) : straightKm !== null ? (
+      {straightKm !== null ? (
         <span className="text-concrete-700">A cerca de {formatKm(straightKm)} da sua casa (em linha reta).</span>
       ) : null}
     </div>
@@ -91,7 +67,7 @@ export function JobMap({ job, place, home, askHome = false }: Props) {
       <MapCanvas
         job={job}
         origin={origin}
-        path={route?.path ?? null}
+        path={null}
         mode={mode}
         onExpand={() => setOpen(true)}
         label={
