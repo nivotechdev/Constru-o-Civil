@@ -24,7 +24,7 @@ Fluxo central (não mudar sem pedir):
 2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros — sem filtro de ofício desde o U01;
    impulsionadas → urgentes → recentes).
 3. Trabalhador se candidata; a empresa vê os candidatos e os perfis (os dois lados veem o perfil do outro).
-4. Empresa aprova → **o WhatsApp é liberado para os dois lados** (`get_contact`). O endereço
+4. Empresa aprova → **o WhatsApp é liberado** (`get_contact`): o trabalhador vê o da empresa na hora; a empresa sem selo só recebe o do trabalhador depois que ele tocar em "Compartilhar meu WhatsApp" (AUD-009), e só aprova com a conta de 3 dias e até 5 por dia. O endereço
    completo e o mapa de um local comercial aparecem para qualquer conta logada (U53); o de casa, apartamento ou
    condomínio só para a empresa dona e o trabalhador aprovado (AUD-002); o link público sem conta mostra só bairro e cidade.
 5. Presença confirmada → diária concluída (cron) → **avaliação dos dois lados** → notas e histórico nos perfis.

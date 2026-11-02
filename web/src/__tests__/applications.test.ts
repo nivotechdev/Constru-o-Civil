@@ -143,6 +143,22 @@ describe('status machine in the services', () => {
     ).toBe(true);
   });
 
+  it('AUD-009: the approved worker shares the WhatsApp and the company is told (once)', async () => {
+    // Jorge is already pre-selected on BC-4821 in the demo data.
+    await asWorker();
+    await expect(run(m.apps.shareWhatsapp('BC-4998'))).rejects.toMatchObject({ code: 'nao_encontrado' });
+    await run(m.apps.shareWhatsapp('BC-4821'));
+    const app = m.sel.applicationFor(m.store.getDb(), 'BC-4821', 'jorge');
+    expect(app?.workerSharedWhatsappAt).toBeTruthy();
+    const told = () =>
+      m.store
+        .getDb()
+        .notifications.filter((n) => n.companyId === 'meridiano' && /compartilhou o WhatsApp/.test(n.title)).length;
+    expect(told()).toBe(1);
+    await run(m.apps.shareWhatsapp('BC-4821'));
+    expect(told()).toBe(1);
+  });
+
   it('F13: the company invites; accepting becomes a candidacy and the company hears it', async () => {
     const inv = await import('../services/invites');
     await asCompany();

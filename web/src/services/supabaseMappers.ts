@@ -361,7 +361,8 @@ export function applicationFromRow(
     autoRejected: row.auto_rejected,
     workerReviewed: row.worker_reviewed,
     companyReviewed: row.company_reviewed,
-    ...(row.presence_confirmed_at ? { presenceConfirmedAt: row.presence_confirmed_at } : {})
+    ...(row.presence_confirmed_at ? { presenceConfirmedAt: row.presence_confirmed_at } : {}),
+    ...(row.worker_shared_whatsapp_at ? { workerSharedWhatsappAt: row.worker_shared_whatsapp_at } : {})
   };
 }
 
@@ -376,7 +377,8 @@ export function applicationToRow(app: Application): TableInsert<'applications'> 
     auto_rejected: app.autoRejected,
     worker_reviewed: app.workerReviewed,
     company_reviewed: app.companyReviewed,
-    presence_confirmed_at: app.presenceConfirmedAt ?? null
+    presence_confirmed_at: app.presenceConfirmedAt ?? null,
+    worker_shared_whatsapp_at: app.workerSharedWhatsappAt ?? null
   };
 }
 

@@ -287,6 +287,8 @@ export interface Application {
   companyReviewed: boolean;
   /** F12: when the hired worker confirmed they'll go (reset when the job's dates change). */
   presenceConfirmedAt?: string | null;
+  /** AUD-009: when the approved worker shared the WhatsApp with a company that has no seal. */
+  workerSharedWhatsappAt?: string | null;
 }
 
 export interface WorkerPost {

@@ -191,6 +191,7 @@ type ApplicationRow = {
   worker_reviewed: boolean;
   company_reviewed: boolean;
   presence_confirmed_at: string | null;
+  worker_shared_whatsapp_at?: string | null;
 };
 
 type ApplicationEventRow = {
@@ -449,6 +450,7 @@ export interface SupabaseDatabase {
         Returns: undefined;
       };
       confirm_presence: { Args: { p_job_id: string }; Returns: undefined };
+      share_my_whatsapp: { Args: { p_job_id: string }; Returns: undefined };
       undo_reject: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
       save_job_alert: {
         Args: {

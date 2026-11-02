@@ -16,7 +16,7 @@ import { ScreenLoading } from '../../components/QueryView';
 import { PageSkeleton } from '../../components/Skeleton';
 import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
-import { confirmPresence, giveUp, loadMyApplications } from '../../services/applications';
+import { confirmPresence, giveUp, loadMyApplications, shareWhatsapp } from '../../services/applications';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { applicationFor, companyOf, currentWorkerId, getJob } from '../../services/selectors';
@@ -35,6 +35,7 @@ export default function Selected({ params }: ScreenProps) {
   const query = useQuery('my-applications', loadMyApplications);
   const [asking, setAsking] = useState(false);
   const confirm = useAction(confirmPresence, () => showToast('Presença confirmada. Avisamos a empresa.'));
+  const share = useAction(shareWhatsapp, () => showToast('Pronto. A empresa já pode chamar você.'));
   const quit = useAction(giveUp, () => {
     setAsking(false);
     showToast('Avisamos a empresa. Obrigado por avisar com antecedência.');
@@ -91,6 +92,23 @@ export default function Selected({ params }: ScreenProps) {
               </div>
             </div>
             <ContactButton applicationId={hired.id} size="lg" fullWidth />
+            {/* AUD-009: a company without a seal only gets the worker's number after the worker shares it. */}
+            {!company.verified && !hired.workerSharedWhatsappAt ? (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm text-concrete-700">
+                  Esta empresa ainda não foi verificada. Ela só recebe o seu WhatsApp se você quiser.
+                </span>
+                {share.error ? <FieldError message={share.error} /> : null}
+                <Button
+                  label="Compartilhar meu WhatsApp com esta empresa"
+                  iconLeft="message-circle"
+                  variant="secondary"
+                  fullWidth
+                  loading={share.loading}
+                  onClick={() => void share.run(job.id)}
+                />
+              </div>
+            ) : null}
             <span className="text-sm text-concrete-700">
               Combine ponto de encontro, horário e pagamento direto com a empresa. A Bicos não cobra taxa e não entra na
               negociação.

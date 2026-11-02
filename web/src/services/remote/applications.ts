@@ -50,6 +50,13 @@ export const cancelHire = (jobId: string, workerId: string, reason: string) =>
 export const completeWorkday = (jobId: string, workerId: string) => transition(jobId, workerId, 'concluir');
 export const markNoShow = (jobId: string, workerId: string) => transition(jobId, workerId, 'marcar_falta');
 
+/** AUD-009: RPC share_my_whatsapp — the company without a seal only gets the worker's WhatsApp after this. */
+export async function shareWhatsapp(jobId: string): Promise<void> {
+  const client = await db();
+  await request(() => client.rpc('share_my_whatsapp', { p_job_id: jobId }));
+  await loadJob(jobId);
+}
+
 /** F12: RPC confirm_presence. */
 export async function confirmPresence(jobId: string): Promise<void> {
   const client = await db();

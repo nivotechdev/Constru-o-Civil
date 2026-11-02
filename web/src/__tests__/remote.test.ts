@@ -1340,6 +1340,15 @@ describe('remote: data and actions', () => {
     });
   });
 
+  it('AUD-009: sharing the WhatsApp calls the RPC and re-reads the job', async () => {
+    const fake = server('ana', { rpc: { share_my_whatsapp: () => ({ data: null, error: null }) } });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await m.apps.shareWhatsapp('BC-5001');
+    expect(fake.calls.find((c) => c.name === 'share_my_whatsapp')?.args).toEqual({ p_job_id: 'BC-5001' });
+    expect(fake.calls.some((c) => c.name === 'jobs')).toBe(true);
+  });
+
   it('Z12: profile pictures go to Storage (own folder) and are saved on the profile; the old file is removed', async () => {
     const fake = server('ana');
     const m = await load(fake);

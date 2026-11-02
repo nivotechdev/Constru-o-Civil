@@ -209,6 +209,7 @@ export type Database = {
           worker_reviewed: boolean;
           company_reviewed: boolean;
           presence_confirmed_at: string | null;
+          worker_shared_whatsapp_at: string | null;
         };
         Insert: {
           id?: string;
@@ -221,6 +222,7 @@ export type Database = {
           worker_reviewed?: boolean;
           company_reviewed?: boolean;
           presence_confirmed_at?: string | null;
+          worker_shared_whatsapp_at?: string | null;
         };
         Update: {
           id?: string;
@@ -233,6 +235,7 @@ export type Database = {
           worker_reviewed?: boolean;
           company_reviewed?: boolean;
           presence_confirmed_at?: string | null;
+          worker_shared_whatsapp_at?: string | null;
         };
         Relationships: [
           {
@@ -1870,6 +1873,7 @@ export type Database = {
       set_job_photos: { Args: { p_job_id: string; p_photos: string[] }; Returns: undefined };
       set_my_address: { Args: { p: Json }; Returns: undefined };
       set_my_theme: { Args: { p_theme: string }; Returns: undefined };
+      share_my_whatsapp: { Args: { p_job_id: string }; Returns: undefined };
       short_datetime_br: { Args: { p_at: string }; Returns: string };
       signup_taken: { Args: { p_kind: string; p_value: string }; Returns: boolean };
       staff_guard: { Args: Record<PropertyKey, never>; Returns: string };

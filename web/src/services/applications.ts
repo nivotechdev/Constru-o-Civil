@@ -499,6 +499,38 @@ export async function undoApproval(jobId: string, workerId: string): Promise<voi
  * F12: the hired worker confirms they'll go; the company is told. Backend: RPC confirm_presence (the
  * reminder the day before is a daily routine: remind_presence).
  */
+/**
+ * AUD-009: the approved worker shares the WhatsApp with a company that has no seal (it only receives the number after
+ * this). Backend: RPC share_my_whatsapp.
+ */
+export async function shareWhatsapp(jobId: string): Promise<void> {
+  if (!IS_DEMO) return remote.shareWhatsapp(jobId);
+  await mockLatency(400);
+  const db = store.getDb();
+  const app = findApp(db, jobId, currentWorkerId());
+  const job = db.jobs[jobId];
+  if (!job) throw serviceError('nao_encontrado', 'Essa vaga não existe mais.');
+  if (app.status !== 'pre_selecionado' && app.status !== 'contratado')
+    throw serviceError('conflito', 'Só dá para compartilhar o WhatsApp depois que a empresa aprovar.');
+  if (app.workerSharedWhatsappAt) return;
+  const at = now();
+  const worker = db.workers[app.workerId];
+  store.transact((d) =>
+    withNotification(
+      { ...d, applications: d.applications.map((a) => (a.id === app.id ? { ...a, workerSharedWhatsappAt: at } : a)) },
+      {
+        kind: 'confirmar_presenca',
+        title: `${(worker?.name ?? 'O trabalhador').split(' ')[0]} compartilhou o WhatsApp`,
+        text: `Agora você pode chamar para combinar ${jobTitle(job)}.`,
+        workerId: null,
+        companyId: job.companyId,
+        target: '/vaga-gerenciar/' + jobId
+      },
+      at
+    )
+  );
+}
+
 export async function confirmPresence(jobId: string): Promise<void> {
   if (!IS_DEMO) return remote.confirmPresence(jobId);
   await mockLatency(400);

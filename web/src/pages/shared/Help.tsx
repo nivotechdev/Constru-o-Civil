@@ -41,7 +41,7 @@ const WORKER: Question[] = [
   },
   {
     q: 'Quando vejo o endereço e o WhatsApp da empresa?',
-    a: 'Se o serviço é em um comércio, o endereço completo e o mapa aparecem na vaga. Se é em uma casa ou apartamento, você vê só o bairro e a distância até a empresa aprovar você. O botão do WhatsApp também aparece quando a empresa aprovar você.'
+    a: 'Se o serviço é em um comércio, o endereço completo e o mapa aparecem na vaga. Se é em uma casa ou apartamento, você vê só o bairro e a distância até a empresa aprovar você. O botão do WhatsApp também aparece quando a empresa aprovar você. Se a empresa ainda não foi verificada, ela só recebe o seu WhatsApp se você tocar em "Compartilhar meu WhatsApp".'
   },
   {
     q: 'Não vou poder ir. O que faço?',

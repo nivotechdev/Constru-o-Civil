@@ -67,7 +67,8 @@ begin
           jsonb_build_object('role', p_role, 'nome', p_name, 'documento', p_document, 'whatsapp', pg_temp.phone_for(p_id::text),
                              'terms_version', '1.0', 'maior_de_idade', true),
           now(), now());
-  update public.accounts set profile_completed_at = now() where id = p_id;
+  -- AUD-009: conta de teste já "velha" (empresa sem selo só aprova depois de 3 dias de conta); os testes da regra mexem nisso.
+  update public.accounts set profile_completed_at = now(), created_at = now() - interval '10 days' where id = p_id;
 end;
 $$;
 
