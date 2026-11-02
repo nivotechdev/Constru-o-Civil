@@ -4,33 +4,18 @@
 // 1. Chama a RPC delete_my_account COM O TOKEN DO USUÁRIO: ela exige login de no máximo 5 minutos, recusa
 //    se houver bico em andamento sem confirmação, avisa o outro lado, anonimiza o perfil e as avaliações
 //    (reviews.author_label) e apaga a conta de acesso — tudo numa transação.
-// 2. Só se a conta saiu: apaga os arquivos do usuário nos buckets (avatars, portfolio, vagas — a pasta
-//    `<id>/` de cada um) e tira das vagas antigas os endereços dessas fotos.
+// 2. Só se a conta saiu: apaga os arquivos do usuário nos buckets (avatars, portfolio, vagas e identidade —
+//    a pasta `<id>/` de cada um; a selfie e o documento saem aqui, AUD-001) e tira das vagas antigas os
+//    endereços dessas fotos.
 //
 // Respostas: 200 { ok: true, arquivos } · 401/409/422 { erro, mensagem }.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { adminClient, json, preflight, requestUser, requireAppOrigin, rpcError } from '../_shared/http.ts';
+import { ACCOUNT_BUCKETS, removeFolder } from '../_shared/accountFiles.ts';
 import { monitored } from '../_shared/monitoring.ts';
 
 // R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
 requireAppOrigin();
-
-const BUCKETS = ['avatars', 'portfolio', 'vagas'];
-
-/** Apaga tudo em `<bucket>/<id>/`, em lotes; devolve quantos arquivos saíram. */
-async function removeFolder(admin: ReturnType<typeof adminClient>, bucket: string, id: string): Promise<number> {
-  let removed = 0;
-  for (let round = 0; round < 50; round++) {
-    const { data, error } = await admin.storage.from(bucket).list(id, { limit: 100 });
-    if (error) throw error;
-    const paths = (data ?? []).filter((f) => f.id).map((f) => `${id}/${f.name}`);
-    if (!paths.length) break;
-    const { error: removeError } = await admin.storage.from(bucket).remove(paths);
-    if (removeError) throw removeError;
-    removed += paths.length;
-  }
-  return removed;
-}
 
 Deno.serve(
   monitored('excluir-conta', async (req) => {
@@ -60,7 +45,7 @@ Deno.serve(
     // A conta já saiu: daqui em diante, uma falha não volta atrás — fica no log para limpar à mão.
     const admin = adminClient();
     let files = 0;
-    for (const bucket of BUCKETS) {
+    for (const bucket of ACCOUNT_BUCKETS) {
       try {
         files += await removeFolder(admin, bucket, user.id);
       } catch (e) {
