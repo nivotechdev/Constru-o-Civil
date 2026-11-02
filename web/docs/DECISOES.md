@@ -2543,3 +2543,47 @@ Por isso a função só deve ser publicada com `TURNSTILE_SECRET` definido.
 Hoje a função não está na produção, então nada muda para o público até a publicação (produção só com "pode").
 Cobertura: o contrato do app foi testado; a lógica da função (Deno) não tem teste automatizado. O item S-12 da
 auditoria continua aberto para isso.
+
+## AUD-002 — endereço exato: comércio para quem tem conta, casa e apartamento só para a dona e o aprovado
+
+O U53 abriu rua, número, CEP e ponto exato de toda vaga para qualquer conta logada, por permissão de coluna. A auditoria
+mostrou que uma conta grátis lia o endereço de todas as vagas de uma vez, inclusive de quem contrata um serviço em casa.
+Decisão dos sócios (02/11/2026, opção C): local comercial (comércio, prédio, outro) continua visível a quem tem conta;
+casa, apartamento, condomínio e vaga sem tipo só para a empresa dona e o trabalhador aprovado; os outros veem bairro,
+ponto aproximado e distância. As seis colunas saem do `select` (como no Z06) e o endereço sai por `get_job_addresses` e
+`feed_jobs`, que decidem no servidor, com limite de 120 consultas por hora por conta (`address_lookups_per_hour`). Vaga
+sem tipo é tratada como residência por segurança. Isto substitui em parte o U53; o link público segue só com bairro e
+cidade. O `feed_jobs` de 12 argumentos continua removido (o U65 o trocou pelo de 13).
+
+## AUD-004 — excluir a conta anonimiza o que a pessoa escreveu
+
+`anonymize_account` não tocava nas avaliações escritas por quem saía: o nome (`author_label`) e o comentário ficavam no
+perfil de quem foi avaliado. Decisão 3 dos sócios: anonimizar, não apagar. Sai o nome e o comentário; a nota continua na
+média de quem foi avaliado (apagar a nota mexeria na reputação de terceiros). A atualização acontece antes de apagar as
+candidaturas, porque é por elas que se acha o que a pessoa avaliou. As avaliações recebidas continuam saindo com a conta.
+
+## AUD-005 — de onde vem o IP dos limites de taxa
+
+O primeiro item de `x-forwarded-for` é escrito pelo cliente, então trocá-lo a cada chamada anulava todos os limites.
+`clientIp` lê `cf-connecting-ip` (escrito pela borda), depois `x-real-ip` e só então o último item de `x-forwarded-for`.
+Valor que não parece IP é ignorado. Premissa a conferir no staging: as funções ficam atrás da Cloudflare, que reescreve
+`cf-connecting-ip`; se um dia o tráfego chegar sem ela, vale o último item de `x-forwarded-for`.
+
+## AUD-012 — tetos por empresa
+
+Sem selo: 10 vagas abertas e 3 novas por dia; com selo: 30 e 10 (decisão 11). Os números ficam em `app_config`
+(`jobs_open_max_*`, `jobs_per_day_*`) para ajustar depois do piloto sem publicar o app. O campo `urgent` do pedido é
+ignorado: só o impulso pago destaca a vaga. Vaga já marcada como urgente continua assim até ser encerrada.
+
+## AUD-014 — sem rota de carro
+
+A casa do trabalhador (ponto de rua) e o IP iam para dois servidores públicos de rota que a Política não citava.
+Decisão 5, opção A: a rota saiu, o mapa mostra a distância em linha reta e os mosaicos do OpenStreetMap, que a Política
+agora cita. Trade-off: o tempo de carro deixou de aparecer; o botão "Abrir no Google Maps" continua dando o caminho.
+
+## AUD-020 — link de e-mail só entra se este aparelho pediu
+
+O app aceitava `#access_token=…&refresh_token=…` de qualquer link e entrava na conta de quem montou o link. Agora
+`requestAuthLink` grava um marcador de 1 hora (cadastro, reenvio, "esqueci a senha", troca de e-mail, Google) e o link
+só vale uma vez e só se o marcador existir. Custo: abrir o link do e-mail em OUTRO aparelho não entra mais; o aviso manda
+entrar com a senha ou pedir um link novo. A alternativa (PKCE) tem a mesma limitação e mexe no cliente do Supabase.
