@@ -553,6 +553,12 @@ export type Database = {
         Update: { id?: never; jobname?: string; runid?: number; message?: string; sent?: boolean; alerted_at?: string };
         Relationships: [];
       };
+      cron_http_calls: {
+        Row: { id: number; jobname: string; request_id: number; called_at: string; checked: boolean };
+        Insert: { id?: never; jobname: string; request_id: number; called_at?: string; checked?: boolean };
+        Update: { id?: never; jobname?: string; request_id?: number; called_at?: string; checked?: boolean };
+        Relationships: [];
+      };
       identity_submissions: {
         Row: {
           id: string;
@@ -1611,6 +1617,7 @@ export type Database = {
       call_storage_cleanup: { Args: Record<PropertyKey, never>; Returns: undefined };
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       check_cron_failures: { Args: Record<PropertyKey, never>; Returns: number };
+      check_cron_http_calls: { Args: Record<PropertyKey, never>; Returns: number };
       claim_document_for: { Args: { p_user_id: string; p_digits: string }; Returns: undefined };
       claim_whatsapp_for: { Args: { p_user_id: string; p_phone: string }; Returns: undefined };
       cnpj_valid: { Args: { p_document: string }; Returns: boolean };
@@ -1816,6 +1823,7 @@ export type Database = {
       publish_job: { Args: { p: Json }; Returns: string };
       purge_auth_attempts: { Args: Record<PropertyKey, never>; Returns: number };
       purge_unconfirmed_signups: { Args: Record<PropertyKey, never>; Returns: number };
+      raise_cron_alert: { Args: { p_job: string; p_message: string }; Returns: boolean };
       rate_limit_hit: { Args: { p_key: string; p_max: number; p_window: string }; Returns: boolean };
       reiniciar_cadastro_pendente_documento: { Args: { p_documento: string }; Returns: boolean };
       reiniciar_cadastro_pendente_email: { Args: { p_email: string }; Returns: boolean };
@@ -1863,6 +1871,7 @@ export type Database = {
         Args: { p_action: string; p_target_type: string; p_target_id: string; p_reason: string };
         Returns: undefined;
       };
+      storage_cleanup_overdue: { Args: Record<PropertyKey, never>; Returns: number };
       storage_url_ok: { Args: { p_url: string; p_bucket: string; p_owner: string }; Returns: boolean };
       submit_application: { Args: { p_job_id: string }; Returns: undefined };
       submit_identity: {
