@@ -10,7 +10,7 @@ import { getSession } from '../store';
 import { db, invokeFunction, request, toServiceError } from './client';
 import { withTimeout } from '../boot';
 import {
-  authRedirectUrl,
+  requestAuthLink,
   enterPendingSession,
   enterNewAccountSession,
   enterSession,
@@ -214,7 +214,7 @@ export async function signUp(data: SignUpData, captcha: CaptchaSource): Promise<
       email,
       password: data.password,
       options: {
-        emailRedirectTo: authRedirectUrl(),
+        emailRedirectTo: requestAuthLink(),
         captchaToken: await captchaToken(captcha),
         // Read by the database when the account is created; the document is removed from the Auth
         // metadata right after it is encrypted (Z09). `tipo` keeps the legacy app's trigger working.
@@ -315,7 +315,7 @@ export async function resendConfirmationEmail(to?: string): Promise<void> {
   const { error } = await client.auth.resend({
     type: 'signup',
     email,
-    options: { emailRedirectTo: authRedirectUrl() }
+    options: { emailRedirectTo: requestAuthLink() }
   });
   if (error) {
     if (authCode(error) === 'over_email_send_rate_limit')
@@ -363,7 +363,7 @@ export async function acceptTerms(version: string): Promise<void> {
 export async function requestPasswordReset(email: string, captcha: CaptchaSource): Promise<void> {
   const client = await db();
   const { error } = await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-    redirectTo: authRedirectUrl(),
+    redirectTo: requestAuthLink(),
     captchaToken: await captchaToken(captcha)
   });
   if (error) {
@@ -438,7 +438,7 @@ export async function changePassword(current: string, next: string, captcha: Cap
 export async function changeEmail(email: string, password: string, captcha: CaptchaSource): Promise<void> {
   if (!(await checkPassword(password, captcha))) throw serviceError('validacao', 'Senha incorreta.');
   const client = await db();
-  const { error } = await client.auth.updateUser({ email }, { emailRedirectTo: authRedirectUrl() });
+  const { error } = await client.auth.updateUser({ email }, { emailRedirectTo: requestAuthLink() });
   if (error) {
     const code = authCode(error);
     if (code === 'email_exists' || code === 'user_already_exists')
@@ -455,7 +455,7 @@ export async function signInWithGoogle(): Promise<void> {
   const client = await db();
   const { error } = await client.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: authRedirectUrl() }
+    options: { redirectTo: requestAuthLink() }
   });
   if (error) throw toServiceError(error);
 }

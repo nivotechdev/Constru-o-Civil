@@ -40,6 +40,33 @@ export function authRedirectUrl(): string {
   return globalThis.location ? routeUrl('/').replace(/#\/$/, '') : '';
 }
 
+// AUD-020: a link with #access_token only signs in if THIS device asked for an e-mail link a short time ago
+// (sign-up, resend, "forgot password", e-mail change). Otherwise anyone could send a link with the tokens of an
+// account of their own and the person who opens it would be using that account without knowing.
+const AUTH_LINK_KEY = 'bicos.link-pedido';
+const AUTH_LINK_MAX_AGE_MS = 60 * 60 * 1000;
+
+/** The address the e-mail links come back to, remembering on this device that a link was just asked for. */
+export function requestAuthLink(): string {
+  try {
+    localStorage.setItem(AUTH_LINK_KEY, String(Date.now()));
+  } catch {
+    // Private mode / blocked storage: the link will not sign in here, the person enters with the password.
+  }
+  return authRedirectUrl();
+}
+
+/** Whether this device asked for an e-mail link in the last hour (and forgets it: a link is used once). */
+function consumeAuthLinkRequest(): boolean {
+  try {
+    const asked = Number(localStorage.getItem(AUTH_LINK_KEY));
+    localStorage.removeItem(AUTH_LINK_KEY);
+    return Number.isFinite(asked) && asked > 0 && Date.now() - asked < AUTH_LINK_MAX_AGE_MS;
+  } catch {
+    return false;
+  }
+}
+
 let channel: RealtimeChannel | null = null;
 
 // A password-reset link opens a short session only to set the new password (services/remote/auth.ts
@@ -366,6 +393,12 @@ async function handleAuthRedirect(): Promise<void> {
   const accessToken = params.get('access_token');
   const refreshToken = params.get('refresh_token');
   if (!accessToken || !refreshToken) return;
+  if (!consumeAuthLinkRequest()) {
+    // AUD-020: nobody on this device asked for this link; do not sign in with tokens that came from outside.
+    replaceUrl('/login');
+    notice = 'Esse link não foi pedido neste aparelho. Entre com seu e-mail e senha, ou peça um link novo por aqui.';
+    return;
+  }
   const recovery = params.get('type') === 'recovery';
   const emailChange = params.get('type') === 'email_change';
   if (recovery) setRecovering(true);
@@ -374,7 +407,10 @@ async function handleAuthRedirect(): Promise<void> {
   replaceUrl(recovery ? '/redefinir-senha' : '/');
   if (error) notice = 'Esse link não vale mais. Entre ou peça um novo.';
   else if (emailChange) notice = 'E-mail trocado. Use o novo para entrar.';
-  else if (!recovery) notice = 'E-mail confirmado. Bem-vindo à Bicos!';
+  else if (!recovery) {
+    const email = (await client.auth.getSession()).data.session?.user.email;
+    notice = email ? `E-mail confirmado. Você entrou como ${email}.` : 'E-mail confirmado. Bem-vindo à Bicos!';
+  }
 }
 
 let notice: string | null = null;

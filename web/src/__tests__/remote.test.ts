@@ -1529,6 +1529,62 @@ describe('Z11: opening the app with the real backend', () => {
     vi.unstubAllGlobals();
   });
 
+  describe('AUD-020: a link with #access_token only signs in if this device asked for it', () => {
+    const memory = new Map<string, string>();
+    const replaced: string[] = [];
+    const stub = (hash: string) => {
+      vi.stubGlobal('localStorage', {
+        getItem: (k: string) => memory.get(k) ?? null,
+        setItem: (k: string, v: string) => memory.set(k, v),
+        removeItem: (k: string) => memory.delete(k),
+        key: () => null,
+        length: 0
+      });
+      const location = { pathname: '/', search: '', hash };
+      vi.stubGlobal('location', location);
+      vi.stubGlobal('window', { location, addEventListener: () => undefined });
+      vi.stubGlobal('history', { replaceState: (_s: unknown, _t: string, url: string) => replaced.push(url) });
+    };
+    const LINK = '#access_token=ATTACKER-A&refresh_token=ATTACKER-R&type=signup';
+    afterEach(() => {
+      memory.clear();
+      replaced.length = 0;
+      vi.unstubAllGlobals();
+    });
+
+    it('tokens from outside, with no link asked here, are ignored and lead to the login', async () => {
+      stub(LINK);
+      const fake = fakeSupabase();
+      const { session } = await boot(fake);
+      await session.startRemoteSession();
+      expect(fake.calls.some((c) => c.name === 'setSession')).toBe(false);
+      expect(replaced.at(-1)).toContain('/login');
+    });
+
+    it('a link asked on this device (reset, confirm, e-mail change) still signs in, once', async () => {
+      stub(LINK);
+      const fake = fakeSupabase();
+      const { session } = await boot(fake);
+      session.requestAuthLink();
+      await session.startRemoteSession();
+      expect(fake.calls.find((c) => c.name === 'setSession')?.args).toMatchObject({ access_token: 'ATTACKER-A' });
+      // The request is used up: the same link a second time is ignored.
+      const again = fakeSupabase();
+      const second = await boot(again);
+      await second.session.startRemoteSession();
+      expect(again.calls.some((c) => c.name === 'setSession')).toBe(false);
+    });
+
+    it('a request older than an hour does not count', async () => {
+      stub(LINK);
+      memory.set('bicos.link-pedido', String(Date.now() - 61 * 60 * 1000));
+      const fake = fakeSupabase();
+      const { session } = await boot(fake);
+      await session.startRemoteSession();
+      expect(fake.calls.some((c) => c.name === 'setSession')).toBe(false);
+    });
+  });
+
   it('Y27: a session whose account has no row is signed out with the reason', async () => {
     const fake = fakeSupabase({
       tables: { accounts: [] },
