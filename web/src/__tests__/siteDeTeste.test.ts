@@ -27,10 +27,10 @@ describe('segredos do staging em um environment (AUD-023)', () => {
     for (const file of ['.github/workflows/staging.yml', '.github/workflows/staging-fotos.yml']) {
       const text = read(file);
       const jobs = text
-        .split(/\n(?=  [a-z0-9-]+:\n)/)
+        .split(/\n(?= {2}[a-z0-9-]+:\n)/)
         .filter((block) => block.includes('secrets.SUPABASE_ACCESS_TOKEN'));
       expect(jobs.length, file).toBeGreaterThan(0);
-      for (const job of jobs) expect(job, file + ' › ' + job.slice(0, 40)).toMatch(/\n    environment: staging\n/);
+      for (const job of jobs) expect(job, file + ' › ' + job.slice(0, 40)).toMatch(/\n {4}environment: staging\n/);
     }
   });
 });
