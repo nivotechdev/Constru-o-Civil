@@ -1,0 +1,44 @@
+caminho	linhas	como	achados	nota
+web/src/services/legal.ts	225	lido por inteiro	C2-001,C2-004,C2-014	texto legal; guarda de build em build/env.ts confere {{…}}
+web/src/services/media.ts	6	lido por inteiro		só createObjectURL; sem achado
+web/src/services/mockLatency.ts	23	lido por inteiro		demo
+web/src/services/mode.ts	9	lido por inteiro		ok
+web/src/services/monitoring.ts	163	lido por inteiro	C2-006	
+web/src/services/notifications.ts	161	lido por inteiro	C2-007,C2-015	
+web/src/services/paging.ts	38	lido por inteiro		ok; limpo em leaveSession
+web/src/services/payments.ts	286	lido por inteiro	C2-015	
+web/src/services/profiles.ts	274	lido por inteiro		ok; validações duplicadas demo×real coerentes
+web/src/services/push.ts	100	lido por inteiro	C2-008	RPC conferida em x03_push.sql
+web/src/services/pwa.ts	25	lido por inteiro		ok (toast de atualização pode ser trocado por outro toast: menor)
+web/src/services/pwaStub.ts	4	lido por inteiro		stub de standalone
+web/src/services/queries.ts	110	lido por inteiro	C2-005	
+web/src/services/reviews.ts	132	lido por inteiro		demo; real valida em remote/actions
+web/src/services/route.ts	65	lido por inteiro	C2-001	
+web/src/services/router.ts	237	lido por inteiro		ok; navigate não valida path (valores vêm de rotas/servidor)
+web/src/services/safety.ts	92	lido por inteiro	C2-007	
+web/src/services/selectors.ts	184	lido por inteiro	C2-007,C2-011	
+web/src/services/sharedUI.ts	21	lido por inteiro		ok
+web/src/services/store.ts	271	lido por inteiro	C2-005,C2-007,C2-015	
+web/src/services/supabase.ts	50	lido por inteiro	C2-017	
+web/src/services/supabaseMappers.ts	541	lido por inteiro	C2-011,C2-015	
+web/src/services/theme.ts	108	lido por inteiro	C2-018	
+web/src/services/toast.ts	45	lido por inteiro		ok
+web/src/services/remote/auth.ts	490	lido por inteiro	C2-016	
+web/src/services/remote/client.ts	162	lido por inteiro	C2-006,C2-009	
+web/src/services/remote/data.ts	560	lido por inteiro	C2-005,C2-015	
+web/src/services/remote/firebase.ts	242	lido por inteiro	C2-019	
+web/src/services/remote/firebaseSdk.ts	15	lido por inteiro		reexports; ok
+web/src/services/remote/merge.ts	279	lido por inteiro	C2-005	puro; ok exceto C2-005 (apply sem época)
+web/src/services/remote/profiles.ts	218	lido por inteiro	C2-005	
+web/src/services/remote/session.ts	582	lido por inteiro	C2-005,C2-008,C2-010,C2-013,C2-015	
+web/src/services/remote/storage.ts	159	lido por inteiro	C2-002,C2-003,C2-012	bucket conferido em z12_fotos.sql
+web/src/utils/image.ts	66	lido por inteiro (apoio)	C2-003	compressImage
+web/src/utils/media.ts	45	lido por inteiro (apoio)	C2-012	portfolioFileProblem
+web/src/pages/shared/WorkerPosts.tsx:205-260	56	amostrado (trecho do compositor)	C2-002	accept="image/*,video/*"
+web/src/components/JobMap.tsx:25-70	46	amostrado (origem da rota)	C2-001	home do trabalhador vai ao OSRM
+web/vite.config.ts	~200	lido por inteiro (apoio)		runtimeCaching só de fotos; guarda legal
+web/build/env.ts	~120	lido por inteiro (apoio)		guarda de produção
+objeto: bundle de produção ($SCRATCH/dist-c2)	-	build e2e com env fictício	C2-007	seed + senha demo no chunk principal
+objeto: rpc save_push_subscription / delete_push_subscription	-	migration x03_push.sql	C2-008	reatribui endpoint à conta que chama: ok
+objeto: buckets avatars/portfolio/vagas/identidade	-	migrations z12/f07	C2-012	MIME e tamanho conferidos: ok
+objeto: trigger check_worker_images_v2 / check_company_images_v2	-	migration z12_fotos.sql	-	URL de foto validada no banco contra app_config.storage_public_base: ok (valor padrão aponta para a produção; staging precisa trocar, está comentado na migration)

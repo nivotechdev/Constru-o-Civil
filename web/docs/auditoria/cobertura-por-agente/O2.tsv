@@ -1,0 +1,74 @@
+caminho	linhas	como	achados	nota
+web/src/__tests__/fakeSupabase.ts	218	lido por inteiro	O2-008	RPC não configurada responde sucesso; sem RLS
+web/src/__tests__/helpers.ts	17	lido por inteiro		ok
+web/src/__tests__/remote.test.ts	1503	lido por inteiro	O2-006,O2-007,O2-008	48 testes; modo real com falso; sem afterEach no bloco principal
+web/src/__tests__/applications.test.ts	375	lido por inteiro	O2-001,O2-007	23 testes; falha em fuso/hora (5 testes às 22h30 BRT)
+web/src/__tests__/services.test.ts	474	lido por inteiro	O2-007,O2-008	21 testes demo
+web/src/__tests__/session.test.ts	180	lido por inteiro		8 testes; guardas de rota ok
+web/src/__tests__/payments.test.ts	145	lido por inteiro	O2-002	demo; nada da Edge Function
+web/src/__tests__/contacts.test.ts	114	lido por inteiro	O2-007	if (!app) return
+web/src/__tests__/reviews.test.ts	116	lido por inteiro		demo
+web/src/__tests__/deleteAccount.test.ts	85	lido por inteiro		demo
+web/src/__tests__/publicLink.test.ts	90	lido por inteiro	O2-008	JSON escrito à mão
+web/src/__tests__/headers.test.ts	91	lido por inteiro		ok (CSP)
+web/src/__tests__/admin.test.ts	136	lido por inteiro		falso responde BC401 por variável
+web/src/__tests__/firebaseSignIn.test.ts	238	lido por inteiro		bem isolado (afterEach)
+web/src/__tests__/supabase.test.ts	254	lido por inteiro	O2-007	expect(typeof typed) placeholder
+web/src/__tests__/utils.parity.test.ts	241	lido por inteiro	O2-007	nome enganoso; valores fixos ainda úteis
+web/src/__tests__/address.test.ts	274	amostrado (linhas 60-75 + grep + cobertura; não lido por inteiro por limite de uso)	O2-007	lido rápido a pedido da coordenação
+web/src/__tests__/places.test.ts	351	amostrado (só grep + cobertura medida; não lido linha a linha por limite de uso)		lido rápido a pedido da coordenação
+web/src/__tests__/firebaseToken.test.ts	110	amostrado (só grep + cobertura medida; não lido linha a linha por limite de uso)		_shared/firebase.ts testado
+web/src/__tests__/edgeOrigin.test.ts	70	amostrado (só grep + cobertura medida; não lido linha a linha por limite de uso)		varre funções por requireAppOrigin
+web/src/__tests__/states.test.ts	120	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/theme.test.ts	129	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/buildEnv.test.ts	115	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/busy.test.ts	137	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/editJob.test.ts	100	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/oficios.test.ts	96	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/days.test.ts	102	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/router.test.ts	93	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/captcha.test.ts	74	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/monitoring.test.ts	72	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/route.test.ts	66	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/emailTemplates.test.ts	58	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/legal.test.ts	48	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		lê ../../../legal fora de web/
+web/src/__tests__/store.test.ts	29	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/tag.test.ts	28	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/confirmEmail.test.ts	28	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/src/__tests__/tapTarget.test.ts	27	amostrado (só grep de asserções frouxas/skip/esperas + cobertura medida; não lido linha a linha por limite de uso)		
+web/e2e/apoio.ts	352	lido por inteiro	O2-005	
+web/e2e/playwright.config.ts	27	lido por inteiro	O2-003	só Pixel 7
+web/e2e/limpeza.ts	32	lido por inteiro	O2-005	engole erros
+web/e2e/relatorio.ts	64	lido por inteiro	O2-004	sem f8
+web/e2e/LEIA.md	65	lido por inteiro	O2-004,O2-010	
+web/e2e/local/serve-fn.ts	10	lido por inteiro		
+web/e2e/local/servidor.mjs	53	lido por inteiro	O2-002,O2-004	só 3 funções
+web/e2e/fluxos/01-cadastro-trabalhador.spec.ts	62	lido por inteiro		
+web/e2e/fluxos/02-construtora-vaga.spec.ts	167	lido por inteiro		
+web/e2e/fluxos/03-candidatura.spec.ts	79	lido por inteiro		
+web/e2e/fluxos/04-diaria-avaliacao.spec.ts	93	lido por inteiro	O2-005	conclude_finished_jobs() global
+web/e2e/fluxos/05-seguranca-conta.spec.ts	85	lido por inteiro		
+web/e2e/fluxos/06-login.spec.ts	101	lido por inteiro		
+web/e2e/fluxos/07-equipe.spec.ts	157	lido por inteiro	O2-005	
+web/e2e/fluxos/08-cadastro-google.spec.ts	128	lido por inteiro	O2-002,O2-007	waitForTimeout(300); função não exercitada
+web/e2e/fixtures/foto.png	2	binário		imagem
+web/docs/E2E.md	177	lido por inteiro	O2-004	gerado, defasado
+web/supabase/tests/_helpers.sql	129	lido por inteiro	O2-009	
+web/supabase/tests/run.mjs	57	lido por inteiro	O2-009	
+web/supabase/tests/local/setup.sh	24	lido por inteiro		
+web/supabase/tests/local/shim.sql	50	lido por inteiro		
+objeto: vitest 287 testes x 1 execução (UTC, hora real)	-	ok		35 arquivos
+objeto: vitest x TZ=America/Sao_Paulo (hora real 16h37)	-	ok		287 passam
+objeto: vitest x TZ=America/Los_Angeles	-	ok		287 passam
+objeto: vitest x TZ=Asia/Tokyo	-	falha	O2-001	1 falha (Y01)
+objeto: vitest x TZ=Pacific/Kiritimati	-	falha	O2-001	1 falha (Y01)
+objeto: vitest x TZ=America/Sao_Paulo relógio 22:30 e 23:59	-	falha	O2-001	5 falhas
+objeto: vitest x TZ=America/Sao_Paulo relógio 10:00	-	ok		287 passam
+objeto: vitest --sequence.shuffle (sementes 1,42,1337,99999,2026)	-	ok		5/5 verdes
+objeto: vitest repetição 2 e 3	-	ok		verdes
+objeto: vitest shuffle+TZ Tokyo/Kiritimati	-	falha	O2-001	mesma falha
+objeto: cobertura v8 (cópia)	-	n/v parcial		37,7% linhas; ver matriz-testes.md
+objeto: testes SQL (execução)	-	n/v		sem Docker; CI verde em 24/10
+objeto: E2E (execução)	-	n/v		sem staging; staging.yml e2e verde em 24/10
+objeto: job e2e do web.yml	-	falha	O2-004	verde vazio
+objeto: Edge Functions (10)	-	falha	O2-002	sem teste

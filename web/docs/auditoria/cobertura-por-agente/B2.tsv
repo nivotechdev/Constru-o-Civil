@@ -1,0 +1,95 @@
+caminho	linhas	como	achados	nota
+rota /mural | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga/BC-4821 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga/BC-4822 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga/BC-4822 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga/BC-ZZZ | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga/BC-ZZZ ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /v/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga/BC-4821 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /notificacoes | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/notificacoes ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /whatsapp | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/whatsapp ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /configuracoes | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/configuracoes ; alvos<48px(360)=4 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /configuracoes/privacidade | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/configuracoes/privacidade ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /configuracoes/senha | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/configuracoes/senha ; alvos<48px(360)=3 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /configuracoes/email | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/configuracoes/email ; alvos<48px(360)=4 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /configuracoes/bloqueados | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/configuracoes/bloqueados ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /configuracoes/avisos | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/configuracoes/avisos ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /configuracoes/excluir-conta | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/configuracoes/excluir-conta ; alvos<48px(360)=6 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /conta-excluida | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/conta-excluida ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /ajuda | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/ajuda ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /termos | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/termos ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /privacidade | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/privacidade ; alvos<48px(360)=1 ; overflow360=372 ; print t1-m-*/t1-d-*
+rota /admin | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/admin ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /trabalhador/jorge | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/trabalhador/jorge ; alvos<48px(360)=4 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /trabalhador/jorge/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/trabalhador/jorge/BC-4821 ; alvos<48px(360)=4 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /trabalhador/nelson/BC-4995 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/trabalhador/nelson/BC-4995 ; alvos<48px(360)=3 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /trabalhador/xxx | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/trabalhador/xxx ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /empresa | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/empresa ; alvos<48px(360)=11 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /empresa/editar | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/empresa/editar ; alvos<48px(360)=4 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /construtora/alvorada | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/construtora/alvorada ; alvos<48px(360)=6 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /construtora/xxx | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/construtora/xxx ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliacoes/construtora/meridiano | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliacoes/construtora/meridiano ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliacoes/trabalhador/jorge | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliacoes/trabalhador/jorge ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliacoes/foo/bar | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliacoes/foo/bar ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /criar-vaga | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/criar-vaga ; alvos<48px(360)=17 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-editar/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-editar/BC-4821 ; alvos<48px(360)=18 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-editar/BC-4822 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-editar/BC-4822 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-editar/BC-4960 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-editar/BC-4960 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-editar/BC-ZZZ | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-editar/BC-ZZZ ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /publicar-de-novo/BC-4960 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/publicar-de-novo/BC-4960 ; alvos<48px(360)=17 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /publicar-de-novo/BC-4822 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/publicar-de-novo/BC-4822 ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-publicada/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-publicada/BC-4821 ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-publicada/BC-ZZZ | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-publicada/BC-ZZZ ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-gerenciar/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-gerenciar/BC-4821 ; alvos<48px(360)=7 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-gerenciar/BC-4822 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-gerenciar/BC-4822 ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-gerenciar/BC-4998 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-gerenciar/BC-4998 ; alvos<48px(360)=6 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-gerenciar/BC-4960 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-gerenciar/BC-4960 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vaga-gerenciar/BC-ZZZ | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vaga-gerenciar/BC-ZZZ ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /fechado/BC-4960 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/fechado/BC-4960 ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /fechado/BC-4944 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/fechado/BC-4944 ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /fechado/BC-4822 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/fechado/BC-4822 ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /fechado/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/fechado/BC-4821 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /impulsionar/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/impulsionar/BC-4821 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /impulsionar/BC-4998 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/impulsionar/BC-4998 ; alvos<48px(360)=1 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /impulsionar/BC-4822 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/impulsionar/BC-4822 ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /impulsionar/BC-4998/24h | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/impulsionar/BC-4998/24h ; alvos<48px(360)=3 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /impulsionar/BC-4998/3d | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/impulsionar/BC-4998/3d ; alvos<48px(360)=3 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /impulsionar/BC-4998/zzz | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/impulsionar/BC-4998/zzz ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /impulsionar/BC-4821/24h | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/impulsionar/BC-4821/24h ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /historico | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/historico ; alvos<48px(360)=9 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /minhas-vagas | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/minhas-vagas ; alvos<48px(360)=9 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /pagamentos | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/pagamentos ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliar-trabalhador/BC-4960/marcos | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliar-trabalhador/BC-4960/marcos ; alvos<48px(360)=6 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliar-trabalhador/BC-4918/edson | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliar-trabalhador/BC-4918/edson ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliar-trabalhador/BC-4821/jorge | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliar-trabalhador/BC-4821/jorge ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliar-trabalhador/BC-ZZZ/x | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliar-trabalhador/BC-ZZZ/x ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /minhas-candidaturas | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/minhas-candidaturas ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /perfil | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/perfil ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /perfil/editar | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/perfil/editar ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /perfil/verificar | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/perfil/verificar ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /vagas-salvas | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/vagas-salvas ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /confirmar/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/confirmar/BC-4821 ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /enviado/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/enviado/BC-4821 ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /selecionado/BC-4821 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/selecionado/BC-4821 ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /avaliar/BC-4703 | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/avaliar/BC-4703 ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /login | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /splash | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /escolha-perfil | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /cadastro/recrutador | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /verificar-email | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /completar-perfil/recrutador | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /aceitar-termos | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /entrar-celular | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /esqueci-senha | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/esqueci-senha ; alvos<48px(360)=2 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /redefinir-senha | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/redefinir-senha ; alvos<48px(360)=3 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /completar-cadastro | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/mural ; alvos<48px(360)=33 ; overflow360=0 ; print t1-m-*/t1-d-*
+rota /rota-que-nao-existe | perfil empresa Meridiano (demo)	-	varredura no navegador 360x800=ok ; 1280x800=ok	-	landed=/rota-que-nao-existe ; alvos<48px(360)=0 ; overflow360=0 ; print t1-m-*/t1-d-*
+fluxo cadastro de empresa (CPF e CNPJ) -> e-mail -> completar perfil | - | navegador 360x800, demo | B2-009 | ok com ressalvas (foco do código); reload no meio perde o rascunho (hipótese)
+fluxo publicar vaga completo com fotos + validações por campo | - | navegador 360x800, demo | B2-001,B2-002,B2-003 | falha (valor, fotos, foco)
+fluxo candidatos: aprovar/recusar/desfazer/contratar/concluir/avaliar | - | navegador 360x800, demo | B2-006 | ok (alvos de toque 40 px)
+fluxo impulsionar PIX + cartão + pagamentos | - | navegador 360x800, demo | B2-005 | ok (R$ 12 / R$ 28 coerentes)
+fluxo editar/excluir/republicar vaga | - | navegador 360x800, demo | - | ok
+fluxo link público /v/:id como visitante | - | navegador 360x800, demo | - | ok (sem rua nem WhatsApp); no build de produção C3-001
+fluxo configurações (e-mail, senha, WhatsApp, editar empresa, bloqueados, excluir conta) | - | navegador 360x800, demo | B2-008 | ok com ressalva (WhatsApp de outra conta)
+fluxo offline / modo falha / clique duplo | - | navegador 360x800, demo | - | ok
+/admin com equipe (filas, decisões, auditoria) | 478 | lido por inteiro (Admin.tsx) + admin.ts | - | n/v em runtime (demo sem equipe), revisado no código
+conta suspensa | - | - | - | n/v (demo não tem)
+tela desktop 1280x800: gerenciar, criar, empresa, pagamento, avaliar, configurações, menu da conta | - | navegador 1280x800 | B2-004,B2-007 | ok exceto B2-007 e "Conta de recrutador"

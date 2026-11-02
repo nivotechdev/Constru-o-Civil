@@ -1,0 +1,66 @@
+caminho	linhas	como	achados	nota
+web/src/components/AboutField.tsx	47	lido por inteiro	C5-008	contador aria-live a cada tecla
+web/src/components/AddressFields.tsx	198	lido por inteiro	C5-008	describedBy do CEP aponta para id que some
+web/src/components/AutocompleteField.tsx	276	lido por inteiro	C5-010,C5-018	combobox correto; placeholder 3,11:1
+web/src/components/Avatar.tsx	84	lido por inteiro	C5-014	sem onError
+web/src/components/BackBar.tsx	20	lido por inteiro		ok
+web/src/components/Badge.tsx	33	lido por inteiro		contrastes ok (4,7-7,7)
+web/src/components/BusyOverlay.tsx	89	lido por inteiro		ok; prazo 30 s em busy.ts
+web/src/components/Button.tsx	91	lido por inteiro	C5-005,C5-010	loading sem nome; accent 3,98:1
+web/src/components/CandidateRow.tsx	121	lido por inteiro	C5-001,C5-009,C5-010,C5-018	div clicavel sem teclado
+web/src/components/Captcha.tsx	99	lido por inteiro	C5-004	sem timeout/unsupported callback
+web/src/components/Card.tsx	37	lido por inteiro	C5-019	padding lg sem uso
+web/src/components/Checkbox.tsx	36	lido por inteiro	C5-002,C5-008,C5-019	sem foco visivel
+web/src/components/CityPicker.tsx	148	lido por inteiro	C5-013	GPS apos fechar; listbox sem setas
+web/src/components/CodeInput.tsx	130	lido por inteiro	C5-008,C5-009	erro sem id/describedby
+web/src/components/ContactButton.tsx	88	lido por inteiro	C5-009	uma chamada por linha (por desenho)
+web/src/components/EmptyState.tsx	27	lido por inteiro	C5-017	h3 fixo
+web/src/components/ErrorBoundary.tsx	94	lido por inteiro		ok; key=path em App.tsx:167
+web/src/components/ErrorState.tsx	46	lido por inteiro	C5-017	h3 fixo
+web/src/components/FieldError.tsx	11	lido por inteiro		ok
+web/src/components/FlowLayout.tsx	104	lido por inteiro		ok
+web/src/components/GoogleButton.tsx	55	lido por inteiro		hex por regra da marca Google
+web/src/components/IconButton.tsx	45	lido por inteiro	C5-012,C5-018	badge fora do nome acessivel
+web/src/components/InfoRow.tsx	14	lido por inteiro		sem min-w-0 (texto longo; nao provado)
+web/src/components/Input.tsx	205	lido por inteiro	C5-009,C5-010,C5-019	olho da senha 36 px; prefix sem uso
+web/src/components/JobCover.tsx	70	lido por inteiro	C5-019	hex decorativo
+web/src/components/JobMap.tsx	155	lido por inteiro	C5-002; ver C2-001,D5-003	OSRM ja relatado
+web/src/components/JobTile.tsx	170	lido por inteiro	C5-002,C5-018,C5-019	foco ring-brand-100 1,27:1
+web/src/components/KeyValue.tsx	9	lido por inteiro		ok
+web/src/components/LoadMore.tsx	19	lido por inteiro	C5-005	usa Button loading
+web/src/components/Logo.tsx	26	lido por inteiro	C5-019	#fff
+web/src/components/MapCanvas.tsx	175	lido por inteiro	(H3); ver C2-001	atribuicao em texto simples
+web/src/components/MapLinks.tsx	23	lido por inteiro		rel ok; url encodeURIComponent
+web/src/components/MercadoPagoCardForm.tsx	111	lido por inteiro	C5-015	sem prazo; sem reportError
+web/src/components/Modal.tsx	134	lido por inteiro	C5-016	alertdialog sem describedby
+web/src/components/NotFound.tsx	17	lido por inteiro	C5-017	JobNotFound sem saida
+web/src/components/NotificationsPanel.tsx	153	lido por inteiro	C5-009,C5-012	sem gerenciamento de foco
+web/src/components/OfflineBanner.tsx	18	lido por inteiro	C5-019	comentario building site
+web/src/components/PasswordStrength.tsx	19	lido por inteiro		ok
+web/src/components/PhotoCarousel.tsx	274	lido por inteiro	C5-002,C5-014	outline-none; aria-roledescription sem role
+web/src/components/PhotoManager.tsx	58	lido por inteiro	C5-002,C5-006,C5-009,C5-018	remover 28 px
+web/src/components/PhotoSlot.tsx	72	lido por inteiro	C5-002,C5-006	input sem nome com foto
+web/src/components/ProfileAddressField.tsx	26	lido por inteiro		ok
+web/src/components/ProfileSection.tsx	51	lido por inteiro		ok
+web/src/components/QueryView.tsx	47	lido por inteiro	C5-003	sem prazo
+web/src/components/Radio.tsx	83	lido por inteiro	C5-002	sem foco visivel
+web/src/components/Rating.tsx	42	lido por inteiro	C5-007,C5-019	editable morto
+web/src/components/ReasonDialog.tsx	70	lido por inteiro		Input so com placeholder (aceito pelo axe)
+web/src/components/ResultIcon.tsx	21	lido por inteiro	C5-019	mapa de tom duplicado
+web/src/components/ReviewForm.tsx	130	lido por inteiro	C5-017,C5-019	h3 fixo; StarPicker export sem uso
+web/src/components/SafetyMenu.tsx	138	lido por inteiro	C5-010	placeholder 3,11:1
+web/src/components/SaveFlag.tsx	29	lido por inteiro	C5-019	aria-pressed + rotulo mutavel
+web/src/components/Select.tsx	76	lido por inteiro	C5-008	sem aria-invalid/describedby
+web/src/components/SettingsButton.tsx	14	lido por inteiro	C5-019	comentario 1024 px (lg=770)
+web/src/components/SignOutDialog.tsx	31	lido por inteiro	C5-016	erro no lugar da descricao
+web/src/components/Skeleton.tsx	80	lido por inteiro	C5-019	TileSkeleton export sem uso
+web/src/components/Switch.tsx	42	lido por inteiro	C5-002,C5-010	sem foco; trilho 1,67:1
+web/src/components/Tag.tsx	54	lido por inteiro		ok
+web/src/components/TextArea.tsx	33	lido por inteiro		ok
+web/src/components/ThemeToggle.tsx	125	lido por inteiro	C5-019	bom; hex do sol
+web/src/components/ToastHost.tsx	50	lido por inteiro	C5-009,C5-011	4 s fixo
+web/src/components/WhatsAppButton.tsx	78	lido por inteiro	C5-002,C5-009,C5-010	4,31:1; foco 1,21:1
+web/src/components/WhatsAppRow.tsx	35	lido por inteiro	C5-009	Trocar 36 px
+web/src/components/icons/Icon.tsx	67	lido por inteiro	C5-019	onClick so p/ Rating editable
+web/src/components/icons/iconData.ts	174	amostrado (linhas 1-71 lidas; 72-174 decodificadas por script: 94 icones, todos SVG valido; icones sem uso nao verificado)		dados
+web/src/components/notificationLook.ts	38	lido por inteiro	C5-019	mapa de tom duplicado

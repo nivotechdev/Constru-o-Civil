@@ -1,0 +1,45 @@
+caminho	linhas	como	achados	nota
+web/supabase/migrations/20261019000100_u01_vaga_simples.sql	223	lido por inteiro	D3c-005	diff contra a versão anterior (W08/L18/Y28/lanc06): só muda o que o cabeçalho diz; ok
+web/supabase/migrations/20261019000200_u06_sem_encerrar_vaga.sql	42	lido por inteiro	D3c-009	ok; drop function close_job sem dependências
+web/supabase/migrations/20261020000100_u10_dados_unicos.sql	169	lido por inteiro	D3c-004,D3c-008	ver achados de WhatsApp único
+web/supabase/migrations/20261020000200_u12_perfil_simples.sql	229	lido por inteiro	D3c-005,D3c-009	drop de colunas (dado perdido, pedido do responsável)
+web/supabase/migrations/20261020000300_u24_exclusao_completa.sql	89	lido por inteiro	D3c-001,D3c-002,D3c-008	ver achados de avaliações escritas
+web/supabase/migrations/20261021000100_u30_tema_da_conta.sql	46	lido por inteiro		RLS própria + RPC; ok
+web/supabase/migrations/20261021000200_u32_perfis.sql	45	lido por inteiro	D3c-009	drop de 4 colunas; checks ok
+web/supabase/migrations/20261021000300_u37_cadastro_google.sql	22	lido por inteiro	D3c-008	cron de limpeza; ok (Firebase só cria login Google com e-mail confirmado)
+web/supabase/migrations/20261021000400_u49_busca_vagas.sql	100	lido por inteiro	D3c-003,D3c-007	busca por position(), sem LIKE; ver achado de custo
+web/supabase/migrations/20261021000500_u48_publico_geral.sql	683	lido por inteiro	D3c-006	13 funções diffadas contra a versão anterior: só texto muda; sobra 'construtora' em admin_suspend_account
+web/supabase/migrations/20261021000600_u51_endereco.sql	258	lido por inteiro	D3c-005,D3c-006	addresses só do dono; ponto deslocado ficou sem função depois do U53
+web/supabase/migrations/20261021000700_u52_dias_e_local.sql	424	lido por inteiro	D3c-006	comentário do cabeçalho desatualizado após U53
+web/supabase/migrations/20261021000800_u53_endereco_publico.sql	101	lido por inteiro	D1-001	citado, não repetido
+web/supabase/migrations/20261022000100_u62_empresa_sem_endereco.sql	60	lido por inteiro	D3c-009	delete de addresses de empresa com where seguro
+web/supabase/migrations/20261022000200_u63_um_nome_so.sql	72	lido por inteiro	D3c-009	drop de companies.contact_name
+web/supabase/migrations/20261022000300_u65_valor_minimo.sql	105	lido por inteiro	D3c-009	drop+create de feed_jobs com grants refeitos; filtro correto
+web/supabase/migrations/20261024000100_u67_cidade_da_empresa.sql	45	lido por inteiro	D3c-005	
+web/supabase/tests/u01_vaga_simples.sql	51	lido por inteiro		
+web/supabase/tests/u06_sem_encerrar_vaga.sql	44	lido por inteiro		
+web/supabase/tests/u10_dados_unicos.sql	66	lido por inteiro		
+web/supabase/tests/u12_perfil_simples.sql	34	lido por inteiro		
+web/supabase/tests/u24_exclusao_completa.sql	83	lido por inteiro	D3c-001	fixture com worker_id e company_id nas duas avaliações esconde o furo
+web/supabase/tests/u30_tema_da_conta.sql	27	lido por inteiro		
+web/supabase/tests/u32_perfis.sql	43	lido por inteiro		
+web/supabase/tests/u37_cadastro_google.sql	30	lido por inteiro		
+web/supabase/tests/u48_publico_geral.sql	32	lido por inteiro		lista de frases não cobre o 'construtora' sem aspas
+web/supabase/tests/u49_busca_vagas.sql	47	lido por inteiro		
+web/supabase/tests/u51_endereco.sql	76	lido por inteiro	D3c-006,D3c-008	bom: negativos 42501/BC422; cobre ponto deslocado que o U53 tornou inútil
+web/supabase/tests/u52_dias_e_local.sql	73	lido por inteiro	D3c-008	
+web/supabase/tests/u53_endereco_publico.sql	21	lido por inteiro	D3c-008,D1-001	só caso positivo
+web/supabase/tests/u62_empresa_sem_endereco.sql	31	lido por inteiro		ok: empresa recusada em set_my_address
+web/supabase/tests/u63_um_nome_so.sql	12	lido por inteiro		ok
+web/supabase/tests/u65_valor_minimo.sql	34	lido por inteiro		ok: igual ao mínimo, a combinar e busca
+web/supabase/tests/u67_cidade_da_empresa.sql	23	lido por inteiro	D3c-005	UF inexistente não é testada
+obj: public.anonymize_account (staging)	-	lido por inteiro	D3c-001,D3c-002	falha: não apaga o que a conta escreveu; apaga denúncias/bloqueios
+obj: public.addresses (tabela, RLS, grants)	-	lido por inteiro	D1-001	ok: só o dono lê, sem escrita direta
+obj: public.save_address / set_my_address / finish_sign_up	-	lido por inteiro	D3c-005	falha leve: limites de longitude e UF
+obj: public.account_prefs + set_my_theme	-	lido por inteiro		ok
+obj: public.feed_jobs (13 args)	-	lido por inteiro	D3c-003,D3c-007	falha: sem teto de busca; sinônimos de obra
+obj: public.signup_taken / claim_whatsapp_for / accounts_whatsapp_key	-	lido por inteiro	D3c-004	falha: unicidade sem prova de posse
+obj: public.purge_unconfirmed_signups	-	lido por inteiro		ok (login Google sempre nasce confirmado: entrar-com-firebase email_confirm=true)
+obj: public.job_from_draft / publish_job / update_job / job_runs_on	-	lido por inteiro	D3c-005	ok; [null] em weekdays sem BC422 (hipótese)
+obj: public.submit_review / admin_suspend_account (textos U48)	-	lido por inteiro	D3c-006	ok; sobra 'construtora' inalcançável
+obj: migrations u* na produção (25 pendentes)	-	n/v	D3c-009	só contagens e catálogo; nada aplicado

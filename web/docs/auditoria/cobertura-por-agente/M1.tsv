@@ -1,0 +1,57 @@
+caminho	linhas	como	achados	nota
+web/src/services/applicationMachine.ts	173	lido por inteiro	M1-006	tabela TRANSITIONS = application_next_status (ok)
+web/src/services/applications.ts	675	lido por inteiro	M1-002,M1-003,M1-006	corpo demo de todas as transições
+web/src/services/remote/applications.ts	58	lido por inteiro	-	chama transition_application/submit/withdraw/undo_reject/confirm_presence
+web/src/utils/applicationStatus.ts	126	lido por inteiro	-	11 status cobertos nos dois rótulos (ok)
+web/src/services/jobs.ts	271	lido por inteiro	M1-003	demo
+web/src/services/remote/jobs.ts	74	lido por inteiro	-	
+web/src/services/selectors.ts	184	lido por inteiro	M1-005	jobState/approvedCount = job_holding
+web/src/services/invites.ts	124	lido por inteiro	M1-003	
+web/src/services/reviews.ts	132	lido por inteiro	M1-003	
+web/src/services/contacts.ts	73	lido por inteiro	-	
+web/src/services/safety.ts	92	lido por inteiro	M1-003	
+web/src/services/payments.ts	286	lido por inteiro	M1-003	
+web/src/services/alerts.ts	155	lido por inteiro	M1-003	
+web/src/services/account.ts	220	lido por inteiro	-	divergência leve em paridade.md
+web/src/services/profiles.ts	274	lido por inteiro	-	
+web/src/services/remote/profiles.ts	218	lido por inteiro	-	
+web/src/services/identity.ts	65	lido por inteiro	-	
+web/src/services/admin.ts	208	lido por inteiro	-	
+web/src/services/notifications.ts	161	lido por inteiro	-	grupos iguais ao banco
+web/src/services/auth.ts	678	lido por inteiro	M1-003	
+web/src/services/address.ts	420	amostrado (só os ramos IS_DEMO)	-	ramos demo × rede
+web/src/services/push.ts, theme.ts, queries.ts, boot.ts, store.ts, features.ts	-	amostrado (só os ramos IS_DEMO)	M1-005	store.ts importa o seed
+web/src/pages/worker/feed/feedUI.ts	258	lido por inteiro	M1-004	
+web/src/pages/worker/feed/Feed.tsx	107	amostrado (linhas 30-107)	M1-004	
+web/src/pages/recruiter/jobForm.ts	294	lido por inteiro	-	regras = job_from_draft
+web/src/utils/jobInfo.ts	323	lido por inteiro	-	lastDay/isExpired = job_last_day
+web/src/services/remote/data.ts	560	amostrado (loadFeed, loadJob, conclude)	M1-004	
+web/docs/CONTRATO-BACKEND.md	254	lido por inteiro	M1-006	
+web/supabase/tests/{_helpers,z01,y01_y04,l22,u06,f12,f13,r03}.sql	-	lido por inteiro	M1-001	nenhum cobre vaga oculta/conta suspensa
+web/src/__tests__/applications.test.ts	375	amostrado (tabela)	-	
+web/src/__tests__/remote.test.ts	1503	amostrado (grep de rpc)	M1-003	só forma da chamada
+OBJETO transição enviada→em_analise (analisar)	-	staging pg_get_functiondef	-	ok
+OBJETO transição aprovar	-	staging + prova em transação desfeita	M1-001	falha (vaga oculta/conta suspensa)
+OBJETO transição recusar	-	staging	-	ok
+OBJETO transição desfazer_recusa (undo_reject)	-	staging	-	ok
+OBJETO transição desfazer_aprovacao	-	staging	-	ok
+OBJETO transição contratar	-	staging + prova	M1-001	falha (conta suspensa)
+OBJETO transição desistir	-	staging + prova	M1-002	falha (sem janela)
+OBJETO transição cancelar_contratacao	-	staging	-	ok
+OBJETO transição concluir (empresa e sistema)	-	staging	M1-006	ok (doc desatualizada)
+OBJETO transição marcar_falta	-	staging + prova	M1-002	ok
+OBJETO transição expirar	-	staging	-	ok
+OBJETO transição cancelar_por_suspensao	-	staging	-	ok
+OBJETO submit_application / withdraw_application	-	staging	M1-003	ok no banco; demo mais folgado
+OBJETO confirm_presence	-	staging	M1-003	ok
+OBJETO invite_worker / answer_invite	-	staging + prova (suspensa)	M1-001,M1-003	falha (conta suspensa)
+OBJETO delete_job	-	staging + prova (com contratado)	-	ok
+OBJETO conclude_finished_jobs / conclude_my_finished_jobs / cron bicos-concluir-diarias	-	staging	M1-006	ok (hipótese H2: ordem de travas)
+OBJETO admin_suspend_account / anonymize_account / delete_my_account / on_auth_user_deleted	-	staging	-	ok (H4)
+OBJETO block_account / get_contact	-	staging + prova	-	ok (H3 decisão F04)
+OBJETO job_holding / job_reopen_auto_rejected / job_close_if_team_done / job_close_applications / job_is_open / job_started / job_last_day	-	staging	-	ok
+OBJETO triggers de applications (refuse_blocked, refuse_suspended, limit_application_spam)	-	staging	M1-003	ok
+OBJETO grants e RLS de applications/application_events/job_invites	-	staging	-	ok (só SELECT)
+OBJETO funções legadas (decidir_candidatura, concluir_candidatura, fechar_vaga, contato_whatsapp)	-	staging has_function_privilege	-	ok (sem EXECUTE para anon/authenticated)
+OBJETO lanc06 backoffice (admin_hide_job, admin_unhide_job)	-	staging	M1-001	falha (hide não trava decisões)
+OBJETO corrida dupla aprovação/candidatura/lotação	-	leitura do código (lock da vaga)	-	n/v em duas sessões; ok pelo desenho

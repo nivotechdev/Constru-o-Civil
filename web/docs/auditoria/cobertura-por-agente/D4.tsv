@@ -1,0 +1,47 @@
+caminho	linhas	como	achados	nota
+web/supabase/functions/.env.staging.example	23	lido por inteiro	D4-012	sem FIREBASE_PROJECT_ID; VAPID_SUBJECT com e-mail pessoal; chave de teste do Turnstile é pública (ok)
+web/supabase/functions/_shared/captcha.ts	32	lido por inteiro	D4-002; D4-007	repo falha fechada; produção publicada falha aberta; fetch sem prazo
+web/supabase/functions/_shared/confirm.ts	20	lido por inteiro	-	X31 correto; sem achados
+web/supabase/functions/_shared/firebase.ts	115	lido por inteiro	D4-007; H3	verificação do token completa; sem prazo no fetch das chaves; sem nova busca por kid novo (hipótese)
+web/supabase/functions/_shared/http.ts	72	lido por inteiro	D4-001	clientIp usa o primeiro item de x-forwarded-for
+web/supabase/functions/_shared/mercadopago.ts	83	lido por inteiro	D4-008; D4-007	ts não numérico passa a janela; fetch sem prazo
+web/supabase/functions/_shared/monitoring.ts	55	lido por inteiro	D4-007; D4-002	Sentry aguardado sem prazo antes do 500; scrub ok (produção sem o scrub de JWT)
+web/supabase/functions/_shared/origin.ts	59	lido por inteiro	D4-008	aceita https://*.com
+web/supabase/functions/codigo-whatsapp/index.ts	95	lido por inteiro	D4-001; D4-007	conferir sem captcha (limite 8/número); IP forjável
+web/supabase/functions/criar-cobranca/index.ts	110	lido por inteiro	D4-003	valor vindo do banco (ok); resultados de attach/confirm ignorados
+web/supabase/functions/entrar-com-documento/index.ts	59	lido por inteiro	D4-001; D4-006; D4-002	captcha e limites ok no repo; oráculo de tempo na RPC; produção sem captcha sem segredo
+web/supabase/functions/entrar-com-firebase/index.ts	127	lido por inteiro	D4-001; D4-010; D4-002	ramo celular sem whatsapp_verified_at; não publicada na produção
+web/supabase/functions/enviar-push/index.ts	106	lido por inteiro	D4-009	segredo em tempo constante ok; endpoint sem lista de hosts
+web/supabase/functions/excluir-conta/index.ts	75	lido por inteiro	ref. D5-002	BUCKETS sem identidade (coberto por D5-002)
+web/supabase/functions/limpar-arquivos/index.ts	46	lido por inteiro	ref. D1-006; D5-001	sem trava de proporção; 401 diário na produção
+web/supabase/functions/verificar-cadastro/index.ts	79	lido por inteiro	D4-001; D4-002	oráculo sim/não é decisão U10; captcha X32 ok; não publicada na produção
+web/supabase/functions/verificar-cnpj/index.ts	82	lido por inteiro	D4-005; D4-007	selo automático sem vínculo com o CNPJ
+web/supabase/functions/webhook-pagamento/index.ts	64	lido por inteiro	D4-003; D4-008	erro de confirm_boost_payment vira 200; assinatura ok
+web/supabase/email-templates/LEIA.md	25	lido por inteiro	-	coerente com configurar-auth.mjs
+web/supabase/email-templates/confirmacao.html	134	lido por inteiro	-	ok (1 h e 7 dias coerentes)
+web/supabase/email-templates/link-de-acesso.html	110	lido por inteiro	D4-011	texto fixo sobre exclusão
+web/supabase/email-templates/redefinir-senha.html	85	lido por inteiro	-	ok
+web/supabase/email-templates/troca-de-email.html	83	lido por inteiro	-	ok
+web/public/_headers	26	lido por inteiro	D4-004; D4-014	sem media-src; curingas amplos; CSP exercitada só em demonstração
+web/public/push-sw.js	36	lido por inteiro	D4-009	URL absoluta do payload abre sem checar origem
+OBJ edge function prod: 8 publicadas (v1–v2)	-	get_edge_function	D4-002	falha: faltam verificar-cadastro e entrar-com-firebase; código anterior ao L05; comparei 8 de 8
+OBJ edge function staging: 10 publicadas	-	list_edge_functions + get_edge_function(verificar-cadastro)	D4-002	ok com ressalva: staging = master (24/10), sem X30–X32
+OBJ verify_jwt prod/staging	-	list_edge_functions	-	ok: true nas 7 do navegador, false em webhook-pagamento, enviar-push, limpar-arquivos
+OBJ logs prod 24 h (function_edge_logs)	-	query_logs	D4-002	ok: 1 chamada (limpar-arquivos 401); sem erro recorrente
+OBJ advisors segurança prod e staging	-	get_advisors	D4-013	WARN: proteção de senha vazada desligada; pg_net em public (só prod); RPCs secdef esperadas
+OBJ RPC de uso interno (grants)	-	pg_proc.proacl staging	-	ok: só service_role
+OBJ RPC document_login_email	-	pg_get_functiondef + medição	D4-006	falha: tempo 0,55 ms × 77,84 ms
+OBJ RPC confirm/fail/attach/begin_boost_payment	-	pg_get_functiondef	D4-003	ok o núcleo; falta fila de reembolso
+OBJ RPC save_push_subscription	-	pg_get_functiondef	D4-009	falha: só valida https://
+OBJ RPC orphan_storage_objects	-	pg_get_functiondef	ref. D1-006	ok colunas cobertas; sem trava
+OBJ RPC admin_suspend_account / delete_my_account	-	pg_get_functiondef	-	ok: banned_until e sessões apagadas; exige login de 5 min
+OBJ storage.buckets (4)	-	select staging	-	ok: MIME e tamanho por bucket; identidade privado
+OBJ storage.objects policies (9)	-	pg_policies staging	-	ok: pasta <uid>/ em todas; leitura de identidade só equipe
+OBJ auth.users: confirmação e banimento	-	count prod e staging	H7	ok: 0 não confirmados com login; 0 anônimos
+OBJ Auth painel (SMTP, captcha, URLs, OTP, providers)	-	configurar-auth.mjs lido	H7	n/v: sem acesso ao painel
+OBJ Secrets das funções	-	-	H8	n/v: não listáveis
+OBJ deno check / deno lint	-	Deno 2.9.6 via npx, cópia no scratchpad	-	ok: sem erros
+OBJ CSP × navegador (demo, 8 rotas)	-	Chromium + csp-app.mjs	-	ok sem violações; fluxos de terceiros n/v (H4)
+OBJ CSP media-src	-	Chromium + csp-media.mjs/csp-blob.mjs	D4-004	falha: vídeo remoto e blob bloqueados
+OBJ front: XSS, target=_blank, postMessage, storage, console	-	grep em web/src	-	ok
+OBJ segredos: dist-demo, src, docs, histórico git	-	grep e git log -G (279 commits)	-	ok: nenhum
