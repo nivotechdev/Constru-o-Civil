@@ -1835,6 +1835,7 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: { company_id: string; worker_id: string; reviews: number }[];
       };
+      rehash_document_hashes: { Args: Record<PropertyKey, never>; Returns: number };
       reiniciar_cadastro_pendente_documento: { Args: { p_documento: string }; Returns: boolean };
       reiniciar_cadastro_pendente_email: { Args: { p_email: string }; Returns: boolean };
       remind_presence: { Args: Record<PropertyKey, never>; Returns: number };

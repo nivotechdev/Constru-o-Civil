@@ -13,6 +13,6 @@ select pg_temp.fails($$select public.create_my_account('trabalhador', 'Pelo Goog
 select public.create_my_account('trabalhador', 'Pelo Google', '390.533.447-05', '(11) 98888-7777', '1.0', true);
 select public.create_my_account('trabalhador', 'Pelo Google', '390.533.447-05', '(11) 98888-7777', '1.0', true);  -- de novo: nada
 select pg_temp.logout();
-select pg_temp.ok((select role = 'trabalhador' and worker_id is not null and document = '***.533.447-**'
+select pg_temp.ok((select role = 'trabalhador' and worker_id is not null and document = '***.***.***-05'
                      from public.accounts where id = '7b000000-0000-0000-0000-0000000000a1'), 'conta criada');
 rollback;

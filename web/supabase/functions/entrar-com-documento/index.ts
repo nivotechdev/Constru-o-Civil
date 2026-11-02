@@ -11,15 +11,14 @@
 // Publicar: supabase functions deploy entrar-com-documento (ver web/docs/SUPABASE.md).
 import { captchaOk } from '../_shared/captcha.ts';
 import { adminClient, clientIp, json, preflight, requireAppOrigin } from '../_shared/http.ts';
+import { keyedHash } from '../_shared/keyedHash.ts';
 import { monitored } from '../_shared/monitoring.ts';
 
 // R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
 requireAppOrigin();
 
-async function sha256Hex(text: string): Promise<string> {
-  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+// AUD-019: HMAC (segredo RATE_LIMIT_PEPPER) em vez de SHA-256 puro nas chaves do limite.
+const PEPPER = Deno.env.get('RATE_LIMIT_PEPPER') ?? '';
 
 Deno.serve(
   monitored('entrar-com-documento', async (req) => {
@@ -42,7 +41,11 @@ Deno.serve(
     // Conta cada tentativa (mesmo as inválidas) por IP e por documento.
     const limits = await Promise.all([
       admin.rpc('rate_limit_hit', { p_key: 'ip:' + ip, p_max: 20, p_window: '15 minutes' }),
-      admin.rpc('rate_limit_hit', { p_key: 'doc:' + (await sha256Hex(documento)), p_max: 5, p_window: '15 minutes' })
+      admin.rpc('rate_limit_hit', {
+        p_key: 'doc:' + (await keyedHash(documento, PEPPER)),
+        p_max: 5,
+        p_window: '15 minutes'
+      })
     ]);
     if (limits.some((r) => r.error)) return json({ erro: 'falha' }, 502);
     if (limits.some((r) => r.data === true)) return json({ erro: 'muitas-tentativas' }, 429);

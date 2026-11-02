@@ -13,6 +13,7 @@
 // Publicar: supabase functions deploy verificar-cadastro (ver web/docs/SUPABASE.md).
 import { captchaOk } from '../_shared/captcha.ts';
 import { adminClient, clientIp, json, preflight, requireAppOrigin } from '../_shared/http.ts';
+import { keyedHash } from '../_shared/keyedHash.ts';
 import { monitored } from '../_shared/monitoring.ts';
 
 // Chamada pelo navegador — sem APP_ORIGIN a função não sobe.
@@ -20,10 +21,8 @@ requireAppOrigin();
 
 const CAMPOS = new Set(['email', 'documento', 'whatsapp']);
 
-async function sha256Hex(text: string): Promise<string> {
-  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+// AUD-019: HMAC (segredo RATE_LIMIT_PEPPER) em vez de SHA-256 puro nas chaves do limite.
+const PEPPER = Deno.env.get('RATE_LIMIT_PEPPER') ?? '';
 
 /** O valor como o banco guarda: e-mail em minúsculas; documento e telefone só com os números. */
 function normalizado(campo: string, valor: string): string | null {
@@ -64,7 +63,7 @@ Deno.serve(
     const limits = await Promise.all([
       admin.rpc('rate_limit_hit', { p_key: 'cadastro-ip:' + ip, p_max: 30, p_window: '15 minutes' }),
       admin.rpc('rate_limit_hit', {
-        p_key: 'cadastro:' + (await sha256Hex(campo + ':' + valor)),
+        p_key: 'cadastro:' + (await keyedHash(campo + ':' + valor, PEPPER)),
         p_max: 10,
         p_window: '15 minutes'
       })

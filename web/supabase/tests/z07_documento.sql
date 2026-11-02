@@ -41,7 +41,7 @@ values ('30000000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-0000000
 select pg_temp.new_user('30000000-0000-0000-0000-0000000000a4', 'trabalhador', 'Quem confirmou', '111.444.777-35');
 select pg_temp.ok(not exists (select 1 from auth.users where id = '30000000-0000-0000-0000-0000000000a3'),
   'cadastro pendente com o mesmo documento é liberado');
-select pg_temp.ok((select document from public.accounts where id = '30000000-0000-0000-0000-0000000000a4') = '***.444.777-**',
+select pg_temp.ok((select document from public.accounts where id = '30000000-0000-0000-0000-0000000000a4') = '***.***.***-35',
   'documento fica com o novo cadastro (mascarado)');
 
 -- Y16: recrutador com CPF não tem o CPF no campo público "CNPJ" da empresa.
