@@ -60,10 +60,8 @@ export async function requestUser(req: Request): Promise<{ id: string; email: st
   return { id: data.user.id, email: data.user.email ?? '' };
 }
 
-/** O IP de quem chamou (o Supabase repassa o do cliente em x-forwarded-for). */
-export function clientIp(req: Request): string {
-  return (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'desconhecido';
-}
+/** O IP de quem chamou (AUD-005: nunca o primeiro item de x-forwarded-for; ver clientIp.ts). */
+export { clientIp } from './clientIp.ts';
 
 /** Os erros das RPCs (BC401…) viram o mesmo formato que o app entende: { erro, mensagem }. */
 export function rpcError(error: { code?: string; message?: string }): Response {
