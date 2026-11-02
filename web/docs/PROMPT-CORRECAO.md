@@ -20,7 +20,67 @@ Público do produto: trabalhadores de celular simples, internet ruim e pouca fam
 7. **Decisões dos sócios** (valem como ordem; onde estiver em branco, o AUD correspondente fica "depende do responsável" e você não decide por eles):
 
 ```
-{{DECISOES_DOS_SOCIOS}}
+DECISÕES DOS SÓCIOS PARA A RODADA FIX (02/11/2026)
+Origem: são as recomendações da coluna "Recomendação" do topo de `PLANO-CORRECAO.md`, adotadas a pedido do responsável. Valem como ordem. Se os sócios quiserem outra opção, troque a linha da decisão aqui antes de rodar a FIX; nenhuma decisão está em branco.
+Regra geral: onde a decisão depende de dinheiro, advogado, contador, DNS, conta em provedor ou token, o AUD correspondente vira "ação do responsável" em `web/docs/CHECKLIST-LANCAMENTO.md` (com passo a passo, dono e data sugeridos) e NÃO é marcado como feito. A parte técnica que não depende disso você faz.
+
+1. Endereço exato das vagas (AUD-002) — opção C.
+   - Local comercial: rua, número, CEP e ponto exato continuam visíveis para conta logada, como no U53.
+   - Casa, apartamento e condomínio (`place_type`): só bairro, cidade e ponto aproximado (`area_lat`/`area_lon`) até a empresa aprovar a candidatura; depois da aprovação, o exato aparece para o aprovado.
+   - Parar de entregar o endereço por `select` direto: leitura por RPC, com limite de consultas por conta (começar com 60 endereços exatos por hora, valor em `app_config`).
+   - No formulário de criar vaga, quando for casa/apartamento, dizer em uma frase que o endereço só aparece para quem for aprovado.
+   - Corrigir `CLAUDE.md` §1 (item 4) e registrar em `DECISOES.md` que isto substitui em parte o U53.
+
+2. Quando liberar o WhatsApp (AUD-009, AUD-013) — opções B + C, aplicadas assim:
+   - Empresa verificada: sem mudança (aprovou, o contato dos dois lados é liberado).
+   - Empresa não verificada: (a) só libera contato se o WhatsApp da conta estiver confirmado e a conta tiver pelo menos 3 dias; (b) teto de 5 aprovações por dia; (c) o contato do trabalhador só chega à empresa depois que ele tocar "Compartilhar meu WhatsApp com esta empresa" (o aviso de aprovação já leva o botão). Números em `app_config`.
+   - Selo "Verificada" (AUD-013): o cadastro com CNPJ ativo passa a mostrar "CNPJ ativo na Receita", sem o selo. "Verificada" só quando a equipe confere (`set_company_verification`) ou quando o nome digitado e o telefone ou e-mail da Receita batem com os da conta. Sem o código por telefone (opção c do AUD): fica fora desta rodada.
+   - Pôr o aviso "Nunca pague para trabalhar" nas telas do WhatsApp liberado (ganho rápido do resumo).
+   - Isto autoriza mudar o passo 4 do fluxo central (`CLAUDE.md` §1, "WhatsApp liberado para os dois lados"); atualize o texto lá e em `CONTRATO-BACKEND.md`.
+
+3. Exclusão de conta × avaliações escritas (AUD-004) — opção B (anonimizar). Ao excluir: tirar o nome e o comentário das avaliações que a pessoa escreveu e manter a nota na média da outra parte. Corrigir a tela de exclusão e a Política ("As avaliações que você escreveu ficam sem o seu nome e sem o comentário"). Texto marcado como proposta para o advogado revisar.
+
+4. O que guardar depois de excluir (AUD-163, AUD-069, AUD-070) — implemente esta proposta, com os prazos como constantes fáceis de mudar (`app_config` ou uma única função de expurgo) e o trecho da Política marcado "proposta — revisar com o advogado e o contador":
+   - Pagamentos: tabela mínima `payments_ledger` (valor, data, id do Mercado Pago, documento do pagador em HMAC), sem vaga nem nome, fora da cascata de exclusão, guardada 5 anos.
+   - Banidos e denúncias procedentes: registro mínimo (HMAC do documento, data, categoria), só `service_role`, 5 anos; denúncias improcedentes e abertas sem decisão são anonimizadas/apagadas na exclusão.
+   - `staff_actions` 5 anos; denúncias resolvidas 1 ano; avisos lidos há mais de 1 ano. Cron de expurgo para cada um.
+   - Ação do responsável: o contador confirma o prazo fiscal e o advogado os demais. Não mexer em `LEGAL_REVIEWED`.
+
+5. Mapa e rota de carro (AUD-014) — opção A. Tirar a rota de carro (OSRM): mostrar só a distância em linha reta e os botões "Abrir no Maps/Waze". Manter os mosaicos do OpenStreetMap. Citar na Política o OpenStreetMap, o dado enviado (a área do mapa e o IP) e a finalidade.
+
+6. Plano do Supabase (AUD-015, AUD-186; X30) — opção B: Pro (US$ 25/mês) antes do primeiro usuário real. Ação do responsável: contratar. A IA: `scripts/backup-producao.sh`, ensaio de restauração no staging registrado em documento, onde guardar a chave do documento fora do Supabase, e o passo a passo para ligar a proteção contra senha vazada e o backup diário no painel. Não marcar como feito.
+
+7. Textos legais (AUD-016, AUD-015, AUD-073, AUD-081) — fazer antes do piloto. Ação do responsável: os 10 dados da empresa e a revisão do advogado. A IA NÃO preenche os campos `{{…}}` nem muda `LEGAL_REVIEWED`; o build de produção continua falhando enquanto estiverem em branco (é proposital). A IA entrega: a lista dos 10 campos com o que cada um pede, `web/docs/INCIDENTE.md` (uma tela, proposta), o registro dos operadores fora do Brasil e dos contratos a aceitar em `web/docs/LGPD.md`, e a guarda dos registros de acesso por 6 meses (AUD-015) no desenho que o advogado confirmar.
+
+8. Avisos fora do app (AUD-049) — opção A: e-mail (Brevo) para candidato novo, aprovação e resumo diário do alerta, respeitando as preferências de aviso, atrás de uma chave escondida em `services/features.ts` até a conta Brevo e o SMTP estarem configurados (ação do responsável). Enquanto isso, trocar "Avisamos" por "Você vê aqui no app". Push fica para depois do piloto.
+
+9. Moderação (AUD-045) — sim. Permitir ocultar perfil, avaliação e publicação por denúncia (`hidden_at` e ação `ocultar_conteudo` em `admin_resolve_report`); o conteúdo oculto some para todos menos a equipe e o dono; suspender conta esconde o perfil público.
+
+10. Papéis da equipe (AUD-063) — opção A: aplicar o papel nas funções. Moderador: fila de denúncias, ocultar conteúdo e ver identidade/pagamento só para leitura. Admin: tudo isso mais verificação de empresa e de identidade, suspender e reativar, fila de pagamentos e `add_staff_member`. Registrar a tabela de quem pode o quê em `DECISOES.md` e testar com os dois papéis.
+
+11. Tetos de abuso (AUD-011, AUD-012) — usar estes números (em `app_config`, revisar depois do piloto):
+   - Empresa sem verificação: até 10 vagas abertas ao mesmo tempo e 3 novas por dia. Verificada: 30 abertas e 10 por dia.
+   - `urgent` do payload é ignorado; urgente só por impulso pago.
+   - Concluir diária só depois do dia combinado (se a data é a combinar, pelo menos 24 horas depois de `contratado`); `jobs_done` e nota só contam com presença confirmada ou conclusão dos dois lados.
+   - Consulta para a equipe com pares de contas que só avaliam um ao outro.
+
+12. Staging fora da organização da produção (AUD-023) — opção A. Ação do responsável: criar a organização/usuário do staging no Supabase e o token só dele, e rotacionar o token atual. A IA: `environment: staging` nos workflows, restrito à `master`, com os segredos nele; item "rotacionar token" no checklist com dono e data. Nunca tocar no token.
+
+13. Site de teste público (AUD-024) — opção A: manter, com faixa fixa "AMBIENTE DE TESTE — não use dados reais", `noindex`/`Disallow: /`, remetente de e-mail próprio do staging (ou sem SMTP) e captcha real de staging ou lista de e-mails permitidos. O domínio e o remetente novos são ação do responsável.
+
+14. Navegadores suportados (AUD-195) — adotar Chrome/WebView ≥ 100 e Safari ≥ 15.4. Pôr em `browserslist` e `build.target`, documentar em `web/README.md` e rodar o E2E também em WebKit no CI.
+
+15. Cadastro e primeiro uso (AUD-213, AUD-214) — sim para os dois. "Ver bicos perto de mim" (cidade em uma pergunta) com lista pública só com bairro e cidade, pela mesma regra do `public_job_card`, com limite de taxa e colunas mínimas (é uma segunda superfície `anon`: teste de segurança novo e registro em `ADVISORS.md`). "Criar minha conta" continua o botão principal. O endereço do trabalhador só é pedido ao tocar na distância ou na primeira candidatura.
+
+16. Vocabulário de status (AUD-167): "Aprovado" no app todo. O mesmo estado tem o mesmo nome para trabalhador e empresa (hoje "Pré-selecionado" × "Aprovado"; "Em análise" × "Novo"), uma só tabela em `utils/applicationStatus.ts` e um teste que garante isso. Os nomes internos (`pre_selecionado` etc.) ficam. Aplicar também a coluna "Sugestão" de `web/docs/auditoria/vocabulario.md`.
+
+17. Contatos de suporte (AUD-082): ação dos sócios criar `suporte@` e `dev@nivotech.com.br`. A IA tira o Gmail e o celular do código e dos documentos (variáveis de ambiente e valores de exemplo neutros), tira o padrão de `E2E_EMAIL_BASE`, corrige `SUPABASE.md` e documenta no checklist onde os sócios preenchem. Não reescrever o histórico do Git.
+
+18. Quando aplicar na produção (AUD-055, AUD-065): uma janela única, com backup ensaiado, na ordem do `APLICAR.md` e de um roteiro atualizado, só depois dos blocos 0 a 2 estarem no staging e conferidos. Esta rodada NÃO aplica nada na produção (CLAUDE.md §9): você entrega o roteiro regenerado (`IMPLANTACAO.md`) e o comparativo repositório × produção, e espera o "pode" dos sócios.
+
+19. Quem vê o perfil dos trabalhadores (AUD-021, AUD-020) — opção B. Empresa só lê trabalhador com vínculo (candidatura, convite ou avaliação), por RPC `get_worker_profile(id)` que confere o vínculo e devolve só o necessário, sem coordenada; o próprio trabalhador continua lendo o seu. Antes de trocar a política, mapeie todo uso de leitura de `workers` por empresa (`grep` em `src/services/remote`) e liste no relatório o que mudou. O `#access_token` do link (AUD-020) passa a ser aceito só com marcador de início de fluxo válido por 1 hora e com a mensagem "Você entrou como <e-mail>".
+
+20. Reembolso, estorno e chargeback do impulso (AUD-038, AUD-039) — opção C no piloto, A antes de ligar o Mercado Pago. Pagamentos continuam DESLIGADOS (`FEATURES.payments` falso) no lançamento; ligar o Mercado Pago é ação do responsável, só depois de testar no sandbox (incluindo a validade mínima do PIX, hipótese H1 da auditoria). A IA implementa já a opção A: estados `reembolsado` e `estornado`, webhook que trata `refunded`/`charged_back` e responde 500 quando falha ao aplicar, fila de pagamentos no `/admin` e aviso à empresa, tudo com teste.
 ```
 
 ## 3. Regras de trabalho
@@ -67,7 +127,7 @@ Os textos abaixo são o resumo operacional de cada achado. A descrição complet
 
 ### Bloco 0 — Segurança e privacidade
 
-**Instruções do bloco 0 (segurança e privacidade).** Comece pelos dois S0 (identidade não apagada); depois os S1; depois S2/S3. Para tudo que mexe em grants/RLS/funções, **primeiro** estenda `web/supabase/tests/seguranca.sql` (ou crie teste novo) com o caso negativo por papel (`anon`, trabalhador, empresa, membro, equipe, conta suspensa, dono × não dono). Confirme cada correção no staging com bloco desfeito. Itens `responsável`: só documente no checklist e peça a decisão. Textos legais: **não** invente dado da empresa nem prazo; deixe `{{…}}` e `LEGAL_REVIEWED=false` até o advogado.
+**Instruções do bloco 0 (segurança e privacidade).** Comece pelo S0 (AUD-001, selfie e documento não apagados ao excluir a conta) e pelo S1 AUD-006 (a limpeza de 30 dias que não roda); depois os demais S1; depois S2/S3. Para tudo que mexe em grants/RLS/funções, **primeiro** estenda `web/supabase/tests/seguranca.sql` (ou crie teste novo) com o caso negativo por papel (`anon`, trabalhador, empresa, membro, equipe, conta suspensa, dono × não dono). Confirme cada correção no staging com bloco desfeito. Itens `responsável`: só documente no checklist e peça a decisão. Textos legais: **não** invente dado da empresa nem prazo; deixe `{{…}}` e `LEGAL_REVIEWED=false` até o advogado.
 
 - **AUD-002** (S1, esforço M, migration, responsável, produção) — Rua, número, CEP e ponto exato de TODA vaga (inclusive casa/apartamento de pessoa física) saem por `select` direto para qualquer conta logada
   - Onde: `web/supabase/migrations/20261021000800_u53_endereco_publico.sql:10` (`grant select (cep, street, number, complement, lat, lon) on public.jobs to authenticated`); política `jobs` (`using (deleted_at is null and hidden_at is null …)`); `jobs.place_type` aceita `casa`/`apartamento` (`20261021000700_u52_dias_e_local.sql:22-24`)

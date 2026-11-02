@@ -4,7 +4,7 @@
 
 ## Decisões que precisamos tomar antes da rodada FIX
 
-Cada decisão destrava um grupo de achados (os `AUD-xxx` entre parênteses). Colar as respostas no `PROMPT-CORRECAO.md`, no lugar de `{{DECISOES_DOS_SOCIOS}}`. Onde há dúvida jurídica, a recomendação precisa de OK do advogado.
+Cada decisão destrava um grupo de achados (os `AUD-xxx` entre parênteses). As respostas vão no `PROMPT-CORRECAO.md`, seção 2, item 7. O prompt já vem preenchido com a coluna **Recomendação** de cada linha (adotada em 02/11/2026 a pedido do responsável); trocar a opção lá se os sócios decidirem diferente. Onde há dúvida jurídica, a recomendação precisa de OK do advogado.
 
 | #   | Decisão                                                                                                                                                                                                          | Opções                                                                                                                                                                                                                | Custo                            | Recomendação                                                                                                       |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -44,7 +44,7 @@ Convenções: **Esf.** P < 2 h, M meio dia a 2 dias, G > 2 dias; **Tipo**: `migr
 - Itens: 50 (S0 1, S1 5, S2 17, S3 27, M 0).
 - Estimativa de esforço: ~26.0 dia(s) de trabalho (P=2 h, M=1 dia, G=3 dias) — somado ao total da rodada.
 - Com migration: 29; toca a produção: 39; depende dos sócios: 27.
-- **Ordem sugerida**: primeiro os dois S0 de privacidade (identidade não apagada), depois os S1 (mapa/OSRM, textos legais, abuso de WhatsApp, limites de taxa, endereço), depois os S2/S3 de segurança e LGPD.
+- **Ordem sugerida**: primeiro o S0 de privacidade (AUD-001, selfie e documento não apagados ao excluir a conta) e o S1 AUD-006 (a limpeza que não roda), depois os demais S1 (limites de taxa, endereço) e os S2/S3 de segurança e LGPD (mapa/OSRM, textos legais, abuso de WhatsApp).
 - **Migrations**: a maior parte. **Produção**: nada se aplica sozinho; entra no pacote da decisão 18. **Ação do responsável**: textos legais, prazos, advogado, DPAs, plano Pro.
 - **Risco de regressão**: grants/RLS/funções mexem no coração do app. Mitigação: estender `seguranca.sql` com casos negativos por papel antes de cada correção; testes de exclusão/exportação ponta a ponta no staging com contas de teste; backfill de `author_account` testado com dados.
 
