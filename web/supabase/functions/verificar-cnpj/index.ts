@@ -1,7 +1,9 @@
 // Verificação automática da construtora (L10): consulta o CNPJ na BrasilAPI (dados públicos da Receita).
 //
 // O app chama com o token da sessão, sem corpo, depois de completar o perfil ou pelo "Verificar agora".
-// - Situação cadastral ATIVA → set_company_verification('verificada') (o selo aparece e chega o aviso).
+// - Situação cadastral ATIVA E o nome digitado e o telefone/e-mail da conta batem com os da Receita (AUD-013) →
+//   set_company_verification('verificada') (o selo aparece e chega o aviso). ATIVA sem bater → continua 'pendente'
+//   (motivo 'dados-nao-conferem') para a conferência da equipe.
 // - BAIXADA / INAPTA / SUSPENSA / NULA → 'reprovada' (não publica até falar com a equipe).
 // - CPF (recrutador por conta própria), CNPJ não encontrado ou a BrasilAPI fora do ar → continua 'pendente'
 //   para a conferência manual. Até 5 consultas por construtora por dia.
@@ -11,6 +13,7 @@
 // L06: a resposta (razão social, situação, abertura, atividade, cidade) fica em companies.cnpj_check para a
 // fila de construtoras do /admin.
 import { adminClient, json, preflight, requestUser, requireAppOrigin } from '../_shared/http.ts';
+import { decideCnpjStatus, type CnpjDecision } from '../_shared/cnpjMatch.ts';
 import { monitored } from '../_shared/monitoring.ts';
 
 // R02: chamada pelo navegador — sem APP_ORIGIN a função não sobe.
@@ -28,7 +31,7 @@ Deno.serve(
 
     const { data: company } = await admin
       .from('companies')
-      .select('id, verification_status')
+      .select('id, name, verification_status')
       .eq('id', user.id)
       .maybeSingle();
     if (!company) return json({ erro: 'BC401', mensagem: 'Essa conta não é de empresa.' }, 401);
@@ -43,13 +46,27 @@ Deno.serve(
     if (error) return json({ erro: 'falha' }, 502);
     if (!cnpj) return json({ status: 'pendente', motivo: 'sem-cnpj' });
 
+    const { data: account } = await admin
+      .from('accounts')
+      .select('whatsapp, email')
+      .eq('company_id', user.id)
+      .maybeSingle();
     let situacao = '';
+    let body: Record<string, unknown> = {};
+    let decision: CnpjDecision = { status: 'pendente' };
     try {
       const res = await fetch(API + cnpj, { headers: { Accept: 'application/json' } });
       if (res.status === 404) return json({ status: 'pendente', motivo: 'nao-encontrado' });
       if (!res.ok) return json({ status: 'pendente', motivo: 'indisponivel' });
-      const body = (await res.json()) as Record<string, unknown>;
+      body = (await res.json()) as Record<string, unknown>;
       situacao = String(body.descricao_situacao_cadastral ?? '').toUpperCase();
+      decision = decideCnpjStatus({
+        situacao,
+        body,
+        name: company.name ?? '',
+        whatsapp: account?.whatsapp,
+        email: account?.email
+      });
       // L06: o que a Receita respondeu fica para a fila da equipe (dados públicos da empresa, não da pessoa).
       const pick = (k: string) => (typeof body[k] === 'string' || typeof body[k] === 'number' ? String(body[k]) : null);
       await admin
@@ -64,6 +81,7 @@ Deno.serve(
             atividade: pick('cnae_fiscal_descricao'),
             municipio: pick('municipio'),
             uf: pick('uf'),
+            confere: decision.confere ?? null,
             consultado_em: new Date().toISOString()
           }
         })
@@ -72,11 +90,13 @@ Deno.serve(
       return json({ status: 'pendente', motivo: 'indisponivel' });
     }
 
-    const status = situacao === 'ATIVA' ? 'verificada' : situacao ? 'reprovada' : 'pendente';
-    if (status !== 'pendente') {
-      const { error: setError } = await admin.rpc('set_company_verification', { p_company: user.id, p_status: status });
+    if (decision.status !== 'pendente') {
+      const { error: setError } = await admin.rpc('set_company_verification', {
+        p_company: user.id,
+        p_status: decision.status
+      });
       if (setError) return json({ erro: 'falha' }, 502);
     }
-    return json({ status, ...(situacao && status === 'reprovada' ? { motivo: situacao.toLowerCase() } : {}) });
+    return json({ status: decision.status, ...(decision.motivo ? { motivo: decision.motivo } : {}) });
   })
 );
