@@ -167,7 +167,7 @@ function JobSummary({ card, onApply, onSignUp }: { card: PublicJobCard; onApply:
           <Button label="Entrar para me candidatar" size="lg" fullWidth onClick={onApply} />
           <Button label="Criar minha conta" variant="secondary" fullWidth onClick={onSignUp} />
           <span className="text-xs text-center text-concrete-500">
-            Entre para ver o endereço completo e o mapa. O contato aparece para quem a empresa aprovar.
+            Entre para ver o mapa. O endereço de casa ou apartamento e o contato aparecem para quem a empresa aprovar.
           </span>
         </div>
       ) : (

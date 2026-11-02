@@ -274,6 +274,10 @@ export default function JobDetail({ params }: ScreenProps) {
               home={role === 'trabalhador' ? workerHome(db) : null}
               askHome={role === 'trabalhador'}
             />
+            {/* AUD-002: a house or apartment shows only the area until the company approves. */}
+            {!exact && role === 'trabalhador' ? (
+              <p className="text-sm text-concrete-500">O endereço completo aparece quando a empresa aprovar você.</p>
+            ) : null}
           </Section>
         </div>
 

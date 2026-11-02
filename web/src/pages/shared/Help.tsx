@@ -41,7 +41,7 @@ const WORKER: Question[] = [
   },
   {
     q: 'Quando vejo o endereço e o WhatsApp da empresa?',
-    a: 'O endereço completo e o mapa aparecem na vaga desde o começo, para você ver se dá para ir. O botão do WhatsApp aparece quando a empresa aprovar você.'
+    a: 'Se o serviço é em um comércio, o endereço completo e o mapa aparecem na vaga. Se é em uma casa ou apartamento, você vê só o bairro e a distância até a empresa aprovar você. O botão do WhatsApp também aparece quando a empresa aprovar você.'
   },
   {
     q: 'Não vou poder ir. O que faço?',
@@ -60,7 +60,7 @@ const COMPANY: Question[] = [
   },
   {
     q: 'Quem vê o endereço do serviço?',
-    a: 'Quem entra na Bicos vê o endereço completo e o mapa da vaga, para saber a distância. O seu WhatsApp só vai para quem você aprovar.'
+    a: 'Em comércio, quem entra na Bicos vê o endereço completo e o mapa. Em casa ou apartamento, todos veem só o bairro e a distância: o endereço completo vai só para quem você aprovar. O seu WhatsApp também só vai para quem você aprovar.'
   },
   {
     q: 'Como falo com o trabalhador?',

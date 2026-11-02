@@ -245,7 +245,8 @@ export async function loadJob(jobId: string): Promise<void> {
       request(() => client.from('applications').select('*').eq('job_id', jobId).eq('worker_id', workerId)),
       savedIds()
     ]);
-    const recipes = await jobsWithContext([job], apps.some((a) => HOLDS_SLOT.has(a.status)) ? [jobId] : []);
+    // AUD-002: the address of this job, if the server allows it (commerce, or picked/hired); it filters.
+    const recipes = await jobsWithContext([job], [jobId]);
     recipes.push(
       putApplications(apps, await eventsOf(apps), (a) => a.jobId === jobId && a.workerId === workerId),
       putSavedJobIds(saved)
@@ -253,7 +254,7 @@ export async function loadJob(jobId: string): Promise<void> {
     apply(...recipes);
     return;
   }
-  const recipes = await jobsWithContext([job]);
+  const recipes = await jobsWithContext([job], [jobId]);
   if (companyId && job.company_id === companyId) {
     const apps = await request(() => client.from('applications').select('*').eq('job_id', jobId));
     recipes.push(...(await applicationsWithContext(apps, (a) => a.jobId === jobId)));

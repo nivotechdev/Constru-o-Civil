@@ -1751,6 +1751,7 @@ export type Database = {
       invite_worker: { Args: { p_job_id: string; p_worker_id: string }; Returns: undefined };
       is_my_job: { Args: { p_job_id: string }; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      job_address_open: { Args: { p_job_id: string; p_company: string; p_place_type: string }; Returns: boolean };
       job_close_applications: { Args: { p_job: Database['public']['Tables']['jobs']['Row'] }; Returns: undefined };
       job_close_if_team_done: { Args: { p_job_id: string }; Returns: undefined };
       job_extras_from_draft: { Args: { p: Json }; Returns: unknown };

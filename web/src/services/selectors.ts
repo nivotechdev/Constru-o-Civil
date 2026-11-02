@@ -138,12 +138,25 @@ export function unavailableText(state: JobState): { title: string; text: string 
 export const isJobClosed = (db: Database, job: Job, now: Date = new Date()): boolean =>
   jobState(db, job, now) !== 'aberta';
 
+/** Places that are not a home: their exact address is visible to everyone signed in (AUD-002, decision 1). */
+const NON_RESIDENTIAL = new Set(['comercio', 'predio', 'outro']);
+
 /**
- * Whether the session sees the job's street, number and CEP. U53: everyone signed in does (before, Z06, only the
- * company and the worker it picked or hired); the public link, without a session, shows only the area.
+ * Whether the session sees the job's street, number and CEP. AUD-002: a commercial place (U53) is open to everyone
+ * signed in; a house, apartment or condominium (or a job with no place type) only to the company that owns it and
+ * the worker picked or hired for it, the others see the neighbourhood and the distance. The public link, without a
+ * session, shows only the area. In real mode the server sends the address only to them (get_job_addresses,
+ * feed_jobs); in the demo this is what hides it.
  */
-export function canSeeExactAddress(_db: Database, _job: Job): boolean {
-  return Boolean(getSession());
+export function canSeeExactAddress(db: Database, job: Job): boolean {
+  const session = getSession();
+  if (!session) return false;
+  // Real mode: the server sent the exact address, so it is allowed (AUD-002); the demo has no such flag.
+  if (job.address.exact === true) return true;
+  if (job.placeType && NON_RESIDENTIAL.has(job.placeType)) return true;
+  if (session.companyId && job.companyId === session.companyId) return true;
+  const app = session.workerId ? applicationFor(db, job.id, session.workerId) : null;
+  return Boolean(app && (app.status === 'pre_selecionado' || app.status === 'contratado'));
 }
 
 // ---- saved jobs ----

@@ -1267,37 +1267,77 @@ describe('remote: data and actions', () => {
     expect(decodeURIComponent(contact.url)).toContain('(BC-5001)');
   });
 
-  it('U53: everyone signed in reads the full address with the job (no approval needed)', async () => {
+  it('AUD-002: jobs are read without the street; the exact address comes only when the server sends it', async () => {
+    const exact = {
+      job_id: 'BC-5001',
+      cep: '01310-100',
+      street: 'Avenida Paulista',
+      number: '1000',
+      complement: null,
+      neighborhood: 'Bela Vista',
+      city: 'São Paulo',
+      uf: 'SP',
+      lat: -23.5631,
+      lon: -46.6544
+    };
     const app = {
       id: 'app-1',
       job_id: 'BC-5001',
-      worker_id: 'u-ana',
+      worker_id: 'ana',
       status: 'enviada',
-      created_at: NOW,
-      status_changed_at: NOW,
-      auto_rejected: false,
+      created_at: '2026-10-01T10:00:00Z',
+      status_changed_at: '2026-10-01T10:00:00Z',
+      presence_confirmed_at: null,
       worker_reviewed: false,
       company_reviewed: false
     };
-    const fake = server('ana', { tables: { applications: [app] } });
+    let rows: (typeof exact)[] = [];
+    // The server never sends the exact columns with a job read: the fake's rows go without them too.
+    const noExact = (row: ReturnType<typeof jobRow>) =>
+      Object.fromEntries(
+        Object.entries(row).filter(([k]) => !['cep', 'street', 'number', 'complement', 'lat', 'lon'].includes(k))
+      );
+    const fake = server('ana', {
+      tables: {
+        applications: [app],
+        jobs: [noExact(jobRow('BC-5001', 'u-obra', 1)), noExact(jobRow('BC-5002', 'u-outra', 2))]
+      },
+      rpc: { get_job_addresses: () => ({ data: rows, error: null }) }
+    });
     const m = await load(fake);
     await m.auth.signIn('ana@exemplo.com', 'segredo123');
     await m.jobs.loadJob('BC-5001');
     const selects = fake.calls.filter((c) => c.name === 'jobs').map((c) => String(c.ops?.[0]?.[1]));
-    expect(selects.every((cols) => cols.includes('street') && cols.includes('lat') && cols !== '*')).toBe(true);
-    // Only a candidate, not picked: the address is there all the same, read with the job.
-    expect(fake.calls.some((c) => c.name === 'get_job_addresses')).toBe(false);
-    const job = m.store.getDb().jobs['BC-5001'];
-    expect(job.address).toMatchObject({ street: 'Avenida Paulista', number: '1000', exact: true, lat: -23.56 });
+    const exactColumns = ['cep', 'street', 'number', 'complement', 'lat', 'lon'];
+    expect(selects.every((cols) => cols !== '*' && !cols.split(',').some((c) => exactColumns.includes(c.trim())))).toBe(
+      true
+    );
+    // A house, not approved: the server sends nothing and the screen keeps to the area.
+    expect(fake.calls.find((c) => c.name === 'get_job_addresses')?.args).toEqual({ p_job_ids: ['BC-5001'] });
+    let job = m.store.getDb().jobs['BC-5001'];
+    expect(job.address).toMatchObject({ street: '', exact: false, lat: -23.56 });
+    expect(m.selectors.canSeeExactAddress(m.store.getDb(), job)).toBe(false);
+    // The server sends it (a commerce, or approved): the address shows, and a re-read of the mural doesn't blank it.
+    rows = [exact];
+    await m.jobs.loadJob('BC-5001');
+    job = m.store.getDb().jobs['BC-5001'];
+    expect(job.address).toMatchObject({ street: 'Avenida Paulista', number: '1000', exact: true });
     expect(m.selectors.canSeeExactAddress(m.store.getDb(), job)).toBe(true);
-    // A row without the street (read before U53) keeps the area only, as before.
+    await m.jobs.loadFeed();
+    expect(m.store.getDb().jobs['BC-5001'].address.street).toBe('Avenida Paulista');
+    // U51: the public point is the exact one moved 100–200 m: a new one (the company moved the job) drops the old
+    // street until it is read again.
+    expect(m.store.getDb().jobs['BC-5001'].address.area).toEqual({ lat: -23.56, lon: -46.65 });
     const { putJobs } = await import('../services/remote/merge');
-    const areaOnly: Record<string, unknown> = { ...jobRow('BC-5001', 'u-obra', 1) };
-    for (const k of ['street', 'number', 'cep', 'complement', 'lat', 'lon']) delete areaOnly[k];
-    const moved = putJobs([{ ...areaOnly, area_lat: -23.5619 } as unknown as ReturnType<typeof jobRow>])(
+    const moved = putJobs([{ ...noExact(jobRow('BC-5001', 'u-obra', 1)), area_lat: -23.5619 } as never])(
       m.store.getDb()
     );
     expect(moved.jobs['BC-5001'].address).toMatchObject({ street: '', exact: false, lat: -23.5619 });
+    const same = putJobs([noExact(jobRow('BC-5001', 'u-obra', 1)) as never])(m.store.getDb());
+    expect(same.jobs['BC-5001'].address).toMatchObject({
+      street: 'Avenida Paulista',
+      area: { lat: -23.56, lon: -46.65 }
+    });
   });
 
   it('Z12: profile pictures go to Storage (own folder) and are saved on the profile; the old file is removed', async () => {

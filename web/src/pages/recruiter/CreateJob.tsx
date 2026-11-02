@@ -265,7 +265,11 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
             onChange={(v) => set({ placeType: v as PlaceType | '' }, 'placeType')}
           />
         </div>
-        <span className="-mt-1 text-sm text-concrete-500">O endereço aparece na vaga, com o mapa.</span>
+        <span className="-mt-1 text-sm text-concrete-500">
+          {['comercio', 'predio', 'outro'].includes(f.placeType)
+            ? 'O endereço aparece na vaga, com o mapa.'
+            : 'O endereço só aparece para quem você aprovar. Antes disso, todos veem o bairro.'}
+        </span>
       </fieldset>
 
       <WeekdayPicker

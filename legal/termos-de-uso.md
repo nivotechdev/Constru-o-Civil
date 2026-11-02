@@ -31,7 +31,7 @@ Quem contrata publica vagas reais, com valor, local e datas verdadeiros, e avisa
 
 O trabalhador se candidata só a vagas que pode cumprir e avisa pela Bicos se não puder ir.
 
-O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço do serviço aparece na vaga para quem tem conta, com o mapa.
+O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço de um comércio aparece na vaga, com o mapa, para quem tem conta; o de uma casa ou apartamento aparece só para quem a empresa aprovou.
 
 ## 5. Verificação
 
