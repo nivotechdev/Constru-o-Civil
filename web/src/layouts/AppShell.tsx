@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useDb, useRole } from '../hooks/useStore';
-import { currentCompany, currentWorker } from '../services/selectors';
+import { currentCompanyId, currentWorkerId } from '../services/selectors';
 import type { Role } from '../types/models';
 import { cx } from '../utils/cx';
 import { AppNav, type AccountSummary } from './AppNav';
@@ -85,13 +85,14 @@ export function AppShell({ path, pattern, children }: AppShellProps) {
   // Decided once per screen (the shell is mounted afresh on every navigation).
   const [entrance] = useState(screenEntrance);
 
+  // AUD-007: the account may not be in the store yet (or may be gone): the shell then shows no name, never throws.
   let account: AccountSummary;
   if (role === 'recrutador') {
-    const company = currentCompany(db);
-    account = { name: company.name, photo: company.logoUrl ?? null };
+    const company = db.companies[currentCompanyId()];
+    account = { name: company?.name ?? '', photo: company?.logoUrl ?? null };
   } else {
-    const worker = currentWorker(db);
-    account = { name: worker.name, initials: worker.initials, photo: worker.photoUrl ?? null };
+    const worker = db.workers[currentWorkerId()];
+    account = { name: worker?.name ?? '', initials: worker?.initials ?? '', photo: worker?.photoUrl ?? null };
   }
 
   return (

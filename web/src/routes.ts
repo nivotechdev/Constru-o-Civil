@@ -201,6 +201,15 @@ export function isAuthFlow(path: string): boolean {
   return path.startsWith('/cadastro/') || path.startsWith('/completar-perfil/');
 }
 
+/**
+ * AUD-007: the navigation shell belongs to the signed-in area only. A visitor on a public screen (the job's public
+ * link, Ajuda, finishing a Google sign-up) gets the screen alone: the shell reads the account's name, and without
+ * a session there is none to read.
+ */
+export function usesAppShell(path: string, signedIn: boolean): boolean {
+  return signedIn && !isAuthFlow(path);
+}
+
 export function preloadAllScreens(): void {
   for (const r of ROUTES) void r.value.preload();
 }

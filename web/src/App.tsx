@@ -9,7 +9,7 @@ import { SignOutDialog } from './components/SignOutDialog';
 import { ToastHost } from './components/ToastHost';
 import { useSession } from './hooks/useStore';
 import { AppShell } from './layouts/AppShell';
-import { isAuthFlow, preloadAllScreens, ROUTES } from './routes';
+import { preloadAllScreens, ROUTES, usesAppShell } from './routes';
 import { guardRoute, RETURN_TO_KEY, type ReturnToUI } from './services/guards';
 import { getLocation, matchRoute, navigate, subscribe } from './services/router';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from './services/sharedUI';
@@ -175,7 +175,7 @@ function Routes() {
   return (
     <Suspense fallback={null}>
       <SignOutDialog />
-      {isAuthFlow(path) ? (
+      {!usesAppShell(path, session !== null) ? (
         screen
       ) : (
         // A new shell per navigation, like the legacy app (which rebuilt the whole DOM): no element
