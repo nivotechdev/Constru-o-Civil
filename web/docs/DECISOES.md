@@ -2521,3 +2521,9 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
 - **Pedido do responsável**: no tema escuro as letras da logo ficam **brancas**; o check azul `#1D4BED` e os pontos
   âmbar continuam iguais nos dois temas. No tema claro nada mudou (letras `#101418`). Feito com a classe `.logo-ink`
   em `styles/base.css`, que troca só o preenchimento das letras quando `<html data-theme="dark">`.
+
+## U75 — título da guia do navegador é só "Valorjob"
+
+O título da guia (`<title>` do `index.html`) trazia "Valorjob — bicos e diárias perto de você". Pedido do responsável:
+deixar somente "Valorjob". O app não troca o título por tela (não há `document.title` no código), então a guia mostra
+sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a frase completa.
