@@ -27,3 +27,22 @@ describe('campos de número inteiro (AUD-026)', () => {
     expect(readWholeInput('1a', 2, 'quantidade')).toMatchObject({ value: null, problem: 'Use só números.' });
   });
 });
+
+// AUD-031: the closed-jobs screen lists only the closed jobs.
+import { jobsForView } from '../pages/recruiter/MyJobs';
+import { emptyDatabase } from '../services/store';
+import type { Job } from '../types/models';
+
+describe('Bicos fechados x Minhas vagas (AUD-031)', () => {
+  const at = (id: string, state: Partial<Job>) => ({ id, ...state }) as Job;
+  it('the closed view keeps only the jobs that are closed', () => {
+    const db = emptyDatabase();
+    const jobs = [
+      at('BC-1', { closed: false, deletedAt: null } as Partial<Job>),
+      at('BC-2', { closed: true } as Partial<Job>)
+    ];
+    const closed = jobsForView(db, jobs, 'encerradas').map((j) => j.id);
+    expect(closed).not.toContain('BC-1');
+    expect(jobsForView(db, jobs, 'todas')).toHaveLength(2);
+  });
+});

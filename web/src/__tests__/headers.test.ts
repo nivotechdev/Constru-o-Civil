@@ -89,3 +89,12 @@ describe('cabeçalhos de segurança (L08)', () => {
     }
   });
 });
+
+describe('vídeo do portfólio (AUD-034)', () => {
+  it('the CSP has media-src for the app and the public storage (a video plays and its preview shows)', () => {
+    expect(csp['media-src']).toBeDefined();
+    expect(allows(csp['media-src'], 'https://abc.supabase.co/storage/v1/object/public/portfolio/x.mp4')).toBe(true);
+    expect(csp['media-src']).toContain('blob:');
+    expect(allows(csp['media-src'], 'https://evil.example/x.mp4')).toBe(false);
+  });
+});

@@ -42,10 +42,20 @@ function tabOf(db: Database, job: Job): Tab | 'encerradas' {
 
 const inTab = (db: Database, job: Job, tab: Tab) => tab === 'todas' || tabOf(db, job) === tab;
 
+/** The screen's own list. "encerradas" is the history screen (Bicos fechados): only the closed jobs, no tabs. */
+export type MyJobsView = Tab | 'encerradas';
+export function jobsForView(db: Database, jobs: Job[], view: MyJobsView): Job[] {
+  return view === 'encerradas'
+    ? jobs.filter((j) => tabOf(db, j) === 'encerradas')
+    : jobs.filter((j) => inTab(db, j, view));
+}
+
 export default function MyJobs({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('history', loadHistory);
   const paging = usePaging(HISTORY_PAGE, loadMoreHistory);
+  // AUD-031: /historico ("Bicos fechados") opens the closed jobs; before it fell back to the "Abertas" tab.
+  const closedOnly = params.tab === 'encerradas';
   const [tab, setTab] = useState<Tab>(
     params.tab === 'cheias' ? 'cheias' : params.tab === 'todas' ? 'todas' : 'abertas'
   );
@@ -58,31 +68,35 @@ export default function MyJobs({ params }: ScreenProps) {
     abertas: mine.filter((j) => tabOf(db, j) === 'abertas').length,
     cheias: mine.filter((j) => tabOf(db, j) === 'cheias').length
   };
-  const list = mine.filter((j) => inTab(db, j, tab));
+  const list = jobsForView(db, mine, closedOnly ? 'encerradas' : tab);
 
   return (
     <div className="flex flex-col">
       <div className="sticky top-0 z-20 flex items-center justify-between min-h-14 px-4 sm:px-0 bg-concrete-0 border-b border-concrete-200 lg:static lg:bg-transparent lg:border-0 lg:pb-2">
-        <h1 className="font-display font-semibold text-xl lg:text-[1.75rem] text-concrete-900">Minhas vagas</h1>
+        <h1 className="font-display font-semibold text-xl lg:text-[1.75rem] text-concrete-900">
+          {closedOnly ? 'Bicos fechados' : 'Minhas vagas'}
+        </h1>
       </div>
       <div className="flex flex-col gap-4 px-4 sm:px-0 py-4">
-        <div className="flex bg-concrete-100 rounded-full p-1 gap-1" role="tablist" aria-label="Situação das vagas">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              className={cx(
-                'flex-1 h-10 rounded-full text-sm font-bold transition-colors',
-                tab === t.id ? 'bg-concrete-0 text-brand-600 shadow-card' : 'text-concrete-500'
-              )}
-              onClick={() => setTab(t.id)}
-            >
-              {`${t.label} · ${counts[t.id]}`}
-            </button>
-          ))}
-        </div>
+        {closedOnly ? null : (
+          <div className="flex bg-concrete-100 rounded-full p-1 gap-1" role="tablist" aria-label="Situação das vagas">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                className={cx(
+                  'flex-1 h-10 rounded-full text-sm font-bold transition-colors',
+                  tab === t.id ? 'bg-concrete-0 text-brand-600 shadow-card' : 'text-concrete-500'
+                )}
+                onClick={() => setTab(t.id)}
+              >
+                {`${t.label} · ${counts[t.id]}`}
+              </button>
+            ))}
+          </div>
+        )}
         <QueryView query={query} skeleton={<ListSkeleton />}>
           {() =>
             list.length === 0 && !(tab === 'todas' && paging.hasMore) ? (
