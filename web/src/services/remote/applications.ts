@@ -4,7 +4,7 @@
 import type { ApplicationAction } from '../applicationMachine';
 import { serviceError } from '../errors';
 import { getSession } from '../store';
-import { db, request } from './client';
+import { db, request, afterSuccess } from './client';
 import { loadJob } from './data';
 
 async function transition(jobId: string, workerId: string, action: ApplicationAction, reason: string | null = null) {
@@ -12,7 +12,7 @@ async function transition(jobId: string, workerId: string, action: ApplicationAc
   await request(() =>
     client.rpc('transition_application', { p_job_id: jobId, p_worker_id: workerId, p_action: action, p_reason: reason })
   );
-  await loadJob(jobId);
+  await afterSuccess(() => loadJob(jobId));
 }
 
 function myWorkerId(): string {
@@ -24,13 +24,13 @@ function myWorkerId(): string {
 export async function submitApplication(jobId: string): Promise<void> {
   const client = await db();
   await request(() => client.rpc('submit_application', { p_job_id: jobId }));
-  await loadJob(jobId);
+  await afterSuccess(() => loadJob(jobId));
 }
 
 export async function withdrawApplication(jobId: string): Promise<void> {
   const client = await db();
   await request(() => client.rpc('withdraw_application', { p_job_id: jobId }));
-  await loadJob(jobId);
+  await afterSuccess(() => loadJob(jobId));
 }
 
 export const giveUp = (jobId: string, reason: string) => transition(jobId, myWorkerId(), 'desistir', reason);
@@ -42,7 +42,7 @@ export const undoApproval = (jobId: string, workerId: string) => transition(jobI
 export async function undoReject(jobId: string, workerId: string): Promise<void> {
   const client = await db();
   await request(() => client.rpc('undo_reject', { p_job_id: jobId, p_worker_id: workerId }));
-  await loadJob(jobId);
+  await afterSuccess(() => loadJob(jobId));
 }
 export const confirmHire = (jobId: string, workerId: string) => transition(jobId, workerId, 'contratar');
 export const cancelHire = (jobId: string, workerId: string, reason: string) =>
@@ -54,12 +54,12 @@ export const markNoShow = (jobId: string, workerId: string) => transition(jobId,
 export async function shareWhatsapp(jobId: string): Promise<void> {
   const client = await db();
   await request(() => client.rpc('share_my_whatsapp', { p_job_id: jobId }));
-  await loadJob(jobId);
+  await afterSuccess(() => loadJob(jobId));
 }
 
 /** F12: RPC confirm_presence. */
 export async function confirmPresence(jobId: string): Promise<void> {
   const client = await db();
   await request(() => client.rpc('confirm_presence', { p_job_id: jobId }));
-  await loadJob(jobId);
+  await afterSuccess(() => loadJob(jobId));
 }

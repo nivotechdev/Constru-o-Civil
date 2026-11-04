@@ -11,7 +11,7 @@ import { companyToWorkerUrl, workerToCompanyUrl } from '../../utils/whatsapp';
 import type { ProviderCardToken } from '../payments';
 import type { CaptchaSource } from '../auth';
 import type { DeletionProof } from '../account';
-import { db, invokeFunction, request } from './client';
+import { afterSuccess, db, invokeFunction, request } from './client';
 import { loadJob } from './data';
 import { apply, putPayments } from './merge';
 import { checkPassword, checkSecurityCode, signOut } from './auth';
@@ -90,7 +90,7 @@ export async function submitReview(input: ReviewInput): Promise<void> {
     })
   );
   const app = store.getDb().applications.find((a) => a.id === input.applicationId);
-  if (app) await loadJob(app.jobId);
+  if (app) await afterSuccess(() => loadJob(app.jobId));
 }
 
 // ---- boost payments: the charge is created by the Edge Function criar-cobranca (Mercado Pago) and
@@ -130,7 +130,7 @@ export async function payWithCard(jobId: string, planId: BoostPlanId, card: Prov
   const payment = await keep(pagamento);
   if (payment.status === 'recusado')
     throw serviceError('conflito', 'O banco recusou o cartão. Confira os dados ou use outro cartão ou o PIX.');
-  if (payment.status === 'confirmado') await loadJob(jobId);
+  if (payment.status === 'confirmado') await afterSuccess(() => loadJob(jobId));
   return payment;
 }
 

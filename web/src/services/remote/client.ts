@@ -122,6 +122,18 @@ async function renewSession(): Promise<boolean> {
   }
 }
 
+/**
+ * AUD-027: the server already did the action when this runs. A failed read-back (the screen's refresh) must not turn
+ * the success into an error; the screen keeps what it had until the next read.
+ */
+export async function afterSuccess(refresh: () => Promise<void>): Promise<void> {
+  try {
+    await refresh();
+  } catch {
+    // the action is done; the next read shows it
+  }
+}
+
 export async function request<R extends { data: unknown; error: unknown }>(
   run: () => PromiseLike<R>
 ): Promise<OkData<R>> {

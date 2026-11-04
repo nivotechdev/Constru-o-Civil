@@ -39,3 +39,17 @@ describe('renovar a sessão antes de encerrar (AUD-035)', () => {
     expect(isJwtExpired({ code: '42501', message: 'permission denied' })).toBe(false);
   });
 });
+
+// AUD-027: a failed read-back after a successful action does not turn the action into an error.
+import { afterSuccess } from '../services/remote/client';
+
+describe('ação que deu certo não vira erro (AUD-027)', () => {
+  it('a failing refresh after the action is swallowed', async () => {
+    await expect(afterSuccess(() => Promise.reject(new Error('rede caiu na releitura')))).resolves.toBeUndefined();
+  });
+  it('a working refresh runs', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    await afterSuccess(refresh);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+});

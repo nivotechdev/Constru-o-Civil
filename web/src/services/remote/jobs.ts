@@ -7,7 +7,7 @@ import { serviceError } from '../errors';
 import { jobToRow } from '../supabaseMappers';
 import * as store from '../store';
 import { isJobSaved } from '../selectors';
-import { db, request, toServiceError } from './client';
+import { db, request, toServiceError, afterSuccess } from './client';
 import { loadJob } from './data';
 import { uploadAll } from './storage';
 
@@ -26,7 +26,7 @@ export async function publishJob(draft: JobDraft): Promise<string> {
   const client = await db();
   const ready = await withUploadedPhotos(draft);
   const id = await request(() => client.rpc('publish_job', { p: draftRow(ready) }));
-  await loadJob(id);
+  await afterSuccess(() => loadJob(id));
   return id;
 }
 
@@ -34,7 +34,7 @@ export async function updateJob(jobId: string, draft: JobDraft): Promise<void> {
   const client = await db();
   const ready = await withUploadedPhotos(draft);
   await request(() => client.rpc('update_job', { p_job_id: jobId, p: draftRow(ready) }));
-  await loadJob(jobId);
+  await afterSuccess(() => loadJob(jobId));
 }
 
 export async function updateJobPhotos(jobId: string, photos: string[]): Promise<void> {
@@ -48,7 +48,7 @@ export async function deleteJob(jobId: string): Promise<void> {
   const client = await db();
   await request(() => client.rpc('delete_job', { p_job_id: jobId }));
   if (!store.getDb().deletedJobIds.includes(jobId)) store.deleteJobPost(jobId);
-  await loadJob(jobId).catch(() => undefined);
+  await afterSuccess(() => loadJob(jobId));
 }
 
 /** Optimistic, like the demo: the flag flips at once and goes back if the request fails. */
