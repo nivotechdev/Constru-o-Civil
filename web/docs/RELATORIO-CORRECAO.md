@@ -64,10 +64,20 @@ Feito, com teste que falhava antes (ou prova equivalente), na ordem do bloco:
 - AUD-035 (S2): token expirado com relógio errado renova a sessão antes de desligar (`sessionRefresh.test.ts`).
 - Também: `lanc10_link_publico.sql` tinha uma checagem frágil (dependia da data); corrigida, sem mudar o que ela prova.
 
+Feito na segunda rodada do bloco 1 (S3):
+
+- AUD-085 (nome sem emoji, até 80), AUD-089 (foco no campo do código), AUD-093 (aviso de sucesso em tom de sucesso),
+  AUD-094 (ordem dos posts), AUD-101 (contagem do reenvio, sem "0:60"), AUD-105 (só a conta desbloqueada gira),
+  AUD-115 (foto que não carrega), AUD-116 (telefone colado com +55 ou 0), AUD-118 (valor do aviso com ponto de milhar,
+  migration `20261102001600_aud118`), AUD-128 (ícone da aba em qualquer rota).
+
 Ainda não feito no bloco 1:
 
 - AUD-032 (S2): estados do pagamento do impulso. Fica para quando o pagamento for ligado (hoje inativo no piloto).
-- S3 do bloco 1 (AUD-083 a AUD-128, exceto os já cobertos acima): cerca de 45 itens, a maioria de texto, acessibilidade e consistência.
+- S3 que faltam (cerca de 30): AUD-084, 086, 087, 090, 096, 097, 098, 099, 100, 103, 104, 106, 107, 108, 109, 110, 111,
+  113, 114, 122, 126.
+- S3 que dependem de migration ou decisão dos sócios (escritos quando couber, sem aplicar): AUD-088, 095, 112, 117, 119,
+  120, 121, 124, 127; e AUD-091, 092, 102, 123, 125 (texto e responsável).
 - AUD-022 e demais itens do bloco 0 que sobraram (AUD-056 a 068, 071, 074 a 080).
 
 Blocos 2 a 7: não iniciados.
