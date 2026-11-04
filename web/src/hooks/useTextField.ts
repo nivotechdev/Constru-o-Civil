@@ -1,9 +1,8 @@
 import { useLayoutEffect, useRef, type ChangeEvent } from 'react';
 
-// Browsers only honour `autofocus` for the first such element a document ever sees; later ones are
-// ignored. The legacy app relied on that native behaviour (its fields were plain DOM nodes with the
-// attribute), so it's emulated here instead of React's autoFocus, which focuses on every mount.
-let autofocusProcessed = false;
+// AUD-089: a field with autoFocus takes the focus when it appears, so a new step of a form (the WhatsApp code, the
+// e-mail code) brings the keyboard up. It never takes the focus from someone who is already typing somewhere else.
+// (The browser's own rule, "only the first autofocus of a document", left the later steps without a cursor.)
 
 type Field = HTMLInputElement | HTMLTextAreaElement;
 
@@ -32,8 +31,7 @@ export function useTextField<T extends Field>(onValue: ((value: string) => void)
   });
 
   useLayoutEffect(() => {
-    if (!autoFocus || autofocusProcessed) return;
-    autofocusProcessed = true;
+    if (!autoFocus) return;
     const active = document.activeElement;
     if (!active || active === document.body) ref.current?.focus();
   }, [autoFocus]);
