@@ -51,7 +51,7 @@ export function FeedGrid({ db, role, jobs }: { db: Database; role: Role; jobs: J
   );
 }
 
-export function NoJobsState({ location, home }: { location: string; home: string }) {
+export function NoJobsState({ location, home, narrowed }: { location: string; home: string; narrowed: boolean }) {
   if (location !== home) {
     return (
       <EmptyState
@@ -60,6 +60,16 @@ export function NoJobsState({ location, home }: { location: string; home: string
         description="Assim que alguém publicar uma vaga nessa cidade, ela aparece aqui."
         actionLabel={`Ver bicos em ${home.split(',')[0]}`}
         onAction={() => setFeed({ location: home, origin: null })}
+      />
+    );
+  }
+  // AUD-030: "com esse filtro" only when a filter is on; with none, the mural is simply empty for now.
+  if (!narrowed) {
+    return (
+      <EmptyState
+        icon="search-x"
+        title="Ainda não tem bico aqui"
+        description="Quando alguém publicar uma vaga na sua cidade, ela aparece aqui."
       />
     );
   }

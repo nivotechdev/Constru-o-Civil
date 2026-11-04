@@ -11,7 +11,7 @@ import { navigate } from '../../../services/router';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
 import { FeedGrid, LoadMore, NoJobsState, NoSearchResults, SearchPill, SearchScope } from './FeedParts';
-import { setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
+import { feedNarrowed, setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
 import type { Paging } from '../../../services/paging';
 
 export interface FeedLayoutProps {
@@ -82,7 +82,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
           <LoadMore paging={paging} />
         </>
       ) : (
-        <NoJobsState location={ui.location} home={home} />
+        <NoJobsState location={ui.location} home={home} narrowed={feedNarrowed(ui, home)} />
       )}
     </div>
   );

@@ -6,7 +6,7 @@ import { Tag } from '../../../components/Tag';
 import type { Database, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
 import { FeedGrid, LoadMore, NoJobsState, NoSearchResults, SearchPill, SearchScope } from './FeedParts';
-import { noFilters, setFeed, type SearchMatches } from './feedUI';
+import { feedNarrowed, noFilters, setFeed, type SearchMatches } from './feedUI';
 import type { FeedLayoutProps } from './MobileFeed';
 
 /** The mural from 770px up (tablet and desktop): a wide search bar, the filters button and the grid. */
@@ -31,7 +31,7 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, 
           <LoadMore paging={paging} />
         </>
       ) : (
-        <NoJobsState location={ui.location} home={home} />
+        <NoJobsState location={ui.location} home={home} narrowed={feedNarrowed(ui, home)} />
       )}
     </div>
   );

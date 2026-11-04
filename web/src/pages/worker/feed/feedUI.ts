@@ -80,7 +80,23 @@ export function feedDefaults(db: Database, role: Role): FeedUI {
 
 /** "Limpar filtros": back to the home city and no filter. */
 export function noFilters(home: string): Partial<FeedUI> {
-  return { oficio: null, dist: ALL_CITY, quando: null, minPay: null, location: home, origin: null };
+  return { search: '', oficio: null, dist: ALL_CITY, quando: null, minPay: null, location: home, origin: null };
+}
+
+/**
+ * AUD-030: whether the mural is narrowed by anything (a filter, a search, another city or distance). An empty mural
+ * says so only then, and offers "Limpar filtros" only then.
+ */
+export function feedNarrowed(ui: FeedUI, home: string): boolean {
+  return (
+    ui.oficio !== null ||
+    ui.quando !== null ||
+    ui.minPay !== null ||
+    ui.search.trim() !== '' ||
+    ui.dist !== ALL_CITY ||
+    ui.origin !== null ||
+    ui.location !== home
+  );
 }
 
 export const setFeed = (patch: Partial<FeedUI>) => setUI<FeedUI>(FEED_KEY, patch);
