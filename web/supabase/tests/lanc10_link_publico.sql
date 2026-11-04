@@ -31,7 +31,9 @@ select pg_temp.ok(public.public_job_card('naoexiste2345') is null, 'slug desconh
 select pg_temp.fails($$select * from public.public_link_hits$$, '42501');
 reset role;
 select pg_temp.ok((select count(*) from public.public_link_hits) = 3, 'cada consulta conta');
-select pg_temp.ok((select bool_and(ip_hash !~ '203') from public.public_link_hits), 'o IP não fica gravado');
+-- U71: o hash é sha256 em hex — pode conter "203" por acaso (dependia do dia); o que importa é não ter o IP.
+select pg_temp.ok((select bool_and(ip_hash ~ '^[0-9a-f]{64}$' and position('203.0.113' in ip_hash) = 0)
+                   from public.public_link_hits), 'o IP não fica gravado');
 
 -- 60 consultas em 10 minutos por IP; outro IP segue livre; o Cloudflare manda no IP.
 insert into public.public_link_hits (ip_hash)
