@@ -241,9 +241,11 @@ describe('the address with the real providers', () => {
       point: input.cepPoint,
       precision: 'cep'
     });
+    // AUD-028: both maps down: the centre, and flagged as degraded so the person is told.
     expect(await r.geocodeOnline({ ...input, street: 'Rua Marechal Floriano', cepPoint: null })).toEqual({
       point: centre,
-      precision: 'cidade'
+      precision: 'cidade',
+      degraded: true
     });
   });
 

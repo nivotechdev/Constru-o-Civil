@@ -1,5 +1,6 @@
 // U51: the address in "Editar perfil" (worker and company) — what is being typed, its problems, and checking it on
 // "Salvar" (only when it changed).
+import { showToast } from '../services/toast';
 import { useState } from 'react';
 import {
   resolveAddress,
@@ -43,6 +44,7 @@ export function useAddressEditor(initial: AddressDraft): AddressEditor {
         return false;
       }
       setDraft(r.draft);
+      if (r.warning) showToast(r.warning);
       return r.address;
     }
   };

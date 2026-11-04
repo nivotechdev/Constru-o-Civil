@@ -105,6 +105,7 @@ export default function CompleteProfile({ params }: ScreenProps) {
     setUi({ checking: true, error: null });
     resolveAddress(ui.address)
       .then((r) => {
+        if (r.ok && r.warning) showToast(r.warning);
         if (r.ok) setUi({ checking: false, resolved: r.address, address: r.draft, addressErrors: {}, step: 'fotos' });
         else setUi({ checking: false, addressErrors: r.errors });
       })

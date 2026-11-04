@@ -302,7 +302,9 @@ const hasErrors = (e: AddressErrors) => Object.values(e).some(Boolean);
  */
 export async function resolveAddress(
   d: AddressDraft
-): Promise<{ ok: true; address: ResolvedAddress; draft: AddressDraft } | { ok: false; errors: AddressErrors }> {
+): Promise<
+  { ok: true; address: ResolvedAddress; draft: AddressDraft; warning?: string } | { ok: false; errors: AddressErrors }
+> {
   const errors = addressErrors(d);
   if (hasErrors(errors)) return { ok: false, errors };
   const cityLabel = knownCityLabel(d.city) as string;
@@ -363,7 +365,11 @@ export async function resolveAddress(
       lon: +located.point.lon.toFixed(6),
       precision: located.precision
     },
-    draft: { ...d, cep, city: cityLabel, street, neighborhood }
+    draft: { ...d, cep, city: cityLabel, street, neighborhood },
+    // AUD-028: the house could not be placed on the map; the person is told, not left with a centre point in silence.
+    ...(located.degraded
+      ? { warning: 'Não deu para marcar a casa no mapa agora. Usamos o centro da cidade: confira o endereço depois.' }
+      : {})
   };
 }
 
@@ -407,7 +413,9 @@ export interface GeocodeInput {
  * then the CEP's point, then the city's centre. Demo: the CEP's point (or the city's centre) moved a little by the
  * street and number.
  */
-export async function geocode(input: GeocodeInput): Promise<{ point: GeoPoint; precision: PlacePrecision }> {
+export async function geocode(
+  input: GeocodeInput
+): Promise<{ point: GeoPoint; precision: PlacePrecision; degraded?: boolean }> {
   if (!IS_DEMO) return geocodeOnline(input);
   await mockLatency(300);
   const known = CEPS.find((c) => onlyDigits(c.cep) === onlyDigits(input.cep));

@@ -250,13 +250,22 @@ export async function streetsOnline(
   }
   // ViaCEP out: the map's streets (with the CEP when the map has it).
   const mapUrl = photonUrl(`${typed} ${city}`, centre, ['street']);
+  let mapDown = false;
   const { body } = await unlessAborted(
     cached(mapUrl, () => getJson<{ features?: PhotonFeature[] }>(mapUrl)),
     signal
   ).catch((e: unknown) => {
     if (signal?.aborted) throw e;
+    mapDown = true;
     return { body: null };
   });
+  // AUD-028: both services down (no internet, or a slow connection) is not "no such street": say so.
+  if (mapDown && list === null) {
+    throw serviceError(
+      'offline',
+      'Sem internet agora para buscar a rua. Tente de novo quando o sinal voltar ou digite o CEP.'
+    );
+  }
   const seen = new Set<string>();
   const items: StreetOption[] = [];
   for (const f of inCity(body?.features, city, centre)) {
@@ -331,7 +340,11 @@ function bestPlace(places: Candidate[], input: GeocodeInput): Candidate | null {
 }
 
 /** Where the address is: the house (with a number the map knows), its street, the CEP or the city's centre. */
-export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPoint; precision: PlacePrecision }> {
+export async function geocodeOnline(
+  input: GeocodeInput
+): Promise<{ point: GeoPoint; precision: PlacePrecision; degraded?: boolean }> {
+  let nominatimDown = false;
+  let photonDown = false;
   const streetLine = input.number ? `${input.number} ${input.street}` : input.street;
   const nominatim =
     'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=10&countrycodes=br' +
@@ -358,6 +371,7 @@ export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPo
     if (best) return { point: best.p, precision: input.number && best.house ? 'numero' : 'rua' };
   } catch {
     // Nominatim out or slow: Photon has the same map.
+    nominatimDown = true;
   }
   try {
     const q = `${input.street}${input.number ? ' ' + input.number : ''}, ${input.neighborhood}, ${input.city}`;
@@ -382,7 +396,9 @@ export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPo
     if (best) return { point: best.p, precision: input.number && best.house ? 'numero' : 'rua' };
   } catch {
     // the map is out: the CEP's point
+    photonDown = true;
   }
   if (input.cepPoint) return { point: input.cepPoint, precision: 'cep' };
-  return { point: input.cityCentre, precision: 'cidade' };
+  // AUD-028: both maps down: the house is placed at the city's centre, and the caller says so.
+  return { point: input.cityCentre, precision: 'cidade', degraded: nominatimDown && photonDown };
 }

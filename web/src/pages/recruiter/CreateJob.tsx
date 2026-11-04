@@ -128,6 +128,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
     if (ui.located && ui.located.key === addressKey(form))
       return { point: { lat: ui.located.lat, lon: ui.located.lon }, form };
     const r = await resolveAddress(formAddress(form));
+    if (r.ok && r.warning) showToast(r.warning);
     if (!r.ok) {
       setUi((s) => ({ step: 1, errors: { ...s.errors, ...(r.errors as Partial<Record<FieldKey, string | null>>) } }));
       return null;
