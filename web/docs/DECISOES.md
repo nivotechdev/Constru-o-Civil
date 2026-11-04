@@ -2507,3 +2507,11 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
   acompanha. O degradê da aba ativa do menu do computador usa os azuis fixos do tema claro (`#587AF3` → `#163CC2`), então
   é o mesmo azul nos dois temas.
 - **Ficou igual**: os ícones do app e o favicon (fundo azul, check branco e ponto âmbar), que não mudam com o tema.
+
+## U73 — Logo volta a ser a do tema claro, sem mudar no tema escuro
+
+- **Pedido do responsável**: a logo principal é a do tema claro (check azul `#1D4BED`, pontos âmbar `#FFB21E`, letras
+  quase pretas `#101418`) e **não muda** quando o tema escuro liga. O U72 (logo toda azul) foi desfeito; as cores agora
+  são fixas em `Logo.tsx`, sem tokens de tema. A tela de abertura segue com check e letras brancos e pontos âmbar.
+- **Atenção**: no tema escuro as letras quase pretas ficam com pouco contraste sobre o fundo escuro. Ficou assim por
+  decisão do responsável; o azul da aba ativa do menu (U72) continua fixo.
