@@ -41,3 +41,39 @@ export interface ReturnToUI {
   path: string | null;
 }
 export const RETURN_TO_DEFAULTS: ReturnToUI = { path: null };
+
+// AUD-033: where to go after signing in or finishing the profile. Kept in this tab's sessionStorage as well as the
+// store, because the store is cleared when the account changes (the Google, SMS and new sign-ups lost it).
+const RETURN_STORAGE_KEY = 'bicos.voltar';
+
+/** A path inside the app, and nothing that leads elsewhere (no scheme, no protocol-relative address). */
+export function isAppPath(path: string | null | undefined): path is string {
+  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//') && !path.includes('://');
+}
+
+export function rememberReturnTo(path: string): void {
+  if (!isAppPath(path)) return;
+  try {
+    sessionStorage.setItem(RETURN_STORAGE_KEY, path);
+  } catch {
+    // no storage: the store copy is still there
+  }
+}
+
+/** Where the person was trying to go, if they were sent to sign in from a deep link. Read it; `forgetReturnTo` ends it. */
+export function peekReturnTo(): string | null {
+  try {
+    const path = sessionStorage.getItem(RETURN_STORAGE_KEY);
+    return isAppPath(path) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+export function forgetReturnTo(): void {
+  try {
+    sessionStorage.removeItem(RETURN_STORAGE_KEY);
+  } catch {
+    // nothing to forget
+  }
+}

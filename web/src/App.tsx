@@ -10,7 +10,7 @@ import { ToastHost } from './components/ToastHost';
 import { useSession } from './hooks/useStore';
 import { AppShell } from './layouts/AppShell';
 import { preloadAllScreens, ROUTES, usesAppShell } from './routes';
-import { guardRoute, RETURN_TO_KEY, type ReturnToUI } from './services/guards';
+import { guardRoute, rememberReturnTo, RETURN_TO_KEY, type ReturnToUI } from './services/guards';
 import { getLocation, matchRoute, navigate, subscribe } from './services/router';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from './services/sharedUI';
 import { getUI, setUI } from './services/store';
@@ -57,7 +57,10 @@ function Redirect({ to, from }: { to: string; from?: string }) {
   useEffect(() => {
     // After the commit, outside React's own work (the router renders synchronously on navigation).
     const timer = window.setTimeout(() => {
-      if (from) setUI<ReturnToUI>(RETURN_TO_KEY, { path: from });
+      if (from) {
+        setUI<ReturnToUI>(RETURN_TO_KEY, { path: from });
+        rememberReturnTo(from);
+      }
       navigate(to, { replace: true });
     });
     return () => window.clearTimeout(timer);

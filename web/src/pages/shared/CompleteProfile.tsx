@@ -25,6 +25,7 @@ import { finishSignUp } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
 import { checkMyCompany, saveMyProfileImages } from '../../services/profiles';
 import { navigate } from '../../services/router';
+import { forgetReturnTo, peekReturnTo } from '../../services/guards';
 import { askSignOut } from '../../services/sharedUI';
 import { showToast } from '../../services/toast';
 import type { ScreenProps } from '../../types/screen';
@@ -119,7 +120,10 @@ export default function CompleteProfile({ params }: ScreenProps) {
         setUi({ saving: false });
         // L10: the automatic CNPJ check runs in the background (the profile shows the result).
         if (company) void checkMyCompany().catch(() => undefined);
-        navigate('/mural', { replace: true });
+        // AUD-033: the job the person was going to (Google, SMS and a new sign-up end here), else the mural.
+        const back = peekReturnTo();
+        forgetReturnTo();
+        navigate(back ?? '/mural', { replace: true });
       })
       .catch((e: unknown) => setUi({ saving: false, error: errorMessage(e) }));
   }

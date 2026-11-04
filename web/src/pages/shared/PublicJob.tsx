@@ -14,7 +14,7 @@ import { PageSkeleton } from '../../components/Skeleton';
 import { useSession } from '../../hooks/useStore';
 import { jobTitle } from '../../services/catalog';
 import { errorMessage } from '../../services/errors';
-import { homeFor, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
+import { homeFor, rememberReturnTo, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
 import { loadPublicJob, type PublicJob as PublicJobCard } from '../../services/jobs';
 import { IS_DEMO } from '../../services/mode';
 import { navigate } from '../../services/router';
@@ -56,7 +56,10 @@ export default function PublicJob({ params }: ScreenProps) {
 
   /** Sign in (or up) and come back to the job. */
   const enter = (path: string, jobId?: string) => {
-    if (jobId) setUI<ReturnToUI>(RETURN_TO_KEY, { path: '/vaga/' + jobId });
+    if (jobId) {
+      setUI<ReturnToUI>(RETURN_TO_KEY, { path: '/vaga/' + jobId });
+      rememberReturnTo('/vaga/' + jobId);
+    }
     navigate(path);
   };
   const elsewhere = () => (session ? navigate(homeFor(session)) : enter('/login'));

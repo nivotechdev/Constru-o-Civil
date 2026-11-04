@@ -16,7 +16,14 @@ import {
   prepareSocialSignIn
 } from '../../services/auth';
 import { errorMessage, ServiceError } from '../../services/errors';
-import { homeFor, RETURN_TO_DEFAULTS, RETURN_TO_KEY, type ReturnToUI } from '../../services/guards';
+import {
+  forgetReturnTo,
+  homeFor,
+  peekReturnTo,
+  RETURN_TO_DEFAULTS,
+  RETURN_TO_KEY,
+  type ReturnToUI
+} from '../../services/guards';
 import { navigate } from '../../services/router';
 import { getSession, getUI, resetUI, type UIPatch } from '../../services/store';
 import { useCaptcha } from '../../components/Captcha';
@@ -90,7 +97,7 @@ export default function Login() {
     }
     setUi({ submitting: true, error: null, notice: null, unconfirmed: null, resent: false });
     // The deep link that sent the user here (read before: signing in starts a clean screen state).
-    const back = getUI<ReturnToUI>(RETURN_TO_KEY, RETURN_TO_DEFAULTS).path;
+    const back = peekReturnTo() ?? getUI<ReturnToUI>(RETURN_TO_KEY, RETURN_TO_DEFAULTS).path;
     signIn(ui.identifier, password, captcha.getToken)
       .then((result) => {
         if (!result.ok) {
@@ -100,6 +107,7 @@ export default function Login() {
           return;
         }
         resetUI(RETURN_TO_KEY);
+        forgetReturnTo();
         resetUI('login');
         navigate(back || '/mural', { replace: true });
       })
