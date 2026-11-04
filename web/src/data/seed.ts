@@ -168,7 +168,7 @@ export const COMPANIES: Record<string, Company> = {
     verified: true,
     verification: 'verificada',
     verifiedSince: '12 ago',
-    sinceLabel: 'Na Bicos desde março de 2025',
+    sinceLabel: 'Na Valorjob desde março de 2025',
     respondTime: 'Responde em 1h20, em média',
     paidCount: 128,
     about:

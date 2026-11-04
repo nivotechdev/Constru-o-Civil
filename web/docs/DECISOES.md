@@ -2475,3 +2475,24 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
 - **Filtros (e todo diálogo/folha)**: enquanto estão abertos, a página de trás não rola (`useModal` trava o rolar do
   documento, com contagem para diálogos um sobre o outro) e a folha não "puxa" a página quando chega ao fim
   (`overscroll-contain`). Era isso que fazia a folha dos filtros subir junto com o mural.
+
+## U70 — A marca passa a ser Valorjob
+
+- **O quê**: o nome do app agora é **Valorjob** (com V maiúsculo, sem espaço). Trocados: o símbolo e a assinatura
+  (`components/Logo.tsx`, desenhados em SVG: um check com o braço longo o dobro do curto, que forma o V, e um ponto
+  âmbar `#FFB21E` dentro dele — uma pessoa levantando a mão), a tela de abertura (`index.html`, `BootSplash` e
+  `Splash`), o favicon, os ícones do PWA, o ícone da Apple, a imagem de prévia dos links (`public/icons`, gerados por
+  `scripts/make-icons.mjs`), o manifesto, os textos de tela que diziam "a Bicos", os termos e a política
+  (`legal.ts` e `/legal/*.md`), os modelos de e-mail e o nome do remetente (`configurar-auth.mjs`).
+- **Ficou igual de propósito**: "bico"/"bicos" como palavra comum ("Bicos e diárias perto de você", "Bicos
+  fechados", "Bicos novos e convites"); nomes internos (`BicosSupabase`, `bicos-fotos`, ids de cron e de plugin); o
+  azul `#1D4BED`, que já era o da marca; as fontes (trocar por Inter, como sugere o guia de marca, é dependência nova
+  e muda o Lighthouse — fica para outro passo).
+- **A wordmark é desenho, não texto**: assim não depende de fonte carregada (abre igual no celular sem sinal) e o
+  ponto do "j" pode ser o mesmo âmbar do símbolo. O nome lido pelo leitor de tela vem de um `sr-only`.
+- **Termos**: só o nome mudou, então a versão (`TERMS.version`) não subiu — ninguém precisa aceitar de novo.
+- **Pendente (aprovação/ação do responsável)**: (1) as mensagens que vêm do banco (avisos e erros das RPCs nas
+  migrations, ex.: "a equipe da Bicos suspendeu a conta") ainda dizem Bicos — precisam de uma migration nova que
+  reescreva essas funções, e na produção só com "pode"; (2) os modelos de e-mail e o nome do remetente só mudam no
+  Supabase quando `configurar-auth.mjs` rodar de novo; (3) a descrição do PIX (`criar-cobranca`) muda quando a função
+  for republicada; (4) domínio (`bicos.nivotech.com.br`) e nome nas lojas continuam os de antes até decidirem o novo.

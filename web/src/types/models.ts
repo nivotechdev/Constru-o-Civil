@@ -1,4 +1,4 @@
-// Domain types for the Bicos marketplace. They mirror, field by field, the records the legacy
+// Domain types for the Valorjob marketplace. They mirror, field by field, the records the legacy
 // app kept in its in-memory mock database (archive/app/js/data/seed.js + archive/app/js/store.js).
 
 /** Which side of the marketplace an account is on. One account = one side (see docs/DECISOES.md). */
@@ -329,7 +329,7 @@ export type IdentityStatus = 'nao_enviado' | 'em_analise' | 'verificado' | 'recu
 /** L18: how the company pays the diária. */
 export type WagePayment = 'pix_dia' | 'pix_fim' | 'dinheiro' | 'outro';
 
-/** The Bicos team's check of a company (Y24). Every company starts "pendente". */
+/** The Valorjob team's check of a company (Y24). Every company starts "pendente". */
 export type CompanyVerification = 'pendente' | 'verificada' | 'reprovada';
 
 /** What a notification is about; the screen picks its icon and colour from it. */

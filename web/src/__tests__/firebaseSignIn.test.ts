@@ -1,5 +1,5 @@
 // U28: phone and Google sign-in through Firebase — the app sends Firebase's ID token to `entrar-com-firebase`, turns
-// the answer into the Bicos session (verifyOtp with the link hash) and signs out of Firebase; a number without an
+// the answer into the Valorjob session (verifyOtp with the link hash) and signs out of Firebase; a number without an
 // account comes back as 'sem-conta' and is kept for the sign-up.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authUser, fakeSupabase } from './fakeSupabase';
@@ -96,7 +96,7 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     box.clear();
   });
 
-  it('the SMS code opens the account of that number; the Bicos session comes from the link hash', async () => {
+  it('the SMS code opens the account of that number; the Valorjob session comes from the link hash', async () => {
     const fake = server('ok');
     holder.client = fake.client;
     const firebase = await import('../services/remote/firebase');
@@ -150,11 +150,11 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     await done;
   });
 
-  it('Google: the Firebase window, then the same exchange for the Bicos session', async () => {
+  it('Google: the Firebase window, then the same exchange for the Valorjob session', async () => {
     const fake = server('ok');
     holder.client = fake.client;
     const firebase = await import('../services/remote/firebase');
-    // U37: a Google login without a Bicos account answers its e-mail and name — the sign-up continues with them.
+    // U37: a Google login without a Valorjob account answers its e-mail and name — the sign-up continues with them.
     expect(await firebase.signInWithFirebaseGoogle()).toEqual({ email: 'ana@exemplo.com', name: '' });
     expect(holder.popup).toBeGreaterThan(0);
     expect(exchanges(fake)).toEqual([{ idToken: 'firebase-token-google' }]);
@@ -186,7 +186,7 @@ describe('entrar com o celular e com o Google pelo Firebase (U28)', () => {
     // The tap: only Google's window shows — no "waiting" screen over the app.
     const done = auth.signInWithGoogle('trabalhador');
     expect(busy.getBusy()).toBeNull();
-    // The account was chosen: now the Bicos account opens (locked); then the next screen, then unlocked.
+    // The account was chosen: now the Valorjob account opens (locked); then the next screen, then unlocked.
     choose();
     await done;
     expect(loc.pathname).toBe('/cadastro/trabalhador'); // no account yet: the same sign-up, without the e-mail

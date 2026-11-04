@@ -105,7 +105,7 @@ export default function PhoneSignIn() {
           <FlowHeading
             overline="Sem senha"
             title="Qual é o seu celular?"
-            help="O mesmo número de WhatsApp da sua conta na Bicos. Vamos mandar um código por SMS."
+            help="O mesmo número de WhatsApp da sua conta na Valorjob. Vamos mandar um código por SMS."
           />
           <Input
             id="celular-numero"
@@ -184,7 +184,7 @@ export default function PhoneSignIn() {
           <FlowHeading
             overline="Número confirmado"
             title="Esse número ainda não tem conta"
-            help={`Não achamos conta na Bicos com o celular ${phone}. Crie sua conta — o número já vai preenchido.`}
+            help={`Não achamos conta na Valorjob com o celular ${phone}. Crie sua conta — o número já vai preenchido.`}
           />
           {error ? <FieldError message={error} /> : null}
         </>

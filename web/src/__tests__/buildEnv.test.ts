@@ -76,7 +76,7 @@ describe('WhatsApp do suporte (L11)', () => {
 });
 
 describe('textos legais no build (R01)', () => {
-  const filled = { reviewed: true, texts: ['A Bicos é um serviço da NivoTech Ltda., CNPJ 12.345.678/0001-90.'] };
+  const filled = { reviewed: true, texts: ['A Valorjob é um serviço da NivoTech Ltda., CNPJ 12.345.678/0001-90.'] };
   const blank = { reviewed: true, texts: ['CNPJ {{CNPJ}}, sede em {{ENDERECO}}.', 'De novo {{CNPJ}}.'] };
   const draft = { reviewed: false, texts: filled.texts };
   const PILOT = { BICOS_PILOTO_SEM_REVISAO_JURIDICA: '1' };

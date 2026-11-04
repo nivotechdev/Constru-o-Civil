@@ -65,7 +65,7 @@ export default function Admin() {
               <EmptyState
                 icon="lock"
                 title="Área só da equipe"
-                description="Esta área é da equipe da Bicos. Se você faz parte dela, peça para incluírem sua conta."
+                description="Esta área é da equipe da Valorjob. Se você faz parte dela, peça para incluírem sua conta."
               />
             ) : (
               <>

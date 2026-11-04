@@ -12,7 +12,7 @@
          quem pede uma ação séria (hoje: excluir a conta sem senha, como as feitas com o Google). Variáveis do
          Supabase Auth: {{ .Token }} (os 6 números), {{ .Email }}. Sem link: o código só vale dentro do app. -->
     <div style="display: none; max-height: 0; overflow: hidden">
-      Seu código de verificação da Bicos é {{ .Token }}. Não passe para ninguém.
+      Seu código de verificação da Valorjob é {{ .Token }}. Não passe para ninguém.
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f4f5f7">
       <tr>
@@ -26,7 +26,7 @@
           >
             <tr>
               <td style="background: #1d4bed; padding: 20px 24px">
-                <span style="font-size: 26px; font-weight: bold; color: #ffffff; letter-spacing: -0.5px">Bicos</span>
+                <span style="font-size: 26px; font-weight: bold; color: #ffffff; letter-spacing: -0.5px">Valorjob</span>
                 <span style="font-size: 13px; color: #c9d4ff; padding-left: 8px">bicos e diárias</span>
               </td>
             </tr>
@@ -36,8 +36,8 @@
                   Seu código de segurança
                 </h1>
                 <p style="margin: 0; font-size: 16px; line-height: 24px">
-                  Você pediu para excluir sua conta na Bicos. Para confirmar que é você, copie o código abaixo e cole no
-                  app.
+                  Você pediu para excluir sua conta na Valorjob. Para confirmar que é você, copie o código abaixo e cole
+                  no app.
                 </p>
               </td>
             </tr>
@@ -46,7 +46,7 @@
                 <!-- U27: o "Copiar código" que o Gmail mostra (o cartão "Código solicitado" do GitHub, com o botão) é do
                      próprio Gmail: ele aparece quando o Gmail reconhece um código de verificação. Para ele reconhecer,
                      o e-mail segue o formato desses remetentes: "código de verificação" no assunto, o código como UM
-                     número inteiro (sem caixas separadas, sem espaços) e a frase "Seu código de verificação da Bicos é
+                     número inteiro (sem caixas separadas, sem espaços) e a frase "Seu código de verificação da Valorjob é
                      …". Um e-mail não pode ter botão próprio que copie (nenhum programa de e-mail roda código); o
                      número também se seleciona inteiro com um toque. -->
                 <table
@@ -87,19 +87,20 @@
             </tr>
             <tr>
               <td style="padding: 10px 24px 8px 24px; font-size: 14px; line-height: 20px; color: #5b6273">
-                Seu código de verificação da Bicos é {{ .Token }}. Ele vale por 1 hora e só uma vez.
+                Seu código de verificação da Valorjob é {{ .Token }}. Ele vale por 1 hora e só uma vez.
               </td>
             </tr>
             <tr>
               <td style="padding: 12px 24px 24px 24px; font-size: 13px; line-height: 19px; color: #5b6273">
-                Ninguém da Bicos vai pedir esse código por telefone ou WhatsApp: não passe para ninguém. Não foi você?
-                Ignore este e-mail: sem o código, nada acontece com a sua conta.
+                Ninguém da Valorjob vai pedir esse código por telefone ou WhatsApp: não passe para ninguém. Não foi
+                você? Ignore este e-mail: sem o código, nada acontece com a sua conta.
               </td>
             </tr>
             <tr>
               <td style="background: #f4f5f7; padding: 16px 24px; font-size: 12px; line-height: 17px; color: #8a90a0">
-                Bicos, da NivoTech · Este e-mail foi enviado para {{ .Email }} porque alguém pediu um código para a
-                conta da Bicos com este endereço. Não responda: esta caixa não é lida. Dúvidas? Abra a Bicos › Ajuda.
+                Valorjob, da NivoTech · Este e-mail foi enviado para {{ .Email }} porque alguém pediu um código para a
+                conta da Valorjob com este endereço. Não responda: esta caixa não é lida. Dúvidas? Abra a Valorjob ›
+                Ajuda.
               </td>
             </tr>
           </table>

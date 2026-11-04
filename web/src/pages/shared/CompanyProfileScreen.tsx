@@ -177,7 +177,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
               </div>
               <div className="flex gap-2.5 items-center">
                 <Icon name="calendar" size={20} color="var(--text-subtle)" />
-                <span className="text-sm text-concrete-700">{company.sinceLabel || 'Na Bicos'}</span>
+                <span className="text-sm text-concrete-700">{company.sinceLabel || 'Na Valorjob'}</span>
               </div>
             </div>
           </Card>
@@ -280,7 +280,7 @@ export default function CompanyProfileScreen({ params }: ScreenProps) {
   );
 }
 
-// Y24: where the Bicos team's check of the company stands — never a "Verificada" that didn't happen.
+// Y24: where the Valorjob team's check of the company stands — never a "Verificada" that didn't happen.
 function VerificationRow({ company }: { company: Company }) {
   const check = useAction(checkMyCompany, (status) =>
     showToast(

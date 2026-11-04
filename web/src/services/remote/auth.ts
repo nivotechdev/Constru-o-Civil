@@ -423,7 +423,7 @@ export async function changeEmail(email: string, password: string, captcha: Capt
   if (error) {
     const code = authCode(error);
     if (code === 'email_exists' || code === 'user_already_exists')
-      throw serviceError('conflito', 'Esse e-mail já tem conta na Bicos.');
+      throw serviceError('conflito', 'Esse e-mail já tem conta na Valorjob.');
     if (code === 'over_email_send_rate_limit')
       throw serviceError('conflito', 'Já enviamos um link há pouco. Espere alguns minutos para pedir outro.');
     throw toServiceError(error);
@@ -441,7 +441,7 @@ export async function signInWithGoogle(): Promise<void> {
   if (error) throw toServiceError(error);
 }
 
-/** U37: the e-mail and name of a Google login on this device that has no Bicos account yet (else null). */
+/** U37: the e-mail and name of a Google login on this device that has no Valorjob account yet (else null). */
 export async function pendingGoogleIdentity(): Promise<GoogleIdentity | null> {
   const client = await db();
   const { data } = await client.auth.getSession();

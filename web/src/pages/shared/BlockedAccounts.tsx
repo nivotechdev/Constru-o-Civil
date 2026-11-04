@@ -19,7 +19,7 @@ export default function BlockedAccounts() {
   const unblock = useAction(unblockAccount, () => showToast('Desbloqueado'));
   const list = blockedIds(db).map((id) => ({
     id,
-    name: db.companies[id]?.name ?? db.workers[id]?.name ?? 'Conta da Bicos'
+    name: db.companies[id]?.name ?? db.workers[id]?.name ?? 'Conta da Valorjob'
   }));
 
   return (

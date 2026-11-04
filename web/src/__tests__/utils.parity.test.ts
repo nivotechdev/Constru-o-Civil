@@ -156,7 +156,7 @@ describe('sharing a job (F09)', () => {
         pay: 200,
         address: { neighborhood: 'Tatuapé', city: 'São Paulo' } as never
       })
-    ).toBe('Limpeza em Tatuapé · R$ 200 por diária. Vi na Bicos:');
+    ).toBe('Limpeza em Tatuapé · R$ 200 por diária. Vi na Valorjob:');
   });
 });
 

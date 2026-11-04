@@ -2,6 +2,7 @@ import { startTransition, Suspense, useEffect, useState, useSyncExternalStore } 
 import { flushSync } from 'react-dom';
 import { BusyOverlay } from './components/BusyOverlay';
 import { Button } from './components/Button';
+import { Logo } from './components/Logo';
 import { OfflineBanner } from './components/OfflineBanner';
 import { ResultIcon } from './components/ResultIcon';
 import { SignOutDialog } from './components/SignOutDialog';
@@ -103,7 +104,7 @@ export function App() {
 function BootSplash() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-brand-500" aria-busy="true">
-      <span className="font-display font-bold text-5xl text-white tracking-tight">Bicos</span>
+      <Logo inverse height={52} />
       <span
         role="status"
         aria-label="Abrindo"
@@ -131,7 +132,7 @@ function OfflineStart() {
     <div className="flex flex-col items-center justify-center min-h-screen gap-5 text-center px-6">
       <ResultIcon icon="wifi-off" tone="brand" />
       <div className="flex flex-col gap-2 max-w-sm">
-        <h1 className="font-display font-bold text-2xl text-concrete-900">Sem conexão com a Bicos</h1>
+        <h1 className="font-display font-bold text-2xl text-concrete-900">Sem conexão com a Valorjob</h1>
         <p className="text-concrete-500">Sua conta continua aqui. Assim que a internet voltar, o app abre sozinho.</p>
       </div>
       <Button label="Tentar de novo" iconLeft="refresh-cw" loading={trying} onClick={retry} />

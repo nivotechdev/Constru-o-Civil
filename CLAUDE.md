@@ -1,4 +1,4 @@
-# CLAUDE.md — Contexto do Bicos (NivoTech)
+# CLAUDE.md — Contexto da Valorjob, antiga Bicos (NivoTech)
 
 > Contexto fixo para qualquer IA trabalhar neste repositório. Leia inteiro antes de mudar qualquer coisa.
 > Estado conferido em 17/10/2026 (branch `claude/front-novo-supabase` em `1b07bb6`, `master` em `dd8d0ad`, produção e
@@ -6,11 +6,12 @@
 
 ## 1. O produto
 
-**Bicos** é um marketplace de **bicos e diárias** (trabalho temporário) para o **público geral**, da **NivoTech**
+**Valorjob** (até o U70, 04/11/2026, chamada **Bicos**) é um marketplace de **bicos e diárias** (trabalho temporário) para o **público geral**, da **NivoTech**
 (nivotech.com.br, Brasil). Desde o U48 (21/10/2026) não é mais só de construção: empresas e pessoas que precisam de
 alguém para um serviço encontram trabalhadores verificados; quem procura bico tem um canal único de oportunidades.
 Nos textos e ícones do app, nada de construtora, obra, pedreiro ou EPI — "empresa", "serviço", "local", "trabalhador".
-Os nomes internos antigos (papel `recrutador`, lado `construtora`, `para_construtora`, rota `/construtora/:id`) ficam.
+Nos textos de tela a marca é **Valorjob** ("a Valorjob"); "bico" segue como palavra comum. Logo, ícones e
+favicon: `components/Logo.tsx` e `scripts/make-icons.mjs` (U70). Os nomes internos antigos (papel `recrutador`, lado `construtora`, `para_construtora`, rota `/construtora/:id`) ficam.
 
 Dois lados (enum `app_role`):
 - **trabalhador** (pessoa física, CPF, 18+): quem procura bico (garçom, faxina, eventos, mudança, loja, cuidados…).

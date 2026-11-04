@@ -1,11 +1,14 @@
 import { Button } from '../../components/Button';
+import { Logo } from '../../components/Logo';
 import { navigate } from '../../services/router';
 
 export default function Splash() {
   return (
     <div className="min-h-screen flex flex-col bg-brand-500">
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <span className="font-display font-bold text-5xl sm:text-6xl text-white tracking-tight">Bicos</span>
+        <h1>
+          <Logo inverse height={52} />
+        </h1>
         <p className="max-w-xs sm:max-w-sm text-base sm:text-lg text-white/85">
           Bicos e diárias perto de você. Sem taxa para o trabalhador.
         </p>

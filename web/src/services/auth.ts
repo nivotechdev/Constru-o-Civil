@@ -211,7 +211,7 @@ async function createAccount(data: SignUpData, captcha: CaptchaSource): Promise<
   if (accounts.some((a) => a.email.toLowerCase() === data.email.trim().toLowerCase()))
     return { ok: false, reason: 'email-taken' };
   if (accounts.some((a) => digits(a.whatsapp) === digits(data.whatsapp)))
-    throw serviceError('conflito', 'Esse WhatsApp já está em outra conta da Bicos.');
+    throw serviceError('conflito', 'Esse WhatsApp já está em outra conta da Valorjob.');
 
   const stamp = Date.now().toString(36);
   const now = new Date().toISOString();
@@ -589,7 +589,7 @@ export interface GoogleSignUpData {
  * Backend: Auth updateUser({ password }), RPC create_my_account, then the session starts as usual.
  */
 export async function completeGoogleSignUp(data: GoogleSignUpData): Promise<void> {
-  if (!data.adult) throw serviceError('validacao', 'A Bicos é só para maiores de 18 anos.');
+  if (!data.adult) throw serviceError('validacao', 'A Valorjob é só para maiores de 18 anos.');
   const validDoc = data.role === 'recrutador' ? isValidCnpj(data.doc) || isValidCpf(data.doc) : isValidCpf(data.doc);
   if (!validDoc)
     throw serviceError('validacao', data.role === 'recrutador' ? 'CNPJ ou CPF inválido.' : 'CPF inválido.');
@@ -633,7 +633,7 @@ export async function changeEmail(email: string, password: string, captcha: Capt
   await mockLatency(600);
   if (!session || passwords.get(session.accountId) !== password) throw serviceError('validacao', 'Senha incorreta.');
   if (Object.values(getDb().accounts).some((a) => a.email.toLowerCase() === clean))
-    throw serviceError('conflito', 'Esse e-mail já tem conta na Bicos.');
+    throw serviceError('conflito', 'Esse e-mail já tem conta na Valorjob.');
   updateAccount(session.accountId, { email: clean });
 }
 

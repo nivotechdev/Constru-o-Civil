@@ -34,7 +34,7 @@ describe('e-mails do Auth (L04)', () => {
 
   it('U11: the sign-up code shows in the preview and can be selected in one tap', () => {
     const html = readFileSync(dir + 'confirmacao.html', 'utf8');
-    expect(html).toMatch(/display: none[^>]*>\s*Seu código de verificação da Bicos é \{\{ \.Token \}\}\./);
+    expect(html).toMatch(/display: none[^>]*>\s*Seu código de verificação da Valorjob é \{\{ \.Token \}\}\./);
     expect(html).toMatch(/user-select: all;[\s\S]*\{\{ \.Token \}\}/);
   });
 
@@ -44,12 +44,12 @@ describe('e-mails do Auth (L04)', () => {
       // The code as ONE number, selectable in one tap — no boxes, no spaces, no link to another page.
       expect(html).toMatch(/user-select: all[^>]*>\s*\{\{ \.Token \}\}\s*</);
       expect(html).not.toMatch(/slice \.Token/);
-      expect(html).toMatch(/Seu código de verificação da Bicos é \{\{ \.Token \}\}\./);
+      expect(html).toMatch(/Seu código de verificação da Valorjob é \{\{ \.Token \}\}\./);
       expect(html).not.toContain('copiar-codigo');
     }
     const auth = readFileSync(fileURLToPath(new URL('../../scripts/configurar-auth.mjs', import.meta.url)), 'utf8');
-    expect(auth).toContain("mailer_subjects_confirmation: 'Seu código de verificação da Bicos'");
-    expect(auth).toContain("mailer_subjects_magic_link: 'Seu código de verificação da Bicos'");
+    expect(auth).toContain("mailer_subjects_confirmation: 'Seu código de verificação da Valorjob'");
+    expect(auth).toContain("mailer_subjects_magic_link: 'Seu código de verificação da Valorjob'");
   });
 
   it('the e-mail change says the new address', () => {

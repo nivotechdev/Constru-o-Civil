@@ -1,4 +1,4 @@
-// Mercado Pago: só o que o Bicos usa (criar pagamento PIX/cartão, ler um pagamento, conferir o aviso).
+// Mercado Pago: só o que a Valorjob usa (criar pagamento PIX/cartão, ler um pagamento, conferir o aviso).
 // Documentação: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments/post
 // Segredos (Supabase → Edge Functions → Secrets): MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET.
 

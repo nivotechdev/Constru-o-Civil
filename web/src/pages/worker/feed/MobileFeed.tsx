@@ -91,7 +91,7 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
     <div className="flex flex-col lg:hidden">
       <div className="sticky top-0 z-20 flex flex-col gap-2 px-4 pt-2 pb-3.5 bg-concrete-0 border-b border-concrete-200">
         <div className="flex items-center justify-between gap-2 min-h-12">
-          <h1 className="inline-flex" aria-label="Bicos">
+          <h1 className="inline-flex" aria-label="Valorjob">
             <Logo compact />
           </h1>
           <MobileNotifications />

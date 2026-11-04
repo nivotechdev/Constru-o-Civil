@@ -180,9 +180,9 @@ interface SignupUI {
 const CHECKED: Partial<Record<FieldId, SignUpCheck>> = { doc: 'documento', email: 'email', whatsapp: 'whatsapp' };
 
 function takenMessage(id: FieldId, value: string): string {
-  if (id === 'email') return 'Esse e-mail já tem conta na Bicos. Entre na conta ou use outro e-mail.';
-  if (id === 'whatsapp') return 'Esse WhatsApp já está em outra conta da Bicos. Use outro número.';
-  return `Esse ${value.replace(/\D/g, '').length === 14 ? 'CNPJ' : 'CPF'} já tem conta na Bicos. Entre na conta ou recupere a senha.`;
+  if (id === 'email') return 'Esse e-mail já tem conta na Valorjob. Entre na conta ou use outro e-mail.';
+  if (id === 'whatsapp') return 'Esse WhatsApp já está em outra conta da Valorjob. Use outro número.';
+  return `Esse ${value.replace(/\D/g, '').length === 14 ? 'CNPJ' : 'CPF'} já tem conta na Valorjob. Entre na conta ou recupere a senha.`;
 }
 
 function validateField(field: SignupField, values: Values, role: Role): string | null {
@@ -431,7 +431,7 @@ export default function Signup({ params }: ScreenProps) {
           setUi((s) => ({
             submitting: false,
             step: emailStep,
-            errors: { ...s.errors, email: 'Esse e-mail já tem conta na Bicos. Entre na conta ou use outro e-mail.' }
+            errors: { ...s.errors, email: 'Esse e-mail já tem conta na Valorjob. Entre na conta ou use outro e-mail.' }
           }));
           return;
         }
@@ -485,7 +485,7 @@ export default function Signup({ params }: ScreenProps) {
       taken: 'doc',
       errors: {
         ...s.errors,
-        doc: `Não deu para criar a conta com ${doc}. Se você já tem conta na Bicos, entre ou recupere a senha.`
+        doc: `Não deu para criar a conta com ${doc}. Se você já tem conta na Valorjob, entre ou recupere a senha.`
       }
     }));
   }
@@ -574,7 +574,7 @@ export default function Signup({ params }: ScreenProps) {
               onChange={(v) => setUi({ adult: v, adultError: false })}
             />
             {ui.adultError ? (
-              <span className="pl-9 -mt-1 text-sm text-danger-500">A Bicos é só para maiores de 18 anos.</span>
+              <span className="pl-9 -mt-1 text-sm text-danger-500">A Valorjob é só para maiores de 18 anos.</span>
             ) : null}
             <Checkbox
               label={

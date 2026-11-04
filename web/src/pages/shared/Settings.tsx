@@ -141,7 +141,7 @@ export default function Settings() {
           <Row
             icon="trash-2"
             label="Excluir minha conta"
-            description="Apaga sua conta e seus dados da Bicos"
+            description="Apaga sua conta e seus dados da Valorjob"
             danger
             onClick={() => navigate('/configuracoes/excluir-conta')}
           />

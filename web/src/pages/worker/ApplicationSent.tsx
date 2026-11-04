@@ -28,13 +28,13 @@ export default function ApplicationSent({ params }: ScreenProps) {
     if (missing) navigate('/vaga/' + params.id, { replace: true });
   }, [missing, params.id]);
   if (query.status !== 'ready' || missing)
-    return <ScreenLoading title="Bicos" onBack={() => goBack('/mural')} query={query} skeleton={<PageSkeleton />} />;
+    return <ScreenLoading title="Valorjob" onBack={() => goBack('/mural')} query={query} skeleton={<PageSkeleton />} />;
   if (!job) return <JobNotFound />;
   const company = companyOf(db, job);
 
   return (
     <div className="flex flex-col">
-      <BackBar title="Bicos" onBack={() => goBack('/mural')} />
+      <BackBar title="Valorjob" onBack={() => goBack('/mural')} />
       <div className="flex flex-col items-center text-center gap-5 px-6 pt-10 pb-8 lg:max-w-app lg:mx-auto">
         <ResultIcon icon="circle-check" tone="success" />
         <div className="flex flex-col gap-2">

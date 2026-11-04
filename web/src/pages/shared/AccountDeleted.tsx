@@ -11,7 +11,7 @@ export default function AccountDeleted() {
         <h1 className="font-display font-bold text-2xl text-concrete-900">Conta excluída</h1>
         <p className="text-concrete-700">
           Seu perfil, suas fotos e seus contatos foram apagados, e a sessão foi encerrada. As avaliações e o histórico
-          dos bicos continuam, sem o seu nome. Obrigado por ter usado a Bicos.
+          dos bicos continuam, sem o seu nome. Obrigado por ter usado a Valorjob.
         </p>
       </div>
       <Button label="Voltar ao início" variant="secondary" onClick={() => navigate('/splash', { replace: true })} />

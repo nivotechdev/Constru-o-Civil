@@ -29,15 +29,15 @@ export const TERMS: LegalDocument = {
     {
       title: '1. Quem somos',
       body: [
-        'A Bicos é um serviço da {{RAZAO_SOCIAL}} ("NivoTech"), CNPJ {{CNPJ}}, com sede em {{ENDERECO}}.',
-        'Ao criar uma conta você aceita estes termos e a Política de privacidade. Se não concordar, não use a Bicos.'
+        'A Valorjob é um serviço da {{RAZAO_SOCIAL}} ("NivoTech"), CNPJ {{CNPJ}}, com sede em {{ENDERECO}}.',
+        'Ao criar uma conta você aceita estes termos e a Política de privacidade. Se não concordar, não use a Valorjob.'
       ]
     },
     {
-      title: '2. O que a Bicos faz',
+      title: '2. O que a Valorjob faz',
       body: [
-        'A Bicos aproxima empresas e pessoas que precisam de alguém para um serviço ou uma diária e trabalhadores que procuram bico.',
-        'A Bicos não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre quem contrata e o trabalhador, que respondem por ele.'
+        'A Valorjob aproxima empresas e pessoas que precisam de alguém para um serviço ou uma diária e trabalhadores que procuram bico.',
+        'A Valorjob não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre quem contrata e o trabalhador, que respondem por ele.'
       ]
     },
     {
@@ -45,14 +45,14 @@ export const TERMS: LegalDocument = {
       body: [
         'Cada conta é de uma pessoa ou empresa e de um lado só: trabalhador ou quem contrata (conta de empresa).',
         'Você é responsável pelos dados que informa (CPF, CNPJ, WhatsApp, e-mail) e por manter sua senha em segredo.',
-        'Para usar a Bicos você precisa ter 18 anos ou mais.'
+        'Para usar a Valorjob você precisa ter 18 anos ou mais.'
       ]
     },
     {
       title: '4. Vagas e candidaturas',
       body: [
         'Quem contrata publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.',
-        'O trabalhador se candidata só a vagas que pode cumprir e avisa pela Bicos se não puder ir.',
+        'O trabalhador se candidata só a vagas que pode cumprir e avisa pela Valorjob se não puder ir.',
         'O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço do serviço aparece na vaga para quem tem conta, com o mapa.'
       ]
     },
@@ -66,7 +66,7 @@ export const TERMS: LegalDocument = {
     {
       title: '6. Pagamentos',
       body: [
-        'Para o trabalhador, a Bicos é sempre grátis. Publicar vaga também é grátis.',
+        'Para o trabalhador, a Valorjob é sempre grátis. Publicar vaga também é grátis.',
         'Quem contrata paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.',
         'O pagamento da diária é feito direto por quem contrata ao trabalhador, como combinado entre eles.'
       ]
@@ -75,7 +75,7 @@ export const TERMS: LegalDocument = {
       title: '7. Avaliações, denúncias e conduta',
       body: [
         'Depois da diária, cada lado pode avaliar o outro uma vez. A avaliação deve ser verdadeira e respeitosa.',
-        'Não é permitido publicar conteúdo falso, ofensivo ou discriminatório, pedir dinheiro adiantado, oferecer trabalho perigoso ou ilegal, nem usar a Bicos para outro fim.',
+        'Não é permitido publicar conteúdo falso, ofensivo ou discriminatório, pedir dinheiro adiantado, oferecer trabalho perigoso ou ilegal, nem usar a Valorjob para outro fim.',
         'Qualquer pessoa pode denunciar uma vaga, um perfil, uma avaliação ou um post. A equipe analisa e pode ocultar conteúdo ou suspender a conta, registrando o motivo. Quem discordar pode falar com o suporte.'
       ]
     },
@@ -126,7 +126,7 @@ export const PRIVACY: LegalDocument = {
       body: [
         'São pedidas só a quem quer o selo "Verificado", com consentimento próprio e destacado na tela de verificação (LGPD, art. 11, I). A foto do rosto é dado biométrico, um dado pessoal sensível.',
         'Finalidade: conferir que você é quem diz ser e evitar fraude. Não usamos para mais nada.',
-        'Quem vê: só as pessoas da equipe de verificação da Bicos, e cada decisão fica registrada com quem decidiu e quando. As fotos ficam em área privada, sem endereço público.',
+        'Quem vê: só as pessoas da equipe de verificação da Valorjob, e cada decisão fica registrada com quem decidiu e quando. As fotos ficam em área privada, sem endereço público.',
         'Prazo: apagadas 30 dias depois da decisão (aprovada ou recusada). Você pode retirar o consentimento a qualquer momento pelo {{DPO_EMAIL}}; o selo sai junto.'
       ]
     },
@@ -195,11 +195,11 @@ export const IDENTITY_CONSENT = {
   title: 'Uso da sua selfie e do documento',
   points: [
     'Para que serve: só para conferir que você é você e dar o selo "Verificado".',
-    'Quem vê: só a equipe de verificação da Bicos. Ninguém mais, nem as empresas.',
+    'Quem vê: só a equipe de verificação da Valorjob. Ninguém mais, nem as empresas.',
     'Por quanto tempo: apagamos as fotos 30 dias depois da decisão.',
     'Você pode desistir quando quiser, pela Ajuda ou pelo e-mail de privacidade.'
   ],
-  checkbox: 'Concordo que a Bicos use minha selfie e a foto do meu documento só para verificar minha identidade.'
+  checkbox: 'Concordo que a Valorjob use minha selfie e a foto do meu documento só para verificar minha identidade.'
 };
 
 /** The version the sign-up records as accepted (terms and policy are accepted together). */

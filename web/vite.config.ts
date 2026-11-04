@@ -104,8 +104,8 @@ export default defineConfig(({ mode }) => {
               injectRegister: false,
               includeAssets: ['icons/favicon-32.png', 'icons/apple-touch-icon.png', 'icons/icon.svg'],
               manifest: {
-                name: 'Bicos — bicos e diárias',
-                short_name: 'Bicos',
+                name: 'Valorjob — bicos e diárias',
+                short_name: 'Valorjob',
                 description:
                   'Bicos e diárias perto de você: empresas e pessoas que contratam e trabalhadores que procuram bico.',
                 lang: 'pt-BR',

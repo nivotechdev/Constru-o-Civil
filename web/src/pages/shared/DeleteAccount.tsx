@@ -119,7 +119,7 @@ export default function DeleteAccount() {
             <div className="flex flex-col gap-1">
               <span className="font-semibold text-danger-500">Essa ação não pode ser desfeita</span>
               <span className="text-sm text-concrete-600">
-                Tudo o que é seu na Bicos é apagado de vez: perfil, fotos, contatos, notificações e as avaliações que
+                Tudo o que é seu na Valorjob é apagado de vez: perfil, fotos, contatos, notificações e as avaliações que
                 você fez e recebeu.{' '}
                 {worker
                   ? 'Você sai de todos os bicos e candidaturas, e suas vagas salvas e publicações somem.'
@@ -257,7 +257,7 @@ export default function DeleteAccount() {
         open={asking}
         tone="danger"
         title="Excluir sua conta de vez?"
-        description="Depois disso, para usar a Bicos de novo você vai precisar criar outra conta."
+        description="Depois disso, para usar a Valorjob de novo você vai precisar criar outra conta."
         confirmLabel="Sim, excluir conta"
         loading={remove.loading}
         error={remove.error}

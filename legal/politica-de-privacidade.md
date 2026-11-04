@@ -35,7 +35,7 @@ São pedidas só a quem quer o selo "Verificado", com consentimento próprio e d
 
 Finalidade: conferir que você é quem diz ser e evitar fraude. Não usamos para mais nada.
 
-Quem vê: só as pessoas da equipe de verificação da Bicos, e cada decisão fica registrada com quem decidiu e quando. As fotos ficam em área privada, sem endereço público.
+Quem vê: só as pessoas da equipe de verificação da Valorjob, e cada decisão fica registrada com quem decidiu e quando. As fotos ficam em área privada, sem endereço público.
 
 Prazo: apagadas 30 dias depois da decisão (aprovada ou recusada). Você pode retirar o consentimento a qualquer momento pelo {{DPO_EMAIL}}; o selo sai junto.
 

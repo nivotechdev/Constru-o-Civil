@@ -46,7 +46,7 @@ beforeEach(() => {
       admin_identity_queue: () =>
         staff
           ? { data: [queueRow], error: null }
-          : { data: null, error: { code: 'BC401', message: 'Área só da equipe da Bicos.' } },
+          : { data: null, error: { code: 'BC401', message: 'Área só da equipe da Valorjob.' } },
       admin_report_queue: (args) => ({
         data:
           args.p_status === 'aberta'

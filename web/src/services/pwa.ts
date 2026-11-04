@@ -12,7 +12,7 @@ export function startServiceWorker(): void {
   if (!/^https?:$/.test(location.protocol)) return;
   const update = registerSW({
     onNeedRefresh() {
-      showToast('Tem uma versão nova da Bicos.', {
+      showToast('Tem uma versão nova da Valorjob.', {
         action: { label: 'Atualizar', onClick: () => void update(true) },
         duration: 24 * HOUR
       });

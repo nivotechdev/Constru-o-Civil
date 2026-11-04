@@ -1,4 +1,4 @@
-// L03 (lançamento): E2E do Bicos num backend de verdade — o staging (CI, job `e2e`) ou o Supabase local
+// L03 (lançamento): E2E da Valorjob num backend de verdade — o staging (CI, job `e2e`) ou o Supabase local
 // (e2e/LEIA.md). Os fluxos rodam em ordem (cada um usa o que o anterior criou) e cada etapa vira um print em
 // e2e/resultados/prints/, citado em docs/E2E.md. As contas de teste são criadas e apagadas pelo próprio teste.
 import { defineConfig, devices } from '@playwright/test';

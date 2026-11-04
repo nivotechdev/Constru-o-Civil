@@ -374,7 +374,7 @@ async function handleAuthRedirect(): Promise<void> {
   replaceUrl(recovery ? '/redefinir-senha' : '/');
   if (error) notice = 'Esse link não vale mais. Entre ou peça um novo.';
   else if (emailChange) notice = 'E-mail trocado. Use o novo para entrar.';
-  else if (!recovery) notice = 'E-mail confirmado. Bem-vindo à Bicos!';
+  else if (!recovery) notice = 'E-mail confirmado. Bem-vindo à Valorjob!';
 }
 
 let notice: string | null = null;

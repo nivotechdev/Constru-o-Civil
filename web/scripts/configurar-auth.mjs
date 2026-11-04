@@ -50,7 +50,7 @@ const config = {
         smtp_user: need('BREVO_SMTP_USER'),
         smtp_pass: need('BREVO_SMTP_KEY'),
         smtp_admin_email: env.SMTP_SENDER || 'nao-responda@nivotech.com.br',
-        smtp_sender_name: 'Bicos',
+        smtp_sender_name: 'Valorjob',
         smtp_max_frequency: 60,
         rate_limit_email_sent: Number(env.RATE_LIMIT_EMAIL ?? 100)
       }
@@ -58,13 +58,13 @@ const config = {
   // Os e-mails em português só podem ser trocados com SMTP próprio (o plano grátis recusa com o e-mail padrão).
   ...(hasSmtp
     ? {
-        mailer_subjects_confirmation: 'Seu código de verificação da Bicos',
+        mailer_subjects_confirmation: 'Seu código de verificação da Valorjob',
         mailer_templates_confirmation_content: template('confirmacao.html'),
-        mailer_subjects_recovery: 'Criar uma senha nova na Bicos',
+        mailer_subjects_recovery: 'Criar uma senha nova na Valorjob',
         mailer_templates_recovery_content: template('redefinir-senha.html'),
-        mailer_subjects_email_change: 'Confirme o novo e-mail da sua conta na Bicos',
+        mailer_subjects_email_change: 'Confirme o novo e-mail da sua conta na Valorjob',
         mailer_templates_email_change_content: template('troca-de-email.html'),
-        mailer_subjects_magic_link: 'Seu código de verificação da Bicos',
+        mailer_subjects_magic_link: 'Seu código de verificação da Valorjob',
         mailer_templates_magic_link_content: template('link-de-acesso.html')
       }
     : {}),

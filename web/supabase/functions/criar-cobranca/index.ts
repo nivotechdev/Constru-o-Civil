@@ -54,7 +54,7 @@ Deno.serve(
 
     const base = {
       transaction_amount: payment.amount_cents / 100,
-      description: `Bicos — destaque da vaga ${payment.job_id}`,
+      description: `Valorjob — destaque da vaga ${payment.job_id}`,
       external_reference: payment.id,
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/webhook-pagamento`,
       statement_descriptor: 'BICOS'

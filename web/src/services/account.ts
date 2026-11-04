@@ -140,7 +140,7 @@ export async function deleteAccount(
           next,
           {
             kind: 'desistencia',
-            title: 'Um trabalhador saiu da Bicos',
+            title: 'Um trabalhador saiu da Valorjob',
             text: `A vaga dele em ${jobTitle(job)} voltou a ficar aberta.`,
             workerId: null,
             companyId: job.companyId,
@@ -174,7 +174,7 @@ export async function deleteAccount(
           {
             kind: 'contratacao_cancelada',
             title: 'Contratação cancelada',
-            text: `A empresa de ${jobTitle(job)} saiu da Bicos e o bico foi cancelado.`,
+            text: `A empresa de ${jobTitle(job)} saiu da Valorjob e o bico foi cancelado.`,
             workerId: app.workerId,
             companyId: null,
             target: '/minhas-candidaturas'

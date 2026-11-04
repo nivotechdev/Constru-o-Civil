@@ -92,8 +92,8 @@ export default function Selected({ params }: ScreenProps) {
             </div>
             <ContactButton applicationId={hired.id} size="lg" fullWidth />
             <span className="text-sm text-concrete-700">
-              Combine ponto de encontro, horário e pagamento direto com a empresa. A Bicos não cobra taxa e não entra na
-              negociação.
+              Combine ponto de encontro, horário e pagamento direto com a empresa. A Valorjob não cobra taxa e não entra
+              na negociação.
             </span>
           </div>
         </Card>

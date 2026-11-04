@@ -50,7 +50,7 @@ export default function ChooseProfile() {
         </>
       }
     >
-      <FlowHeading overline="Criar conta" title="Como você vai usar o Bicos?" />
+      <FlowHeading overline="Criar conta" title="Como você vai usar a Valorjob?" />
       <div className="flex flex-col gap-3 short:gap-2.5">
         <RadioCard
           name="perfil-cadastro"

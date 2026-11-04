@@ -38,13 +38,13 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   // U10: CPF, e-mail e WhatsApp de outra conta param o cadastro no próprio passo (o do trabalhador do fluxo 1).
   await page.fill(k + 'doc', trabalhador.documento);
   await seguir();
-  await expect(page.getByText('Esse CPF já tem conta na Bicos.', { exact: false })).toBeVisible();
+  await expect(page.getByText('Esse CPF já tem conta na Valorjob.', { exact: false })).toBeVisible();
   await print(page, 'f2', 'cadastro para no CPF que já tem conta');
   await page.fill(k + 'doc', cnpj);
   await seguir();
   await page.fill(k + 'email', trabalhador.email);
   await seguir();
-  await expect(page.getByText('Esse e-mail já tem conta na Bicos.', { exact: false })).toBeVisible();
+  await expect(page.getByText('Esse e-mail já tem conta na Valorjob.', { exact: false })).toBeVisible();
   await page.fill(k + 'email', email);
   await seguir();
   if (trabalhador.whatsapp) {

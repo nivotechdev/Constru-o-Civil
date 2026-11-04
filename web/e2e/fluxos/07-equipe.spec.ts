@@ -33,7 +33,7 @@ test('equipe aprova identidade e construtora e trata a denúncia', async ({ brow
   await arquivos.nth(0).setInputFiles(FOTO);
   await arquivos.nth(1).setInputFiles(FOTO);
   await expect(w.getByRole('button', { name: 'Enviar para verificação' })).toBeDisabled();
-  await w.getByText(/Concordo que a Bicos use minha selfie/).click();
+  await w.getByText(/Concordo que a Valorjob use minha selfie/).click();
   await print(w, 'f7', 'consentimento da selfie');
   await w.getByRole('button', { name: 'Enviar para verificação' }).click();
   await expect(w.getByText('Em análise')).toBeVisible();

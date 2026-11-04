@@ -1,7 +1,7 @@
 // Fluxo 8 (U40–U42): cadastro com o Google — as mesmas telas do cadastro normal, só sem o passo do e-mail, sem a
 // confirmação dele e sem o botão do Google — e nenhuma tela de entrada rola. A janela do Google não abre em robô: o
 // teste começa logo depois dela, do jeito que o app continua quando ela fecha — um login com o e-mail confirmado pelo
-// Google e sem conta na Bicos (o que a função entrar-com-firebase cria), aberto por um link de acesso.
+// Google e sem conta na Valorjob (o que a função entrar-com-firebase cria), aberto por um link de acesso.
 import { expect, test, type Page } from '@playwright/test';
 import {
   admin,
@@ -53,7 +53,7 @@ test('Google sem conta: o mesmo cadastro, sem o e-mail, e a conta nasce com o e-
   const cpf = cpfValido('google');
   const whatsapp = whatsappDeTeste('google');
 
-  // O que entrar-com-firebase faz para um Google sem conta: o login, com o e-mail já confirmado e sem conta na Bicos.
+  // O que entrar-com-firebase faz para um Google sem conta: o login, com o e-mail já confirmado e sem conta na Valorjob.
   const { data, error } = await admin().auth.admin.createUser({
     email,
     email_confirm: true,
@@ -67,7 +67,7 @@ test('Google sem conta: o mesmo cadastro, sem o e-mail, e a conta nasce com o e-
 
   // Veio do login (sem lado): escolhe o lado primeiro — a mesma tela, sem o botão do Google.
   await expect(page).toHaveURL(/\/escolha-perfil/);
-  await expect(page.getByRole('heading', { name: 'Como você vai usar o Bicos?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Como você vai usar a Valorjob?' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Continuar com o Google' })).toHaveCount(0);
   await semRolagem(page, 'escolha do lado (Google)');
   await print(page, 'f8', 'google escolha do lado');

@@ -191,7 +191,7 @@ function TopBar({ role, items, active, account }: TopBarProps) {
           <button
             type="button"
             className="inline-flex items-center pl-1 rounded-full outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
-            aria-label="Bicos, ir para o início"
+            aria-label="Valorjob, ir para o início"
             onClick={() => go('/mural')}
           >
             <Logo />

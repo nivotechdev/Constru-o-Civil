@@ -23,7 +23,7 @@ export function isLegacyJobLink(key: string): boolean {
 export function jobShareText(job: Pick<Job, 'oficioId' | 'title' | 'pay' | 'address'>): string {
   const where = job.address.neighborhood || job.address.city;
   const pay = job.pay ? ` · ${formatPay(job.pay)} por diária` : '';
-  return `${jobTitle(job)} em ${where}${pay}. Vi na Bicos:`;
+  return `${jobTitle(job)} em ${where}${pay}. Vi na Valorjob:`;
 }
 
 /** Opens the share sheet (or WhatsApp). Answers how it went. */

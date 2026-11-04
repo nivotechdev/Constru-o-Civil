@@ -1,4 +1,4 @@
-// U28: the Edge Function only opens a Bicos session for a Firebase ID token signed by Firebase, for this project,
+// U28: the Edge Function only opens a Valorjob session for a Firebase ID token signed by Firebase, for this project,
 // still valid and from a fresh sign-in — and for the phone, only for a Brazilian mobile.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { brazilianMobile, forgetFirebaseKeys, verifyFirebaseToken } from '../../supabase/functions/_shared/firebase.ts';

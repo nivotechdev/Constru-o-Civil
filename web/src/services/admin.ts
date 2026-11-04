@@ -114,7 +114,7 @@ export const ADMIN_DEFAULTS: AdminData = {
 
 const save = (patch: Partial<AdminData>) => store.setUI<AdminData>(ADMIN_KEY, patch);
 const remote = () => import('./remote/admin');
-const notStaff = () => serviceError('nao_autorizado', 'Área só da equipe da Bicos.');
+const notStaff = () => serviceError('nao_autorizado', 'Área só da equipe da Valorjob.');
 
 /** Whether the session is on the team (the server decides; the screen only reads it). */
 export async function checkStaff(): Promise<void> {

@@ -7,15 +7,15 @@
 
 ## 1. Quem somos
 
-A Bicos é um serviço da {{RAZAO_SOCIAL}} ("NivoTech"), CNPJ {{CNPJ}}, com sede em {{ENDERECO}}.
+A Valorjob é um serviço da {{RAZAO_SOCIAL}} ("NivoTech"), CNPJ {{CNPJ}}, com sede em {{ENDERECO}}.
 
-Ao criar uma conta você aceita estes termos e a Política de privacidade. Se não concordar, não use a Bicos.
+Ao criar uma conta você aceita estes termos e a Política de privacidade. Se não concordar, não use a Valorjob.
 
-## 2. O que a Bicos faz
+## 2. O que a Valorjob faz
 
-A Bicos aproxima empresas e pessoas que precisam de alguém para um serviço ou uma diária e trabalhadores que procuram bico.
+A Valorjob aproxima empresas e pessoas que precisam de alguém para um serviço ou uma diária e trabalhadores que procuram bico.
 
-A Bicos não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre quem contrata e o trabalhador, que respondem por ele.
+A Valorjob não contrata ninguém, não é empregadora e não entra na negociação. O combinado de horário, valor e pagamento é entre quem contrata e o trabalhador, que respondem por ele.
 
 ## 3. Sua conta
 
@@ -23,13 +23,13 @@ Cada conta é de uma pessoa ou empresa e de um lado só: trabalhador ou quem con
 
 Você é responsável pelos dados que informa (CPF, CNPJ, WhatsApp, e-mail) e por manter sua senha em segredo.
 
-Para usar a Bicos você precisa ter 18 anos ou mais.
+Para usar a Valorjob você precisa ter 18 anos ou mais.
 
 ## 4. Vagas e candidaturas
 
 Quem contrata publica vagas reais, com valor, local e datas verdadeiros, e avisa os candidatos quando algo muda.
 
-O trabalhador se candidata só a vagas que pode cumprir e avisa pela Bicos se não puder ir.
+O trabalhador se candidata só a vagas que pode cumprir e avisa pela Valorjob se não puder ir.
 
 O contato por WhatsApp é liberado para os dois lados quando a empresa aprova o candidato. O endereço do serviço aparece na vaga para quem tem conta, com o mapa.
 
@@ -41,7 +41,7 @@ O selo indica que conferimos os documentos, não garante o trabalho de ninguém.
 
 ## 6. Pagamentos
 
-Para o trabalhador, a Bicos é sempre grátis. Publicar vaga também é grátis.
+Para o trabalhador, a Valorjob é sempre grátis. Publicar vaga também é grátis.
 
 Quem contrata paga só se quiser impulsionar uma vaga, por PIX ou cartão (Mercado Pago), sem renovação automática.
 
@@ -51,7 +51,7 @@ O pagamento da diária é feito direto por quem contrata ao trabalhador, como co
 
 Depois da diária, cada lado pode avaliar o outro uma vez. A avaliação deve ser verdadeira e respeitosa.
 
-Não é permitido publicar conteúdo falso, ofensivo ou discriminatório, pedir dinheiro adiantado, oferecer trabalho perigoso ou ilegal, nem usar a Bicos para outro fim.
+Não é permitido publicar conteúdo falso, ofensivo ou discriminatório, pedir dinheiro adiantado, oferecer trabalho perigoso ou ilegal, nem usar a Valorjob para outro fim.
 
 Qualquer pessoa pode denunciar uma vaga, um perfil, uma avaliação ou um post. A equipe analisa e pode ocultar conteúdo ou suspender a conta, registrando o motivo. Quem discordar pode falar com o suporte.
 

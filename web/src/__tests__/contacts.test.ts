@@ -37,7 +37,7 @@ describe('getContact', () => {
     expect(r.ok && r.v.name).toBe('Eventos Meridiano');
     expect(r.ok && r.v.url).toContain('https://wa.me/5511988423310?text=');
     expect(r.ok && decodeURIComponent(r.v.url)).toContain(
-      'Aqui é Jorge, da Bicos. Fui aprovado para a vaga "Garçom para casamento" (BC-4821)'
+      'Aqui é Jorge, da Valorjob. Fui aprovado para a vaga "Garçom para casamento" (BC-4821)'
     );
   });
 
@@ -70,10 +70,10 @@ describe('ready-made messages', () => {
   const parts = { workerName: 'Jorge Mendes', companyName: 'Eventos Meridiano', job, hired: false };
   it('say who writes, which job (title, or the trade of an older job) and which day (P07, U01)', () => {
     expect(workerToCompanyMessage(parts)).toBe(
-      'Olá, Eventos Meridiano! Aqui é Jorge, da Bicos. Fui aprovado para a vaga "Garçom" (BC-4821) do dia 12/10. Podemos combinar os detalhes?'
+      'Olá, Eventos Meridiano! Aqui é Jorge, da Valorjob. Fui aprovado para a vaga "Garçom" (BC-4821) do dia 12/10. Podemos combinar os detalhes?'
     );
     expect(companyToWorkerMessage({ ...parts, hired: true, job: { ...job, endDate: '2026-10-15' } })).toBe(
-      'Olá, Jorge! Aqui é da Eventos Meridiano, pela Bicos. Você foi contratado para a vaga "Garçom" (BC-4821) de 12/10 a 15/10. Podemos combinar os detalhes?'
+      'Olá, Jorge! Aqui é da Eventos Meridiano, pela Valorjob. Você foi contratado para a vaga "Garçom" (BC-4821) de 12/10 a 15/10. Podemos combinar os detalhes?'
     );
     expect(workerToCompanyMessage({ ...parts, hired: true, job: { ...job, dateToArrange: true } })).toContain(
       'Fui contratado para a vaga "Garçom" (BC-4821) com data a combinar.'

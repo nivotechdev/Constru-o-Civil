@@ -17,7 +17,7 @@ interface Question {
 
 const COMMON: Question[] = [
   {
-    q: 'A Bicos cobra alguma coisa?',
+    q: 'A Valorjob cobra alguma coisa?',
     a: 'Do trabalhador, nunca. Quem contrata publica vagas de graça e só paga se quiser colocar uma vaga no topo do mural.'
   },
   {
@@ -49,7 +49,7 @@ const WORKER: Question[] = [
   },
   {
     q: 'Como recebo pela diária?',
-    a: 'O pagamento é combinado direto com a empresa (a forma aparece na vaga). A Bicos não entra no pagamento da diária.'
+    a: 'O pagamento é combinado direto com a empresa (a forma aparece na vaga). A Valorjob não entra no pagamento da diária.'
   }
 ];
 
@@ -60,7 +60,7 @@ const COMPANY: Question[] = [
   },
   {
     q: 'Quem vê o endereço do serviço?',
-    a: 'Quem entra na Bicos vê o endereço completo e o mapa da vaga, para saber a distância. O seu WhatsApp só vai para quem você aprovar.'
+    a: 'Quem entra na Valorjob vê o endereço completo e o mapa da vaga, para saber a distância. O seu WhatsApp só vai para quem você aprovar.'
   },
   {
     q: 'Como falo com o trabalhador?',
@@ -76,7 +76,7 @@ export default function Help() {
   const session = useSession();
   const role = session?.role ?? null;
   const questions = [...(role === 'recrutador' ? COMPANY : role === 'trabalhador' ? WORKER : []), ...COMMON];
-  const whatsapp = whatsappUrl(SUPPORT_WHATSAPP, 'Olá! Preciso de ajuda com a Bicos.');
+  const whatsapp = whatsappUrl(SUPPORT_WHATSAPP, 'Olá! Preciso de ajuda com a Valorjob.');
 
   return (
     <div className="min-h-screen flex flex-col bg-concrete-50 gap-6 pb-10 lg:bg-transparent lg:min-h-0">
@@ -92,7 +92,7 @@ export default function Help() {
             <div className="flex flex-col sm:flex-row gap-2">
               {whatsapp ? <WhatsAppButton href={whatsapp} size="lg" fullWidth /> : null}
               <SupportLink
-                href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Ajuda com a Bicos')}`}
+                href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Ajuda com a Valorjob')}`}
                 icon={<Icon name="mail" size={20} />}
               >
                 Mandar e-mail

@@ -1,6 +1,6 @@
-# Bicos
+# Valorjob
 
-Marketplace de **bicos e diárias** da [NivoTech](https://nivotech.com.br), para o público geral: empresas e pessoas
+(Antes chamado **Bicos**; a marca mudou no U70.) Marketplace de **bicos e diárias** da [NivoTech](https://nivotech.com.br), para o público geral: empresas e pessoas
 que precisam de alguém para um serviço publicam a vaga e encontram trabalhadores verificados; quem procura bico tem
 um canal único de oportunidades perto de casa (garçom, faxina, eventos, mudança, loja, cuidados e o que mais aparecer).
 

@@ -86,7 +86,7 @@ const PUSH_TEXT: Record<PushState, string> = {
   desligado: 'Receba no celular, mesmo com o app fechado, quando a empresa responder ou um bico aparecer.',
   bloqueado:
     'As notificações estão bloqueadas no navegador. Libere em Configurações do site (cadeado ao lado do endereço).',
-  indisponivel: 'Este navegador não recebe notificações. No iPhone, adicione a Bicos à tela de início primeiro.'
+  indisponivel: 'Este navegador não recebe notificações. No iPhone, adicione a Valorjob à tela de início primeiro.'
 };
 
 /** X03: this device on or off; the browser's permission is asked only after the explanation. */

@@ -1,6 +1,6 @@
 // Entrar com o Google ou com o celular (U28). O Firebase Authentication faz a parte difícil no navegador — a janela do
 // Google, o código por SMS e o reCAPTCHA contra robôs — e entrega um ID token. Esta função confere o token
-// (_shared/firebase.ts) e abre a sessão da Bicos no Supabase Auth, onde ficam as contas:
+// (_shared/firebase.ts) e abre a sessão da Valorjob no Supabase Auth, onde ficam as contas:
 //   * Google (e-mail confirmado pelo Google): entra na conta desse e-mail (U64: mesmo a que o cadastro por e-mail deixou
 //     sem confirmar — o Google prova o e-mail, e ele passa a ficar confirmado); sem conta, cria o login (provedor
 //     "google") e o app segue pelo cadastro normal, sem o passo do e-mail nem a confirmação dele (U37);
@@ -9,7 +9,7 @@
 //     oferece criar a conta com esse número.
 // A sessão sai de um link de acesso gerado aqui (nada é enviado por e-mail): o app troca o `token_hash` pela sessão
 // com verifyOtp. Limite de 20 tentativas por IP a cada 15 minutos.
-// U46: `conta` diz se o e-mail já tem conta na Bicos — sem ela, o app vai direto para o cadastro, sem ler a conta
+// U46: `conta` diz se o e-mail já tem conta na Valorjob — sem ela, o app vai direto para o cadastro, sem ler a conta
 // que não existe. E `{ aquecer: true }` (mandado quando abre uma tela com o botão do Google) só "acorda" a função e
 // busca as chaves do Firebase, para o toque de verdade não esperar a função subir.
 //
@@ -89,7 +89,7 @@ Deno.serve(
       if (error) return json({ erro: 'falha' }, 502);
       conta = Boolean(data);
       if (!data) {
-        // Sem conta na Bicos: o login nasce como conta do Google (o app pede o resto em "Completar cadastro").
+        // Sem conta na Valorjob: o login nasce como conta do Google (o app pede o resto em "Completar cadastro").
         const created = await admin.auth.admin.createUser({
           email,
           email_confirm: true,

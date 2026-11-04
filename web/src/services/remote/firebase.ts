@@ -1,6 +1,6 @@
 // U28/U29: Google and phone sign-in through Firebase Authentication. Firebase does the hard part in the browser — the
 // Google window, the SMS code and the invisible reCAPTCHA against robots — and returns an ID token; the Edge Function
-// `entrar-com-firebase` checks it and answers a one-time link hash that becomes the Bicos session (Supabase Auth,
+// `entrar-com-firebase` checks it and answers a one-time link hash that becomes the Valorjob session (Supabase Auth,
 // where the accounts live). Firebase keeps no session of its own: it signs out right after.
 // U29: the SDK is loaded when a screen with the buttons opens (prepareFirebase), NOT on the tap: a browser only lets a
 // page open a window (the Google one) right inside the tap, and loading the SDK first used to make it block the window.
@@ -131,7 +131,7 @@ function firebaseError(e: unknown): ServiceError {
 }
 
 /**
- * Exchanges the Firebase ID token for the Bicos session. `sem-conta` (a phone number without an account) is answered
+ * Exchanges the Firebase ID token for the Valorjob session. `sem-conta` (a phone number without an account) is answered
  * as such; a Google login without its account answers its e-mail and name, for the sign-up (U37).
  */
 async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'sem-conta' | GoogleIdentity> {
@@ -165,7 +165,7 @@ async function bridge(auth: Auth, sdk: Sdk, idToken: string): Promise<'ok' | 'se
 
 /** U45: what the Google sign-in tells the screen on the way (see signInWithGoogle in services/auth.ts). */
 export interface GoogleSignInHooks {
-  /** The Google window answered with an account: now the Bicos account is being opened. */
+  /** The Google window answered with an account: now the Valorjob account is being opened. */
   onAccountChosen?: () => void;
   /** Read right after the window answers: false (the person tapped "Cancelar") stops there, signed out. */
   stillWanted?: () => boolean;

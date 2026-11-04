@@ -1,4 +1,4 @@
-// U37: creating the account with "Continuar com o Google". A Google account with no Bicos account goes through the
+// U37: creating the account with "Continuar com o Google". A Google account with no Valorjob account goes through the
 // SAME sign-up as everyone else (side, name, CPF/CNPJ, WhatsApp, password, terms) — only the e-mail and its
 // confirmation are left out, because Google already confirmed that e-mail. While it lasts, the device holds a
 // Supabase session with no account row; this module keeps what the screens need to know about it:
@@ -38,7 +38,7 @@ export function googleRole(): Role | null {
   }
 }
 
-/** Where a Google account without a Bicos account continues: its side's sign-up, or choosing the side first. */
+/** Where a Google account without a Valorjob account continues: its side's sign-up, or choosing the side first. */
 export function googleSignUpPath(): string {
   const role = googleRole();
   return role ? '/cadastro/' + role : '/escolha-perfil';

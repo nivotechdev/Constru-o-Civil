@@ -25,7 +25,7 @@ export default function AcceptTerms() {
         <div className="flex flex-col gap-2">
           <h1 className="font-display font-bold text-3xl text-concrete-900">Atualizamos nossos termos</h1>
           <p className="text-base text-concrete-700">
-            {`Os Termos de uso e a Política de privacidade mudaram (versão ${TERMS.version}, de ${formatPostDate(TERMS.updatedAt)}). Leia e aceite para continuar usando a Bicos.`}
+            {`Os Termos de uso e a Política de privacidade mudaram (versão ${TERMS.version}, de ${formatPostDate(TERMS.updatedAt)}). Leia e aceite para continuar usando a Valorjob.`}
           </p>
         </div>
         <div className="flex flex-col gap-2">

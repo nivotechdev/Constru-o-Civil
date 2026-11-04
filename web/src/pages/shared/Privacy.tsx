@@ -22,8 +22,8 @@ export default function Privacy() {
       <BackBar title="Privacidade e dados" onBack={() => goBack('/configuracoes')} />
       <div className="flex flex-col gap-5 px-4 sm:px-0">
         <p className="text-sm text-concrete-600">
-          De acordo com a LGPD, você pode baixar uma cópia de tudo o que a Bicos guarda sobre você, ou excluir sua conta
-          e seus dados por completo.
+          De acordo com a LGPD, você pode baixar uma cópia de tudo o que a Valorjob guarda sobre você, ou excluir sua
+          conta e seus dados por completo.
         </p>
 
         <Card padding="md">

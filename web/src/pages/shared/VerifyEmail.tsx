@@ -143,7 +143,7 @@ export default function VerifyEmail() {
             changing: false,
             newEmailError:
               result.reason === 'email-taken'
-                ? 'Esse e-mail já tem conta na Bicos. Digite outro e-mail.'
+                ? 'Esse e-mail já tem conta na Valorjob. Digite outro e-mail.'
                 : 'Não deu para usar esse e-mail. Confira e tente de novo.'
           });
           focusNewEmail();

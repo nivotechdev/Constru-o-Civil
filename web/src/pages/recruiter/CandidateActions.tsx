@@ -223,7 +223,7 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
                   : app.status === 'expirada'
                     ? 'A vaga venceu sem a contratação ser confirmada.'
                     : app.status === 'cancelado_pela_equipe'
-                      ? 'Cancelado pela equipe da Bicos: a conta foi suspensa.'
+                      ? 'Cancelado pela equipe da Valorjob: a conta foi suspensa.'
                       : 'Contratação cancelada.'}
         </span>
       </div>
