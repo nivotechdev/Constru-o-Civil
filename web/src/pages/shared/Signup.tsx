@@ -28,6 +28,7 @@ import type { ScreenProps } from '../../types/screen';
 import { FEATURES } from '../../services/features';
 import { currentPath, goBack as routerGoBack, navigate } from '../../services/router';
 import { resetUI, setUI } from '../../services/store';
+import { forgetSignupDraft, loadSignupDraft, saveSignupDraft } from '../../services/signupDraft';
 import type { Role } from '../../types/models';
 import { isValidEmail, maskCNPJ, maskCPF, isValidMobile, maskPhone } from '../../utils/format';
 import { WhatsAppCode } from './WhatsAppCode';
@@ -237,23 +238,30 @@ export default function Signup({ params }: ScreenProps) {
   // U37: a Google login without its account: the same steps, without the e-mail ones.
   const google = useGoogleSignUp();
   const cfg = signupSteps(role, Boolean(google));
-  const [ui, setUi] = useUI<SignupUI>(key, () => ({
-    step: 0,
-    // U28: a number confirmed by SMS that had no account comes filled in.
-    values: ((phone) => (phone ? { whatsapp: maskPhone(phone) } : {}))(takeSignUpPhone()),
-    errors: {},
-    submitting: false,
-    passwordVisible: false,
-    accepted: false,
-    acceptError: false,
-    adult: false,
-    adultError: false,
-    codeSentAt: 0,
-    resending: false,
-    resent: false,
-    submitError: null,
-    taken: null
-  }));
+  const [ui, setUi] = useUI<SignupUI>(key, () => {
+    // AUD-025: a reload resumes the draft (the step and the typed fields; the password is typed again).
+    const draft = loadSignupDraft(role);
+    return {
+      step: draft ? Math.min(draft.step, signupSteps(role, Boolean(google)).fields.length - 1) : 0,
+      // U28: a number confirmed by SMS that had no account comes filled in.
+      values: {
+        ...((phone) => (phone ? { whatsapp: maskPhone(phone) } : {}))(takeSignUpPhone()),
+        ...(draft?.values ?? {})
+      },
+      errors: {},
+      submitting: false,
+      passwordVisible: false,
+      accepted: draft?.accepted ?? false,
+      acceptError: false,
+      adult: draft?.adult ?? false,
+      adultError: false,
+      codeSentAt: 0,
+      resending: false,
+      resent: false,
+      submitError: null,
+      taken: null
+    };
+  });
   // Y22: the password only lives in this screen (never in the shared store), and the draft (name,
   // document, e-mail…) is forgotten when the flow is left — except for a look at the terms.
   const [password, setPassword] = useState('');
@@ -268,10 +276,17 @@ export default function Signup({ params }: ScreenProps) {
   useEffect(
     () => () => {
       const to = currentPath();
-      if (!['/termos', '/privacidade', '/cadastro/' + role].includes(to)) resetUI(key);
+      if (!['/termos', '/privacidade', '/cadastro/' + role].includes(to)) {
+        resetUI(key);
+        forgetSignupDraft(role);
+      }
     },
     [key, role]
   );
+  // AUD-025: what is typed is kept for a reload (never the password: see services/signupDraft.ts).
+  useEffect(() => {
+    saveSignupDraft(role, { step: ui.step, values: ui.values, accepted: ui.accepted, adult: ui.adult });
+  }, [role, ui.step, ui.values, ui.accepted, ui.adult]);
   const step = Math.max(0, Math.min(ui.step, cfg.fields.length - 1));
   const field = cfg.fields[step];
   const isLast = step === cfg.fields.length - 1;
@@ -441,6 +456,7 @@ export default function Signup({ params }: ScreenProps) {
         }
         // The account now exists and is logged in; the route guard takes it to "Confirme seu e-mail".
         resetUI(key);
+        forgetSignupDraft(role);
         setUI<{ fromSignup: boolean }>('verificar-email', { fromSignup: true });
         navigate('/verificar-email', { replace: true });
       })
@@ -461,6 +477,7 @@ export default function Signup({ params }: ScreenProps) {
     })
       .then(() => {
         resetUI(key);
+        forgetSignupDraft(role);
         navigate('/completar-perfil/' + role, { replace: true });
       })
       .catch((e: unknown) => {
