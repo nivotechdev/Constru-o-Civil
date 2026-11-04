@@ -274,3 +274,11 @@ button {
   height: max(100%, 44px);
   transform: translate(-50%, -50%);
 }
+
+/* U74: the logo's letters — near-black on the light theme, white on the dark one (the check and dots don't change). */
+.logo-ink {
+  fill: #101418;
+}
+:root[data-theme='dark'] .logo-ink {
+  fill: #fff;
+}
