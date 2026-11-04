@@ -1,4 +1,5 @@
 // F04: Configurações › Contas bloqueadas — who the account blocked, with "Desbloquear".
+import { useState } from 'react';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -17,6 +18,8 @@ export default function BlockedAccounts() {
   const db = useDb();
   const query = useQuery('blocks', loadMyBlocks);
   const unblock = useAction(unblockAccount, () => showToast('Desbloqueado'));
+  // AUD-105: only the account being unblocked shows the spinner (the others keep their buttons).
+  const [unblocking, setUnblocking] = useState<string | null>(null);
   const list = blockedIds(db).map((id) => ({
     id,
     name: db.companies[id]?.name ?? db.workers[id]?.name ?? 'Conta da Bicos'
@@ -44,8 +47,11 @@ export default function BlockedAccounts() {
                         label="Desbloquear"
                         size="sm"
                         variant="secondary"
-                        loading={unblock.loading}
-                        onClick={() => void unblock.run(b.id)}
+                        loading={unblock.loading && unblocking === b.id}
+                        onClick={() => {
+                          setUnblocking(b.id);
+                          void unblock.run(b.id).finally(() => setUnblocking(null));
+                        }}
                       />
                     </div>
                   ))}
