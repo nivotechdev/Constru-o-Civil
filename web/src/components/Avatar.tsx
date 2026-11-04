@@ -1,5 +1,6 @@
 // The people in the app: a worker's photo (or initials) and a company's logo (or the building icon).
 // Saved photos are shown to everyone (Z12): profiles, candidate lists, the mural, the job pages, the menu.
+import { useBrokenImage } from '../hooks/useBrokenImage';
 import type { Company, Worker } from '../types/models';
 import { cx } from '../utils/cx';
 import { Icon } from './icons/Icon';
@@ -34,6 +35,8 @@ export function WorkerAvatar({
   className?: string;
 }) {
   const s = SIZES[size];
+  // AUD-115: a photo that does not load shows the initials.
+  const [broken, markBroken] = useBrokenImage(worker.photoUrl);
   return (
     <span
       className={cx(
@@ -43,8 +46,15 @@ export function WorkerAvatar({
         className
       )}
     >
-      {worker.photoUrl ? (
-        <img src={worker.photoUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+      {worker.photoUrl && !broken ? (
+        <img
+          src={worker.photoUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={markBroken}
+          className="w-full h-full object-cover"
+        />
       ) : (
         worker.initials
       )}
@@ -65,6 +75,7 @@ export function CompanyAvatar({
   className?: string;
 }) {
   const s = SIZES[size];
+  const [broken, markBroken] = useBrokenImage(company.logoUrl);
   return (
     <span
       className={cx(
@@ -74,8 +85,15 @@ export function CompanyAvatar({
         className
       )}
     >
-      {company.logoUrl ? (
-        <img src={company.logoUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+      {company.logoUrl && !broken ? (
+        <img
+          src={company.logoUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={markBroken}
+          className="w-full h-full object-cover"
+        />
       ) : (
         <Icon name="building-2" size={s.icon} color="var(--brand)" />
       )}

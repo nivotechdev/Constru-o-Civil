@@ -1,3 +1,4 @@
+import { useBrokenImage } from '../hooks/useBrokenImage';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import type { Job } from '../types/models';
@@ -202,17 +203,12 @@ function Slides({ job, photos, frame, compact }: SlidesProps) {
       // X05: on a tile the photos are decoration of the card (its link says what the job is); swipe stays.
       aria-hidden={compact ? true : undefined}
       aria-label={compact ? undefined : 'Fotos do bico'}
+      role={compact ? undefined : 'region'}
       aria-roledescription={compact ? undefined : 'carrossel'}
     >
       {photos.map((src, i) => (
         <div key={i} className="shrink-0 w-full h-full snap-center snap-always overflow-hidden">
-          <img
-            src={src}
-            alt={`Foto ${i + 1} de ${n}`}
-            draggable={false}
-            loading={i === 0 ? 'eager' : 'lazy'}
-            className={imgClass}
-          />
+          <SlidePhoto src={src} alt={`Foto ${i + 1} de ${n}`} eager={i === 0} className={imgClass} />
         </div>
       ))}
     </div>
@@ -270,5 +266,21 @@ function Slides({ job, photos, frame, compact }: SlidesProps) {
         </span>
       )}
     </div>
+  );
+}
+
+/** One photo of the carousel. A photo that does not load leaves its place as a plain cover (AUD-115), not a broken image. */
+function SlidePhoto({ src, alt, eager, className }: { src: string; alt: string; eager: boolean; className: string }) {
+  const [broken, markBroken] = useBrokenImage(src);
+  if (broken) return <div aria-hidden="true" className="w-full h-full job-cover-grid bg-concrete-100" />;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      draggable={false}
+      loading={eager ? 'eager' : 'lazy'}
+      onError={markBroken}
+      className={className}
+    />
   );
 }
