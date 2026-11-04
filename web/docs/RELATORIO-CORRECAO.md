@@ -46,3 +46,28 @@ no ambiente) e os 70 testes SQL no banco local: todos verdes. O CI do GitHub rod
 - `d5c926b` (todo o bloco 0 até aqui): `sql` ✔ (80 testes SQL, `APLICAR-TUDO.sql` e tipos em dia) e `checks` ✔
   (typecheck, lint, format, 321 testes, `deno check`, builds, Lighthouse, axe, cadastro sem rolagem). O job `e2e` segue
   pulado, como antes (tratado no bloco 5).
+
+## Bloco 1 (fluxo principal), parcial
+
+Feito, com teste que falhava antes (ou prova equivalente), na ordem do bloco:
+
+- AUD-007 (S1): visitante abre `/v/:id`, `/ajuda` e a conclusão do cadastro sem a moldura logada (`publicScreens.test.ts`).
+- AUD-025 (S2): cadastro sobrevive a recarregar; a senha nunca é guardada (`signupDraft.test.ts`).
+- AUD-026 (S2): campos de número inteiro recusam vírgula, ponto e sinal com mensagem (`wholeNumberInput.test.ts`).
+- AUD-027 (S2): ação feita no servidor não vira erro quando a releitura falha (`sessionRefresh.test.ts`).
+- AUD-028 (S2): sem internet a rua diz "offline"; casa no centro da cidade vem com aviso (`addressOffline.test.ts`).
+- AUD-029 (S2): resposta depois do Sair não cai na conta seguinte (`leaveSession.test.ts`).
+- AUD-030 (S2): mural vazio fala em filtro só quando há filtro; "Limpar filtros" limpa a busca (`feedEmpty.test.ts`).
+- AUD-031 (S2): /historico mostra só os bicos fechados (`wholeNumberInput.test.ts`, bloco com `jobsForView`).
+- AUD-033 (S2): "voltar para a vaga" vale também no Google, SMS e cadastro novo (`returnTo.test.ts`).
+- AUD-034 (S2): CSP com `media-src` para o vídeo (`headers.test.ts`).
+- AUD-035 (S2): token expirado com relógio errado renova a sessão antes de desligar (`sessionRefresh.test.ts`).
+- Também: `lanc10_link_publico.sql` tinha uma checagem frágil (dependia da data); corrigida, sem mudar o que ela prova.
+
+Ainda não feito no bloco 1:
+
+- AUD-032 (S2): estados do pagamento do impulso. Fica para quando o pagamento for ligado (hoje inativo no piloto).
+- S3 do bloco 1 (AUD-083 a AUD-128, exceto os já cobertos acima): cerca de 45 itens, a maioria de texto, acessibilidade e consistência.
+- AUD-022 e demais itens do bloco 0 que sobraram (AUD-056 a 068, 071, 074 a 080).
+
+Blocos 2 a 7: não iniciados.
