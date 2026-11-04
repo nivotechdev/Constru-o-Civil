@@ -14,6 +14,7 @@ import { isValidMobile, maskPhone } from '../utils/format';
 import { demoVerifiedPhones } from './auth';
 import { isValidCnpj } from '../utils/document';
 import { MAX_CAPTION } from '../utils/media';
+import { nameProblem } from '../utils/nameText';
 import {
   cleanExperiences,
   MAX_ABOUT,
@@ -74,6 +75,7 @@ export function profileErrors(
     if (name.length < 3) e.name = role === 'trabalhador' ? 'Informe seu nome completo.' : 'Informe o nome da empresa.';
     else if (name.length > 80) e.name = 'Use até 80 caracteres.';
     else if (role === 'trabalhador' && name.split(/\s+/).length < 2) e.name = 'Informe nome e sobrenome.';
+    else e.name = nameProblem(name, role === 'trabalhador' ? 'pessoa' : 'empresa') ?? undefined;
   }
   if (patch.city !== undefined && !cityByLabel(patch.city)) e.city = 'Escolha a cidade na lista.';
   if (patch.location !== undefined && !cityByLabel(patch.location)) e.location = 'Escolha a cidade na lista.';

@@ -21,10 +21,19 @@ export function maskCNPJ(v: string | null | undefined): string {
 }
 
 /** Brazilian phone as typed: "(11) 98842-3310" (mobile) or "(11) 3842-3310" (landline). */
+/**
+ * AUD-116: the digits of a pasted phone. A country code ("+55 54…") or a trunk zero ("054…") in front is dropped
+ * before the number is cut to 11 digits, so it does not turn into another number.
+ */
+export function phoneDigits(v: string | null | undefined): string {
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.length > 11 && d.startsWith('55')) d = d.slice(2);
+  else if (d.length === 12 && d.startsWith('0')) d = d.slice(1);
+  return d.slice(0, 11);
+}
+
 export function maskPhone(v: string | null | undefined): string {
-  const d = String(v || '')
-    .replace(/\D/g, '')
-    .slice(0, 11);
+  const d = phoneDigits(v);
   if (!d) return '';
   if (d.length <= 2) return '(' + d;
   const ddd = '(' + d.slice(0, 2) + ') ';

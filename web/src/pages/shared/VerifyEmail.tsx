@@ -23,6 +23,7 @@ import { getSession, resetUI } from '../../services/store';
 import { CODE_LENGTH } from '../../utils/code';
 import { cx } from '../../utils/cx';
 import { isValidEmail } from '../../utils/format';
+import { clock, secondsLeft } from '../../utils/countdown';
 
 interface VerifyEmailUI {
   /** Came straight from the sign-up (the code was just sent). */
@@ -324,14 +325,12 @@ export default function VerifyEmail() {
 /** Seconds left until `from + seconds`, re-read every second. */
 function useSecondsLeft(from: number, seconds: number): number {
   const [now, setNow] = useState(() => Date.now());
+  const left = secondsLeft(from, seconds, now);
+  // AUD-101: the timer runs only while there is a wait to count.
   useEffect(() => {
+    if (left <= 0) return;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
-  return from ? Math.max(0, seconds - Math.floor((now - from) / 1000)) : 0;
-}
-
-/** 60 → "1:00", 45 → "0:45". */
-function clock(seconds: number): string {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }, [left > 0]);
+  return left;
 }

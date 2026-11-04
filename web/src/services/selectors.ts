@@ -166,7 +166,8 @@ export const savedJobs = (db: Database): Job[] =>
 
 // ---- worker portfolio posts (photo/video, Instagram-style, no likes/comments) ----
 export function postsForWorker(db: Database, workerId: string): WorkerPost[] {
-  return db.workerPosts.filter((p) => p.workerId === workerId).sort((a, b) => (a.date < b.date ? 1 : -1));
+  // AUD-094: newest day first; posts of the same day keep their order (a consistent comparison, not -1 for ties).
+  return db.workerPosts.filter((p) => p.workerId === workerId).sort((a, b) => b.date.localeCompare(a.date));
 }
 
 /**

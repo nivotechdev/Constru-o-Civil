@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { nameProblem } from '../../utils/nameText';
 import { passwordProblem } from '../../utils/password';
 import { Button } from '../../components/Button';
 import { Checkbox } from '../../components/Checkbox';
@@ -191,9 +192,13 @@ function validateField(field: SignupField, values: Values, role: Role): string |
   if (field.id === 'nome') {
     if (!v) return 'Informe o nome completo.';
     if (v.split(/\s+/).length < 2) return 'Informe nome e sobrenome.';
-    return null;
+    // AUD-085: no emoji, no symbols, up to 80 characters.
+    return nameProblem(v, 'pessoa');
   }
-  if (field.id === 'razao') return v.length < 3 ? 'Informe seu nome ou o nome da empresa.' : null;
+  if (field.id === 'razao') {
+    if (v.length < 3) return 'Informe seu nome ou o nome da empresa.';
+    return nameProblem(v, role === 'recrutador' ? 'empresa' : 'pessoa');
+  }
   if (field.id === 'doc') {
     // Y17: the check digits too (the server refuses the same documents).
     if (role === 'recrutador')

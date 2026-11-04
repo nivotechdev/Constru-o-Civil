@@ -1,6 +1,7 @@
 // "Entrar com o celular" (U28): the number, a 6-number code by SMS (Firebase, with an invisible "I'm not a robot"),
 // and the account whose WhatsApp is that number opens. A number without an account is offered the sign-up, which
 // starts with it filled in.
+import { secondsLeft } from '../../utils/countdown';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { CodeInput } from '../../components/CodeInput';
@@ -32,7 +33,7 @@ export default function PhoneSignIn() {
     const t = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(t);
   }, []);
-  const wait = sentAt ? Math.max(0, RESEND_SECONDS - Math.floor((now - sentAt) / 1000)) : 0;
+  const wait = secondsLeft(sentAt, RESEND_SECONDS, now);
 
   function send() {
     if (busy || !robot.current) return;

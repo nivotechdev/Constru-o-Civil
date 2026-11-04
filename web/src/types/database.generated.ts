@@ -1834,6 +1834,7 @@ export type Database = {
       purge_unconfirmed_signups: { Args: Record<PropertyKey, never>; Returns: number };
       raise_cron_alert: { Args: { p_job: string; p_message: string }; Returns: boolean };
       rate_limit_hit: { Args: { p_key: string; p_max: number; p_window: string }; Returns: boolean };
+      reais_text: { Args: { p_value: number }; Returns: string };
       reciprocal_review_pairs: {
         Args: Record<PropertyKey, never>;
         Returns: { company_id: string; worker_id: string; reviews: number }[];

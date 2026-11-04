@@ -5,6 +5,7 @@ import { CodeInput } from '../../components/CodeInput';
 import { Icon } from '../../components/icons/Icon';
 import { WHATSAPP_RESEND_SECONDS } from '../../services/auth';
 import { IS_DEMO } from '../../services/mode';
+import { clock, secondsLeft } from '../../utils/countdown';
 
 interface WhatsAppCodeProps {
   /** id of the (visually hidden) input, so the step can focus it. */
@@ -23,15 +24,16 @@ interface WhatsAppCodeProps {
   onEditNumber: () => void;
 }
 
-/** Seconds left before "Reenviar código" unlocks, re-read a few times a second. */
+/** Seconds left before "Reenviar código" unlocks. The timer runs only while there is a wait to count (AUD-101). */
 function useCountdown(sentAt: number): number {
   const [now, setNow] = useState(() => Date.now());
+  const left = secondsLeft(sentAt, WHATSAPP_RESEND_SECONDS, now);
   useEffect(() => {
+    if (left <= 0) return;
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
-  }, []);
-  const elapsed = Math.max(0, Math.floor((now - sentAt) / 1000));
-  return Math.max(0, WHATSAPP_RESEND_SECONDS - elapsed);
+  }, [left > 0]);
+  return left;
 }
 
 export function WhatsAppCode({
@@ -100,9 +102,4 @@ export function WhatsAppCode({
       </div>
     </div>
   );
-}
-
-/** 60 → "1:00", 45 → "0:45". */
-function clock(seconds: number): string {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
