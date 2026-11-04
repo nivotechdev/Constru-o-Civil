@@ -387,7 +387,10 @@ async function handleAuthRedirect(): Promise<void> {
   const params = new URLSearchParams(fragment);
   if (params.get('error') || params.get('error_code')) {
     replaceUrl('/login');
-    notice = 'Esse link não vale mais (ele vence depois de um tempo ou de usado). Entre ou peça um novo.';
+    notice = {
+      text: 'Esse link não vale mais (ele vence depois de um tempo ou de usado). Entre ou peça um novo.',
+      ok: false
+    };
     return;
   }
   const accessToken = params.get('access_token');
@@ -396,7 +399,10 @@ async function handleAuthRedirect(): Promise<void> {
   if (!consumeAuthLinkRequest()) {
     // AUD-020: nobody on this device asked for this link; do not sign in with tokens that came from outside.
     replaceUrl('/login');
-    notice = 'Esse link não foi pedido neste aparelho. Entre com seu e-mail e senha, ou peça um link novo por aqui.';
+    notice = {
+      text: 'Esse link não foi pedido neste aparelho. Entre com seu e-mail e senha, ou peça um link novo por aqui.',
+      ok: false
+    };
     return;
   }
   const recovery = params.get('type') === 'recovery';
@@ -405,15 +411,19 @@ async function handleAuthRedirect(): Promise<void> {
   const client = await db();
   const { error } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
   replaceUrl(recovery ? '/redefinir-senha' : '/');
-  if (error) notice = 'Esse link não vale mais. Entre ou peça um novo.';
-  else if (emailChange) notice = 'E-mail trocado. Use o novo para entrar.';
+  if (error) notice = { text: 'Esse link não vale mais. Entre ou peça um novo.', ok: false };
+  else if (emailChange) notice = { text: 'E-mail trocado. Use o novo para entrar.', ok: true };
   else if (!recovery) {
     const email = (await client.auth.getSession()).data.session?.user.email;
-    notice = email ? `E-mail confirmado. Você entrou como ${email}.` : 'E-mail confirmado. Bem-vindo à Bicos!';
+    notice = {
+      text: email ? `E-mail confirmado. Você entrou como ${email}.` : 'E-mail confirmado. Bem-vindo à Bicos!',
+      ok: true
+    };
   }
 }
 
-let notice: string | null = null;
+// AUD-093: a notice says whether it is good news or a problem; the colour follows that, not the wording.
+let notice: { text: string; ok: boolean } | null = null;
 let started = false;
 let listening = false;
 
@@ -428,9 +438,9 @@ function hasStoredSession(): boolean {
 
 function flushNotice(): void {
   if (!notice) return;
-  const text = notice;
+  const { text, ok } = notice;
   notice = null;
-  setTimeout(() => showToast(text, { tone: text.startsWith('E-mail confirmado') ? 'default' : 'error' }), 300);
+  setTimeout(() => showToast(text, { tone: ok ? 'default' : 'error' }), 300);
 }
 
 /** Y27: the session points to an account the app doesn't have — sign out and say why. */
@@ -470,7 +480,7 @@ async function dropBrokenSession(): Promise<void> {
   const client = await db();
   await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
   await leaveSession();
-  notice = 'Não achamos o cadastro dessa conta. Entre de novo ou crie uma conta nova.';
+  notice = { text: 'Não achamos o cadastro dessa conta. Entre de novo ou crie uma conta nova.', ok: false };
 }
 
 /**
@@ -519,7 +529,7 @@ async function restore(): Promise<void> {
   setBootStatus('starting');
   try {
     await withTimeout(handleAuthRedirect(), 8000).catch(() => {
-      notice = notice ?? 'Não deu para abrir o link agora. Confira sua internet e tente de novo.';
+      notice = notice ?? { text: 'Não deu para abrir o link agora. Confira sua internet e tente de novo.', ok: false };
     });
     let user: User | null = null;
     try {
