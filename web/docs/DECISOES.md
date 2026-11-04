@@ -2496,3 +2496,14 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
   reescreva essas funções, e na produção só com "pode"; (2) os modelos de e-mail e o nome do remetente só mudam no
   Supabase quando `configurar-auth.mjs` rodar de novo; (3) a descrição do PIX (`criar-cobranca`) muda quando a função
   for republicada; (4) domínio (`bicos.nivotech.com.br`) e nome nas lojas continuam os de antes até decidirem o novo.
+
+## U72 — Logo de uma cor só e azul do menu igual nos dois temas
+
+- **Problema**: no tema escuro a logo mudava de cor (o check ia para um azul-claro e as letras para quase branco) e,
+  no menu do computador, o ícone da aba ativa ficava arroxeado — o degradê usava `brand-600`, que no tema escuro é um
+  lilás claro (feito para texto sobre fundo escuro).
+- **O que foi feito**: a logo do app (`Logo.tsx`) ficou **toda no azul principal `#1D4BED`** (`brand-500`, igual nos
+  dois temas): check, ponto e letras, sem o âmbar; na tela de abertura (`inverse`) é toda branca, e o `index.html`
+  acompanha. O degradê da aba ativa do menu do computador usa os azuis fixos do tema claro (`#587AF3` → `#163CC2`), então
+  é o mesmo azul nos dois temas.
+- **Ficou igual**: os ícones do app e o favicon (fundo azul, check branco e ponto âmbar), que não mudam com o tema.

@@ -215,8 +215,10 @@ function TopBar({ role, items, active, account }: TopBarProps) {
                 <span
                   className={cx(
                     'relative inline-flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200',
+                    // U72: fixed blues (brand-400 → brand-600 of the light theme): the dark theme's brand-600 is a
+                    // light lavender, which turned the active tab purple.
                     isActive
-                      ? 'bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-raised'
+                      ? 'bg-gradient-to-br from-[#587AF3] to-[#163CC2] text-white shadow-raised'
                       : 'bg-concrete-100 text-concrete-600 group-hover:bg-concrete-200 group-hover:scale-105'
                   )}
                 >
