@@ -16,7 +16,7 @@ import {
   postFromRow,
   workerFromRow
 } from '../supabaseMappers';
-import { transact } from '../store';
+import { isSessionOver, transact } from '../store';
 
 /** The columns the app may read (the WhatsApp columns are private: see get_contact). */
 export const ACCOUNT_COLUMNS =
@@ -40,6 +40,8 @@ export type Recipe = (db: Database) => Database;
 
 /** Applies several recipes as one store change. */
 export function apply(...recipes: Recipe[]): void {
+  // AUD-029: an answer that arrives after the sign-out is the old account's: it is dropped.
+  if (isSessionOver()) return;
   transact((db) => recipes.reduce((d, r) => r(d), db));
 }
 

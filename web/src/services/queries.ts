@@ -47,6 +47,8 @@ export function getQuery(key: string): QueryState {
 const STALE_MS = 20_000;
 const loadedAt = new Map<string, number>();
 const loaders = new Map<string, () => Promise<void>>();
+// AUD-029: bumped when the store is cleared (sign-out). A load that started before it does not write its state after it.
+let generation = 0;
 
 /** Loads `key` unless it is already loaded or loading. `force` reloads it (pull to refresh, retry). */
 export function runQuery(key: string, loader: () => Promise<void>, force = false): Promise<void> {
@@ -56,9 +58,10 @@ export function runQuery(key: string, loader: () => Promise<void>, force = false
   if (!force && current?.status === 'ready') {
     if (!IS_DEMO && !pending && Date.now() - (loadedAt.get(key) ?? 0) > STALE_MS) {
       // Quietly: the screen keeps what it shows; a failure leaves it as it was.
+      const gen = generation;
       const refresh = loader()
         .then(() => {
-          loadedAt.set(key, Date.now());
+          if (gen === generation) loadedAt.set(key, Date.now());
         })
         .catch(() => undefined)
         .finally(() => inFlight.delete(key));
@@ -68,13 +71,19 @@ export function runQuery(key: string, loader: () => Promise<void>, force = false
   }
   if (pending) return pending;
   if (current?.status !== 'loading') set(key, LOADING);
+  const gen = generation;
   const run = loader()
     .then(() => {
+      if (gen !== generation) return;
       loadedAt.set(key, Date.now());
       set(key, READY);
     })
-    .catch((e: unknown) => set(key, { status: 'error', error: errorMessage(e), offline: isOfflineError(e) }))
-    .finally(() => inFlight.delete(key));
+    .catch((e: unknown) => {
+      if (gen === generation) set(key, { status: 'error', error: errorMessage(e), offline: isOfflineError(e) });
+    })
+    .finally(() => {
+      if (gen === generation) inFlight.delete(key);
+    });
   inFlight.set(key, run);
   return run;
 }
@@ -102,6 +111,7 @@ export function refreshCandidacies(visible = false): Promise<void> {
 
 /** Forgets every loaded key (after signing out, the next account loads its own data). */
 export function clearQueries(): void {
+  generation += 1;
   states = new Map();
   inFlight.clear();
   loadedAt.clear();

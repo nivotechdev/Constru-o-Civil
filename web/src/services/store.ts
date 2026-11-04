@@ -137,7 +137,17 @@ export function getRole(): Role {
  * Starts (`id`) or ends (`null`) the session. Ending it, or starting another account's, forgets every
  * screen's UI state (Y22: nothing typed by one person — a sign-up draft, a login — shows up for the next).
  */
+/**
+ * AUD-029: true from the moment the session ends until another one starts. A response that arrives in that
+ * window belongs to the account that just left: the store does not take it.
+ */
+let sessionOver = false;
+export function isSessionOver(): boolean {
+  return sessionOver;
+}
+
 export function setSessionAccount(id: string | null): void {
+  sessionOver = id === null;
   if (IS_DEMO) storeAccountId(id);
   state = { ...state, accountId: id, ui: id && id === state.accountId ? state.ui : {} };
   notify();
@@ -148,6 +158,7 @@ export function setSessionAccount(id: string | null): void {
  * clean store (nothing of the previous one shows up for a moment).
  */
 export function clearSessionData(): void {
+  sessionOver = true;
   state = { accountId: null, db: emptyDatabase(), ui: {} };
   notify();
 }
