@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AddressFields } from '../../components/AddressFields';
 import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
@@ -27,6 +27,7 @@ import { cx } from '../../utils/cx';
 import { dayLabel, todayISO } from '../../utils/dates';
 import { fold } from '../../utils/addressText';
 import { cleanWeekdays, daysText, PLACE_TYPES, WEEKDAYS } from '../../utils/jobInfo';
+import { readWholeInput } from '../../utils/wholeNumberInput';
 import { FEATURES } from '../../services/features';
 import {
   draftFromForm,
@@ -63,10 +64,6 @@ interface CreateJobUI {
   publishError: string | null;
 }
 
-function digits(v: string, max: number) {
-  return String(v).replace(/\D/g, '').slice(0, max);
-}
-
 const hasErrors = (e: FormErrors) => Object.values(e).some(Boolean);
 
 /** The address as the map needs it, spelling aside: a new key means it has to be found again. */
@@ -84,6 +81,8 @@ export default function CreateJob() {
  * told about a change.
  */
 export function JobFormScreen({ job, template, templateId }: { job?: Job; template?: JobForm; templateId?: string }) {
+  // AUD-026: why a number field refused the last keystroke (a comma, a point, a sign), per field.
+  const [numberHint, setNumberHint] = useState<Partial<Record<'valor' | 'diarias' | 'vagas', string | null>>>({});
   const db = useDb();
   const KEY = job ? 'edit-job:' + job.id : templateId ? 'create-job:de:' + templateId : 'create-job';
   const holding = job ? approvedCount(db, job.id) : 0;
@@ -288,7 +287,12 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           value={f.valor}
           disabled={f.negociavel}
           error={ui.errors.valor}
-          onInput={(v) => set({ valor: digits(v, 5) }, 'valor')}
+          hint={numberHint.valor ?? null}
+          onInput={(v) => {
+            const r = readWholeInput(v, 5, 'reais');
+            setNumberHint((h) => ({ ...h, valor: r.problem }));
+            if (r.value !== null) set({ valor: r.value }, 'valor');
+          }}
         />
         <Switch
           label="Combinar o valor com o trabalhador"
@@ -303,8 +307,12 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           suffix="diária(s)"
           inputMode="numeric"
           value={f.diarias}
-          error={ui.errors.diarias}
-          onInput={(v) => set({ diarias: digits(v, 2) }, 'diarias', 'startDate')}
+          error={ui.errors.diarias ?? numberHint.diarias ?? null}
+          onInput={(v) => {
+            const r = readWholeInput(v, 2, 'quantidade');
+            setNumberHint((h) => ({ ...h, diarias: r.problem }));
+            if (r.value !== null) set({ diarias: r.value }, 'diarias', 'startDate');
+          }}
         />
       </div>
 
@@ -375,8 +383,12 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
           suffix="pessoa(s)"
           inputMode="numeric"
           value={f.vagas}
-          error={ui.errors.vagas}
-          onInput={(v) => set({ vagas: digits(v, 2) }, 'vagas')}
+          error={ui.errors.vagas ?? numberHint.vagas ?? null}
+          onInput={(v) => {
+            const r = readWholeInput(v, 2, 'quantidade');
+            setNumberHint((h) => ({ ...h, vagas: r.problem }));
+            if (r.value !== null) set({ vagas: r.value }, 'vagas');
+          }}
         />
       </div>
       <div className="flex flex-col gap-1.5 w-full">
@@ -547,11 +559,13 @@ function PayField({
   value,
   disabled,
   error,
+  hint,
   onInput
 }: {
   value: string;
   disabled: boolean;
   error?: string | null;
+  hint?: string | null;
   onInput: (value: string) => void;
 }) {
   const [ref, handleChange] = useTextField<HTMLInputElement>(onInput);
@@ -589,6 +603,8 @@ function PayField({
       </div>
       {error && !disabled ? (
         <FieldError id={messageId} message={error} />
+      ) : hint && !disabled ? (
+        <FieldError id={messageId} message={hint} />
       ) : (
         <span id={messageId} className="text-sm text-concrete-500">
           {disabled ? 'No mural aparece "A combinar".' : `Mínimo de R$ ${MIN_PAY}.`}
