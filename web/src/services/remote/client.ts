@@ -85,12 +85,49 @@ type OkData<R> = R extends { error: null; data: infer D } ? D : never;
  * Runs a request and translates whatever it fails with — including a fetch that never reached the
  * server (supabase-js rejects, instead of returning `{ error }`, on some network failures).
  */
+/** A token that the clock says is over (AUD-035: a phone whose clock is off sees its token as expired at once). */
+export function isJwtExpired(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as ErrorLike;
+  return e.code === 'PGRST301' || /JWT expired/i.test(typeof e.message === 'string' ? e.message : '');
+}
+
+/**
+ * AUD-035: when the server says the token expired, renew it once and ask again, before treating the session as over.
+ * Only a renewal that fails ends the session; a clock that is wrong no longer logs the person out every hour.
+ */
+export async function runWithSessionRefresh<R extends { error: unknown }>(
+  run: () => PromiseLike<R>,
+  refresh: () => Promise<boolean>
+): Promise<R> {
+  let result: R;
+  try {
+    result = await run();
+  } catch (e) {
+    if (!isJwtExpired(e) || !(await refresh())) throw e;
+    return run();
+  }
+  if (result.error && isJwtExpired(result.error) && (await refresh())) return run();
+  return result;
+}
+
+async function renewSession(): Promise<boolean> {
+  try {
+    const client = await getSupabase();
+    if (!client) return false;
+    const { error } = await client.auth.refreshSession();
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 export async function request<R extends { data: unknown; error: unknown }>(
   run: () => PromiseLike<R>
 ): Promise<OkData<R>> {
   let result: R;
   try {
-    result = await run();
+    result = await runWithSessionRefresh(run, renewSession);
   } catch (e) {
     throw toServiceError(e);
   }
