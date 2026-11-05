@@ -336,7 +336,7 @@ export function JobFormScreen({ job, template, templateId }: { job?: Job; templa
               ? end === f.startDate
                 ? `Um dia só: ${dayLabel(f.startDate)}.`
                 : `De ${dayLabel(f.startDate)} até ${dayLabel(end)} (${formDiarias(f)} diárias nos dias marcados).`
-              : 'Sem data, a vaga fica com a data a combinar.'}
+              : 'Sem data, a vaga fica com a data a combinar e fica 30 dias no mural.'}
           </span>
         )}
         {f.startDate ? (
