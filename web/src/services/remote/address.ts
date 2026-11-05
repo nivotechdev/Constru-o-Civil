@@ -407,40 +407,54 @@ function medoid(places: Place[]): Place {
 /** Same house number, as written ("1200", "1200 A" = "1200A"). */
 const sameHouse = (a: string, b: string) => fold(a).replace(/\s+/g, '') === fold(b).replace(/\s+/g, '');
 
+/** A point found for the address, and whether something ties it to the address (neighbourhood, CEP, house). */
+interface Found {
+  point: GeoPoint;
+  precision: PlacePrecision;
+  anchored: boolean;
+}
+
+/** A stretch this close to the neighbourhood's centre is the neighbourhood's. */
+const NEAR_HOOD_KM = 3;
+/**
+ * A stretch tied to nothing (no neighbourhood, no CEP) counts only this close to the city's centre: a municipality may
+ * have districts far away with a street of the same name (Criúva, 38 km from the centre of Caxias, has its own "Rua
+ * Júlio de Castilhos" — the centre's is "Avenida").
+ */
+const URBAN_KM = 8;
+
 /**
  * Of the map's answers, where the address is. Only the answers in the city (near its centre) and of this street (by
- * name, the way the map writes it — see streetSimilarity), the best-named first and the same kind ("Rua" or
- * "Avenida") when both exist. With a number the map knows: the house. Otherwise the stretch of the street in the
- * neighbourhood typed (a long street crosses many), or with the CEP typed, or the one closest to the neighbourhood's
- * centre; of several, the middle one.
+ * name, the way the map writes it — see streetSimilarity). With a number the map knows: the house. Otherwise the
+ * stretch of the street in the neighbourhood typed (a long street crosses many), or with the CEP typed, or the one
+ * closest to the neighbourhood's centre; of several, the middle one, of the same kind ("Rua"/"Avenida") when there are
+ * both. A stretch tied to none of these is only a last resort (`anchored: false`).
  */
-function choosePlace(
-  places: Place[],
-  input: GeocodeInput,
-  hood: GeoPoint | null
-): { point: GeoPoint; precision: PlacePrecision } | null {
+function choosePlace(places: Place[], input: GeocodeInput, hood: GeoPoint | null): Found | null {
   const scored = places
     .filter((x) => distanceKm(x.p, input.cityCentre) <= MAX_FROM_CENTRE_KM)
     .map((x) => ({ x, sim: streetSimilarity(x.street, input.street) }))
     .filter((c) => c.sim >= 0.8);
   if (!scored.length) return null;
   const top = Math.max(...scored.map((c) => c.sim));
-  let same = scored.filter((c) => c.sim >= top - 0.05).map((c) => c.x);
+  const same = scored.filter((c) => c.sim >= top - 0.05).map((c) => c.x);
   const kind = streetKind(input.street);
-  if (kind && same.some((x) => streetKind(x.street) === kind)) {
-    const sameKind = same.filter((x) => streetKind(x.street) === kind || !streetKind(x.street));
-    if (sameKind.length) same = sameKind;
-  }
+  const preferKind = (list: Place[]) => {
+    const sameKind = kind ? list.filter((x) => streetKind(x.street) === kind) : [];
+    return sameKind.length ? sameKind : list;
+  };
   const inHood = (x: Place) => x.neighborhoods.some((n) => likelySameNeighborhood(n, input.neighborhood));
   const cep = cepDigits(input.cep);
   const byCep = (x: Place) => Boolean(cep) && x.postcode === cep;
+  const nearHood = (x: Place) => Boolean(hood) && distanceKm(x.p, hood as GeoPoint) <= NEAR_HOOD_KM;
+  const urban = (x: Place) => distanceKm(x.p, input.cityCentre) <= URBAN_KM;
 
   if (input.number) {
     const houses = same.filter((x) => x.house && sameHouse(x.house, input.number));
-    if (houses.length) {
-      const pick = houses.find(inHood) ?? houses.find(byCep) ?? houses[0];
-      return { point: pick.p, precision: 'numero' };
-    }
+    const tied = houses.find(inHood) ?? houses.find(byCep) ?? houses.find(nearHood);
+    if (tied) return { point: tied.p, precision: 'numero', anchored: true };
+    const loose = hood ? undefined : houses.find(urban);
+    if (loose) return { point: loose.p, precision: 'numero', anchored: false };
   }
   // Houses with another number are not where this address is.
   const roads = same.filter((x) => !x.house);
@@ -450,11 +464,12 @@ function choosePlace(
   const cepOnes = pool.filter(byCep);
   let chosen = both.length ? both : hoodOnes.length ? hoodOnes : cepOnes;
   if (!chosen.length && hood) {
-    const nearest = pool.reduce((a, b) => (distanceKm(b.p, hood) < distanceKm(a.p, hood) ? b : a));
-    if (distanceKm(nearest.p, hood) <= 3) chosen = [nearest];
+    const near = pool.filter(nearHood);
+    if (near.length) chosen = [near.reduce((a, b) => (distanceKm(b.p, hood) < distanceKm(a.p, hood) ? b : a))];
   }
-  if (!chosen.length) chosen = pool;
-  return { point: medoid(chosen).p, precision: 'rua' };
+  if (chosen.length) return { point: medoid(preferKind(chosen)).p, precision: 'rua', anchored: true };
+  const loose = pool.filter(urban);
+  return loose.length ? { point: medoid(preferKind(loose)).p, precision: 'rua', anchored: false } : null;
 }
 
 /** "Rua Júlio de Castilhos" → "Júlio de Castilhos" (the map may call it "Avenida"). */
@@ -521,19 +536,20 @@ export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPo
   const city = encodeURIComponent(q.city);
   let hood: GeoPoint | null | undefined;
   const hoodCentre = async () => (hood === undefined ? (hood = await neighborhoodCentre(q)) : hood);
-  const decide = async (places: Place[]) => {
+  // A stretch tied to nothing, kept in case nothing better turns up (see choosePlace).
+  let loose: Found | null = null;
+  /** The point when something ties it to the address; asks where the neighbourhood is only when needed. */
+  const decide = async (places: Place[]): Promise<Found | null> => {
     if (!places.length) return null;
     const first = choosePlace(places, q, null);
-    // Only a street stretch chosen without the neighbourhood's help asks where the neighbourhood is.
-    if (!first || first.precision === 'numero') return first;
-    const helped = places.some(
-      (x) =>
-        streetSimilarity(x.street, q.street) >= 0.8 &&
-        (x.neighborhoods.some((n) => likelySameNeighborhood(n, q.neighborhood)) ||
-          (cepDigits(q.cep) && x.postcode === cepDigits(q.cep)))
-    );
-    return helped ? first : choosePlace(places, q, await hoodCentre());
+    if (!first || first.anchored) return first;
+    const centre = await hoodCentre();
+    const second = centre ? choosePlace(places, q, centre) : first;
+    if (second?.anchored) return second;
+    loose ??= second;
+    return null;
   };
+  const answer = (f: Found) => ({ point: f.point, precision: f.precision });
 
   // The names to ask the map by, until one answers: as typed, as the Correios write it, without its kind ("Rua" for
   // what the map calls "Avenida") and, last, only its last word — the map's own name is then matched here.
@@ -558,7 +574,7 @@ export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPo
         )
       );
       mapReached = true;
-      if (found) return found;
+      if (found) return answer(found);
     }
   } catch {
     // Nominatim out or slow: Photon has the same map.
@@ -569,12 +585,14 @@ export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPo
     const { body } = await cached(url, () => getJson<{ features?: PhotonFeature[] }>(url));
     mapReached = true;
     const found = await decide(fromPhoton(inCity(body?.features, q.city, q.cityCentre)));
-    if (found) return found;
+    if (found) return answer(found);
   } catch {
     // the map is out: the CEP's point
   }
   if (input.cepPoint) return { point: input.cepPoint, precision: 'cep' };
+  // The neighbourhood's centre beats a street of the same name away from it (another district's).
   const centre = mapReached ? await hoodCentre() : null;
   if (centre) return { point: centre, precision: 'bairro' };
+  if (loose) return answer(loose);
   return { point: input.cityCentre, precision: 'cidade' };
 }

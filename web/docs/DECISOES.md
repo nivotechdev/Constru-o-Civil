@@ -2557,8 +2557,11 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
   - **Geocodificador refeito** (`remote/address.ts › geocodeOnline`): Nominatim com todos os pedaços da rua
     (`dedupe=0`, até 40), e, quando o mapa escreve o nome de outro jeito, uma segunda busca pelo último nome; só entram
     resultados da cidade (até 45 km do centro) e do estado; a casa com o número, quando o mapa tem; senão o pedaço da
-    rua no bairro (ou com o CEP), e, sem nenhum dos dois, o pedaço mais perto do centro do bairro (achado no próprio
-    mapa); de vários pedaços, o do meio (medoide). Ordem de reserva: Photon → ponto do CEP (só se não for o centro da
+    rua no bairro (ou com o CEP), e, sem nenhum dos dois, o pedaço a até 3 km do centro do bairro (achado no próprio
+    mapa); de vários pedaços, o do meio (medoide). Um pedaço que não bate com bairro, CEP nem fica perto do bairro
+    **não é aceito** (o ensaio do staging achou a "Rua Júlio de Castilhos" de Criúva, distrito de Caxias a 38 km do
+    centro, para uma vaga do Centro, onde ela é "Avenida"): o mapa é perguntado também pelo nome do Correios e sem o
+    tipo da rua; se nada se amarrar, vale o centro do bairro. Ordem de reserva: Photon → ponto do CEP (só se não for o centro da
     cidade) → **centro do bairro** (`precision: 'bairro'`, antes nunca usado) → centro da cidade.
   - **CEP por trecho**: com o número, o CEP escolhido é o do trecho que tem aquele número ("até 799/800", "de 801/802
     ao fim", "lado ímpar").

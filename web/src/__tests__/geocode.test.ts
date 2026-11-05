@@ -181,6 +181,33 @@ describe('U76: where the address is on the map', () => {
     expect(await r.geocodeOnline(input)).toEqual({ point: { lat: -29.19, lon: -51.21 }, precision: 'rua' });
   });
 
+  it('a street of the same name in a far district of the city is not the one in the neighbourhood (Criúva)', async () => {
+    const criuva = road(-28.877263, -50.97582, { village: 'Criúva' }, 'Rua Júlio de Castilhos');
+    const centro = [{ lat: '-29.1680', lon: '-51.1790', name: 'Centro', category: 'place', address: {} }];
+    const castilhos = { ...input, street: 'Rua Júlio de Castilhos', neighborhood: 'Centro', cep: '95010-003' };
+    // As typed, only Criúva's "Rua"; by the Correios' name, the centre's "Avenida".
+    answers.push(
+      streetSearch(
+        [road(-29.1679, -51.1791, { suburb: 'Centro' }, 'Avenida Júlio de Castilhos')],
+        '&street=Avenida%20J'
+      ),
+      streetSearch([criuva]),
+      placeSearch(centro)
+    );
+    expect(await r.geocodeOnline({ ...castilhos, officialStreet: 'Avenida Júlio de Castilhos' })).toEqual({
+      point: { lat: -29.1679, lon: -51.1791 },
+      precision: 'rua'
+    });
+
+    // The map has only Criúva's: the centre of the neighbourhood, never 38 km away.
+    answers.length = 0;
+    answers.push(streetSearch([criuva]), placeSearch(centro));
+    expect(await r.geocodeOnline(castilhos)).toEqual({
+      point: { lat: -29.168, lon: -51.179 },
+      precision: 'bairro'
+    });
+  });
+
   it('the house with the number typed in the street field', async () => {
     answers.push(
       streetSearch([
