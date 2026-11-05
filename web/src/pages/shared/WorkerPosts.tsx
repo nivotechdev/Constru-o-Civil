@@ -193,7 +193,6 @@ interface ComposerProps {
 }
 
 function Composer({ ui, setUi }: ComposerProps) {
-  const closeAndReset = () => setUi({ composing: false, mediaUrl: null, mediaType: 'image', caption: '' });
   const [progress, setProgress] = useState<number | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const publish = useAction(
@@ -210,6 +209,12 @@ function Composer({ ui, setUi }: ComposerProps) {
       showToast('Post publicado');
     }
   );
+  // AUD-100: the composer stays mounted, so closing it also clears an old error.
+  function closeAndReset() {
+    setUi({ composing: false, mediaUrl: null, mediaType: 'image', caption: '' });
+    setFileError(null);
+    publish.reset();
+  }
 
   return (
     <Sheet open={ui.composing} title="Publicar trabalho" onClose={closeAndReset}>
