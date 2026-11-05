@@ -23,3 +23,14 @@ export function cleanExperiences(list: string[]): string[] {
     return true;
   });
 }
+
+/**
+ * AUD-104: "Desfazer" puts back only the removed experience, at its old place (or at the end if the list got
+ * shorter), and keeps whatever was added after. Does nothing if the same text is already in the list.
+ */
+export function restoreExperience(list: string[], removed: string, index: number): string[] {
+  const key = removed.toLocaleLowerCase('pt-BR');
+  if (list.some((e) => e.toLocaleLowerCase('pt-BR') === key) || list.length >= MAX_EXPERIENCES) return list;
+  const at = Math.min(Math.max(index, 0), list.length);
+  return [...list.slice(0, at), removed, ...list.slice(at)];
+}

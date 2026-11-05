@@ -1,7 +1,7 @@
 // U34/U38: the worker's experiences as pills — up to 10, one short line each (no pasted CV). One field adds them
 // (Enter or the "+" button); a tap on a pill brings it back to the field to fix it; the "×" on each pill removes it,
 // with "Desfazer" in the message, so nothing is lost by a wrong tap. Takes two or three lines of the screen, not ten.
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FieldError } from '../../components/FieldError';
 import { Icon } from '../../components/icons/Icon';
 import { showToast } from '../../services/toast';
@@ -10,7 +10,8 @@ import {
   cleanExperience,
   MAX_EXPERIENCE_LENGTH,
   MAX_EXPERIENCES,
-  MIN_EXPERIENCE_LENGTH
+  MIN_EXPERIENCE_LENGTH,
+  restoreExperience
 } from '../../utils/profileText';
 
 interface ExperiencesFieldProps {
@@ -27,6 +28,11 @@ export function ExperiencesField({ value, error, onChange }: ExperiencesFieldPro
   const [editing, setEditing] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const field = useRef<HTMLInputElement>(null);
+  // The list as it is now, for "Desfazer" (a toast outlives the render that made it).
+  const latest = useRef(value);
+  useEffect(() => {
+    latest.current = value;
+  });
   const full = value.length >= MAX_EXPERIENCES && editing === null;
   const clean = cleanExperience(text);
 
@@ -58,13 +64,15 @@ export function ExperiencesField({ value, error, onChange }: ExperiencesFieldPro
   }
 
   function remove(i: number) {
-    const before = value;
+    const removed = value[i];
     onChange(value.filter((_, j) => j !== i));
     if (editing === i) {
       setEditing(null);
       setText('');
     }
-    showToast('Experiência removida', { action: { label: 'Desfazer', onClick: () => onChange(before) } });
+    showToast('Experiência removida', {
+      action: { label: 'Desfazer', onClick: () => onChange(restoreExperience(latest.current, removed, i)) }
+    });
   }
 
   const counter = text.length > MAX_EXPERIENCE_LENGTH - 25;
