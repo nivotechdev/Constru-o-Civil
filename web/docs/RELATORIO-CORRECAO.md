@@ -71,6 +71,15 @@ Feito na segunda rodada do bloco 1 (S3):
   AUD-115 (foto que não carrega), AUD-116 (telefone colado com +55 ou 0), AUD-118 (valor do aviso com ponto de milhar,
   migration `20261102001600_aud118`), AUD-128 (ícone da aba em qualquer rota).
 
+Feito na terceira rodada do bloco 1 (S3, só telas, sem migration):
+
+- AUD-084 (link do login por celular sem o recurso ligado avisa na hora), AUD-098 ("Ver outros bicos" leva ao mural),
+  AUD-099 (legenda em edição pertence a um post só), AUD-100 (janela "Publicar trabalho" sem erro antigo),
+  AUD-104 ("Desfazer" devolve só a experiência removida), AUD-108 (recarregar "Vaga publicada" busca a vaga),
+  AUD-111 ("Todas · 30+"), AUD-113 (aviso de 30 dias no mural). Testes: `smallFixesBlock1.test.ts`.
+- AUD-087 (impulsionar vaga de outra empresa) não se aplica no piloto: com o pagamento inativo a tela já mostra
+  "indisponível". Volta junto com o AUD-032.
+
 Ainda não feito no bloco 1:
 
 - AUD-032 (S2): estados do pagamento do impulso. Fica para quando o pagamento for ligado (hoje inativo no piloto).
