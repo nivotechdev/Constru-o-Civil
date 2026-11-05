@@ -105,6 +105,7 @@ export default function PublicJob({ params }: ScreenProps) {
           <JobSummary
             card={card}
             onApply={() => enter('/login', card.job.id)}
+            onOthers={elsewhere}
             onSignUp={() => enter('/escolha-perfil', card.job.id)}
           />
         )}
@@ -113,7 +114,17 @@ export default function PublicJob({ params }: ScreenProps) {
   );
 }
 
-function JobSummary({ card, onApply, onSignUp }: { card: PublicJobCard; onApply: () => void; onSignUp: () => void }) {
+function JobSummary({
+  card,
+  onApply,
+  onOthers,
+  onSignUp
+}: {
+  card: PublicJobCard;
+  onApply: () => void;
+  onOthers: () => void;
+  onSignUp: () => void;
+}) {
   const { job, company, open } = card;
   return (
     <>
@@ -174,7 +185,7 @@ function JobSummary({ card, onApply, onSignUp }: { card: PublicJobCard; onApply:
           </span>
         </div>
       ) : (
-        <Button label="Ver outros bicos" size="lg" fullWidth onClick={onApply} />
+        <Button label="Ver outros bicos" size="lg" fullWidth onClick={onOthers} />
       )}
     </>
   );
