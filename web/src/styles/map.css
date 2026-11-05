@@ -41,6 +41,12 @@
   display: block;
 }
 
+/* U76: Google's tiles are shown as Google draws them (its terms: no filters); the dark theme asks Google's dark map. */
+.bicos-map-google .leaflet-tile-pane,
+[data-theme='dark'] .bicos-map-google .leaflet-tile-pane {
+  filter: none;
+}
+
 /* The picture in the job page does not move, and a finger on it still scrolls the page. */
 .bicos-map-static,
 .bicos-map-static .leaflet-pane {

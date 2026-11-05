@@ -1,11 +1,12 @@
 // Worker and company profiles: reading them and the logged-in account editing its own. Each function
 // says what the real backend does there (docs/CONTRATO-BACKEND.md).
 import type { Company, CompanyVerification, Worker, WorkerPost } from '../types/models';
-import { homeFromResolved, type ResolvedAddress } from './address';
+import { draftFromAddress, homeFromResolved, resolveAddress, type ResolvedAddress } from './address';
 import { cityByLabel } from './cities';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
-import { currentCompanyId, currentWorkerId } from './selectors';
+import { currentCompanyId, currentWorkerId, myAddress } from './selectors';
+import { distanceKm } from '../utils/geo';
 import * as store from './store';
 import { IS_DEMO } from './mode';
 import * as remote from './remote/profiles';
@@ -139,6 +140,64 @@ export async function saveMyAddress(address: ResolvedAddress): Promise<void> {
   if (!IS_DEMO) return remote.saveMyAddress(address);
   await mockLatency(500);
   keepAddressInDemo(address);
+}
+
+/** U76: how far each kind of saved point reaches (an old 'cep' point may be only the city's: see lookupCepOnline). */
+const REACH: Record<string, number> = { numero: 4, rua: 3, bairro: 1, cep: 0.5, cidade: 0 };
+const refined = new Set<string>();
+
+/**
+ * U76: the account's address placed again with the map lookup of U76, once per address and device — the text stays
+ * as typed, only the point gets better (the right stretch of a long street, the house when the number is in the
+ * street, never a CEP point that is only the city centre). Saved only when the new point reaches at least as far
+ * and moved; any failure leaves the address as it was. Real mode only (the demo's points are made up).
+ */
+export async function refineMyAddress(): Promise<boolean> {
+  if (IS_DEMO) return false;
+  const session = store.getSession();
+  const home = myAddress(store.getDb());
+  if (!session || !home) return false;
+  const mark = `valorjob:endereco-v76:${session.accountId}:${home.lat},${home.lon}`;
+  try {
+    if (refined.has(mark) || localStorage.getItem(mark)) return false;
+  } catch {
+    if (refined.has(mark)) return false;
+  }
+  refined.add(mark);
+  const done = () => {
+    try {
+      localStorage.setItem(mark, '1');
+    } catch {
+      // private window: tried again in the next session
+    }
+  };
+  let saved = false;
+  try {
+    const r = await resolveAddress(draftFromAddress(home));
+    const now = r.ok ? r.address : null;
+    if (
+      now &&
+      // The address the person typed stays exactly as it was; the new point reaches at least as far, and moved.
+      now.street === home.street &&
+      now.neighborhood === home.neighborhood &&
+      now.city === home.city &&
+      (REACH[now.precision] ?? 0) >= (REACH[home.precision] ?? 0) &&
+      distanceKm(home, now) > 0.02
+    ) {
+      await saveMyAddress(now);
+      saved = true;
+      try {
+        localStorage.setItem(`valorjob:endereco-v76:${session.accountId}:${now.lat},${now.lon}`, '1');
+      } catch {
+        // nothing to keep
+      }
+    }
+    done();
+  } catch {
+    // Offline or a provider down: tried again next time.
+    refined.delete(mark);
+  }
+  return saved;
 }
 
 export type CompanyProfilePatch = Partial<Pick<Company, 'name' | 'location' | 'about'>>;

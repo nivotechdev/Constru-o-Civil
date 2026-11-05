@@ -671,6 +671,126 @@ describe('remote: data and actions', () => {
     expect(m.selectors.myAddress(m.store.getDb())?.street).toBe('Rua Os 18 do Forte');
   });
 
+  it('U76: the address is "known" once loaded — none is null, not missing (the job page waits for it)', async () => {
+    const m = await load(server('ana'));
+    expect(m.selectors.myAddressKnown(m.store.getDb())).toBe(false);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    expect(m.selectors.myAddressKnown(m.store.getDb())).toBe(true);
+    expect(m.selectors.myAddress(m.store.getDb())).toBeNull();
+  });
+
+  it("U76: Google's route by calcular-rota (only the job id goes); without it, the free route", async () => {
+    const answer = {
+      metros: 3312,
+      segundos: 664,
+      texto_distancia: '3,3 km',
+      texto_tempo: '11 min',
+      caminho: [
+        [-29.1681, -51.1794],
+        [-29.1569, -51.1712]
+      ],
+      origem: { lat: -29.1681, lon: -51.1794 },
+      destino: { lat: -29.1569, lon: -51.1712 }
+    };
+    const fake = server('ana', { functions: { 'calcular-rota': () => ({ data: answer, error: null }) } });
+    await load(fake);
+    const route = await import('../services/route');
+    const home = { lat: -29.168, lon: -51.179 };
+    const r = await route.routeToJob({ id: 'BC-5001', lat: -29.157, lon: -51.171 }, home, undefined, true);
+    expect(r).toEqual({
+      meters: 3312,
+      seconds: 664,
+      provider: 'google',
+      path: answer.caminho,
+      from: answer.origem,
+      to: answer.destino,
+      distanceText: '3,3 km',
+      durationText: '11 min'
+    });
+    expect(fake.calls.find((c) => c.name === 'calcular-rota')?.args).toEqual({ job_id: 'BC-5001' });
+
+    // The function refuses (no key, the limit, Google out): the free servers answer.
+    const refusing = server('ana', {
+      functions: {
+        'calcular-rota': () => ({ data: null, error: { message: 'Edge Function returned a non-2xx status code' } })
+      }
+    });
+    await load(refusing);
+    const again = await import('../services/route');
+    vi.stubGlobal(
+      'fetch',
+      async () => new Response(JSON.stringify({ trip: { status: 0, summary: { length: 3.1, time: 540 }, legs: [] } }))
+    );
+    const free = await again.routeToJob({ id: 'BC-5001', lat: -29.157, lon: -51.171 }, home, undefined, true);
+    expect(free).toMatchObject({ meters: 3100, seconds: 540, provider: 'valhalla' });
+    vi.unstubAllGlobals();
+  });
+
+  it('U76: an address saved before is placed again once — same text, a better point', async () => {
+    const saved = {
+      account_id: 'u-ana',
+      cep: '95032-773',
+      street: 'Rua Padre Alberto Luiz Lamonato',
+      neighborhood: 'Nossa Senhora da Saúde',
+      city: 'Caxias do Sul',
+      uf: 'RS',
+      // The city's own point, that BrasilAPI gave as the CEP's.
+      lat: -29.16806,
+      lon: -51.17944,
+      precision: 'cep',
+      updated_at: NOW
+    };
+    const fake = server('ana', {
+      tables: { addresses: [saved] },
+      rpc: { set_my_address: () => ({ data: null, error: null }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    const remoteAddress = await import('../services/remote/address');
+    remoteAddress.nominatimPolicy.gapMs = 0;
+    vi.stubGlobal('fetch', async (url: string) => {
+      const body = url.includes('brasilapi')
+        ? { city: 'Caxias do Sul', state: 'RS', street: saved.street, neighborhood: saved.neighborhood, location: {} }
+        : url.includes('nominatim') && url.includes('lamonato')
+          ? [
+              {
+                lat: '-29.2101',
+                lon: '-51.1702',
+                name: 'Rua Padre Alberto Lamonato',
+                category: 'highway',
+                address: {
+                  road: 'Rua Padre Alberto Lamonato',
+                  suburb: 'Nossa Senhora da Saúde',
+                  'ISO3166-2-lvl4': 'BR-RS'
+                }
+              }
+            ]
+          : url.includes('nominatim')
+            ? []
+            : null;
+      return body === null ? new Response('x', { status: 404 }) : new Response(JSON.stringify(body));
+    });
+    const profiles = await import('../services/profiles');
+    expect(await profiles.refineMyAddress()).toBe(true);
+    expect(fake.calls.find((c) => c.name === 'set_my_address')?.args).toEqual({
+      p: {
+        cep: '95032-773',
+        street: 'Rua Padre Alberto Luiz Lamonato',
+        neighborhood: 'Nossa Senhora da Saúde',
+        city: 'Caxias do Sul',
+        uf: 'RS',
+        lat: -29.2101,
+        lon: -51.1702,
+        precision: 'rua'
+      }
+    });
+    expect(m.selectors.myAddress(m.store.getDb())).toMatchObject({ lat: -29.2101, precision: 'rua' });
+    // Once is enough.
+    expect(await profiles.refineMyAddress()).toBe(false);
+    expect(fake.calls.filter((c) => c.name === 'set_my_address')).toHaveLength(1);
+    vi.unstubAllGlobals();
+  });
+
   it('U51: completing the profile sends the address (and the city and rounded point an older server takes)', async () => {
     const fake = server('ana', { rpc: { finish_sign_up: () => ({ data: null, error: null }) } });
     const m = await load(fake);

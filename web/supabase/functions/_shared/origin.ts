@@ -54,6 +54,7 @@ export const BROWSER_FUNCTIONS = [
   'criar-cobranca',
   'entrar-com-documento',
   'excluir-conta',
-  'verificar-cnpj'
+  'verificar-cnpj',
+  'calcular-rota'
 ] as const;
 export const SERVER_FUNCTIONS = ['enviar-push', 'limpar-arquivos', 'webhook-pagamento'] as const;

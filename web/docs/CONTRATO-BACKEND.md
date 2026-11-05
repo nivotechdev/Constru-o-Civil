@@ -210,6 +210,19 @@ WhatsApp a trabalhadores do ofício por perto — o envio é do back-end).
 | `resolveAddress(rascunho)` (U51)            | confere cidade (lista do IBGE), CEP (da cidade e da rua; em branco, achado pela rua e o bairro) e acha o ponto: Nominatim (OpenStreetMap), Photon, ponto do CEP, centro da cidade — `precision` diz até onde chegou |
 | `locate(...)` (puro no mock)                | o ponto do CEP já buscado, ou o centro da cidade (o formulário da vaga até o U52)                                                                                                                                   |
 
+U76: `resolveAddress` compara nomes como o mapa escreve (`streetSimilarity`), aproveita o número digitado na rua e
+escolhe o CEP do trecho que tem o número; o ponto é a casa, o pedaço da rua no bairro, o ponto do CEP (se não for o
+centro da cidade), o centro do bairro ou o da cidade. `profiles.refineMyAddress()` localiza de novo, uma vez, um
+endereço salvo antes (mesmo texto, ponto melhor → `set_my_address`).
+
+### `route.ts` — distância e tempo de carro (U54/U76)
+
+| função                                   | back-end                                                                                                                                                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `routeToJob(vaga, casa, signal, google)` | com o Google (`FEATURES.googleMaps` e a sessão do Map Tiles): Edge Function `calcular-rota` `{ job_id }` → Routes API com os dois endereços em texto e trânsito; senão (ou se recusar) `drivingRoute` |
+| `drivingRoute(de, até, signal)`          | Valhalla (FOSSGIS), OSRM (FOSSGIS), OSRM (projeto) — só as duas coordenadas; guardada na sessão; `null` se nenhum responder (a tela mostra a linha reta)                                              |
+| `routeDistanceText` / `routeTimeText`    | o texto do próprio Google quando ele respondeu; senão "3,2 km" / "1 h 5 min"                                                                                                                          |
+
 ### `account.ts` — privacidade (LGPD)
 
 | função                                         | erros                                                             | back-end                                                                                                                                                                                                                                                                                                                                                |

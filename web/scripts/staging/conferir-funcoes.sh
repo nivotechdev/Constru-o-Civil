@@ -28,6 +28,8 @@ espera excluir-conta "401"
 espera codigo-whatsapp "401|404|503"
 espera verificar-cnpj "401"
 espera criar-cobranca "401|503"
+# U76: sem GOOGLE_MAPS_API_KEY responde 503 antes de olhar o login (o app usa as rotas gratuitas).
+espera calcular-rota "401|503"
 echo "Funções do servidor (sem o segredo delas):"
 espera webhook-pagamento "503|401"
 espera enviar-push "401" "x-webhook-secret: errado"

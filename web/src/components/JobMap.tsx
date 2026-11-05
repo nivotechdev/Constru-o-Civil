@@ -1,11 +1,15 @@
 // U53/U54/U57: "Onde vai ser" — the job's place and the worker's home (the address saved in their profile, never the
 // phone's position), the road between them and its real length and time (a driving route, as Google Maps writes it).
 // The picture is still; one button opens it full screen, where it moves. The map (Leaflet) is a separate chunk that
-// loads only when the section comes near the screen.
+// loads only when the section comes near the screen. U76: with Google configured, Google's route (the same numbers as
+// Google Maps) on Google's map; an address saved before U76 is placed again, once (profiles.refineMyAddress).
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { GeoPoint } from '../types/models';
 import { distanceKm, formatKm } from '../utils/geo';
-import { drivingRoute, formatDriveTime, formatRoadKm, type DrivingRoute } from '../services/route';
+import { routeDistanceText, routeTimeText, routeToJob, type DrivingRoute } from '../services/route';
+import { FEATURES, GOOGLE_MAPS_KEY } from '../services/features';
+import { googleSession, type Session } from '../services/googleTiles';
+import { refineMyAddress } from '../services/profiles';
 import { useModal } from '../hooks/useModal';
 import { navigate } from '../services/router';
 import { Icon } from './icons/Icon';
@@ -15,6 +19,8 @@ const MapCanvas = lazy(() => import('./MapCanvas'));
 type Road = { key: string; route: DrivingRoute | null } | null;
 
 type Props = {
+  /** The job's id (Google's route is asked by it: the server reads both addresses). */
+  jobId: string;
   job: GeoPoint;
   place: string;
   /** The address saved in the worker's profile — the only starting point there is. */
@@ -23,10 +29,14 @@ type Props = {
   askHome?: boolean;
 };
 
-export function JobMap({ job, place, home, askHome = false }: Props) {
+const isDark = () => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark';
+
+export function JobMap({ jobId, job, place, home, askHome = false }: Props) {
   const [visible, setVisible] = useState(false);
   const [road, setRoad] = useState<Road>(null);
   const [open, setOpen] = useState(false);
+  // U76: Google's tiles session — undefined while asked; null without Google (OpenStreetMap's map, free routes).
+  const [google, setGoogle] = useState<Session | null | undefined>(FEATURES.googleMaps ? undefined : null);
   const modal = useModal(open, () => setOpen(false));
   const box = useRef<HTMLDivElement>(null);
 
@@ -44,29 +54,49 @@ export function JobMap({ job, place, home, askHome = false }: Props) {
     return () => io.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!visible || google !== undefined) return;
+    let live = true;
+    googleSession(isDark()).then((s) => live && setGoogle(s));
+    return () => {
+      live = false;
+    };
+  }, [visible, google]);
+
   const origin = home;
-  const key = origin ? `${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}>${job.lat},${job.lon}` : '';
+  const key = origin ? `${origin.lat.toFixed(6)},${origin.lon.toFixed(6)}>${job.lat},${job.lon}` : '';
 
   // The road from the origin to the job (the real distance and time); no answer leaves the straight line.
   useEffect(() => {
-    if (!origin || !visible) return;
+    if (!origin || !visible || google === undefined) return;
     const ctl = new AbortController();
-    drivingRoute(origin, job, ctl.signal).then((route) => !ctl.signal.aborted && setRoad({ key, route }));
+    routeToJob({ id: jobId, lat: job.lat, lon: job.lon }, origin, ctl.signal, Boolean(google)).then(
+      (route) => !ctl.signal.aborted && setRoad({ key, route })
+    );
     return () => ctl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, visible]);
+  }, [key, visible, google === undefined, Boolean(google)]);
+
+  // U76: an address saved by an older version is placed again once; the route follows the better point.
+  useEffect(() => {
+    if (askHome && origin && visible) void refineMyAddress();
+  }, [askHome, origin, visible]);
 
   const answered = road !== null && road.key === key;
   const route = answered ? road.route : null;
   const calculating = Boolean(origin) && !answered;
   const straightKm = origin ? distanceKm(origin, job) : null;
+  // Google's route starts and ends where Google placed the two addresses: the pin and the dot sit there too.
+  const jobPoint = route?.provider === 'google' && route.to ? route.to : job;
+  const originPoint = route?.provider === 'google' && route.from ? route.from : origin;
+  const tiles = google ? { key: GOOGLE_MAPS_KEY, session: google.session } : null;
 
   const distanceLine = origin ? (
     <div className="text-concrete-900" aria-live="polite">
       {route ? (
         <span>
-          A <strong className="font-bold">{formatRoadKm(route.meters)}</strong> da sua casa
-          <span className="text-concrete-700"> · {formatDriveTime(route.seconds)} de carro</span>
+          A <strong className="font-bold">{routeDistanceText(route)}</strong> da sua casa
+          <span className="text-concrete-700"> · {routeTimeText(route)} de carro</span>
         </span>
       ) : calculating ? (
         <span className="text-concrete-700">Calculando o caminho…</span>
@@ -89,10 +119,11 @@ export function JobMap({ job, place, home, askHome = false }: Props) {
   const canvas = (mode: 'static' | 'full') => (
     <Suspense fallback={<MapLoading />}>
       <MapCanvas
-        job={job}
-        origin={origin}
+        job={jobPoint}
+        origin={originPoint}
         path={route?.path ?? null}
         mode={mode}
+        google={tiles}
         onExpand={() => setOpen(true)}
         label={
           mode === 'full'
@@ -111,7 +142,7 @@ export function JobMap({ job, place, home, askHome = false }: Props) {
         className="relative w-full h-72 rounded-2xl overflow-hidden border border-concrete-200 bg-concrete-100"
         onClick={() => visible && setOpen(true)}
       >
-        {visible ? canvas('static') : <MapLoading />}
+        {visible && google !== undefined ? canvas('static') : <MapLoading />}
       </div>
       {distanceLine}
       {open ? (

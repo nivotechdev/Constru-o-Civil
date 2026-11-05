@@ -27,8 +27,9 @@ import {
   currentWorker,
   getJob,
   jobState,
-  unavailableText,
-  workerHome
+  myAddress,
+  myAddressKnown,
+  unavailableText
 } from '../../services/selectors';
 import { formatPay } from '../../utils/format';
 import { jobTitle } from '../../services/catalog';
@@ -269,10 +270,11 @@ export default function JobDetail({ params }: ScreenProps) {
           {/* U53/U57: the map — the job's place and the worker's saved address, with the road between them. */}
           <Section title="Onde vai ser">
             <JobMap
+              jobId={job.id}
               job={{ lat: job.address.lat, lon: job.address.lon }}
               place={exact ? fullAddressText(job) : placeText(job)}
-              home={role === 'trabalhador' ? workerHome(db) : null}
-              askHome={role === 'trabalhador'}
+              home={role === 'trabalhador' ? myAddress(db) : null}
+              askHome={role === 'trabalhador' && myAddressKnown(db)}
             />
           </Section>
         </div>

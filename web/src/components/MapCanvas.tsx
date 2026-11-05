@@ -1,12 +1,13 @@
-// U54/U56: the map itself (Leaflet + OpenStreetMap tiles), loaded only when the job map is about to show. Nothing but the
-// job's pin, the worker's blue dot and the road between them. `static` is the picture inside the job page (it does not
-// move; one button opens it); `full` is the full-screen one: one finger moves it, two fingers pinch, the buttons zoom
-// and put the job and the worker back in view.
+// U54/U56: the map itself (Leaflet), loaded only when the job map is about to show. Nothing but the job's pin, the
+// worker's blue dot and the road between them. `static` is the picture inside the job page (it does not move; one
+// button opens it); `full` is the full-screen one: one finger moves it, two fingers pinch, the buttons zoom and put the
+// job and the worker back in view. U76: the tiles are OpenStreetMap's, or Google's when Google is configured.
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/map.css';
 import { useEffect, useRef } from 'react';
 import type { GeoPoint } from '../types/models';
+import { googleLayer, osmLayer } from './mapTiles';
 import { Icon } from './icons/Icon';
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
   path: [number, number][] | null;
   label: string;
   mode: 'static' | 'full';
+  /** U76: Google's tiles (its browser key and tiles session); null: OpenStreetMap's. */
+  google?: { key: string; session: string } | null;
   onExpand?: () => void;
 };
 
@@ -42,7 +45,7 @@ function Glyph({ d }: { d: string }) {
 const PIN =
   '<svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg"><path d="M17 43C17 43 3 28.5 3 16.5a14 14 0 0 1 28 0C31 28.5 17 43 17 43Z" fill="#1d4bed" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><circle cx="17" cy="16.5" r="5.5" fill="#fff"/></svg>';
 
-export default function MapCanvas({ job, origin, path, label, mode, onExpand }: Props) {
+export default function MapCanvas({ job, origin, path, label, mode, google = null, onExpand }: Props) {
   const full = mode === 'full';
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -64,11 +67,8 @@ export default function MapCanvas({ job, origin, path, label, mode, onExpand }: 
       boxZoom: false,
       keyboard: full
     });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(m);
     m.attributionControl.setPrefix(false);
+    (google ? googleLayer(m, google.key, google.session) : osmLayer()).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
     const ro = new ResizeObserver(() => m.invalidateSize());
@@ -78,7 +78,9 @@ export default function MapCanvas({ job, origin, path, label, mode, onExpand }: 
       m.remove();
       map.current = null;
     };
-  }, [full]);
+    // The tiles change only with a new key or session (not with a new object of the same ones).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [full, google?.key, google?.session]);
 
   function fit(animate: boolean) {
     const m = map.current;
@@ -123,7 +125,7 @@ export default function MapCanvas({ job, origin, path, label, mode, onExpand }: 
     }).addTo(g);
     fit(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job.lat, job.lon, origin?.lat, origin?.lon, path]);
+  }, [job.lat, job.lon, origin?.lat, origin?.lon, path, google?.session]);
 
   return (
     <div className="relative isolate w-full h-full">
@@ -131,7 +133,9 @@ export default function MapCanvas({ job, origin, path, label, mode, onExpand }: 
         ref={box}
         role={full ? 'application' : 'img'}
         aria-label={label}
-        className={'bicos-map absolute inset-0' + (full ? '' : ' bicos-map-static')}
+        className={
+          'bicos-map absolute inset-0' + (full ? '' : ' bicos-map-static') + (google ? ' bicos-map-google' : '')
+        }
       />
       {full ? (
         <div className="absolute right-3 top-3 z-[500] flex flex-col gap-2">

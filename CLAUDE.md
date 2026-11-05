@@ -14,10 +14,12 @@ Nos textos de tela a marca é **Valorjob** ("a Valorjob"); "bico" segue como pal
 favicon: `components/Logo.tsx` e `scripts/make-icons.mjs` (U70). Os nomes internos antigos (papel `recrutador`, lado `construtora`, `para_construtora`, rota `/construtora/:id`) ficam.
 
 Dois lados (enum `app_role`):
+
 - **trabalhador** (pessoa física, CPF, 18+): quem procura bico (garçom, faxina, eventos, mudança, loja, cuidados…).
 - **recrutador** = empresa ou pessoa que contrata (CNPJ, ou CPF em alguns casos; ver Y16/Y17). Na tela: "empresa".
 
 Fluxo central (não mudar sem pedir):
+
 1. Empresa publica a vaga (título, valor da diária, dias/diárias/horário com data a combinar, endereço sem número,
    fotos, pessoas). U01: sem ofício, datas, urgente, pagamento e requisitos na tela — vagas antigas mantêm os seus.
 2. Trabalhadores veem o **mural** (`feed_jobs`: cidade ou raio, filtros — sem filtro de ofício desde o U01;
@@ -59,6 +61,7 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 ```
 
 ### web/
+
 - **React 19 + TypeScript (strict) + Vite 7 + Tailwind 3.4.19**, PWA (`vite-plugin-pwa`), `@supabase/supabase-js` 2.
 - Roteador próprio por caminho real (`/vaga/BC-1`), em `src/services/router.ts` + `src/routes.ts`; cada tela é um
   chunk lazy. Rotas principais: `/mural`, `/vaga/:id`, `/v/:id` (vaga pública), `/criar-vaga`,
@@ -69,6 +72,7 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
   `types/` (`models.ts` domínio; `database.generated.ts` gerado do banco), `data/` (seed demo + cidades IBGE).
 
 ### Regra de arquitetura nº 1 — dois modos, uma porta
+
 - `src/services/mode.ts` → `IS_DEMO = !isSupabaseConfigured()`. **Sem** `VITE_SUPABASE_URL`/`ANON_KEY` o app roda
   com dados falsos em memória (`data/seed.ts`); **com** elas, fala com o Supabase.
 - Cada serviço em `src/services/*.ts` tem dois corpos: demo (mexe no store) e real (`src/services/remote/*.ts`).
@@ -78,7 +82,7 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
 - Funções que dependem de provedor externo ficam **escondidas** até configurar: `src/services/features.ts`
   (`payments`, `captcha`, `googleLogin`, `whatsappCode`, `push`).
 - Erros: tudo vira `ServiceError` com códigos `offline | falha_demo | nao_autorizado | nao_encontrado | conflito |
-  validacao` e mensagem pronta em PT-BR (`services/errors.ts`, `services/remote/client.ts`). As RPCs levantam
+validacao` e mensagem pronta em PT-BR (`services/errors.ts`, `services/remote/client.ts`). As RPCs levantam
   SQLSTATE próprio `BC401/BC404/BC409/BC422` que o client traduz. **Mantenha esse contrato** em código novo.
 - Máquina de status da candidatura: **única** fonte em `src/services/applicationMachine.ts` (tabela `TRANSITIONS`),
   espelhada no banco em `transition_application`. Mudou uma, mude a outra e os testes dos dois lados.
@@ -135,18 +139,20 @@ direto, em português do Brasil, sem jargão. Isso pesa mais que estética.
   protection desligada (exige Pro), RPCs security definer (esperado).
 
 ### Edge Functions (Deno, `web/supabase/functions/`, todas publicadas)
-| Função | Papel | JWT | Segredos |
-|---|---|---|---|
-| `entrar-com-documento` | login por CPF/CNPJ (resposta única, limite 5/doc e 20/IP por 15 min) | sim | `TURNSTILE_SECRET` |
-| `verificar-cadastro` | cadastro: e-mail/CPF/CNPJ/WhatsApp já tem conta? (U10; limite 30/IP e 10/valor por 15 min; só sim ou não) — **ainda não publicada na produção** | sim | — |
-| `entrar-com-firebase` | Google e celular (U28): confere o ID token do Firebase e abre a sessão da Bicos (limite 20/IP por 15 min) — **ainda não publicada na produção** | sim | `FIREBASE_PROJECT_ID` |
-| `excluir-conta` | exclusão completa (inclui Storage) | sim | — |
-| `codigo-whatsapp` | código por WhatsApp/SMS (Twilio Verify) | sim | `TWILIO_*` |
-| `verificar-cnpj` | CNPJ na Receita (BrasilAPI) — **ligada** | sim | — |
-| `criar-cobranca` | PIX/cartão do impulso (Mercado Pago) | sim | `MP_ACCESS_TOKEN` |
-| `webhook-pagamento` | confirmação do MP (HMAC `x-signature`, janela 15 min, idempotente) | **não** | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET` |
-| `enviar-push` | Web Push a cada notificação (chamada pelo banco via pg_net) | **não** | `VAPID_*`, `PUSH_WEBHOOK_SECRET` |
-| `limpar-arquivos` | apaga órfãos e identidades 30 dias após decisão | **não** | `CLEANUP_SECRET` |
+
+| Função                 | Papel                                                                                                                                           | JWT     | Segredos                               |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------- |
+| `entrar-com-documento` | login por CPF/CNPJ (resposta única, limite 5/doc e 20/IP por 15 min)                                                                            | sim     | `TURNSTILE_SECRET`                     |
+| `verificar-cadastro`   | cadastro: e-mail/CPF/CNPJ/WhatsApp já tem conta? (U10; limite 30/IP e 10/valor por 15 min; só sim ou não) — **ainda não publicada na produção** | sim     | —                                      |
+| `entrar-com-firebase`  | Google e celular (U28): confere o ID token do Firebase e abre a sessão da Bicos (limite 20/IP por 15 min) — **ainda não publicada na produção** | sim     | `FIREBASE_PROJECT_ID`                  |
+| `excluir-conta`        | exclusão completa (inclui Storage)                                                                                                              | sim     | —                                      |
+| `codigo-whatsapp`      | código por WhatsApp/SMS (Twilio Verify)                                                                                                         | sim     | `TWILIO_*`                             |
+| `verificar-cnpj`       | CNPJ na Receita (BrasilAPI) — **ligada**                                                                                                        | sim     | —                                      |
+| `criar-cobranca`       | PIX/cartão do impulso (Mercado Pago)                                                                                                            | sim     | `MP_ACCESS_TOKEN`                      |
+| `calcular-rota`        | distância e tempo de carro pelo Google (Routes API, U76) — só com a chave; sem ela o app usa Valhalla/OSRM                                      | sim     | `GOOGLE_MAPS_API_KEY`                  |
+| `webhook-pagamento`    | confirmação do MP (HMAC `x-signature`, janela 15 min, idempotente)                                                                              | **não** | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET` |
+| `enviar-push`          | Web Push a cada notificação (chamada pelo banco via pg_net)                                                                                     | **não** | `VAPID_*`, `PUSH_WEBHOOK_SECRET`       |
+| `limpar-arquivos`      | apaga órfãos e identidades 30 dias após decisão                                                                                                 | **não** | `CLEANUP_SECRET`                       |
 
 Todas: `SENTRY_DSN`, `RELEASE`. `APP_ORIGIN` (CORS): **obrigatório** desde o L05 — sem ele a função não sobe (não
 cai mais para `*`). R02: só as funções chamadas pelo navegador exigem `APP_ORIGIN` (`requireAppOrigin()` no topo);
@@ -156,6 +162,7 @@ estão na versão anterior ao L05** (republicar só com "pode", depois dos segre
 Publicar: `supabase functions deploy <nome>` (as sem JWT com `--no-verify-jwt`).
 
 ### O que está ligado e o que não está (produção)
+
 Ligado: Auth e-mail + Google, verificação de CNPJ, cron, Storage, todas as funções publicadas.
 **Desligado/sem configurar**: Mercado Pago, Turnstile (captcha), Twilio (código do WhatsApp), Web Push (VAPID),
 Sentry, SMTP próprio (Brevo), `CLEANUP_SECRET`, leaked password protection, URL Configuration do Auth (confirmar).
@@ -174,6 +181,7 @@ npm run build:standalone
 ./supabase/tests/local/setup.sh
 DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase/tests/run.mjs supabase/tests/[a-z]*.sql
 ```
+
 - Testes de serviço rodam nos dois modos; o modo real usa um **falso Supabase** (`src/__tests__/fakeSupabase.ts`):
   tabelas em memória, RPCs respondidas por função, chamadas gravadas para asserção. Use-o para todo serviço novo.
 - Testes SQL: cada arquivo roda em `begin … rollback` (pode rodar até na produção sem deixar rastro). Helpers em
@@ -225,17 +233,17 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54322/postgres node supabase
 
 ## 8. Documentos a consultar (não leia tudo de uma vez — vá pela seção)
 
-| Arquivo | Para quê |
-|---|---|
-| `web/docs/CHECKLIST-LANCAMENTO.md` | lista viva do lançamento: o que a IA fez (com commit) e as **ações do responsável** |
-| `web/docs/STAGING.md`, `web/docs/E2E.md`, `web/docs/VOLUME.md` | staging, testes de ponta a ponta (Playwright, `npm run e2e`) e teste de volume |
-| `web/docs/SUPABASE.md` | banco, funções, segredos, serviços externos, hospedagem — **a referência operacional** |
-| `web/supabase/APLICAR.md` | ordem das migrations, conferências, `repair` do histórico |
-| `web/docs/CONTRATO-BACKEND.md` | contrato de cada serviço/RPC e das transições |
-| `web/docs/DECISOES.md` | por que cada coisa é como é (por ID) |
-| `web/docs/RELATORIO-FINAL.md` | o que a rodada anterior entregou |
-| `web/docs/ADVISORS.md` | avisos do advisor e por que ficam |
-| `web/docs/VALIDACAO.md`, `RELATORIO_PARIDADE.md`, `MAPEAMENTO.md` | histórico da migração do legado (raramente necessários) |
+| Arquivo                                                           | Para quê                                                                               |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `web/docs/CHECKLIST-LANCAMENTO.md`                                | lista viva do lançamento: o que a IA fez (com commit) e as **ações do responsável**    |
+| `web/docs/STAGING.md`, `web/docs/E2E.md`, `web/docs/VOLUME.md`    | staging, testes de ponta a ponta (Playwright, `npm run e2e`) e teste de volume         |
+| `web/docs/SUPABASE.md`                                            | banco, funções, segredos, serviços externos, hospedagem — **a referência operacional** |
+| `web/supabase/APLICAR.md`                                         | ordem das migrations, conferências, `repair` do histórico                              |
+| `web/docs/CONTRATO-BACKEND.md`                                    | contrato de cada serviço/RPC e das transições                                          |
+| `web/docs/DECISOES.md`                                            | por que cada coisa é como é (por ID)                                                   |
+| `web/docs/RELATORIO-FINAL.md`                                     | o que a rodada anterior entregou                                                       |
+| `web/docs/ADVISORS.md`                                            | avisos do advisor e por que ficam                                                      |
+| `web/docs/VALIDACAO.md`, `RELATORIO_PARIDADE.md`, `MAPEAMENTO.md` | histórico da migração do legado (raramente necessários)                                |
 
 ## 9. Regras de segurança para a IA
 

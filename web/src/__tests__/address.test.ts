@@ -127,6 +127,7 @@ describe('the address with the real providers', () => {
       throw new TypeError('Failed to fetch');
     });
     r = await import('../services/remote/address');
+    r.nominatimPolicy.gapMs = 0;
   });
   afterEach(() => vi.unstubAllGlobals());
 

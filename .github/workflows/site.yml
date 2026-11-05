@@ -47,6 +47,10 @@ jobs:
       VITE_FIREBASE_AUTH_DOMAIN: bicoapp-6cc68.firebaseapp.com
       VITE_FIREBASE_PROJECT_ID: bicoapp-6cc68
       VITE_FIREBASE_APP_ID: "1:125261137238:web:a7961decdcc3d1e6b4c2f7"
+      # U76: chave de NAVEGADOR do Google Maps (Map Tiles API, restrita ao endereço do site no Google Cloud) — pública
+      # por natureza, como a do Firebase. Vazia: mapa do OpenStreetMap e rotas gratuitas. A chave de servidor (Routes
+      # API) é outra e fica só no segredo GOOGLE_MAPS_API_KEY das funções.
+      VITE_GOOGLE_MAPS_KEY: ${{ vars.GOOGLE_MAPS_BROWSER_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -453,8 +453,11 @@ export interface Database {
   jobAlerts?: Record<string, JobAlert>;
   /** X03: the session's unread notices as the server counts them (more than the 100 loaded). */
   unreadTotal?: number;
-  /** U51: saved addresses, per account id (the real backend loads only the session's own). */
-  addresses?: Record<string, HomeAddress>;
+  /**
+   * U51: saved addresses, per account id (the real backend loads only the session's own). U76: `null` — loaded, and
+   * the account has none; absent — not loaded yet.
+   */
+  addresses?: Record<string, HomeAddress | null>;
 }
 
 /** A worker's alert for new jobs (Y28): a city — or a radius around a point — and an optional trade. */

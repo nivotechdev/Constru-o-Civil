@@ -24,6 +24,11 @@ interface ImportMetaEnv {
   readonly VITE_CODIGO_WHATSAPP?: string;
   /** Web Push public VAPID key; without it, push notifications are hidden. */
   readonly VITE_VAPID_PUBLIC_KEY?: string;
+  /**
+   * U76: Google Maps browser key (Map Tiles API, limited to the app's sites in Google Cloud). With it, the job's map
+   * is Google's and the distance and time come from Google (Edge Function calcular-rota, with its own secret key).
+   */
+  readonly VITE_GOOGLE_MAPS_KEY?: string;
   /** Sentry DSN for error reports (optional). */
   readonly VITE_SENTRY_DSN?: string;
   /** Support WhatsApp number (digits), for "Falar com o suporte". */

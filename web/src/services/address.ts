@@ -2,7 +2,15 @@
 // is on the map. Each function says what the real backend does there (docs/CONTRATO-BACKEND.md); U51 explains the
 // providers (docs/DECISOES.md).
 import type { GeoPoint, HomeAddress, PlacePrecision } from '../types/models';
-import { fold, hasWords, sameNeighborhood, sameStreet, streetKey } from '../utils/addressText';
+import {
+  fold,
+  hasWords,
+  likelySameNeighborhood,
+  likelySameStreet,
+  splitHouseNumber,
+  streetKey,
+  streetWords
+} from '../utils/addressText';
 import { cityByLabel, searchCities } from './cities';
 import { serviceError } from './errors';
 import { mockLatency } from './mockLatency';
@@ -309,6 +317,9 @@ export async function resolveAddress(
   const city = cityParts(cityLabel) as NonNullable<ReturnType<typeof cityParts>>;
   const street = d.street.trim().replace(/\s+/g, ' ');
   const neighborhood = d.neighborhood.trim().replace(/\s+/g, ' ');
+  // U76: a number typed with the street ("Rua Sinimbu, 1234") finds the house; the street is saved as typed.
+  const typed = splitHouseNumber(street);
+  const number = d.number?.trim() || typed.number;
 
   // The CEP: the one typed, if it is this city's and this street's; otherwise found from the street.
   let cep = maskCEP(d.cep);
@@ -319,15 +330,15 @@ export async function resolveAddress(
       return { ok: false, errors: { cep: 'Não achamos esse CEP. Confira os números ou deixe em branco.' } };
     if (cepFound.city !== cityLabel)
       return { ok: false, errors: { cep: `Esse CEP é de ${cepFound.city}. Confira o CEP ou a cidade.` } };
-    if (cepFound.street && !sameStreet(cepFound.street, street)) {
+    if (cepFound.street && !likelySameStreet(cepFound.street, typed.street)) {
       // The street changed after the CEP was filled: the street's own CEP replaces it.
-      const other = await findCep(cityLabel, street, neighborhood);
+      const other = await findCep(cityLabel, typed.street, neighborhood, number);
       if (!other) return { ok: false, errors: { cep: `Esse CEP é da ${cepFound.street}. Confira o CEP ou a rua.` } };
       cep = other.cep;
       cepFound = await lookupCep(cep).catch(() => null);
     }
   } else {
-    const found = await findCep(cityLabel, street, neighborhood);
+    const found = await findCep(cityLabel, typed.street, neighborhood, number);
     if (!found)
       return {
         ok: false,
@@ -341,8 +352,8 @@ export async function resolveAddress(
   }
 
   const located = await geocode({
-    street,
-    number: d.number?.trim() ?? '',
+    street: typed.street,
+    number,
     neighborhood,
     city: city.name,
     uf: city.uf,
@@ -381,12 +392,76 @@ export function homeFromResolved(a: ResolvedAddress): HomeAddress {
   };
 }
 
-/** The CEP of a street of the city, choosing the stretch in the given neighbourhood. */
-async function findCep(cityLabel: string, street: string, neighborhood: string): Promise<StreetOption | null> {
+/**
+ * U76: whether a CEP's stretch of the street ("até 799/800", "de 801/802 a 1499/1500", "de 1501/1502 ao fim",
+ * "lado ímpar") has this house number: true, false, or null when the stretch says nothing about numbers.
+ */
+export function stretchHas(detail: string, number: string): boolean | null {
+  const n = parseInt(number, 10);
+  const text = detail
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!Number.isFinite(n) || !text) return null;
+  const nums = (s: string) => s.split('/').map((x) => parseInt(x, 10));
+  let known = false;
+  let ok = true;
+  const range = /(?:^|\s)de (\d+(?:\/\d+)?) (?:a|ate) (\d+(?:\/\d+)?)/.exec(text);
+  const fromEnd = /(?:^|\s)de (\d+(?:\/\d+)?) ao fim/.exec(text);
+  const upTo = /(?:^|\s)ate (\d+(?:\/\d+)?)/.exec(text);
+  if (range) {
+    known = true;
+    ok = n >= Math.min(...nums(range[1])) && n <= Math.max(...nums(range[2]));
+  } else if (fromEnd) {
+    known = true;
+    ok = n >= Math.min(...nums(fromEnd[1]));
+  } else if (upTo) {
+    known = true;
+    ok = n <= Math.max(...nums(upTo[1]));
+  }
+  if (/lado impar/.test(text)) {
+    known = true;
+    ok = ok && n % 2 === 1;
+  } else if (/lado par/.test(text)) {
+    known = true;
+    ok = ok && n % 2 === 0;
+  }
+  return known ? ok : null;
+}
+
+/**
+ * The CEP of a street of the city: the stretch that has the house number, when it is known, and is in the
+ * neighbourhood typed; the names compared the way the map and the Correios write them (U76).
+ */
+async function findCep(
+  cityLabel: string,
+  street: string,
+  neighborhood: string,
+  number = ''
+): Promise<StreetOption | null> {
   const { items } = await suggestStreets(cityLabel, street);
-  const same = items.filter((o) => sameStreet(o.street, street));
+  let same = items.filter((o) => likelySameStreet(o.street, street));
+  if (!same.length) {
+    // The Correios may write the name another way ("Padre" for "Pe.", a middle name): ask by its last word.
+    const words = streetWords(street);
+    const last = words[words.length - 1] ?? '';
+    if (words.length > 1 && last.length >= 3 && !/^\d+$/.test(last))
+      same = (await suggestStreets(cityLabel, last)).items.filter((o) => likelySameStreet(o.street, street));
+  }
   if (!same.length) return null;
-  return same.find((o) => sameNeighborhood(o.neighborhood, neighborhood)) ?? same[0];
+  const inHood = (o: StreetOption) => likelySameNeighborhood(o.neighborhood, neighborhood);
+  const covers = (o: StreetOption) => (number ? stretchHas(o.detail, number) : null);
+  return (
+    same.find((o) => covers(o) === true && inHood(o)) ??
+    same.find((o) => covers(o) === true) ??
+    same.find((o) => covers(o) !== false && inHood(o)) ??
+    same.find(inHood) ??
+    same.find((o) => covers(o) !== false) ??
+    same[0]
+  );
 }
 
 export interface GeocodeInput {

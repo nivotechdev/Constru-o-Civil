@@ -33,12 +33,19 @@ export const FEATURES = {
   /** The WhatsApp number confirmed by a code. */
   whatsappCode: IS_DEMO || on(env.VITE_CODIGO_WHATSAPP),
   /** Notifications on the phone (Web Push). */
-  push: !IS_DEMO && Boolean(env.VITE_VAPID_PUBLIC_KEY)
+  push: !IS_DEMO && Boolean(env.VITE_VAPID_PUBLIC_KEY),
+  /**
+   * U76: distance and time by Google (Routes API, through the Edge Function calcular-rota, which keeps its own key)
+   * and Google's map under them (Map Tiles API, with this browser key). Off: the free servers (OpenStreetMap).
+   */
+  googleMaps: !IS_DEMO && Boolean(env.VITE_GOOGLE_MAPS_KEY)
 } as const;
 
 export const MP_PUBLIC_KEY = env.VITE_MP_PUBLIC_KEY ?? '';
 export const TURNSTILE_SITE_KEY = env.VITE_TURNSTILE_SITE_KEY ?? '';
 export const VAPID_PUBLIC_KEY = env.VITE_VAPID_PUBLIC_KEY ?? '';
+/** U76: Google Maps browser key — public by design, limited in Google Cloud to the Map Tiles API and the app's sites. */
+export const GOOGLE_MAPS_KEY = env.VITE_GOOGLE_MAPS_KEY ?? '';
 /**
  * Support WhatsApp (digits, with area code). L11: no default — the production build refuses to run without a
  * valid mobile (build/env.ts); the demo has none and the Help screen offers only the e-mail.

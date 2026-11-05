@@ -10,7 +10,18 @@ name: staging
 on:
   push:
     branches: [master, claude/front-novo-supabase]
-    paths: ["web/supabase/migrations/**", "web/supabase/legado/**", "web/supabase/functions/**", "web/supabase/email-templates/**", "web/scripts/staging/**", "web/scripts/configurar-auth.mjs", "web/src/**", "web/e2e/**", ".github/workflows/staging.yml"]
+    paths:
+      [
+        "web/supabase/migrations/**",
+        "web/supabase/legado/**",
+        "web/supabase/functions/**",
+        "web/supabase/email-templates/**",
+        "web/scripts/staging/**",
+        "web/scripts/configurar-auth.mjs",
+        "web/src/**",
+        "web/e2e/**",
+        ".github/workflows/staging.yml",
+      ]
   workflow_dispatch:
     inputs:
       aplicar:
@@ -84,18 +95,24 @@ jobs:
           node-version: 22
       - name: Segredos das funções (APP_ORIGIN, captcha de teste)
         if: steps.cfg.outputs.ok == 'true'
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           # O E2E roda em http://localhost:4173; o site de teste (se houver) entra na mesma lista.
           origins="http://localhost:4173"
           # APP_ORIGIN é só o domínio (sem caminho): https://nivotechdev.github.io/Constru-o-Civil → https://nivotechdev.github.io
           site_origin=$(node -e 'console.log(new URL(process.argv[1]).origin)' "$SITE_URL")
           [ "$site_origin" != "http://localhost:4173" ] && origins="$site_origin,$origins"
-          npx --yes supabase@2.48.3 secrets set --project-ref "$STAGING_REF" \
+          # U76: a chave do Google (Routes API) só vai quando existe o segredo GOOGLE_MAPS_API_KEY no GitHub; sem ela a
+          # função calcular-rota responde 503 e o app usa as rotas gratuitas.
+          extra=()
+          [ -n "$GOOGLE_MAPS_API_KEY" ] && extra+=("GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY")
+          npx --yes supabase@2.48.3 secrets set --project-ref "$STAGING_REF" "${extra[@]}" \
             "APP_ORIGIN=$origins" \
             "TURNSTILE_SECRET=1x0000000000000000000000000000000AA" \
             "FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'bicoapp-6cc68' }}" \
             "RELEASE=staging-${GITHUB_SHA::12}"
-      - name: Publicar as 10 funções
+      - name: Publicar as 11 funções
         if: steps.cfg.outputs.ok == 'true'
         run: ./scripts/staging/publicar-funcoes.sh
         env:

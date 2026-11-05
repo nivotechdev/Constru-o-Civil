@@ -2527,3 +2527,75 @@ com o botão Cancelar; e a janela demorava uns 5 s para aparecer. **Agora**:
 O título da guia (`<title>` do `index.html`) trazia "Valorjob — bicos e diárias perto de você". Pedido do responsável:
 deixar somente "Valorjob". O app não troca o título por tela (não há `document.title` no código), então a guia mostra
 sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a frase completa.
+
+## U76 — Distância e tempo de carro como no Google Maps
+
+- **Problema** (relatado: "a maioria dos endereços com distância e tempo muito diferentes do Google Maps"). O que a
+  investigação achou, do maior erro para o menor:
+  1. **O ponto da casa ou da vaga estava errado antes de qualquer rota.** O nome da rua precisava ser idêntico no
+     Correios e no mapa: "Rua Padre Alberto **Luiz** Lamonato" (Correios) não casava com "Rua Padre Alberto Lamonato"
+     (OpenStreetMap), nem "Os 18 do Forte" com "Os Dezoito do Forte", nem "Mal." com "Marechal". Sem casar, o endereço
+     caía para o "ponto do CEP" da BrasilAPI — que, para muitos CEPs, é **o centro da cidade** (o mesmo ponto
+     `-29.16806, -51.17944` para CEPs diferentes de Caxias). No staging, uma casa do bairro Nossa Senhora da Saúde estava
+     gravada no centro, a quilômetros dali, marcada como "precisa pelo CEP".
+  2. **Ruas longas** (Sinimbu, Pinheiro Machado, Os 18 do Forte cruzam vários bairros): o mapa devolve um pedaço da rua
+     por bairro; o bairro do Correios ("Lourdes") raramente é escrito como o do mapa ("Nossa Senhora de Lourdes"), então
+     o pedaço escolhido era o primeiro da lista — às vezes do outro lado da cidade.
+  3. **O número da casa nunca entrava** no endereço do trabalhador (o formulário não tem campo de número); quem o
+     digitava junto com a rua ("Rua Sinimbu, 1234") recebia "Não achamos essa rua".
+  4. **As vagas de exemplo do staging** (BC-5071…5080) foram gravadas com coordenadas digitadas à mão e arredondadas
+     (`-29.15, -51.17`): erro de centenas de metros a mais de 1 km. Ver U77.
+  5. **O tempo** vinha do servidor público do OSRM, que calcula com a rua livre (sem semáforo, cruzamento nem trânsito):
+     sistematicamente menor que o do Google em cidade.
+- **O que foi feito** (sem mudar nada na tela):
+  - **Nomes de rua e bairro comparados como gente escreve** (`utils/addressText.ts`): abreviações por extenso ("R. Pe."
+    = "Rua Padre", "N. Sra." = "Nossa Senhora", "Mal.", "Dr.", "Jd."…), números por extenso ("Dezoito" = 18, "XV" = 15,
+    "Vinte e Cinco" = 25), nome do meio ou título esquecido, uma letra trocada em nome longo. Rua de outro nome continua
+    sendo outra rua (o último nome precisa bater). Bairro curto casa com o longo ("Lourdes" ⊂ "Nossa Senhora de Lourdes").
+  - **Número da casa digitado na rua** é aproveitado ("Rua Sinimbu, 1234", "nº 1234 ap 3"); a rua fica salva como foi
+    digitada. Rua cujo nome é número ("Rua 7", "Avenida 25 de Julho") continua sendo o nome.
+  - **Geocodificador refeito** (`remote/address.ts › geocodeOnline`): Nominatim com todos os pedaços da rua
+    (`dedupe=0`, até 40), e, quando o mapa escreve o nome de outro jeito, uma segunda busca pelo último nome; só entram
+    resultados da cidade (até 45 km do centro) e do estado; a casa com o número, quando o mapa tem; senão o pedaço da
+    rua no bairro (ou com o CEP), e, sem nenhum dos dois, o pedaço mais perto do centro do bairro (achado no próprio
+    mapa); de vários pedaços, o do meio (medoide). Ordem de reserva: Photon → ponto do CEP (só se não for o centro da
+    cidade) → **centro do bairro** (`precision: 'bairro'`, antes nunca usado) → centro da cidade.
+  - **CEP por trecho**: com o número, o CEP escolhido é o do trecho que tem aquele número ("até 799/800", "de 801/802
+    ao fim", "lado ímpar").
+  - **Ponto do CEP da BrasilAPI** só vale se estiver a mais de 2 km do centro da cidade (ou o CEP for do Centro).
+  - **Nominatim respeitado**: no máximo 1 pedido por segundo, em fila (`nominatimPolicy`), e cada resposta guardada na
+    sessão.
+  - **Rota gratuita melhor**: **Valhalla** (FOSSGIS, o mesmo do site do OpenStreetMap) primeiro — conta curvas,
+    cruzamentos e semáforos, então o tempo fica mais perto do Google —, depois o OSRM da FOSSGIS e o do projeto. Uma
+    rota pedida é guardada na sessão (a mesma tela aberta de novo não pergunta outra vez).
+  - **Origem só do endereço salvo**: a distância "da sua casa" sai só do endereço do perfil, nunca do ponto arredondado
+    a ~1 km do perfil público. Enquanto o endereço carrega, não aparece "cadastre o seu endereço" por engano
+    (`myAddressKnown`).
+  - **Endereços antigos corrigidos sozinhos**: na primeira vez que a pessoa abre um bico, o endereço dela é localizado de
+    novo com o geocodificador novo (`profiles.refineMyAddress`); se o ponto novo chega pelo menos tão longe e mudou, ele
+    é salvo — o texto continua igual. Uma vez por endereço e aparelho.
+  - **Tempo do Google em português**: "1 h 5 min" (antes "1 h 05 min").
+  - **Igual ao Google Maps, de verdade — pronto para ligar** (`FEATURES.googleMaps`): Edge Function nova
+    **`calcular-rota`** que lê no servidor o endereço da conta e o da vaga e pergunta à **Routes API do Google** com os
+    dois **endereços em texto** (o Google os põe no mapa exatamente como o Google Maps) e o **trânsito de agora**
+    (`TRAFFIC_AWARE_OPTIMAL`, o cálculo do app do Google Maps). Volta a distância, o tempo e o texto do próprio Google
+    ("3,3 km", "11 min"), o caminho e onde o Google pôs cada endereço (o alfinete e o ponto azul vão para lá). O app
+    manda só o id da vaga: ninguém pede rota de endereço alheio; 120 por hora por conta; 5 min guardada.
+  - **Mapa do Google junto** (Map Tiles API): os termos do Google proíbem mostrar a rota/distância dele sobre outro mapa,
+    então, com o Google ligado, o mapa da vaga passa a ser o do Google (mesmo Leaflet, mesmo alfinete, mesmos botões),
+    com a linha de copyright do Google; no tema escuro, o mapa escuro do próprio Google (sem filtro por cima).
+- **Por que assim**: o erro grande era o ponto, não a rota — nenhuma rota acerta saindo do lugar errado. Com os
+  pontos certos, a distância gratuita fica muito perto da do Google; o tempo, só o Google sabe com trânsito. Por isso as
+  duas camadas: a gratuita, melhor possível e já ligada; a do Google, idêntica ao Google Maps, esperando só a chave.
+- **Limites conhecidos (gratuito)**: o OpenStreetMap quase não tem número de casa em Caxias — sem o número no mapa, o
+  ponto é o do pedaço certo da rua (erro típico de dezenas a poucas centenas de metros); o tempo não tem trânsito.
+- **Ação do responsável — para ficar 100% igual ao Google Maps** (custo: Routes API "Pro" tem 5.000 rotas grátis por
+  mês; Map Tiles 2D, 100.000 quadradinhos grátis; com o piloto, deve ficar em zero — confirmar no painel do Google):
+  1. Google Cloud (pode ser o projeto `bicoapp-6cc68`, do Firebase): ativar o faturamento (cartão) e as APIs
+     **Routes API** e **Map Tiles API**.
+  2. Criar **duas chaves**: (a) de **servidor**, restrita só à Routes API → Supabase › Edge Functions › Secrets:
+     `GOOGLE_MAPS_API_KEY` (no staging: segredo `GOOGLE_MAPS_API_KEY` no GitHub, o workflow `staging` já a põe lá);
+     (b) de **navegador**, restrita à Map Tiles API e aos sites do app (referenciadores HTTP) → build:
+     `VITE_GOOGLE_MAPS_KEY` (no site de teste: variável `GOOGLE_MAPS_BROWSER_KEY` do repositório).
+  3. Na produção, publicar `calcular-rota` (com "pode").
+  4. Conferir no painel do Google a exigência de logotipo do Map Tiles; o app mostra "Google · <copyright>" no canto.

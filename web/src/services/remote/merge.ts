@@ -96,8 +96,7 @@ export const putAddress =
   (accountId: string, row: TableRow<'addresses'> | HomeAddress | null): Recipe =>
   (db) => {
     const addresses = { ...db.addresses };
-    if (row) addresses[accountId] = 'account_id' in row ? addressFromRow(row) : row;
-    else delete addresses[accountId];
+    addresses[accountId] = row ? ('account_id' in row ? addressFromRow(row) : row) : null;
     return { ...db, addresses };
   };
 

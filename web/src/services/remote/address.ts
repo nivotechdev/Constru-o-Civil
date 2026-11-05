@@ -7,7 +7,14 @@
 // U51 (docs/DECISOES.md) explains the choice. Nominatim is called once per saved address (never while typing, as its
 // rules ask); every answer is cached for the session. Nothing here is sent anywhere else.
 import type { GeoPoint, PlacePrecision } from '../../types/models';
-import { fold, sameStreet } from '../../utils/addressText';
+import {
+  fold,
+  likelySameNeighborhood,
+  splitHouseNumber,
+  streetKind,
+  streetSimilarity,
+  streetWords
+} from '../../utils/addressText';
 import { distanceKm } from '../../utils/geo';
 import type { CepResult, GeocodeInput, ResolvedAddress, StreetOption, Suggestions } from '../address';
 import { serviceError } from '../errors';
@@ -51,6 +58,7 @@ interface PhotonFeature {
 interface NominatimPlace {
   lat?: string;
   lon?: string;
+  name?: string;
   category?: string;
   type?: string;
   addresstype?: string;
@@ -62,6 +70,8 @@ const maskCep = (d: string) => d.slice(0, 5) + '-' + d.slice(5);
 const OSM_CREDIT = 'Dados © OpenStreetMap';
 /** Farther than this from the city's centre is another city's street of the same name. */
 const MAX_FROM_CENTRE_KM = 45;
+/** U76: a CEP point closer than this to the city's centre may be only the city's point (see lookupCepOnline). */
+const CITY_POINT_KM = 2;
 
 function point(lat: unknown, lon: unknown): GeoPoint | null {
   const la = Number(lat);
@@ -134,8 +144,16 @@ export async function lookupCepOnline(digits: string): Promise<CepResult | null>
     if (body?.city && body.state) {
       const city = `${body.city}, ${body.state}`;
       const coords = body.location?.coordinates;
-      const own = point(coords?.latitude, coords?.longitude);
-      const p = own ?? (await cityCentre(city));
+      const centre = await cityCentre(city);
+      const given = point(coords?.latitude, coords?.longitude);
+      // U76: for many CEPs BrasilAPI gives the city's own point (the same for all of them) — taken for the CEP's, it
+      // put a house kilometres away. A point that close to the centre counts only for a CEP of the centre.
+      const own =
+        given &&
+        (!centre || distanceKm(given, centre) > CITY_POINT_KM || /^centro\b/.test(fold(body.neighborhood ?? '')))
+          ? given
+          : null;
+      const p = own ?? centre;
       if (p)
         return {
           cep: maskCep(digits),
@@ -306,83 +324,250 @@ export async function neighborhoodsOnline(
 }
 
 /** The parts of a Nominatim address that name the neighbourhood. */
-const NEIGHBORHOOD_KEYS = ['suburb', 'neighbourhood', 'quarter', 'city_district', 'residential', 'borough'];
+const NEIGHBORHOOD_KEYS = ['suburb', 'neighbourhood', 'quarter', 'city_district', 'residential', 'borough', 'hamlet'];
 
-interface Candidate {
-  p: GeoPoint;
-  neighborhoods: string[];
-  postcode: string;
-  house: boolean;
-}
+/**
+ * U76: Nominatim's rules ask for at most one request per second from each app. Saving an address may need two or
+ * three (the street, a shorter form of its name, the neighbourhood), so they go out spaced, in order.
+ */
+export const nominatimPolicy = { gapMs: 1100 };
+let nominatimTurn: Promise<unknown> = Promise.resolve();
+let nominatimLast = 0;
 
-/** Of the map's answers near the city: the one in the neighbourhood, with the CEP, at the house number. */
-function bestPlace(places: Candidate[], input: GeocodeInput): Candidate | null {
-  const near = places.filter((x) => distanceKm(x.p, input.cityCentre) <= MAX_FROM_CENTRE_KM);
-  if (!near.length) return null;
-  const want = fold(input.neighborhood);
-  const cep = input.cep.replace(/\D/g, '');
-  const score = (x: Candidate) =>
-    (x.neighborhoods.some((n) => fold(n) === want || fold(n).startsWith(want + ' ') || want.startsWith(fold(n) + ' '))
-      ? 4
-      : 0) +
-    (x.postcode && x.postcode === cep ? 2 : 0) +
-    (input.number && x.house ? 1 : 0);
-  return near.reduce((a, b) => (score(b) > score(a) ? b : a));
-}
-
-/** Where the address is: the house (with a number the map knows), its street, the CEP or the city's centre. */
-export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPoint; precision: PlacePrecision }> {
-  const streetLine = input.number ? `${input.number} ${input.street}` : input.street;
-  const nominatim =
-    'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=10&countrycodes=br' +
-    `&street=${encodeURIComponent(streetLine)}&city=${encodeURIComponent(input.city)}`;
-  try {
-    const list = await cached(nominatim, async () => {
-      const { status, body } = await getJson<NominatimPlace[]>(nominatim);
+function nominatim<T>(params: string): Promise<T[]> {
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=br&accept-language=pt-BR&${params}`;
+  return cached(url, () => {
+    const run = nominatimTurn.then(async () => {
+      const wait = nominatimLast + nominatimPolicy.gapMs - Date.now();
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      nominatimLast = Date.now();
+      const { status, body } = await getJson<T[]>(url);
       if (status !== 200) throw new Error('nominatim ' + status);
-      return body ?? [];
+      return Array.isArray(body) ? body : [];
     });
-    const best = bestPlace(
-      list
-        .filter((x) => !x.address?.['ISO3166-2-lvl4'] || x.address['ISO3166-2-lvl4'] === `BR-${input.uf}`)
-        .filter((x) => !x.address?.road || sameStreet(x.address.road, input.street))
-        .map((x) => ({
-          p: point(x.lat, x.lon) as GeoPoint,
-          neighborhoods: NEIGHBORHOOD_KEYS.map((k) => x.address?.[k] ?? '').filter(Boolean),
-          postcode: (x.address?.postcode ?? '').replace(/\D/g, ''),
-          house: Boolean(x.address?.house_number) || x.addresstype === 'building' || x.category === 'building'
-        }))
-        .filter((x) => x.p),
-      input
+    nominatimTurn = run.catch(() => undefined);
+    return run;
+  });
+}
+
+/** A place the map gave for the address: a stretch of the street, or a house on it. */
+interface Place {
+  p: GeoPoint;
+  /** The street's name as the map writes it. */
+  street: string;
+  neighborhoods: string[];
+  /** Digits only; '' when the map has none. */
+  postcode: string;
+  /** The house number, for a house; '' for the street itself. */
+  house: string;
+}
+
+const cepDigits = (cep: string) => cep.replace(/\D/g, '');
+
+function fromNominatim(list: NominatimPlace[], uf: string): Place[] {
+  return list
+    .filter((x) => !x.address?.['ISO3166-2-lvl4'] || x.address['ISO3166-2-lvl4'] === `BR-${uf}`)
+    .map((x) => ({
+      p: point(x.lat, x.lon) as GeoPoint,
+      street: x.address?.road ?? x.address?.pedestrian ?? x.name ?? '',
+      neighborhoods: NEIGHBORHOOD_KEYS.map((k) => x.address?.[k] ?? '').filter(Boolean),
+      postcode: cepDigits(x.address?.postcode ?? ''),
+      house: x.address?.house_number ?? ''
+    }))
+    .filter((x) => x.p && x.street);
+}
+
+function fromPhoton(features: PhotonFeature[]): Place[] {
+  return features
+    .map((f) => ({
+      p: point(f.geometry?.coordinates?.[1], f.geometry?.coordinates?.[0]) as GeoPoint,
+      street: (f.properties?.housenumber ? f.properties.street : f.properties?.name) ?? '',
+      neighborhoods: [f.properties?.district ?? '', f.properties?.locality ?? ''].filter(Boolean),
+      postcode: cepDigits(f.properties?.postcode ?? ''),
+      house: f.properties?.housenumber ?? ''
+    }))
+    .filter((x) => x.p && x.street);
+}
+
+/** The place in the middle of a group (the one closest to all the others) — a point on the street, not off it. */
+function medoid(places: Place[]): Place {
+  let best = places[0];
+  let bestSum = Infinity;
+  for (const a of places) {
+    let sum = 0;
+    for (const b of places) sum += distanceKm(a.p, b.p);
+    if (sum < bestSum) {
+      bestSum = sum;
+      best = a;
+    }
+  }
+  return best;
+}
+
+/** Same house number, as written ("1200", "1200 A" = "1200A"). */
+const sameHouse = (a: string, b: string) => fold(a).replace(/\s+/g, '') === fold(b).replace(/\s+/g, '');
+
+/**
+ * Of the map's answers, where the address is. Only the answers in the city (near its centre) and of this street (by
+ * name, the way the map writes it — see streetSimilarity), the best-named first and the same kind ("Rua" or
+ * "Avenida") when both exist. With a number the map knows: the house. Otherwise the stretch of the street in the
+ * neighbourhood typed (a long street crosses many), or with the CEP typed, or the one closest to the neighbourhood's
+ * centre; of several, the middle one.
+ */
+function choosePlace(
+  places: Place[],
+  input: GeocodeInput,
+  hood: GeoPoint | null
+): { point: GeoPoint; precision: PlacePrecision } | null {
+  const scored = places
+    .filter((x) => distanceKm(x.p, input.cityCentre) <= MAX_FROM_CENTRE_KM)
+    .map((x) => ({ x, sim: streetSimilarity(x.street, input.street) }))
+    .filter((c) => c.sim >= 0.8);
+  if (!scored.length) return null;
+  const top = Math.max(...scored.map((c) => c.sim));
+  let same = scored.filter((c) => c.sim >= top - 0.05).map((c) => c.x);
+  const kind = streetKind(input.street);
+  if (kind && same.some((x) => streetKind(x.street) === kind)) {
+    const sameKind = same.filter((x) => streetKind(x.street) === kind || !streetKind(x.street));
+    if (sameKind.length) same = sameKind;
+  }
+  const inHood = (x: Place) => x.neighborhoods.some((n) => likelySameNeighborhood(n, input.neighborhood));
+  const cep = cepDigits(input.cep);
+  const byCep = (x: Place) => Boolean(cep) && x.postcode === cep;
+
+  if (input.number) {
+    const houses = same.filter((x) => x.house && sameHouse(x.house, input.number));
+    if (houses.length) {
+      const pick = houses.find(inHood) ?? houses.find(byCep) ?? houses[0];
+      return { point: pick.p, precision: 'numero' };
+    }
+  }
+  // Houses with another number are not where this address is.
+  const roads = same.filter((x) => !x.house);
+  const pool = roads.length ? roads : same;
+  const both = pool.filter((x) => inHood(x) && byCep(x));
+  const hoodOnes = pool.filter(inHood);
+  const cepOnes = pool.filter(byCep);
+  let chosen = both.length ? both : hoodOnes.length ? hoodOnes : cepOnes;
+  if (!chosen.length && hood) {
+    const nearest = pool.reduce((a, b) => (distanceKm(b.p, hood) < distanceKm(a.p, hood) ? b : a));
+    if (distanceKm(nearest.p, hood) <= 3) chosen = [nearest];
+  }
+  if (!chosen.length) chosen = pool;
+  return { point: medoid(chosen).p, precision: 'rua' };
+}
+
+/** Where the neighbourhood is (its centre on the map), or null when the map doesn't know it in this city. */
+async function neighborhoodCentre(input: GeocodeInput): Promise<GeoPoint | null> {
+  if (fold(input.neighborhood).length < 2) return null;
+  const pick = (places: { p: GeoPoint | null; name: string }[]) =>
+    places.find(
+      (x) =>
+        x.p !== null &&
+        distanceKm(x.p, input.cityCentre) <= MAX_FROM_CENTRE_KM &&
+        likelySameNeighborhood(x.name, input.neighborhood)
+    )?.p ?? null;
+  try {
+    const list = await nominatim<NominatimPlace>(
+      `limit=10&q=${encodeURIComponent(`${input.neighborhood}, ${input.city}, ${input.uf}`)}`
     );
-    if (best) return { point: best.p, precision: input.number && best.house ? 'numero' : 'rua' };
+    const found = pick(
+      list
+        .filter(
+          (x) =>
+            (x.category === 'place' || x.category === 'boundary') &&
+            (!x.address?.['ISO3166-2-lvl4'] || x.address['ISO3166-2-lvl4'] === `BR-${input.uf}`)
+        )
+        .map((x) => ({ p: point(x.lat, x.lon), name: x.name ?? '' }))
+    );
+    if (found) return found;
+  } catch {
+    // Nominatim out: Photon
+  }
+  try {
+    const url = photonUrl(`${input.neighborhood} ${input.city}`, input.cityCentre, ['district', 'locality'], 10);
+    const { body } = await cached(url, () => getJson<{ features?: PhotonFeature[] }>(url));
+    return pick(
+      inCity(body?.features, input.city, input.cityCentre)
+        .filter((f) => f.properties?.osm_key === 'place')
+        .map((f) => ({
+          p: point(f.geometry?.coordinates?.[1], f.geometry?.coordinates?.[0]),
+          name: f.properties?.name ?? ''
+        }))
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * U76: where the address is — the house (a number the map knows), its stretch of the street, the CEP's own point,
+ * the neighbourhood's centre or the city's centre, in that order. The street is looked up by its name as typed and,
+ * when the map writes it differently ("Rua Pe. Alberto Lamonato" for the Correios' "Rua Padre Alberto Luiz
+ * Lamonato"), by its last word, then matched by name (streetSimilarity). docs/DECISOES.md › U76.
+ */
+export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPoint; precision: PlacePrecision }> {
+  const typed = splitHouseNumber(input.street);
+  const q: GeocodeInput = { ...input, street: typed.street, number: input.number.trim() || typed.number };
+  const city = encodeURIComponent(q.city);
+  let hood: GeoPoint | null | undefined;
+  const hoodCentre = async () => (hood === undefined ? (hood = await neighborhoodCentre(q)) : hood);
+  const decide = async (places: Place[]) => {
+    if (!places.length) return null;
+    const first = choosePlace(places, q, null);
+    // Only a street stretch chosen without the neighbourhood's help asks where the neighbourhood is.
+    if (!first || first.precision === 'numero') return first;
+    const helped = places.some(
+      (x) =>
+        streetSimilarity(x.street, q.street) >= 0.8 &&
+        (x.neighborhoods.some((n) => likelySameNeighborhood(n, q.neighborhood)) ||
+          (cepDigits(q.cep) && x.postcode === cepDigits(q.cep)))
+    );
+    return helped ? first : choosePlace(places, q, await hoodCentre());
+  };
+
+  let mapReached = false;
+  try {
+    const line = q.number ? `${q.number} ${q.street}` : q.street;
+    let found = await decide(
+      fromNominatim(
+        await nominatim<NominatimPlace>(
+          `limit=40&dedupe=0&layer=address&street=${encodeURIComponent(line)}&city=${city}`
+        ),
+        q.uf
+      )
+    );
+    mapReached = true;
+    if (!found) {
+      // The map may write the name another way: ask by its last word and match the names here.
+      const words = streetWords(q.street);
+      const last = words[words.length - 1];
+      if (last && words.length > 1 && last.length >= 3)
+        found = await decide(
+          fromNominatim(
+            await nominatim<NominatimPlace>(
+              `limit=40&dedupe=0&layer=address&street=${encodeURIComponent(last)}&city=${city}`
+            ),
+            q.uf
+          )
+        );
+    }
+    if (found) return found;
   } catch {
     // Nominatim out or slow: Photon has the same map.
   }
   try {
-    const q = `${input.street}${input.number ? ' ' + input.number : ''}, ${input.neighborhood}, ${input.city}`;
-    const { body } = await getJson<{ features?: PhotonFeature[] }>(
-      photonUrl(q, input.cityCentre, ['house', 'street'], 10)
-    );
-    const best = bestPlace(
-      inCity(body?.features, input.city, input.cityCentre)
-        .filter((f) =>
-          f.properties?.housenumber
-            ? sameStreet(f.properties.street ?? '', input.street)
-            : sameStreet(f.properties?.name ?? '', input.street)
-        )
-        .map((f) => ({
-          p: point(f.geometry?.coordinates?.[1], f.geometry?.coordinates?.[0]) as GeoPoint,
-          neighborhoods: [f.properties?.district ?? '', f.properties?.locality ?? ''].filter(Boolean),
-          postcode: (f.properties?.postcode ?? '').replace(/\D/g, ''),
-          house: Boolean(f.properties?.housenumber)
-        })),
-      input
-    );
-    if (best) return { point: best.p, precision: input.number && best.house ? 'numero' : 'rua' };
+    const text = `${q.street}${q.number ? ' ' + q.number : ''}, ${q.neighborhood}, ${q.city}`;
+    const url = photonUrl(text, q.cityCentre, ['house', 'street'], 15);
+    const { body } = await cached(url, () => getJson<{ features?: PhotonFeature[] }>(url));
+    mapReached = true;
+    const found = await decide(fromPhoton(inCity(body?.features, q.city, q.cityCentre)));
+    if (found) return found;
   } catch {
     // the map is out: the CEP's point
   }
   if (input.cepPoint) return { point: input.cepPoint, precision: 'cep' };
+  const centre = mapReached ? await hoodCentre() : null;
+  if (centre) return { point: centre, precision: 'bairro' };
   return { point: input.cityCentre, precision: 'cidade' };
 }

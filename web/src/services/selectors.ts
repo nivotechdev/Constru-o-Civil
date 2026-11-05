@@ -3,6 +3,7 @@
 import { CURRENT_COMPANY_ID, CURRENT_WORKER_ID } from '../data/seed';
 import type { Application, Company, Database, GeoPoint, HomeAddress, Job, Worker, WorkerPost } from '../types/models';
 import { getSession } from './store';
+import { IS_DEMO } from './mode';
 import { occupiesSlot } from './applicationMachine';
 import { isExpired } from '../utils/jobInfo';
 import { distanceKm } from '../utils/geo';
@@ -24,6 +25,15 @@ export const currentWorker = (db: Database): Worker => db.workers[currentWorkerI
 export function myAddress(db: Database): HomeAddress | null {
   const id = getSession()?.accountId;
   return (id && db.addresses?.[id]) || null;
+}
+
+/**
+ * U76: whether the session's own address is known — loaded (it may be none) — or still on its way. The demo has its
+ * addresses from the start.
+ */
+export function myAddressKnown(db: Database): boolean {
+  const id = getSession()?.accountId;
+  return IS_DEMO || Boolean(id && db.addresses && id in db.addresses);
 }
 
 /**
