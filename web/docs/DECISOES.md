@@ -2599,3 +2599,17 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
      `VITE_GOOGLE_MAPS_KEY` (no site de teste: variável `GOOGLE_MAPS_BROWSER_KEY` do repositório).
   3. Na produção, publicar `calcular-rota` (com "pode").
   4. Conferir no painel do Google a exigência de logotipo do Map Tiles; o app mostra "Google · <copyright>" no canto.
+
+## U77 — Vagas e endereços do staging no ponto certo
+
+- **Problema**: as vagas de exemplo do staging (BC-5071…5080) foram gravadas com coordenadas digitadas à mão e
+  arredondadas (`-29.15, -51.17`, `-29.172, -51.188`…), que não são o lugar do endereço escrito na vaga — erro de
+  centenas de metros a mais de 1 km, que nenhuma rota corrige. Endereços de conta antigos tinham o "ponto do CEP" que é
+  o centro da cidade (U76).
+- **O que foi feito**: `scripts/staging/relocalizar.ts` relocaliza cada vaga e cada endereço do staging com o mesmo
+  geocodificador do app (`resolveAddress`, U76) e grava só o ponto (e, numa vaga de exemplo cujo CEP não é daquela rua,
+  o CEP certo). Roda pelo workflow manual **`staging-localizacao`** (com "ensaio" para ver antes); a rede da sessão da IA
+  não alcança os serviços de mapa. O relatório fica no resumo da execução, sem dado pessoal (das contas, só o começo do
+  id). Recusa a produção.
+- **Produção**: hoje não tem vaga; os endereços das 4 contas antigas se corrigem sozinhos quando abrirem um bico
+  (`refineMyAddress`, U76).

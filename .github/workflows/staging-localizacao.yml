@@ -1,0 +1,48 @@
+# U77 — Põe as vagas e os endereços do staging no ponto certo com o geocodificador do U76 (o mesmo do app).
+# Só manual (Actions › staging-localizacao › Run workflow): não roda a cada envio ao master. "ensaio" só mostra o que
+# mudaria. O relatório fica no resumo da execução (dos endereços de conta, só o começo do id).
+name: staging-localizacao
+
+on:
+  workflow_dispatch:
+    inputs:
+      ensaio:
+        description: "Só mostrar o que mudaria, sem gravar"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  relocalizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      STAGING_REF: setyxomsbfrkneqqfoam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Chaves do staging (lidas na hora, nunca gravadas)
+        run: |
+          keys="$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$STAGING_REF/api-keys?reveal=true")"
+          pick() { echo "$keys" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).find(k=>k.name===process.argv[1]).api_key))' "$1"; }
+          svc="$(pick service_role)"; anon="$(pick anon)"
+          echo "::add-mask::$svc"
+          echo "SERVICE_ROLE_KEY=$svc" >> "$GITHUB_ENV"
+          echo "VITE_SUPABASE_ANON_KEY=$anon" >> "$GITHUB_ENV"
+          echo "SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
+          echo "VITE_SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
+      - name: Relocalizar vagas e endereços
+        env:
+          ENSAIO: ${{ inputs.ensaio && '1' || '' }}
+        run: npx vite-node scripts/staging/relocalizar.ts
