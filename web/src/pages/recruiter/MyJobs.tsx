@@ -50,6 +50,11 @@ export function jobsForView(db: Database, jobs: Job[], view: MyJobsView): Job[] 
     : jobs.filter((j) => inTab(db, j, view));
 }
 
+/** AUD-111: the count only covers the pages loaded so far, so it reads "30+" while there is more to load. */
+export function countText(n: number, more: boolean): string {
+  return more ? `${n}+` : String(n);
+}
+
 export default function MyJobs({ params }: ScreenProps) {
   const db = useDb();
   const query = useQuery('history', loadHistory);
@@ -92,7 +97,7 @@ export default function MyJobs({ params }: ScreenProps) {
                 )}
                 onClick={() => setTab(t.id)}
               >
-                {`${t.label} · ${counts[t.id]}`}
+                {`${t.label} · ${countText(counts[t.id], paging.hasMore && t.id === 'todas')}`}
               </button>
             ))}
           </div>
