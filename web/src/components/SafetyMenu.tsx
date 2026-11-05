@@ -73,10 +73,12 @@ interface SafetyMenuProps {
   block?: { id: string; name: string; onBlocked?: () => void };
   /** Over a photo (profile cover): the white round button. */
   solid?: boolean;
+  /** Extra classes for the flag button (U78: floating over the job's photo on phones). */
+  buttonClassName?: string;
 }
 
 /** The flag in a header: report, and block when there is someone to block. */
-export function SafetyMenu({ target, targetId, what, block, solid = false }: SafetyMenuProps) {
+export function SafetyMenu({ target, targetId, what, block, solid = false, buttonClassName }: SafetyMenuProps) {
   const [menu, setMenu] = useState<'menu' | 'denunciar' | 'bloquear' | null>(null);
   const blockIt = useAction(
     () => blockAccount(block?.id ?? ''),
@@ -92,6 +94,7 @@ export function SafetyMenu({ target, targetId, what, block, solid = false }: Saf
         icon="flag"
         label="Denunciar ou bloquear"
         variant={solid ? 'solid' : undefined}
+        className={buttonClassName}
         onClick={() => setMenu('menu')}
       />
       <Sheet open={menu === 'menu'} title="O que você quer fazer?" onClose={() => setMenu(null)}>

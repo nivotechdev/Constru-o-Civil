@@ -2613,3 +2613,30 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
   id). Recusa a produção.
 - **Produção**: hoje não tem vaga; os endereços das 4 contas antigas se corrigem sozinhos quando abrirem um bico
   (`refineMyAddress`, U76).
+
+## U78 — Tela do bico refeita (bonita, limpa, mesma simplicidade)
+
+- **Pedido do responsável**: a tela de detalhe do bico estava "simples e feia"; manter a simplicidade, mas com cara
+  profissional, limpa e minimalista.
+- **O que mudou** (`pages/worker/JobDetail.tsx`), sem mudar fluxo nem texto:
+  - **Foto de ponta a ponta no celular**, por baixo do cabeçalho, com os botões (voltar, compartilhar, denunciar) em
+    círculos brancos flutuando sobre ela e uma sombra leve no topo para lerem bem em qualquer foto. Ao rolar além da
+    foto, o cabeçalho fica **sólido e fosco** e mostra o título do bico. No computador, cabeçalho e foto como antes
+    (foto com cantos arredondados).
+  - **Conteúdo numa folha arredondada** que sobe um pouco sobre a foto; contador e pontinhos da foto sobem junto
+    (`PhotoCarousel inset`).
+  - **Título** maior, com o bairro e a cidade ao lado de um alfinete; **etiquetas** discretas quando a vaga é urgente
+    (vagas antigas) ou precisa de mais de uma pessoa ("Precisa de 4 pessoas").
+  - **Empresa num cartão**: logo, nome (quebra linha em vez de cortar), selo de verificada ao lado do nome quando é
+    verificada, nota; no celular a seta num círculo (o "Ver perfil" continua para o leitor de tela; aparece escrito a
+    partir de 640 px).
+  - **Fatos num cartão só** (valor, quando, tipo do local, pagamento), cada um com o ícone num quadradinho azul-claro e
+    linhas finas entre eles.
+  - "Você não paga nada para se candidatar" com um escudo verde, também no celular (antes só no computador).
+  - **Sobre o bico / O que levar / Onde vai ser** separados por linhas finas; os itens de "O que levar" com o check
+    num círculo; no mapa, o endereço com alfinete e a distância numa faixa embaixo do mapa, com o ícone do carro (os
+    mesmos textos do U57/U76).
+  - **Barra de baixo fosca** (vidro), respeitando a área do gesto do iPhone; preço em destaque e "Quero esse bico" com
+    cantos mais arredondados. No computador, o cartão do lado ganhou a data e o lugar entre o preço e o botão.
+- **Acessibilidade**: um só título principal (o do bico); o título do cabeçalho rolado é só visual; axe WCAG 2.1 AA
+  sem problemas nos dois temas.

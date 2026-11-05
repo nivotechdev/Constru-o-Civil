@@ -18,9 +18,19 @@ interface IconButtonProps {
   size?: keyof typeof SIZES;
   onClick?: MouseEventHandler<HTMLButtonElement>;
   badge?: number | string | null;
+  /** Extra classes (U78: the floating look over a photo, only on phones). */
+  className?: string;
 }
 
-export function IconButton({ icon, label, variant = 'ghost', size = 'md', onClick, badge }: IconButtonProps) {
+export function IconButton({
+  icon,
+  label,
+  variant = 'ghost',
+  size = 'md',
+  onClick,
+  badge,
+  className
+}: IconButtonProps) {
   return (
     <button
       type="button"
@@ -30,7 +40,8 @@ export function IconButton({ icon, label, variant = 'ghost', size = 'md', onClic
         'relative tap-target inline-flex items-center justify-center rounded-full shrink-0 transition-colors duration-150',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
         VARIANTS[variant] || VARIANTS.ghost,
-        SIZES[size] || SIZES.md
+        SIZES[size] || SIZES.md,
+        className
       )}
       onClick={onClick}
     >

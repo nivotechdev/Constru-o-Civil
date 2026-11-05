@@ -92,7 +92,10 @@ export function JobMap({ jobId, job, place, home, askHome = false }: Props) {
   const tiles = google ? { key: GOOGLE_MAPS_KEY, session: google.session } : null;
 
   const distanceLine = origin ? (
-    <div className="text-concrete-900" aria-live="polite">
+    <div className="flex items-center gap-3 text-concrete-900" aria-live="polite">
+      <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 text-brand-600">
+        <Icon name="car" size={20} />
+      </span>
       {route ? (
         <span>
           A <strong className="font-bold">{routeDistanceText(route)}</strong> da sua casa
@@ -135,16 +138,23 @@ export function JobMap({ jobId, job, place, home, askHome = false }: Props) {
   );
 
   return (
-    <div className="flex flex-col gap-3">
-      <span className="text-concrete-700">{place}</span>
-      <div
-        ref={box}
-        className="relative w-full h-72 rounded-2xl overflow-hidden border border-concrete-200 bg-concrete-100"
-        onClick={() => visible && setOpen(true)}
-      >
-        {visible && google !== undefined ? canvas('static') : <MapLoading />}
+    <div className="flex flex-col gap-3.5">
+      <span className="flex items-start gap-2 text-concrete-700">
+        <span className="mt-0.5 shrink-0 inline-flex">
+          <Icon name="map-pin" size={18} color="var(--text-subtle)" />
+        </span>
+        <span className="min-w-0">{place}</span>
+      </span>
+      <div className="flex flex-col rounded-2xl overflow-hidden border border-concrete-200 bg-concrete-0">
+        <div
+          ref={box}
+          className="relative w-full h-64 sm:h-72 bg-concrete-100"
+          onClick={() => visible && setOpen(true)}
+        >
+          {visible && google !== undefined ? canvas('static') : <MapLoading />}
+        </div>
+        {distanceLine ? <div className="px-4 py-3.5 border-t border-concrete-200">{distanceLine}</div> : null}
       </div>
-      {distanceLine}
       {open ? (
         <div
           ref={modal}
