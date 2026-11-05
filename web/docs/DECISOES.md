@@ -2614,6 +2614,10 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
   o CEP certo). Roda pelo workflow manual **`staging-localizacao`** (com "ensaio" para ver antes), que lê e grava pelo banco (`STAGING_DB_URL`, como as migrations); a rede da sessão da IA
   não alcança os serviços de mapa. O relatório fica no resumo da execução, sem dado pessoal (das contas, só o começo do
   id). Recusa a produção.
+- **Aplicado no staging em 05/11/2026** (depois de três ensaios — o segundo pegou o caso de Criúva, corrigido no U76):
+  10 vagas de exemplo foram de 0,1 a 3,6 km para a rua certa (BC-5080: 3.562 m; BC-5076: 2.983 m; BC-5075: 2.715 m),
+  e o endereço que estava no centro da cidade foi para o centro do bairro (4,5 km). Os pontos de antes estão no
+  relatório das execuções do workflow.
 - **Produção**: hoje não tem vaga; os endereços das 4 contas antigas se corrigem sozinhos quando abrirem um bico
   (`refineMyAddress`, U76).
 
