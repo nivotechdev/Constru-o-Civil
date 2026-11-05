@@ -103,7 +103,7 @@ segredos da tabela, cada função recusa o pedido (401 ou 503) — nada acontece
 | `codigo-whatsapp`      | código de confirmação do WhatsApp (Twilio Verify, Y25)     | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `TWILIO_VERIFY_CHANNEL` (`whatsapp`/`sms`) |         |
 | `verificar-cnpj`       | consulta do CNPJ na Receita (BrasilAPI, L10)               | `BRASILAPI_URL` (opcional)                                                                                 |         |
 | `criar-cobranca`       | PIX e cartão do impulsionamento (Mercado Pago, Z02)        | `MP_ACCESS_TOKEN`                                                                                          |         |
-| `calcular-rota`        | distância e tempo de carro pelo Google (Routes API, U76)   | `GOOGLE_MAPS_API_KEY` (sem ela responde 503 e o app usa as rotas gratuitas)                                |         |
+| `calcular-rota`        | distância a pé e tempo de carro pelo Google (U76/U80)      | `GOOGLE_MAPS_API_KEY` (sem ela responde 503 e o app usa as rotas gratuitas)                                |         |
 | `webhook-pagamento`    | confirmação do Mercado Pago                                | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`                                                                     | sim     |
 | `enviar-push`          | notificação no celular a cada aviso novo (X03)             | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_WEBHOOK_SECRET`                            | sim     |
 | `limpar-arquivos`      | apagar arquivos órfãos e fotos de identidade antigas (X09) | `CLEANUP_SECRET`                                                                                           | sim     |

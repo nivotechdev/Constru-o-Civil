@@ -1,16 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   decodePolyline,
-  drivingRoute,
+  driveText,
   forgetRoutes,
   formatDriveTime,
   formatRoadKm,
-  routeDistanceText,
-  routeTimeText
+  knownWalkDistance,
+  routeToJob,
+  walkDistance,
+  walkText
 } from '../services/route';
 import {
   decodificarLinha,
+  lerMatriz,
   lerRota,
+  pedidoDeMatriz,
   pedidoDeRota,
   porEndereco,
   textoDoEndereco
@@ -19,26 +23,15 @@ import {
 beforeEach(() => forgetRoutes());
 afterEach(() => vi.unstubAllGlobals());
 
-const valhallaOk = (km: number, s: number, shape = '') => ({
+const home = { lat: -29.1681, lon: -51.1794 };
+const job = (id: string, lat: number, lon: number) => ({ id, lat, lon });
+const valhallaRoute = (km: number, s: number, shape = '') => ({
   trip: { status: 0, summary: { length: km, time: s }, legs: [{ shape }] }
 });
-const osrmOk = (m: number, s: number) => ({
-  code: 'Ok',
-  routes: [
-    {
-      distance: m,
-      duration: s,
-      geometry: {
-        coordinates: [
-          [-51.1, -29.1],
-          [-51.2, -29.2]
-        ]
-      }
-    }
-  ]
-});
+/** The JSON a free-server URL carries in ?json=. */
+const reqOf = (url: string) => JSON.parse(decodeURIComponent(url.split('?json=')[1]));
 
-describe('U54/U76: road distance and time, as Google Maps writes them', () => {
+describe('U54/U76: distance and time, as Google Maps writes them', () => {
   it('formats the distance', () => {
     expect(formatRoadKm(640)).toBe('640 m');
     expect(formatRoadKm(3240)).toBe('3,2 km');
@@ -53,86 +46,169 @@ describe('U54/U76: road distance and time, as Google Maps writes them', () => {
     expect(formatDriveTime(7200)).toBe('2 h');
   });
   it("Google's own words win when Google answered", () => {
-    const base = { meters: 3240, seconds: 560, path: [], provider: 'google' as const };
-    expect(routeDistanceText({ ...base, distanceText: '3,3 km' })).toBe('3,3 km');
-    expect(routeTimeText({ ...base, durationText: '11 min' })).toBe('11 min');
-    expect(routeTimeText({ ...base, provider: 'valhalla' })).toBe('9 min');
+    expect(walkText({ meters: 1240, provider: 'google', text: '1,3 km' })).toBe('1,3 km');
+    expect(walkText({ meters: 1240, provider: 'valhalla' })).toBe('1,2 km');
+    const route = { walk: { meters: 1, provider: 'google' as const }, path: [], driveSeconds: 560 };
+    expect(driveText({ ...route, driveText: '11 min' })).toBe('11 min');
+    expect(driveText(route)).toBe('9 min');
+    expect(driveText({ ...route, driveSeconds: null })).toBeNull();
   });
   it('decodes an encoded line (6 decimals: Valhalla; 5: Google)', () => {
     // The example of Google's documentation: (38.5, -120.2), (40.7, -120.95), (43.252, -126.453).
-    expect(decodePolyline('_p~iF~ps|U_ulLnnqC_mqNvxq`@', 5)).toEqual([
+    const line = [
       [38.5, -120.2],
       [40.7, -120.95],
       [43.252, -126.453]
-    ]);
-    expect(decodificarLinha('_p~iF~ps|U_ulLnnqC_mqNvxq`@')).toEqual([
-      [38.5, -120.2],
-      [40.7, -120.95],
-      [43.252, -126.453]
-    ]);
+    ];
+    expect(decodePolyline('_p~iF~ps|U_ulLnnqC_mqNvxq`@', 5)).toEqual(line);
+    expect(decodificarLinha('_p~iF~ps|U_ulLnnqC_mqNvxq`@')).toEqual(line);
   });
 });
 
-describe('U76: the free route — Valhalla first, then OSRM', () => {
-  it('reads Valhalla (km → m, its line) and sends only the two points', async () => {
+describe('U80: the distance ON FOOT — one number for the card and the job page', () => {
+  it("the mural's cards are asked together, on foot, in one request, and kept", async () => {
     const urls: string[] = [];
     vi.stubGlobal('fetch', async (u: string) => {
       urls.push(String(u));
-      return new Response(JSON.stringify(valhallaOk(3.24, 612, '_p~iF~ps|U')));
+      return new Response(
+        JSON.stringify({
+          sources_to_targets: [
+            [
+              { distance: 1.24, time: 900, to_index: 0 },
+              { distance: 0.65, time: 470, to_index: 1 },
+              { distance: null, time: null, to_index: 2 }
+            ]
+          ]
+        })
+      );
     });
-    const r = await drivingRoute({ lat: -29.1, lon: -51.1 }, { lat: -29.2, lon: -51.2 });
-    expect(r).toMatchObject({ meters: 3240, seconds: 612, provider: 'valhalla' });
-    expect(r?.path.length).toBe(1);
-    expect(urls[0]).toMatch(/^https:\/\/valhalla1\.openstreetmap\.de\/route\?json=/);
-    const req = JSON.parse(decodeURIComponent(urls[0].split('?json=')[1]));
-    expect(req).toMatchObject({ costing: 'auto', units: 'kilometers' });
-    expect(req.locations).toEqual([
-      { lat: -29.1, lon: -51.1, type: 'break' },
-      { lat: -29.2, lon: -51.2, type: 'break' }
+    const [a, b, c] = await Promise.all([
+      walkDistance(job('BC-1', -29.16, -51.17), home, false),
+      walkDistance(job('BC-2', -29.17, -51.18), home, false),
+      walkDistance(job('BC-3', -29.19, -51.2), home, false)
     ]);
+    expect(urls).toHaveLength(1);
+    expect(urls[0]).toMatch(/^https:\/\/valhalla1\.openstreetmap\.de\/sources_to_targets\?json=/);
+    expect(reqOf(urls[0])).toMatchObject({ costing: 'pedestrian', sources: [home], targets: [{}, {}, {}] });
+    expect(a).toEqual({ meters: 1240, provider: 'valhalla' });
+    expect(b).toEqual({ meters: 650, provider: 'valhalla' });
+    expect(c).toBeNull();
+    // Kept: asked again, no request — and readable at once by the job's page.
+    expect(await walkDistance(job('BC-1', -29.16, -51.17), home, false)).toEqual(a);
+    expect(knownWalkDistance({ lat: -29.16, lon: -51.17 }, home, false)).toEqual(a);
+    expect(urls).toHaveLength(1);
   });
-  it('Valhalla out: OSRM (lon,lat → lat,lon); nothing answers: null', async () => {
+
+  it("the job's page: the way ON FOOT on the map, the time BY CAR — and the card's number, never another", async () => {
     const urls: string[] = [];
     vi.stubGlobal('fetch', async (u: string) => {
       urls.push(String(u));
-      return String(u).includes('valhalla')
-        ? new Response('x', { status: 503 })
-        : new Response(JSON.stringify(osrmOk(3240, 560)));
+      if (String(u).includes('sources_to_targets'))
+        return new Response(JSON.stringify({ sources_to_targets: [[{ distance: 1.24, to_index: 0 }]] }));
+      const costing = reqOf(String(u)).costing;
+      // The route on foot measures 1.25 km: the page still says the card's 1,2 km.
+      return new Response(
+        JSON.stringify(costing === 'pedestrian' ? valhallaRoute(1.25, 940, '_p~iF~ps|U') : valhallaRoute(1.9, 300))
+      );
     });
-    const r = await drivingRoute({ lat: -29.1, lon: -51.1 }, { lat: -29.2, lon: -51.2 });
-    expect(r).toEqual({
-      meters: 3240,
-      seconds: 560,
-      provider: 'osrm',
-      path: [
-        [-29.1, -51.1],
-        [-29.2, -51.2]
-      ]
+    const card = await walkDistance(job('BC-1', -29.16, -51.17), home, false);
+    const page = await routeToJob(job('BC-1', -29.16, -51.17), home, undefined, false);
+    expect(page).toEqual({ walk: card, path: [[3.85, -12.02]], driveSeconds: 300 });
+    const costings = urls.filter((u) => u.includes('/route?')).map((u) => reqOf(u).costing);
+    expect(costings.sort()).toEqual(['auto', 'pedestrian']);
+  });
+
+  it('a job opened straight (no card before): the route on foot is the number, and the card then says the same', async () => {
+    vi.stubGlobal('fetch', async (u: string) => {
+      if (String(u).includes('sources_to_targets')) throw new Error('the card must not ask');
+      const costing = reqOf(String(u)).costing;
+      return new Response(
+        JSON.stringify(costing === 'pedestrian' ? valhallaRoute(0.82, 600) : valhallaRoute(1.1, 180))
+      );
     });
-    expect(urls[1]).toContain(
-      'routing.openstreetmap.de/routed-car/route/v1/driving/-51.100000,-29.100000;-51.200000,-29.200000'
+    const page = await routeToJob(job('BC-9', -29.17, -51.18), home, undefined, false);
+    expect(page?.walk).toEqual({ meters: 820, provider: 'valhalla' });
+    expect(await walkDistance(job('BC-9', -29.17, -51.18), home, false)).toEqual({ meters: 820, provider: 'valhalla' });
+  });
+
+  it('kept on the phone: the next visit reads the same number without asking', async () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k)
+    });
+    forgetRoutes();
+    vi.stubGlobal(
+      'fetch',
+      async () => new Response(JSON.stringify({ sources_to_targets: [[{ distance: 2.31, to_index: 0 }]] }))
     );
+    await walkDistance(job('BC-1', -29.16, -51.17), home, false);
+    const saved = [...store.values()].join('');
+    vi.resetModules();
+    const fresh = await import('../services/route');
+    vi.stubGlobal('fetch', async () => {
+      throw new Error('no request on the next visit');
+    });
+    store.set('valorjob:distancia-a-pe-v1', saved);
+    expect(fresh.knownWalkDistance({ lat: -29.16, lon: -51.17 }, home, false)).toEqual({
+      meters: 2310,
+      provider: 'valhalla'
+    });
+  });
+
+  it("Valhalla's matrix out: OSRM's table on foot; both out: one route on foot each; nothing: null", async () => {
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', async (u: string) => {
+      urls.push(String(u));
+      if (String(u).includes('valhalla')) return new Response('x', { status: 503 });
+      return new Response(JSON.stringify({ code: 'Ok', distances: [[0, 1500, 720]] }));
+    });
+    const [a, b] = await Promise.all([
+      walkDistance(job('BC-1', -29.16, -51.17), home, false),
+      walkDistance(job('BC-2', -29.17, -51.18), home, false)
+    ]);
+    expect([a?.meters, b?.meters]).toEqual([1500, 720]);
+    expect(urls[1]).toContain('routing.openstreetmap.de/routed-foot/table/v1/driving/-51.179400,-29.168100;');
+    expect(urls[1]).toContain('?sources=0&annotations=distance');
+
+    forgetRoutes();
+    urls.length = 0;
+    vi.stubGlobal('fetch', async (u: string) => {
+      urls.push(String(u));
+      if (String(u).includes('/route?')) return new Response(JSON.stringify(valhallaRoute(0.9, 650)));
+      return new Response('x', { status: 503 });
+    });
+    expect(await walkDistance(job('BC-1', -29.16, -51.17), home, false)).toEqual({ meters: 900, provider: 'valhalla' });
+    expect(reqOf(urls.find((u) => u.includes('/route?')) as string).costing).toBe('pedestrian');
+
     forgetRoutes();
     vi.stubGlobal('fetch', async () => Promise.reject(new Error('offline')));
-    expect(await drivingRoute({ lat: 0, lon: 0 }, { lat: 1, lon: 1 })).toBeNull();
+    expect(await walkDistance(job('BC-1', -29.16, -51.17), home, false)).toBeNull();
+    expect(await routeToJob(job('BC-1', -29.16, -51.17), home, undefined, false)).toBeNull();
   });
-  it('asks each route once; a screen that gives up gets null and the answer stays for the next', async () => {
-    let calls = 0;
-    vi.stubGlobal('fetch', async () => {
-      calls++;
-      return new Response(JSON.stringify(valhallaOk(1.2, 200)));
+
+  it('on foot, OSRM answers through its "foot" server when Valhalla is out', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', async (u: string) => {
+      urls.push(String(u));
+      if (String(u).includes('valhalla')) return new Response('x', { status: 503 });
+      return new Response(
+        JSON.stringify({
+          code: 'Ok',
+          routes: [{ distance: 1320, duration: 990, geometry: { coordinates: [[-51.1, -29.1]] } }]
+        })
+      );
     });
-    const ctl = new AbortController();
-    const first = drivingRoute({ lat: -29.1, lon: -51.1 }, { lat: -29.2, lon: -51.2 }, ctl.signal);
-    ctl.abort();
-    expect(await first).toBeNull();
-    const again = await drivingRoute({ lat: -29.1, lon: -51.1 }, { lat: -29.2, lon: -51.2 });
-    expect(again?.meters).toBe(1200);
-    expect(calls).toBe(1);
+    const page = await routeToJob(job('BC-1', -29.16, -51.17), home, undefined, false);
+    expect(page?.walk).toEqual({ meters: 1320, provider: 'osrm' });
+    expect(page?.path).toEqual([[-29.1, -51.1]]);
+    expect(urls.some((u) => u.includes('/routed-foot/route/v1/driving/'))).toBe(true);
+    expect(urls.some((u) => u.includes('/routed-car/route/v1/driving/'))).toBe(true);
   });
 });
 
-describe('U76: the route by Google (Edge Function calcular-rota)', () => {
+describe('U80: Google (Edge Function calcular-rota) — on foot for the distance, by car for the time', () => {
   const casa = {
     street: 'Rua Sinimbu, 1234',
     neighborhood: 'Centro',
@@ -148,28 +224,24 @@ describe('U76: the route by Google (Edge Function calcular-rota)', () => {
       'Rua Bolívia, 77 - Jardim América, Caxias do Sul - RS, 95020-000, Brasil'
     );
   });
-  it('asks a car route with the traffic of now, in Portuguese, one route', () => {
-    expect(pedidoDeRota(porEndereco(casa), { location: { latLng: { latitude: 1, longitude: 2 } } })).toEqual({
-      origin: { address: 'Rua Sinimbu, 1234 - Centro, Caxias do Sul - RS, 95020-000, Brasil' },
-      destination: { location: { latLng: { latitude: 1, longitude: 2 } } },
+  it('asks on foot without traffic preference (Google refuses it there), by car with the traffic of now', () => {
+    const walk = pedidoDeRota(porEndereco(casa), porEndereco(casa), 'WALK');
+    expect(walk).toMatchObject({ travelMode: 'WALK', languageCode: 'pt-BR', regionCode: 'br', units: 'METRIC' });
+    expect(walk).not.toHaveProperty('routingPreference');
+    expect(pedidoDeRota(porEndereco(casa), porEndereco(casa))).toMatchObject({
       travelMode: 'DRIVE',
-      routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
-      computeAlternativeRoutes: false,
-      languageCode: 'pt-BR',
-      regionCode: 'br',
-      units: 'METRIC'
+      routingPreference: 'TRAFFIC_AWARE_OPTIMAL'
     });
   });
-  it("reads Google's answer: metres, seconds with traffic, its words, the line and where it put each address", () => {
+  it("reads a route: metres, seconds, Google's words, the line and where it put each address", () => {
     expect(
       lerRota({
         routes: [
           {
-            distanceMeters: 3312,
-            duration: '664s',
-            staticDuration: '590s',
+            distanceMeters: 1312,
+            duration: '964s',
             polyline: { encodedPolyline: '_p~iF~ps|U' },
-            localizedValues: { distance: { text: '3,3 km' }, duration: { text: '11 min' } },
+            localizedValues: { distance: { text: '1,3 km' }, duration: { text: '16 min' } },
             legs: [
               {
                 startLocation: { latLng: { latitude: -29.1681, longitude: -51.1794 } },
@@ -180,16 +252,42 @@ describe('U76: the route by Google (Edge Function calcular-rota)', () => {
         ]
       })
     ).toEqual({
-      metros: 3312,
-      segundos: 664,
-      segundos_sem_transito: 590,
-      texto_distancia: '3,3 km',
-      texto_tempo: '11 min',
+      metros: 1312,
+      segundos: 964,
+      segundos_sem_transito: null,
+      texto_distancia: '1,3 km',
+      texto_tempo: '16 min',
       caminho: [[38.5, -120.2]],
       origem: { lat: -29.1681, lon: -51.1794 },
       destino: { lat: -29.1569, lon: -51.1712 }
     });
     expect(lerRota({})).toBeNull();
-    expect(lerRota({ routes: [{ distanceMeters: 10 }] })).toBeNull();
+  });
+  it('the cards: one matrix on foot from the home to every job, read in the order asked', () => {
+    expect(pedidoDeMatriz(porEndereco(casa), [porEndereco(casa)])).toEqual({
+      origins: [{ waypoint: { address: textoDoEndereco(casa) } }],
+      destinations: [{ waypoint: { address: textoDoEndereco(casa) } }],
+      travelMode: 'WALK',
+      languageCode: 'pt-BR',
+      regionCode: 'br',
+      units: 'METRIC'
+    });
+    expect(
+      lerMatriz(
+        [
+          { originIndex: 0, destinationIndex: 2, condition: 'ROUTE_EXISTS', distanceMeters: 640 },
+          {
+            originIndex: 0,
+            destinationIndex: 0,
+            condition: 'ROUTE_EXISTS',
+            distanceMeters: 1312,
+            localizedValues: { distance: { text: '1,3 km' } }
+          },
+          { originIndex: 0, destinationIndex: 1, condition: 'ROUTE_NOT_FOUND' },
+          { originIndex: 0, destinationIndex: 3, condition: 'ROUTE_EXISTS' }
+        ],
+        4
+      )
+    ).toEqual([{ metros: 1312, texto: '1,3 km' }, null, { metros: 640, texto: null }, { metros: 0, texto: null }]);
   });
 });

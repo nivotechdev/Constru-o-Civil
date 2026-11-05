@@ -215,13 +215,14 @@ escolhe o CEP do trecho que tem o número; o ponto é a casa, o pedaço da rua n
 centro da cidade), o centro do bairro ou o da cidade. `profiles.refineMyAddress()` localiza de novo, uma vez, um
 endereço salvo antes (mesmo texto, ponto melhor → `set_my_address`).
 
-### `route.ts` — distância e tempo de carro (U54/U76)
+### `route.ts` — distância a pé e tempo de carro (U54/U76/U80)
 
-| função                                   | back-end                                                                                                                                                                                              |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `routeToJob(vaga, casa, signal, google)` | com o Google (`FEATURES.googleMaps` e a sessão do Map Tiles): Edge Function `calcular-rota` `{ job_id }` → Routes API com os dois endereços em texto e trânsito; senão (ou se recusar) `drivingRoute` |
-| `drivingRoute(de, até, signal)`          | Valhalla (FOSSGIS), OSRM (FOSSGIS), OSRM (projeto) — só as duas coordenadas; guardada na sessão; `null` se nenhum responder (a tela mostra a linha reta)                                              |
-| `routeDistanceText` / `routeTimeText`    | o texto do próprio Google quando ele respondeu; senão "3,2 km" / "1 h 5 min"                                                                                                                          |
+| função                                   | back-end                                                                                                                                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `walkDistance(vaga, casa, google)`       | a distância **a pé** do card: guardada no aparelho; senão pedida junto com os outros cards da tela — Google: `calcular-rota { job_ids }` (matriz `WALK`); grátis: matriz do Valhalla, tabela do OSRM a pé, uma rota a pé por vaga     |
+| `routeToJob(vaga, casa, signal, google)` | a página: rota a pé (caminho, e a distância quando o card ainda não tem) e tempo de carro — Google: `calcular-rota { job_id }`; grátis: Valhalla `pedestrian` + `auto` (OSRM de reserva). A distância é sempre a guardada para o card |
+| `knownWalkDistance(vaga, casa)`          | a distância já guardada, sem pedir nada (a página a mostra na hora)                                                                                                                                                                   |
+| `walkText` / `driveText`                 | o texto do próprio Google quando ele respondeu; senão "1,2 km" / "1 h 5 min"                                                                                                                                                          |
 
 ### `account.ts` — privacidade (LGPD)
 

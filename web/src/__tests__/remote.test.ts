@@ -679,37 +679,55 @@ describe('remote: data and actions', () => {
     expect(m.selectors.myAddress(m.store.getDb())).toBeNull();
   });
 
-  it("U76: Google's route by calcular-rota (only the job id goes); without it, the free route", async () => {
-    const answer = {
-      metros: 3312,
-      segundos: 664,
-      texto_distancia: '3,3 km',
-      texto_tempo: '11 min',
+  it('U80: Google by calcular-rota — on foot for the distance (the cards in one call), by car for the time', async () => {
+    const page = {
+      metros: 1312,
+      texto_distancia: '1,3 km',
       caminho: [
         [-29.1681, -51.1794],
         [-29.1569, -51.1712]
       ],
       origem: { lat: -29.1681, lon: -51.1794 },
-      destino: { lat: -29.1569, lon: -51.1712 }
+      destino: { lat: -29.1569, lon: -51.1712 },
+      carro_segundos: 664,
+      carro_texto: '11 min'
     };
-    const fake = server('ana', { functions: { 'calcular-rota': () => ({ data: answer, error: null }) } });
+    const cards = { distancias: { 'BC-5001': { metros: 1290, texto: '1,3 km' }, 'BC-5002': null } };
+    const fake = server('ana', {
+      functions: {
+        'calcular-rota': (body) => ({
+          data: (body as { job_ids?: string[] }).job_ids ? cards : page,
+          error: null
+        })
+      }
+    });
     await load(fake);
     const route = await import('../services/route');
+    route.forgetRoutes();
     const home = { lat: -29.168, lon: -51.179 };
+    // The cards: one call with the ids only (the server reads the addresses).
+    const [a, b] = await Promise.all([
+      route.walkDistance({ id: 'BC-5001', lat: -29.157, lon: -51.171 }, home, true),
+      route.walkDistance({ id: 'BC-5002', lat: -29.15, lon: -51.16 }, home, true)
+    ]);
+    expect(a).toEqual({ meters: 1290, provider: 'google', text: '1,3 km' });
+    expect(b).toBeNull();
+    expect(fake.calls.filter((c) => c.name === 'calcular-rota').map((c) => c.args)).toEqual([
+      { job_ids: ['BC-5001', 'BC-5002'] }
+    ]);
+    // The job's page: the way on foot and Google's ends, the car's time — and the card's number.
     const r = await route.routeToJob({ id: 'BC-5001', lat: -29.157, lon: -51.171 }, home, undefined, true);
     expect(r).toEqual({
-      meters: 3312,
-      seconds: 664,
-      provider: 'google',
-      path: answer.caminho,
-      from: answer.origem,
-      to: answer.destino,
-      distanceText: '3,3 km',
-      durationText: '11 min'
+      walk: a,
+      path: page.caminho,
+      from: page.origem,
+      to: page.destino,
+      driveSeconds: 664,
+      driveText: '11 min'
     });
-    expect(fake.calls.find((c) => c.name === 'calcular-rota')?.args).toEqual({ job_id: 'BC-5001' });
+    expect(fake.calls.filter((c) => c.name === 'calcular-rota').at(-1)?.args).toEqual({ job_id: 'BC-5001' });
 
-    // The function refuses (no key, the limit, Google out): the free servers answer.
+    // The function refuses (no key, the limit, Google out): the free servers answer, on foot and by car.
     const refusing = server('ana', {
       functions: {
         'calcular-rota': () => ({ data: null, error: { message: 'Edge Function returned a non-2xx status code' } })
@@ -717,12 +735,15 @@ describe('remote: data and actions', () => {
     });
     await load(refusing);
     const again = await import('../services/route');
-    vi.stubGlobal(
-      'fetch',
-      async () => new Response(JSON.stringify({ trip: { status: 0, summary: { length: 3.1, time: 540 }, legs: [] } }))
-    );
+    again.forgetRoutes();
+    vi.stubGlobal('fetch', async (url: string) => {
+      const pedestrian = decodeURIComponent(url).includes('"pedestrian"');
+      return new Response(
+        JSON.stringify({ trip: { status: 0, summary: { length: pedestrian ? 1.4 : 2.1, time: 540 }, legs: [] } })
+      );
+    });
     const free = await again.routeToJob({ id: 'BC-5001', lat: -29.157, lon: -51.171 }, home, undefined, true);
-    expect(free).toMatchObject({ meters: 3100, seconds: 540, provider: 'valhalla' });
+    expect(free).toEqual({ walk: { meters: 1400, provider: 'valhalla' }, path: [], driveSeconds: 540 });
     vi.unstubAllGlobals();
   });
 

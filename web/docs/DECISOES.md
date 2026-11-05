@@ -2656,3 +2656,31 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
 - **O que foi feito**: o mapa em tela cheia (`JobMap`) agora é desenhado num portal no `<body>`, como os outros visores
   em tela cheia (`PostViewer`, `BusyOverlay`). Cobre a página inteira: celular (barra) e computador (cartão do lado).
   Ao fechar, o portal some e a página volta como estava, com o botão. Conferido no navegador nos dois tamanhos.
+
+## U80 — Distância a pé, o mesmo número no card e na página do bico
+
+- **Pedido do responsável**: (1) a distância "da sua casa" tem de ser a **distância a pé**, como o Google Maps mostra
+  indo a pé; (2) o card do mural e a página do bico mostravam números diferentes — tem de ser o mesmo.
+- **Por que diferiam**: o card media em **linha reta** (da casa ao ponto da vaga, `homeDistanceKm`) e arredondava a
+  100 m; a página media pela **rota de carro** (Valhalla `auto`) e arredondava a 10 m. Além disso, o card caía no ponto
+  público do perfil (arredondado a ~1 km) quando o endereço ainda não tinha carregado.
+- **O que foi feito** (`services/route.ts`, `hooks/useHomeDistance.ts`, `JobTile`, `JobMap`):
+  - **A distância de um bico é um número só por casa e vaga, a pé**: calculado uma vez, guardado no aparelho (30 dias)
+    e lido pelo card e pela página. Quem calcula primeiro (o mural ou a página) define o número; o outro só lê. A
+    página, quando o card já tem o número, mostra-o na hora (antes mesmo do mapa) e a rota só acrescenta o caminho e
+    o tempo de carro.
+  - **Grátis**: os cards de uma tela vão **num pedido só** (matriz a pé do Valhalla, `sources_to_targets`
+    `pedestrian`; reserva: tabela a pé do OSRM da FOSSGIS; sem as duas, uma rota a pé por vaga, duas por vez). A página
+    pede a rota a pé (o caminho no mapa) e a de carro (o tempo) juntas.
+  - **Com o Google** (`calcular-rota`): `{ job_ids }` → uma **matriz a pé** do Google (Routes API
+    `computeRouteMatrix`, `WALK`) para os cards; `{ job_id }` → a **rota a pé** (distância, texto do Google, caminho,
+    onde o Google pôs os endereços) e a **de carro** (o tempo com trânsito). Sempre com os endereços em texto — os
+    números são os do Google Maps a pé.
+  - O texto continua o mesmo ("A 1,2 km da sua casa · 9 min de carro"): a distância é a pé e o tempo é de carro, como
+    antes. Sem resposta de nenhum servidor, os dois dizem a linha reta como "cerca de" (o card e a página com a mesma
+    formatação).
+  - O card usa só o endereço salvo (nunca o ponto arredondado do perfil público); sem endereço, mostra o bairro.
+- **Limite honesto**: sem o Google, a distância a pé sai do mapa do OpenStreetMap e do ponto do endereço no mapa — em
+  Caxias o mapa quase não tem número de casa, então o ponto é o do trecho certo da rua, e a diferença para o Google pode
+  passar de 100 m. **Igual ao Google Maps só com a chave do Google** (passo a passo em U76; a matriz a pé dos cards e a
+  rota a pé entram na mesma chave da Routes API; a pé não usa trânsito, então é o preço "Essentials").

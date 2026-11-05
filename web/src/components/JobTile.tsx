@@ -8,9 +8,7 @@ import { tileWhenText } from '../utils/jobInfo';
 import { PhotoCarousel } from './PhotoCarousel';
 import { jobTitle } from '../services/catalog';
 import { SaveFlag } from './SaveFlag';
-import { useDb } from '../hooks/useStore';
-import { homeDistanceKm } from '../services/selectors';
-import { formatKm } from '../utils/geo';
+import { useHomeDistance } from '../hooks/useHomeDistance';
 
 // U35: the icon colour of the status badge on the photo, by tone (theme-aware tokens).
 const TONE_COLOR: Record<Tone, string> = {
@@ -65,11 +63,10 @@ export function JobTile({
   footer = null,
   badge = null
 }: JobTileProps) {
-  // U51/U56: how far it is from the worker's home, highlighted in the description ("1,2 km").
-  const km = homeDistanceKm(useDb(), job);
+  // U51/U56/U80: how far it is from the worker's home ON FOOT ("1,2 km") — the same number as on the job's page.
+  const distance = useHomeDistance(job).text;
   const bairro = job.address.neighborhood;
   const when = tileWhenText(job);
-  const distance = km === null ? null : formatKm(km);
   const label = [
     jobTitle(job),
     badge && badge.label,
