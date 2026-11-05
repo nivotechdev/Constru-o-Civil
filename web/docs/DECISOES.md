@@ -2684,3 +2684,12 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
   Caxias o mapa quase não tem número de casa, então o ponto é o do trecho certo da rua, e a diferença para o Google pode
   passar de 100 m. **Igual ao Google Maps só com a chave do Google** (passo a passo em U76; a matriz a pé dos cards e a
   rota a pé entram na mesma chave da Routes API; a pé não usa trânsito, então é o preço "Essentials").
+
+## U81 — Foto do bico como era antes
+
+- **Pedido do responsável**: a foto da página do bico volta a aparecer como antes do U78.
+- **O que foi feito**: saem a foto de ponta a ponta, os botões flutuando sobre ela, o cabeçalho que ficava sólido ao
+  rolar e a folha arredondada por cima da foto. Volta o cabeçalho de sempre ("Detalhe da vaga", com compartilhar e
+  denunciar) e a foto com margem e cantos arredondados, na mesma altura de antes (`h-72 sm:h-80 lg:h-[26rem]`); o
+  `PhotoCarousel` está igual ao de antes do U78. O resto da página nova (empresa e fatos em cartões, mapa, barra de
+  baixo, cartão do computador) continua.

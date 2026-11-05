@@ -1,9 +1,9 @@
-// U78: the job's page, redone — the photo edge to edge on the phone with floating buttons (the header turns solid,
-// with the job's title, once the photo is scrolled past), the content on a rounded sheet over it, the company and the
+// U78: the job's page, redone — the photo framed under the header (U81: as it was before U78), the company and the
 // facts in clean cards, then "Sobre o bico", "O que levar" and the map. The price and the one action stay at hand:
 // a frosted bar on the phone, a sticky card on the computer. Texts and flows are the same as before (U58).
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import type { ReactNode } from 'react';
 import { ApplicationStatusCard } from './ApplicationStatusCard';
+import { BackBar } from '../../components/BackBar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon, type IconName } from '../../components/icons/Icon';
@@ -61,35 +61,6 @@ function daysSub(days: { word: string; list: string }): string {
   return days.list !== days.word ? days.list : days.word;
 }
 
-/** The phone header's height: the photo starts under it, and it turns solid when the photo goes past it. */
-const HEADER_PX = 56;
-
-/** Whether the marker (the photo's lower edge) went up past the header — read on scroll, one frame at a time. */
-function useScrolledPast(marker: RefObject<HTMLElement | null>, active: boolean): boolean {
-  const [past, setPast] = useState(false);
-  useEffect(() => {
-    if (!active) return;
-    let frame = 0;
-    const check = () => {
-      frame = 0;
-      const el = marker.current;
-      setPast(Boolean(el) && (el as HTMLElement).getBoundingClientRect().top <= HEADER_PX);
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(check);
-    };
-    check();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, [marker, active]);
-  return past;
-}
-
 export default function JobDetail({ params }: ScreenProps) {
   const db = useDb();
   const role = useRole();
@@ -103,9 +74,6 @@ export default function JobDetail({ params }: ScreenProps) {
     showToast('Candidatura cancelada');
     navigate('/minhas-candidaturas');
   });
-  const photoEnd = useRef<HTMLDivElement>(null);
-  const job = query.status === 'ready' ? getJob(db, params.id) : undefined;
-  const solid = useScrolledPast(photoEnd, Boolean(job));
 
   if (query.status !== 'ready')
     return (
@@ -116,6 +84,7 @@ export default function JobDetail({ params }: ScreenProps) {
         skeleton={<PageSkeleton />}
       />
     );
+  const job = getJob(db, params.id);
   if (!job) return <NotFound message="Vaga não encontrada ou encerrada." />;
   const company = companyOf(db, job);
   const worker = currentWorker(db);
@@ -179,77 +148,36 @@ export default function JobDetail({ params }: ScreenProps) {
       </>
     ) : null;
 
-  // Over the photo (phone, before scrolling): white round buttons; on the solid header and on the computer, plain.
-  const overPhoto = !solid;
-  const floating = overPhoto ? 'shadow-raised lg:bg-transparent lg:shadow-none' : undefined;
-
   return (
     <div className="flex flex-col">
-      <header
-        className={cx(
-          'sticky top-0 z-30 flex items-center gap-1 h-14 px-2 border-b transition-[background-color,border-color] duration-200',
-          'lg:static lg:h-auto lg:-ml-3 lg:px-0 lg:pb-4 lg:mb-2 lg:border-0 lg:bg-transparent lg:backdrop-blur-none',
-          solid ? 'bg-concrete-0/95 backdrop-blur-md border-concrete-200' : 'bg-transparent border-transparent'
-        )}
-      >
-        <IconButton
-          icon="arrow-left"
-          label="Voltar"
-          variant={overPhoto ? 'solid' : 'ghost'}
-          className={floating}
-          onClick={() => goBack('/mural')}
-        />
-        {/* The page's heading is the job's title, below; up here only a reminder of it once it scrolls away. */}
-        <span
-          aria-hidden="true"
-          className={cx(
-            'flex-1 min-w-0 px-1 font-display font-semibold text-lg text-concrete-900 truncate transition-opacity duration-200 lg:hidden',
-            solid ? 'opacity-100' : 'opacity-0'
-          )}
-        >
-          {title}
-        </span>
-        <span className="hidden lg:block flex-1 min-w-0 font-display font-semibold text-xl text-concrete-900 truncate">
-          Detalhe da vaga
-        </span>
-        <IconButton
-          icon="share-2"
-          label="Compartilhar vaga"
-          variant={overPhoto ? 'solid' : 'ghost'}
-          className={floating}
-          onClick={() => void shareJob(job).catch(() => undefined)}
-        />
-        {role === 'trabalhador' ? (
-          <span className="ml-1.5 lg:ml-0">
-            <SafetyMenu
-              target="vaga"
-              targetId={job.id}
-              what="a vaga"
-              solid={overPhoto}
-              buttonClassName={floating}
-              block={{ id: company.id, name: company.name, onBlocked: () => navigate('/mural', { replace: true }) }}
+      <BackBar
+        title="Detalhe da vaga"
+        onBack={() => goBack('/mural')}
+        actions={
+          <>
+            <IconButton
+              icon="share-2"
+              label="Compartilhar vaga"
+              onClick={() => void shareJob(job).catch(() => undefined)}
             />
-          </span>
-        ) : null}
-      </header>
+            {role === 'trabalhador' ? (
+              <SafetyMenu
+                target="vaga"
+                targetId={job.id}
+                what="a vaga"
+                block={{ id: company.id, name: company.name, onBlocked: () => navigate('/mural', { replace: true }) }}
+              />
+            ) : null}
+          </>
+        }
+      />
 
-      <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-12">
+      <div className="flex flex-col px-4 py-4 sm:px-6 lg:px-0 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-12">
         <div className="flex flex-col min-w-0">
-          {/* The photo: under the header and edge to edge on the phone; framed on the computer. */}
-          <div className="relative -mt-14 lg:mt-0">
-            <PhotoCarousel
-              job={job}
-              inset
-              className="h-[22rem] sm:h-[26rem] lg:h-[28rem] lg:rounded-3xl overflow-hidden"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/30 to-transparent lg:hidden"
-            />
-            <div ref={photoEnd} aria-hidden="true" className="absolute inset-x-0 bottom-6 h-px lg:hidden" />
-          </div>
+          {/* U81: the photo framed, with rounded corners, under the header — as it was before U78. */}
+          <PhotoCarousel job={job} className="h-72 sm:h-80 lg:h-[26rem] rounded-2xl overflow-hidden" />
 
-          <div className="relative z-10 -mt-6 flex flex-col gap-6 px-5 pt-7 pb-8 rounded-t-[1.75rem] bg-concrete-0 sm:px-6 lg:mt-0 lg:px-0 lg:pt-8 lg:pb-4 lg:rounded-none lg:bg-transparent">
+          <div className="flex flex-col gap-6 pt-5 pb-8 lg:pt-8 lg:pb-4">
             <header className="flex flex-col gap-2.5">
               {job.urgent || people > 1 ? (
                 <div className="flex flex-wrap gap-2">

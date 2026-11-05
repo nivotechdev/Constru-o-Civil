@@ -17,11 +17,6 @@ interface PhotoCarouselProps {
   className?: string;
   /** The version inside a mural tile: small dots, arrows only on hover (desktop), no counter. */
   compact?: boolean;
-  /**
-   * U78: the job page on a phone — something covers the photo's top (the floating buttons) and its bottom edge (the
-   * page's rounded sheet): the counter goes down by the dots, and both rise above the sheet.
-   */
-  inset?: boolean;
 }
 
 /**
@@ -32,8 +27,7 @@ interface PhotoCarouselProps {
 export function PhotoCarousel({
   job,
   className = 'h-56 sm:h-72 lg:h-[26rem] rounded-card',
-  compact = false,
-  inset = false
+  compact = false
 }: PhotoCarouselProps) {
   const photos = jobPhotos(job);
   const frame = cx('relative w-full overflow-hidden bg-concrete-200', className);
@@ -46,9 +40,7 @@ export function PhotoCarousel({
     );
   }
   // A new set of photos starts a fresh carousel (the legacy app rebuilt it on every render).
-  const slides = (
-    <Slides key={photos.join('\n')} job={job} photos={photos} frame={frame} compact={compact} inset={inset} />
-  );
+  const slides = <Slides key={photos.join('\n')} job={job} photos={photos} frame={frame} compact={compact} />;
   // X01: on the mural a tile's carousel (and its photos) is only built when the tile comes near the screen.
   return compact ? <WhenNear frame={frame}>{slides}</WhenNear> : slides;
 }
@@ -78,10 +70,9 @@ interface SlidesProps {
   photos: string[];
   frame: string;
   compact: boolean;
-  inset: boolean;
 }
 
-function Slides({ job, photos, frame, compact, inset }: SlidesProps) {
+function Slides({ job, photos, frame, compact }: SlidesProps) {
   const n = photos.length;
   const trackRef = useRef<HTMLDivElement>(null);
   const widthRef = useRef(0);
@@ -259,7 +250,7 @@ function Slides({ job, photos, frame, compact, inset }: SlidesProps) {
       <div
         className={cx(
           'absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none',
-          compact ? 'bottom-2.5 gap-1' : inset ? 'bottom-10 gap-1.5 lg:bottom-4' : 'bottom-3.5 gap-1.5'
+          compact ? 'bottom-2.5 gap-1' : 'bottom-3.5 gap-1.5'
         )}
       >
         {photos.map((_, k) => (
@@ -274,12 +265,7 @@ function Slides({ job, photos, frame, compact, inset }: SlidesProps) {
         ))}
       </div>
       {compact ? null : (
-        <span
-          className={cx(
-            'absolute inline-flex items-center h-6 px-2.5 rounded-full bg-black/60 text-white text-xs font-semibold pointer-events-none',
-            inset ? 'bottom-[2.125rem] right-4 lg:top-4 lg:bottom-auto' : 'top-3 right-3'
-          )}
-        >
+        <span className="absolute top-3 right-3 inline-flex items-center h-6 px-2.5 rounded-full bg-black/60 text-white text-xs font-semibold pointer-events-none">
           {`${index + 1} / ${n}`}
         </span>
       )}
