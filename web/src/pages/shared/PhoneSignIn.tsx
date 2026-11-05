@@ -4,6 +4,7 @@
 import { secondsLeft } from '../../utils/countdown';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
 import { CodeInput } from '../../components/CodeInput';
 import { FieldError } from '../../components/FieldError';
 import { FlowBar, FlowHeading, FlowLayout } from '../../components/FlowLayout';
@@ -11,6 +12,7 @@ import { Icon } from '../../components/icons/Icon';
 import { Input } from '../../components/Input';
 import { confirmPhoneSignInCode, sendPhoneSignInCode, prepareSocialSignIn } from '../../services/auth';
 import { errorMessage } from '../../services/errors';
+import { FEATURES } from '../../services/features';
 import { goBack, navigate } from '../../services/router';
 import { CODE_LENGTH } from '../../utils/code';
 import { isValidMobile, maskPhone } from '../../utils/format';
@@ -18,7 +20,27 @@ import { isValidMobile, maskPhone } from '../../utils/format';
 type Step = 'numero' | 'codigo' | 'sem-conta';
 const RESEND_SECONDS = 60;
 
+/** AUD-084: a link to this screen without the phone login turned on says so, instead of failing after the number. */
 export default function PhoneSignIn() {
+  return FEATURES.phoneLogin ? <PhoneSignInSteps /> : <PhoneSignInOff />;
+}
+
+function PhoneSignInOff() {
+  return (
+    <FlowLayout>
+      <FlowBar title="Entrar com o celular" onBack={() => goBack('/login')} />
+      <EmptyState
+        icon="message-circle"
+        title="Entrar com o celular não está disponível"
+        description="Entre com seu e-mail e senha."
+        actionLabel="Ir para o login"
+        onAction={() => navigate('/login')}
+      />
+    </FlowLayout>
+  );
+}
+
+function PhoneSignInSteps() {
   // U29: Firebase ready before the tap (the Google window must open inside it).
   useEffect(prepareSocialSignIn, []);
   const robot = useRef<HTMLDivElement>(null);

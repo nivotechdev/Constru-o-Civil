@@ -66,3 +66,10 @@ describe('AUD-113: o prazo de 30 dias é dito a quem publica', () => {
     expect(src('pages/recruiter/CreateJob.tsx')).toMatch(/fica 30 dias no mural/);
   });
 });
+
+describe('AUD-084: /entrar-celular sem o login por celular ligado', () => {
+  it('mostra que não está disponível antes de pedir o número', () => {
+    const s = src('pages/shared/PhoneSignIn.tsx');
+    expect(s).toMatch(/FEATURES\.phoneLogin \? <PhoneSignInSteps \/> : <PhoneSignInOff \/>/);
+  });
+});
