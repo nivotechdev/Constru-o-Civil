@@ -2608,7 +2608,7 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
   o centro da cidade (U76).
 - **O que foi feito**: `scripts/staging/relocalizar.ts` relocaliza cada vaga e cada endereço do staging com o mesmo
   geocodificador do app (`resolveAddress`, U76) e grava só o ponto (e, numa vaga de exemplo cujo CEP não é daquela rua,
-  o CEP certo). Roda pelo workflow manual **`staging-localizacao`** (com "ensaio" para ver antes); a rede da sessão da IA
+  o CEP certo). Roda pelo workflow manual **`staging-localizacao`** (com "ensaio" para ver antes), que lê e grava pelo banco (`STAGING_DB_URL`, como as migrations); a rede da sessão da IA
   não alcança os serviços de mapa. O relatório fica no resumo da execução, sem dado pessoal (das contas, só o começo do
   id). Recusa a produção.
 - **Produção**: hoje não tem vaga; os endereços das 4 contas antigas se corrigem sozinhos quando abrirem um bico

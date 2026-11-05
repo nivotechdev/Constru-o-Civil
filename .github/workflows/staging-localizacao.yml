@@ -22,8 +22,11 @@ jobs:
       run:
         working-directory: web
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      STAGING_REF: setyxomsbfrkneqqfoam
+      # A conexão do banco do staging (a mesma das migrations): não depende do token da API do Supabase.
+      DB_URL: ${{ secrets.STAGING_DB_URL }}
+      # Só para o app saber que está no modo real (services/mode.ts); o script não chama o Supabase por eles.
+      VITE_SUPABASE_URL: https://setyxomsbfrkneqqfoam.supabase.co
+      VITE_SUPABASE_ANON_KEY: nao-usada
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,22 +35,10 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      - name: Chave do staging (lida na hora, nunca gravada)
-        run: |
-          for tentativa in 1 2 3; do
-            keys="$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$STAGING_REF/api-keys?reveal=true")"
-            svc="$(echo "$keys" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let j;try{j=JSON.parse(s)}catch{j=null}if(!Array.isArray(j)){console.error("Resposta da API do Supabase: "+String(j&&j.message||s).slice(0,160));process.exit(0)}const k=j.find(x=>x.name==="service_role");console.log(k?k.api_key:"")})')"
-            [ -n "$svc" ] && break
-            sleep $((tentativa * 10))
-          done
-          [ -n "$svc" ] || { echo "::error::Não deu para ler a chave do staging (segredo SUPABASE_ACCESS_TOKEN)."; exit 1; }
-          echo "::add-mask::$svc"
-          echo "SERVICE_ROLE_KEY=$svc" >> "$GITHUB_ENV"
-          echo "SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
-          # Só para o app saber que está no modo real (services/mode.ts); o script não chama o Supabase por ele.
-          echo "VITE_SUPABASE_URL=https://$STAGING_REF.supabase.co" >> "$GITHUB_ENV"
-          echo "VITE_SUPABASE_ANON_KEY=nao-usada" >> "$GITHUB_ENV"
       - name: Relocalizar vagas e endereços
         env:
           ENSAIO: ${{ inputs.ensaio && '1' || '' }}
-        run: npx vite-node scripts/staging/relocalizar.ts
+        run: |
+          [ -n "$DB_URL" ] || { echo "::error::Falta o segredo STAGING_DB_URL."; exit 1; }
+          command -v psql >/dev/null || sudo apt-get install -y postgresql-client
+          npx vite-node scripts/staging/relocalizar.ts

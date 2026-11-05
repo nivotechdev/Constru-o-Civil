@@ -4,18 +4,35 @@
 // (aqui a rede de fora não alcança os mapas). O texto dos endereços não muda — só o ponto (e, numa vaga de exemplo
 // cujo CEP não é daquela rua, o CEP certo da rua).
 //
-//   SUPABASE_URL=… SERVICE_ROLE_KEY=… VITE_SUPABASE_URL=… VITE_SUPABASE_ANON_KEY=… [ENSAIO=1] \
+//   DB_URL=<conexão do banco do staging> VITE_SUPABASE_URL=… VITE_SUPABASE_ANON_KEY=… [ENSAIO=1] \
 //     npx vite-node scripts/staging/relocalizar.ts
-// Só no staging: recusa a produção. Nada de dado pessoal no relatório (dos endereços de conta, só o começo do id).
+// Lê e grava pelo psql (o mesmo acesso das migrations do staging). Só no staging: recusa a produção. Nada de dado
+// pessoal no relatório (dos endereços de conta, só o começo do id).
+import { spawnSync } from 'node:child_process';
 import { geocode, resolveAddress, type AddressDraft } from '../../src/services/address';
 import { cityByLabel } from '../../src/services/cities';
 import { distanceKm } from '../../src/utils/geo';
 
-const url = process.env.SUPABASE_URL ?? '';
-const key = process.env.SERVICE_ROLE_KEY ?? '';
+const dbUrl = process.env.DB_URL ?? '';
 const dry = Boolean(process.env.ENSAIO);
-if (!url || !key) throw new Error('Faltam SUPABASE_URL e SERVICE_ROLE_KEY.');
-if (url.includes('ppnxdajiihsjaojxokzh')) throw new Error('Isto é só para o staging.');
+if (!dbUrl) throw new Error('Falta DB_URL (conexão do banco do staging).');
+if (dbUrl.includes('ppnxdajiihsjaojxokzh')) throw new Error('Isto é só para o staging.');
+
+/** Roda um SQL no banco do staging e devolve a saída (uma linha, sem cabeçalho). */
+function sql(query: string): string {
+  const r = spawnSync('psql', [dbUrl, '-v', 'ON_ERROR_STOP=1', '-At', '-c', query], { encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`psql: ${(r.stderr || '').trim().slice(0, 300)}`);
+  return r.stdout.trim();
+}
+const rows = <T>(query: string): T[] => JSON.parse(sql(`select coalesce(json_agg(t), '[]') from (${query}) t`)) as T[];
+const num = (n: number) => {
+  if (!Number.isFinite(n)) throw new Error('número inválido');
+  return String(n);
+};
+const text = (v: string, pattern: RegExp) => {
+  if (!pattern.test(v)) throw new Error('valor inesperado');
+  return `'${v}'`;
+};
 
 // O Nominatim pede que cada programa se identifique (no navegador, o próprio navegador faz isso).
 const realFetch = globalThis.fetch;
@@ -29,21 +46,6 @@ globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
   }
   return realFetch(input, init);
 }) as typeof fetch;
-
-const rest = async (path: string, init: RequestInit = {}) => {
-  const res = await realFetch(`${url}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-      ...init.headers
-    }
-  });
-  if (!res.ok) throw new Error(`${init.method ?? 'GET'} ${path.split('?')[0]} → ${res.status} ${await res.text()}`);
-  return res.status === 204 ? null : res.json();
-};
 
 type Point = { lat: number; lon: number };
 type Found = { point: Point; precision: string; cep: string };
@@ -100,9 +102,9 @@ type JobRow = {
   lat: number;
   lon: number;
 };
-const jobs = (await rest(
-  'jobs?select=id,title,cep,street,number,neighborhood,city,uf,lat,lon&deleted_at=is.null&order=id'
-)) as JobRow[];
+const jobs = rows<JobRow>(
+  'select id, title, cep, street, number, neighborhood, city, uf, lat, lon from public.jobs where deleted_at is null order by id'
+);
 out(`### Vagas (${jobs.length})\n`);
 out('| vaga | endereço | antes | depois | precisão | mudou |');
 out('| --- | --- | --- | --- | --- | --- |');
@@ -131,10 +133,11 @@ for (const j of jobs) {
   if (d < 15 && !cepChanged) continue;
   moved++;
   if (!dry)
-    await rest(`jobs?id=eq.${encodeURIComponent(j.id)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ lat: found.point.lat, lon: found.point.lon, ...(cepChanged ? { cep: found.cep } : {}) })
-    });
+    sql(
+      `update public.jobs set lat = ${num(found.point.lat)}, lon = ${num(found.point.lon)}` +
+        (cepChanged ? `, cep = ${text(found.cep, /^\d{5}-\d{3}$/)}` : '') +
+        ` where id = ${text(j.id, /^BC-\d+$/)}`
+    );
 }
 out(`\n${moved} vaga(s) ${dry ? 'mudariam' : 'mudaram'} de lugar.\n`);
 
@@ -149,9 +152,9 @@ type AddressRow = {
   lon: number;
   precision: string;
 };
-const addresses = (await rest(
-  'addresses?select=account_id,cep,street,neighborhood,city,uf,lat,lon,precision'
-)) as AddressRow[];
+const addresses = rows<AddressRow>(
+  'select account_id, cep, street, neighborhood, city, uf, lat, lon, precision from public.addresses order by account_id'
+);
 out(`### Endereços de conta (${addresses.length})\n`);
 out('| conta | precisão antes | precisão depois | mudou |');
 out('| --- | --- | --- | --- |');
@@ -176,18 +179,16 @@ for (const a of addresses) {
   if (d < 15) continue;
   movedHomes++;
   if (!dry) {
-    await rest(`addresses?account_id=eq.${a.account_id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ lat: found.point.lat, lon: found.point.lon, precision: found.precision })
-    });
+    const account = text(a.account_id, /^[0-9a-f-]{36}$/);
+    sql(
+      `update public.addresses set lat = ${num(found.point.lat)}, lon = ${num(found.point.lon)}, ` +
+        `precision = ${text(found.precision, /^(numero|rua|cep|bairro|cidade)$/)} where account_id = ${account}`
+    );
     // O ponto público do trabalhador (arredondado a ~1 km), como o set_my_address faz.
-    await rest(`workers?id=eq.${a.account_id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        lat: Math.round(found.point.lat * 100) / 100,
-        lon: Math.round(found.point.lon * 100) / 100
-      })
-    });
+    sql(
+      `update public.workers set lat = round(${num(found.point.lat)}::numeric, 2), ` +
+        `lon = round(${num(found.point.lon)}::numeric, 2) where id = ${account}`
+    );
   }
 }
 out(`\n${movedHomes} endereço(s) ${dry ? 'mudariam' : 'mudaram'} de lugar.`);
