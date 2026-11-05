@@ -2647,3 +2647,12 @@ sempre só a marca. O `og:title` (prévia ao compartilhar o link) continua com a
     cantos mais arredondados. No computador, o cartão do lado ganhou a data e o lugar entre o preço e o botão.
 - **Acessibilidade**: um só título principal (o do bico); o título do cabeçalho rolado é só visual; axe WCAG 2.1 AA
   sem problemas nos dois temas.
+
+## U79 — Mapa em tela cheia cobre o "Quero esse bico"
+
+- **Problema**: ao abrir o mapa em tela cheia na página do bico, a barra de baixo com "Quero esse bico" (e o cabeçalho)
+  ficavam por cima dele. O mapa estava dentro da folha de conteúdo (`z-10`), e dentro dessa camada o `z-[60]` dele
+  não passa da barra (`z-20`) nem do cabeçalho (`z-30`).
+- **O que foi feito**: o mapa em tela cheia (`JobMap`) agora é desenhado num portal no `<body>`, como os outros visores
+  em tela cheia (`PostViewer`, `BusyOverlay`). Cobre a página inteira: celular (barra) e computador (cartão do lado).
+  Ao fechar, o portal some e a página volta como estava, com o botão. Conferido no navegador nos dois tamanhos.

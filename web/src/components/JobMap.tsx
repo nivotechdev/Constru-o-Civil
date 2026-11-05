@@ -4,6 +4,7 @@
 // loads only when the section comes near the screen. U76: with Google configured, Google's route (the same numbers as
 // Google Maps) on Google's map; an address saved before U76 is placed again, once (profiles.refineMyAddress).
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { GeoPoint } from '../types/models';
 import { distanceKm, formatKm } from '../utils/geo';
 import { routeDistanceText, routeTimeText, routeToJob, type DrivingRoute } from '../services/route';
@@ -155,34 +156,39 @@ export function JobMap({ jobId, job, place, home, askHome = false }: Props) {
         </div>
         {distanceLine ? <div className="px-4 py-3.5 border-t border-concrete-200">{distanceLine}</div> : null}
       </div>
-      {open ? (
-        <div
-          ref={modal}
-          tabIndex={-1}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mapa de onde vai ser o bico"
-          className="fixed inset-0 z-[60] bg-concrete-100 outline-none animate-fade-in"
-        >
-          {canvas('full')}
-          <button
-            type="button"
-            aria-label="Fechar o mapa"
-            className="absolute left-3 z-[600] w-12 h-12 flex items-center justify-center rounded-full bg-concrete-0 text-concrete-900 shadow-[0_2px_10px_rgba(16,24,40,0.25)] active:bg-concrete-100"
-            style={{ top: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}
-            onClick={() => setOpen(false)}
-          >
-            <Icon name="x" size={22} />
-          </button>
-          <div
-            className="absolute inset-x-3 z-[600] flex flex-col gap-1 rounded-2xl bg-concrete-0 p-4 shadow-[0_6px_24px_rgba(16,24,40,0.2)]"
-            style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
-          >
-            <span className="font-semibold text-concrete-900">{place}</span>
-            {distanceLine}
-          </div>
-        </div>
-      ) : null}
+      {/* U79: in a portal on <body>, so the full-screen map covers the whole page — the "Quero esse bico" bar, the
+          header and the desktop card included (inside the page's stacking context they stayed on top of it). */}
+      {open
+        ? createPortal(
+            <div
+              ref={modal}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mapa de onde vai ser o bico"
+              className="fixed inset-0 z-[60] bg-concrete-100 outline-none animate-fade-in"
+            >
+              {canvas('full')}
+              <button
+                type="button"
+                aria-label="Fechar o mapa"
+                className="absolute left-3 z-[600] w-12 h-12 flex items-center justify-center rounded-full bg-concrete-0 text-concrete-900 shadow-[0_2px_10px_rgba(16,24,40,0.25)] active:bg-concrete-100"
+                style={{ top: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}
+                onClick={() => setOpen(false)}
+              >
+                <Icon name="x" size={22} />
+              </button>
+              <div
+                className="absolute inset-x-3 z-[600] flex flex-col gap-1 rounded-2xl bg-concrete-0 p-4 shadow-[0_6px_24px_rgba(16,24,40,0.2)]"
+                style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+              >
+                <span className="font-semibold text-concrete-900">{place}</span>
+                {distanceLine}
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
