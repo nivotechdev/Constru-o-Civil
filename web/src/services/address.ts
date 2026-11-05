@@ -359,7 +359,10 @@ export async function resolveAddress(
     uf: city.uf,
     cep,
     cityCentre: city.point,
-    cepPoint: cepFound && cepFound.pointPrecision !== 'cidade' ? cepFound.point : null
+    cepPoint: cepFound && cepFound.pointPrecision !== 'cidade' ? cepFound.point : null,
+    ...(cepFound?.street && cepFound.street !== typed.street && likelySameStreet(cepFound.street, typed.street)
+      ? { officialStreet: cepFound.street }
+      : {})
   });
   return {
     ok: true,
@@ -452,6 +455,9 @@ async function findCep(
       same = (await suggestStreets(cityLabel, last)).items.filter((o) => likelySameStreet(o.street, street));
   }
   if (!same.length) return null;
+  // A CEP ending in 900–999 is a big user's or the Correios' own (one building), not the street's: only if nothing else.
+  const regular = same.filter((o) => !/-9\d\d$/.test(o.cep));
+  if (regular.length) same = regular;
   const inHood = (o: StreetOption) => likelySameNeighborhood(o.neighborhood, neighborhood);
   const covers = (o: StreetOption) => (number ? stretchHas(o.detail, number) : null);
   return (
@@ -475,6 +481,8 @@ export interface GeocodeInput {
   cityCentre: GeoPoint;
   /** The CEP's own point, when the CEP lookup brought one. */
   cepPoint: GeoPoint | null;
+  /** U76: the street's official name (the Correios'), when it is written otherwise than typed. */
+  officialStreet?: string;
 }
 
 /**

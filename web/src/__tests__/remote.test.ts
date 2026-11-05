@@ -726,6 +726,40 @@ describe('remote: data and actions', () => {
     vi.unstubAllGlobals();
   });
 
+  it("U76: the street's CEP is a street CEP, never a big user's (900–999), and the number's stretch", async () => {
+    await load(server('ana'));
+    const remoteAddress = await import('../services/remote/address');
+    remoteAddress.nominatimPolicy.gapMs = 0;
+    vi.stubGlobal('fetch', async (url: string) => {
+      const body = url.startsWith('https://viacep.com.br/ws/RS/')
+        ? [
+            { cep: '95020-911', logradouro: 'Rua Garibaldi', complemento: 'Prefeitura', bairro: 'Madureira' },
+            { cep: '95040-000', logradouro: 'Rua Garibaldi', complemento: 'até 899/900', bairro: 'Madureira' },
+            { cep: '95040-001', logradouro: 'Rua Garibaldi', complemento: 'de 901/902 ao fim', bairro: 'Madureira' }
+          ]
+        : url.includes('nominatim')
+          ? [
+              {
+                lat: '-29.1601',
+                lon: '-51.1771',
+                name: 'Rua Garibaldi',
+                category: 'highway',
+                address: { road: 'Rua Garibaldi', suburb: 'Madureira', 'ISO3166-2-lvl4': 'BR-RS' }
+              }
+            ]
+          : null;
+      return body === null ? new Response('x', { status: 404 }) : new Response(JSON.stringify(body));
+    });
+    const address = await import('../services/address');
+    const draft = { cep: '', city: 'Caxias do Sul, RS', street: 'Rua Garibaldi, 1200', neighborhood: 'Madureira' };
+    const r = await address.resolveAddress(draft);
+    expect(r).toMatchObject({
+      ok: true,
+      address: { cep: '95040-001', street: 'Rua Garibaldi, 1200', lat: -29.1601, precision: 'rua' }
+    });
+    vi.unstubAllGlobals();
+  });
+
   it('U76: an address saved before is placed again once — same text, a better point', async () => {
     const saved = {
       account_id: 'u-ana',

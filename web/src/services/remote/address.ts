@@ -457,6 +457,15 @@ function choosePlace(
   return { point: medoid(chosen).p, precision: 'rua' };
 }
 
+/** "Rua Júlio de Castilhos" → "Júlio de Castilhos" (the map may call it "Avenida"). */
+function withoutKind(street: string): string {
+  const rest = street.replace(
+    /^\s*(rua|r\.?|avenida|av\.?|travessa|tv\.?|trav\.?|alameda|al\.?|estrada|est\.?|rodovia|rod\.?|praça|praca|pça\.?|largo|beco|viela)\s+/i,
+    ''
+  );
+  return rest === street ? '' : rest;
+}
+
 /** Where the neighbourhood is (its centre on the map), or null when the map doesn't know it in this city. */
 async function neighborhoodCentre(input: GeocodeInput): Promise<GeoPoint | null> {
   if (fold(input.neighborhood).length < 2) return null;
@@ -526,33 +535,31 @@ export async function geocodeOnline(input: GeocodeInput): Promise<{ point: GeoPo
     return helped ? first : choosePlace(places, q, await hoodCentre());
   };
 
+  // The names to ask the map by, until one answers: as typed, as the Correios write it, without its kind ("Rua" for
+  // what the map calls "Avenida") and, last, only its last word — the map's own name is then matched here.
+  const words = streetWords(q.street);
+  const last = words[words.length - 1] ?? '';
+  const names = [q.street, input.officialStreet ?? '', withoutKind(q.street)]
+    .map((n) => n.trim())
+    .filter((n, i, all) => n && all.findIndex((m) => fold(m) === fold(n)) === i);
+  if (last.length >= 3 && words.length > 1 && !names.some((n) => fold(n) === last)) names.push(last);
+
   let mapReached = false;
   try {
-    const line = q.number ? `${q.number} ${q.street}` : q.street;
-    let found = await decide(
-      fromNominatim(
-        await nominatim<NominatimPlace>(
-          `limit=40&dedupe=0&layer=address&street=${encodeURIComponent(line)}&city=${city}`
-        ),
-        q.uf
-      )
-    );
-    mapReached = true;
-    if (!found) {
-      // The map may write the name another way: ask by its last word and match the names here.
-      const words = streetWords(q.street);
-      const last = words[words.length - 1];
-      if (last && words.length > 1 && last.length >= 3)
-        found = await decide(
-          fromNominatim(
-            await nominatim<NominatimPlace>(
-              `limit=40&dedupe=0&layer=address&street=${encodeURIComponent(last)}&city=${city}`
-            ),
-            q.uf
-          )
-        );
+    for (const [i, name] of names.entries()) {
+      // The number goes with the first name only: a house is asked once.
+      const line = q.number && i === 0 ? `${q.number} ${name}` : name;
+      const found = await decide(
+        fromNominatim(
+          await nominatim<NominatimPlace>(
+            `limit=40&dedupe=0&layer=address&street=${encodeURIComponent(line)}&city=${city}`
+          ),
+          q.uf
+        )
+      );
+      mapReached = true;
+      if (found) return found;
     }
-    if (found) return found;
   } catch {
     // Nominatim out or slow: Photon has the same map.
   }

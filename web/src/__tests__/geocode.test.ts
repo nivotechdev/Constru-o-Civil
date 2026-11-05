@@ -129,11 +129,12 @@ describe('U76: where the address is on the map', () => {
 
   it('the map names the street another way: asks by its last word and matches the name', async () => {
     answers.push(
-      streetSearch([], '&street=Rua%20Padre'),
       streetSearch(
         [road(-29.2101, -51.1702, { suburb: 'Nossa Senhora da Saúde' }, 'Rua Padre Alberto Lamonato')],
         '&street=lamonato'
-      )
+      ),
+      // As typed and without "Rua": nothing.
+      streetSearch([])
     );
     const found = await r.geocodeOnline({
       ...input,
@@ -142,6 +143,34 @@ describe('U76: where the address is on the map', () => {
       cep: '95032-773'
     });
     expect(found).toEqual({ point: { lat: -29.2101, lon: -51.1702 }, precision: 'rua' });
+    expect(urls.filter((u) => u.includes('&street=')).map((u) => decodeURIComponent(u.split('&street=')[1]))).toEqual([
+      'Rua Padre Alberto Luiz Lamonato&city=Caxias do Sul',
+      'Padre Alberto Luiz Lamonato&city=Caxias do Sul',
+      'lamonato&city=Caxias do Sul'
+    ]);
+  });
+
+  it('typed "Rua", the map says "Avenida": asked without the kind, and by the Correios\' name', async () => {
+    answers.push(
+      streetSearch(
+        [road(-29.1679, -51.1791, { suburb: 'Centro' }, 'Avenida Júlio de Castilhos')],
+        '&street=J%C3%BAlio%20de%20Castilhos'
+      ),
+      streetSearch([])
+    );
+    const found = await r.geocodeOnline({
+      ...input,
+      street: 'Rua Júlio de Castilhos',
+      neighborhood: 'Centro',
+      cep: '95010-003',
+      officialStreet: 'Avenida Júlio de Castilhos'
+    });
+    expect(found).toEqual({ point: { lat: -29.1679, lon: -51.1791 }, precision: 'rua' });
+    expect(urls.filter((u) => u.includes('&street=')).map((u) => decodeURIComponent(u.split('&street=')[1]))).toEqual([
+      'Rua Júlio de Castilhos&city=Caxias do Sul',
+      'Avenida Júlio de Castilhos&city=Caxias do Sul',
+      'Júlio de Castilhos&city=Caxias do Sul'
+    ]);
   });
 
   it('no stretch in the neighbourhood by name: the one nearest the neighbourhood on the map', async () => {
