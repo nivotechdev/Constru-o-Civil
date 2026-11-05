@@ -3,7 +3,11 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { JobNotFound } from '../../components/NotFound';
 import { ResultIcon } from '../../components/ResultIcon';
+import { ScreenLoading } from '../../components/QueryView';
+import { PageSkeleton } from '../../components/Skeleton';
+import { useQuery } from '../../hooks/useQuery';
 import { useDb } from '../../hooks/useStore';
+import { loadJob } from '../../services/jobs';
 import type { ScreenProps } from '../../types/screen';
 import { goBack, navigate } from '../../services/router';
 import { getJob } from '../../services/selectors';
@@ -13,7 +17,14 @@ import { dateText, placeText } from '../../utils/jobInfo';
 import { FEATURES } from '../../services/features';
 
 export default function JobPublished({ params }: ScreenProps) {
-  const job = getJob(useDb(), params.id);
+  const db = useDb();
+  // AUD-108: after a reload the store is empty; fetch the job before saying it does not exist.
+  const query = useQuery('job:' + params.id, () => loadJob(params.id));
+  const job = getJob(db, params.id);
+  if (!job && query.status !== 'ready')
+    return (
+      <ScreenLoading title="Vaga publicada" onBack={() => goBack('/mural')} query={query} skeleton={<PageSkeleton />} />
+    );
   if (!job) return <JobNotFound />;
 
   return (
