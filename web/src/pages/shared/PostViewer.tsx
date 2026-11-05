@@ -22,20 +22,22 @@ interface PostViewerProps {
 }
 
 export function PostViewer({ posts, index, isOwn, onIndex }: PostViewerProps) {
-  const [editing, setEditing] = useState<string | null>(null);
+  // AUD-099: a caption being edited belongs to one post; another post (or a closed viewer) never inherits it.
+  const [draft, setDraft] = useState<{ id: string; text: string } | null>(null);
   const touchX = useRef<number | null>(null);
   const open = index !== null && Boolean(posts[index]);
   const modalRef = useModal(open, () => onIndex(null));
   const save = useAction(updatePostCaption, () => {
-    setEditing(null);
+    setDraft(null);
     showToast('Legenda salva');
   });
   if (index === null || !posts[index]) return null;
   const post = posts[index];
+  const editing = draft && draft.id === post.id ? draft.text : null;
   const go = (delta: number) => {
     const next = index + delta;
     if (next >= 0 && next < posts.length) {
-      setEditing(null);
+      setDraft(null);
       onIndex(next);
     }
   };
@@ -104,12 +106,12 @@ export function PostViewer({ posts, index, isOwn, onIndex }: PostViewerProps) {
               rows={3}
               value={editing}
               className="w-full px-3 py-2.5 bg-concrete-0 rounded-control border outline-none text-base text-concrete-900 resize-none"
-              onInput={(v) => setEditing(v.slice(0, MAX_CAPTION))}
+              onInput={(v) => setDraft({ id: post.id, text: v.slice(0, MAX_CAPTION) })}
             />
             <span className="text-xs text-white/60 self-end">{`${editing.length}/${MAX_CAPTION}`}</span>
             {save.error ? <FieldError message={save.error} /> : null}
             <div className="flex gap-2">
-              <Button label="Cancelar" variant="secondary" className="flex-1" onClick={() => setEditing(null)} />
+              <Button label="Cancelar" variant="secondary" className="flex-1" onClick={() => setDraft(null)} />
               <Button
                 label="Salvar"
                 className="flex-1"
@@ -127,7 +129,7 @@ export function PostViewer({ posts, index, isOwn, onIndex }: PostViewerProps) {
                 <button
                   type="button"
                   className="text-sm font-semibold text-white underline"
-                  onClick={() => setEditing(post.caption)}
+                  onClick={() => setDraft({ id: post.id, text: post.caption })}
                 >
                   Editar legenda
                 </button>
