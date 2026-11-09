@@ -48,3 +48,23 @@ export async function portfolioFileProblem(
   if (mb > MAX_PHOTO_MB) return `Foto de até ${MAX_PHOTO_MB} MB.`;
   return null;
 }
+
+/**
+ * AUD-086: which of the picked files go into a job's photos. Only photos (the same size limit as the portfolio),
+ * and no more than `max` in all. `problem` says what was left out, in the person's words.
+ */
+export function pickJobPhotos<T extends Pick<File, 'type' | 'size'> & Partial<File>>(
+  files: T[],
+  current: number,
+  max: number
+): { accepted: T[]; problem: string | null } {
+  const isPhoto = (f: T) => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name ?? '');
+  const photos = files.filter(isPhoto);
+  const sized = photos.filter((f) => f.size / (1024 * 1024) <= MAX_PHOTO_MB);
+  const accepted = sized.slice(0, Math.max(max - current, 0));
+  let problem: string | null = null;
+  if (photos.length < files.length) problem = 'Só dá para enviar foto. Os outros arquivos ficaram de fora.';
+  else if (sized.length < photos.length) problem = `Foto de até ${MAX_PHOTO_MB} MB. As maiores ficaram de fora.`;
+  else if (sized.length > accepted.length) problem = `Só cabem ${max} fotos.`;
+  return { accepted, problem };
+}

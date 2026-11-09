@@ -73,3 +73,31 @@ describe('AUD-084: /entrar-celular sem o login por celular ligado', () => {
     expect(s).toMatch(/FEATURES\.phoneLogin \? <PhoneSignInSteps \/> : <PhoneSignInOff \/>/);
   });
 });
+
+import { pickJobPhotos } from '../utils/media';
+
+describe('AUD-086: fotos da vaga', () => {
+  const photo = (mb = 1, name = 'a.png') => ({ type: 'image/png', size: mb * 1024 * 1024, name });
+  it('recusa arquivo que não é foto, com aviso', () => {
+    const r = pickJobPhotos([{ type: 'text/plain', size: 10, name: 'nota.txt' }, photo()], 0, 6);
+    expect(r.accepted).toHaveLength(1);
+    expect(r.problem).toMatch(/Só dá para enviar foto/);
+  });
+  it('recusa foto grande demais', () => {
+    const r = pickJobPhotos([photo(11)], 0, 6);
+    expect(r.accepted).toHaveLength(0);
+    expect(r.problem).toMatch(/até 10 MB/);
+  });
+  it('avisa quando passa do limite de fotos', () => {
+    const r = pickJobPhotos(
+      Array.from({ length: 7 }, () => photo()),
+      3,
+      6
+    );
+    expect(r.accepted).toHaveLength(3);
+    expect(r.problem).toBe('Só cabem 6 fotos.');
+  });
+  it('sem problema, sem aviso', () => {
+    expect(pickJobPhotos([photo()], 0, 6).problem).toBeNull();
+  });
+});
