@@ -1267,6 +1267,28 @@ describe('remote: data and actions', () => {
     expect(decodeURIComponent(contact.url)).toContain('(BC-5001)');
   });
 
+  it('AUD-090: a failing "conclude finished jobs" does not take "Minhas candidaturas" down', async () => {
+    const app = {
+      id: 'app-9',
+      job_id: 'BC-5001',
+      worker_id: 'u-ana',
+      status: 'enviada',
+      created_at: NOW,
+      status_changed_at: NOW,
+      auto_rejected: false,
+      worker_reviewed: false,
+      company_reviewed: false
+    };
+    const fake = server('ana', {
+      tables: { applications: [app] },
+      rpc: { conclude_my_finished_jobs: () => ({ data: null, error: { code: 'XX000', message: 'boom' } }) }
+    });
+    const m = await load(fake);
+    await m.auth.signIn('ana@exemplo.com', 'segredo123');
+    await expect(m.apps.loadMyApplications()).resolves.toBeUndefined();
+    expect(fake.calls.some((c) => c.kind === 'from' && c.name === 'applications')).toBe(true);
+  });
+
   it('AUD-002: jobs are read without the street; the exact address comes only when the server sends it', async () => {
     const exact = {
       job_id: 'BC-5001',

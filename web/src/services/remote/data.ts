@@ -144,7 +144,8 @@ async function savedIds(): Promise<string[]> {
 /** Diárias whose last day has passed become "concluída" (the hourly routine also does it). */
 async function concludeMine(): Promise<void> {
   const client = await db();
-  await request(() => client.rpc('conclude_my_finished_jobs'));
+  // AUD-090: only a head start (the hourly routine does it anyway): if it fails, the screen still reads its data.
+  await request(() => client.rpc('conclude_my_finished_jobs')).catch(() => undefined);
 }
 
 // ---- jobs ----
