@@ -127,3 +127,14 @@ describe('AUD-109: candidato só aprovado tem uma saída', () => {
     expect(s).toMatch(/setConfirm\('cancelar'\)/);
   });
 });
+
+describe('AUD-114: seletor de cidade', () => {
+  const s = src('components/CityPicker.tsx');
+  it('uma resposta tardia do GPS é ignorada depois de fechar', () => {
+    expect(s).toMatch(/lookup\.current !== mine/);
+    expect(s).toMatch(/const close = \(\) => \{\s*lookup\.current \+= 1;/);
+  });
+  it('a lista não promete setas (sem listbox/option)', () => {
+    expect(s).not.toMatch(/role="listbox"|role="option"/);
+  });
+});

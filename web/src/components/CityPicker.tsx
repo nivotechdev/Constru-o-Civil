@@ -1,5 +1,6 @@
 // "Onde você quer trabalhar": the button that shows the chosen city, and the sheet that picks one — by
 // GPS or by typing any Brazilian municipality. Used by the mural's filters and by "Completar perfil".
+import { useRef } from 'react';
 import { useUI } from '../hooks/useStore';
 import { locateMyCity, searchCities } from '../services/cities';
 import type { GeoPoint } from '../types/models';
@@ -59,17 +60,26 @@ interface CityPickerProps {
 
 export function CityPicker({ open, title, value, onChoose, onClose, stateKey }: CityPickerProps) {
   const [ui, setUi] = useUI<PickerUI>(stateKey, PICKER_DEFAULTS);
+  // AUD-114: the number of the GPS lookup still wanted; closing or choosing by hand makes a late answer be ignored.
+  const lookup = useRef(0);
   const close = () => {
+    lookup.current += 1;
     setUi(PICKER_DEFAULTS);
     onClose();
   };
   const choose = (label: string, point?: GeoPoint) => {
+    lookup.current += 1;
     setUi(PICKER_DEFAULTS);
     onChoose(label, point);
   };
   const useMyLocation = () => {
+    const mine = ++lookup.current;
     setUi({ geo: 'loading' });
-    void locateMyCity().then((r) => (typeof r === 'string' ? setUi({ geo: r }) : choose(r.label, r.point)));
+    void locateMyCity().then((r) => {
+      if (lookup.current !== mine) return;
+      if (typeof r === 'string') setUi({ geo: r });
+      else choose(r.label, r.point);
+    });
   };
   const q = ui.query.trim();
   const results = open ? searchCities(q, 8) : [];
@@ -114,15 +124,14 @@ export function CityPicker({ open, title, value, onChoose, onClose, stateKey }: 
           {q ? 'Cidades encontradas' : 'Cidades mais procuradas'}
         </span>
         {results.length ? (
-          <div className="flex flex-col" role="listbox" aria-label="Cidades">
+          <div className="flex flex-col" role="group" aria-label="Cidades">
             {results.map((c) => {
               const active = c.label === value;
               return (
                 <button
                   key={c.label}
                   type="button"
-                  role="option"
-                  aria-selected={active ? 'true' : 'false'}
+                  aria-pressed={active ? 'true' : 'false'}
                   className={cx(
                     'flex items-center gap-3 min-h-12 px-2 -mx-2 rounded-control text-left transition-colors hover:bg-concrete-50',
                     active ? 'text-brand-600' : 'text-concrete-900'
