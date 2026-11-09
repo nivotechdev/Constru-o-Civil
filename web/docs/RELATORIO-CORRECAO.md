@@ -80,6 +80,22 @@ Feito na terceira rodada do bloco 1 (S3, só telas, sem migration):
 - AUD-087 (impulsionar vaga de outra empresa) não se aplica no piloto: com o pagamento inativo a tela já mostra
   "indisponível". Volta junto com o AUD-032.
 
+Feito na quarta rodada do bloco 1 (S3):
+
+- AUD-086 (fotos da vaga: só foto, até 10 MB, 6 no total, com aviso), AUD-090 (falha em concluir diárias não derruba as
+  telas de acompanhamento), AUD-091 (mensagem pronta do WhatsApp sem artigo errado e sem gênero: "Minha candidatura
+  foi aprovada" / "Sua contratação foi confirmada" — redação neutra, os sócios podem trocar), AUD-092 (textos legais na
+  versão 3.0 de 02/11; todo mundo aceita de novo; teste com hash do texto), AUD-096 (limite de tentativas e conta
+  suspensa ao trocar senha/e-mail e ao confirmar código), AUD-097 (captcha que falhou e navegador embutido), AUD-107
+  (busca do mural com "Carregar mais" e "30+"), AUD-109 (candidato só aprovado tem uma saída), AUD-110 (digitar na
+  busca mantém a lista), AUD-114 (GPS do seletor de cidade ignorado depois de fechar; lista sem `listbox`; E2E
+  ajustado). Testes: `smallFixesBlock1`, `authErrors`, `remote` (AUD-090), `legal`.
+- Deixados de propósito (mexem em login/cadastro ou pedem decisão; entram no bloco de ajustes finais):
+  AUD-103 (link de senha vencido: precisa ser testado no celular, porque a sessão do link chega de forma assíncrona),
+  AUD-119 (CNPJ alfanumérico: toca banco, login por documento e Edge Functions; enquanto isso, empresa com CNPJ novo
+  alfanumérico se cadastra com CPF), AUD-120 (cidade padrão "São Paulo, SP" no cadastro), AUD-122 (Fernando de
+  Noronha), AUD-126 (refatorar filtros do mural), AUD-088, 095, 102, 112, 117, 121, 123, 124, 125, 127.
+
 Ainda não feito no bloco 1:
 
 - AUD-032 (S2): estados do pagamento do impulso. Fica para quando o pagamento for ligado (hoje inativo no piloto).
