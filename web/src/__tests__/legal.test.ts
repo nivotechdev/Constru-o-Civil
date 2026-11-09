@@ -45,3 +45,20 @@ describe('textos legais (L07)', () => {
     expect(IDENTITY_CONSENT.points.join(' ')).toContain('30 dias');
   });
 });
+
+// AUD-092: the text of a version never changes under the same number. If this fails after editing a paragraph, raise
+// `version` and `updatedAt` in services/legal.ts (everyone accepts again) and put the new hash here.
+import { createHash } from 'node:crypto';
+const BODY_HASH: Record<string, string> = {
+  'Termos de uso@3.0': 'd59d5de668ad264805c1980f224b8314b78a138a7553fdfe0f5571498dd5bb32',
+  'Política de privacidade@3.0': 'ce722eb2c1284c4d035082add86699ce417ee829db85640c05f6454146d048bc'
+};
+describe('versão do texto legal (AUD-092)', () => {
+  for (const doc of [TERMS, PRIVACY]) {
+    it(`${doc.title}: o texto desta versão não mudou sem subir a versão`, () => {
+      const key = `${doc.title}@${doc.version}`;
+      const hash = createHash('sha256').update(JSON.stringify(doc.sections)).digest('hex');
+      expect(BODY_HASH[key], `texto novo para ${key}: hash ${hash}`).toBe(hash);
+    });
+  }
+});

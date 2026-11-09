@@ -1,6 +1,6 @@
 # Política de privacidade
 
-**Versão 2.0 · atualizada em 15/10/2026**
+**Versão 3.0 · atualizada em 02/11/2026**
 
 > **Versão do piloto (ainda sem revisão de advogado).** Gerado de `web/src/services/legal.ts` — edite lá, não aqui. Os
 > campos `{{...}}` são preenchidos pela empresa (ver `web/docs/CHECKLIST-LANCAMENTO.md`).

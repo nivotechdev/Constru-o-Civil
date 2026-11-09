@@ -23,8 +23,8 @@ export const LEGAL_REVIEWED = false;
 
 export const TERMS: LegalDocument = {
   title: 'Termos de uso',
-  version: '2.0',
-  updatedAt: '2026-10-15',
+  version: '3.0',
+  updatedAt: '2026-11-02',
   sections: [
     {
       title: '1. Quem somos',
@@ -98,8 +98,8 @@ export const TERMS: LegalDocument = {
 
 export const PRIVACY: LegalDocument = {
   title: 'Política de privacidade',
-  version: '2.0',
-  updatedAt: '2026-10-15',
+  version: '3.0',
+  updatedAt: '2026-11-02',
   sections: [
     {
       title: '1. Quem cuida dos seus dados',
