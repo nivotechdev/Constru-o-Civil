@@ -70,7 +70,7 @@ test('construtora se cadastra e publica uma vaga com foto', async ({ page }) => 
   await page.getByRole('button', { name: 'Digitar a cidade' }).click();
   await page.fill('#completar-cidade-search', 'Caxias do Sul');
   await page
-    .getByRole('option', { name: /Caxias do Sul/ })
+    .getByRole('button', { name: /Caxias do Sul/ })
     .first()
     .click();
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
