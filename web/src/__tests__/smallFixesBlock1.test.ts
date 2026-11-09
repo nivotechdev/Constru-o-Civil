@@ -117,3 +117,13 @@ describe('AUD-107 e AUD-110: busca do mural', () => {
     expect(desktop).toMatch(/found\?\.jobs\.length && query\.status !== 'ready'/);
   });
 });
+
+describe('AUD-109: candidato só aprovado tem uma saída', () => {
+  it('"Cancelar a contratação" fica só para quem foi contratado', () => {
+    const s = src('pages/recruiter/CandidateActions.tsx');
+    const pre = s.slice(s.indexOf("app.status === 'pre_selecionado'"), s.indexOf("app.status === 'contratado'"));
+    expect(pre).toMatch(/Desfazer aprovação/);
+    expect(pre).not.toMatch(/setConfirm\('cancelar'\)/);
+    expect(s).toMatch(/setConfirm\('cancelar'\)/);
+  });
+});

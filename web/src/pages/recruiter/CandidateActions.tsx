@@ -130,14 +130,7 @@ export function CandidateActions({ job, worker }: { job: Job; worker: Worker }) 
             disabled={busy}
             onClick={() => void doUndo.run(job.id, worker.id)}
           />
-          <Button
-            label="Cancelar"
-            variant="ghost"
-            fullWidth
-            className="lg:w-auto"
-            disabled={busy}
-            onClick={() => setConfirm('cancelar')}
-          />
+          {/* AUD-109: one way out while only approved ("Desfazer aprovação"); cancelling is for a hired worker. */}
         </div>
       </div>
     );
