@@ -10,6 +10,7 @@ import { useUI } from '../../../hooks/useStore';
 import { navigate } from '../../../services/router';
 import { MENU_DEFAULTS, MENU_KEY, type MenuUI } from '../../../services/sharedUI';
 import type { Database, Job, Role } from '../../../types/models';
+import { countText } from '../../../utils/format';
 import { FeedGrid, LoadMore, NoJobsState, NoSearchResults, SearchPill, SearchScope } from './FeedParts';
 import { feedNarrowed, setFeed, SORTS, type ActiveFilter, type FeedUI, type SearchMatches } from './feedUI';
 import type { Paging } from '../../../services/paging';
@@ -42,9 +43,12 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
       {found.jobs.length ? (
         <div className="flex flex-col gap-3">
           <div className="text-xs font-bold tracking-[0.08em] uppercase text-concrete-500" role="status">
-            {found.jobs.length === 1 ? '1 vaga encontrada' : `${found.jobs.length} vagas encontradas`}
+            {found.jobs.length === 1 && !paging.hasMore
+              ? '1 vaga encontrada'
+              : `${countText(found.jobs.length, paging.hasMore)} vagas encontradas`}
           </div>
           <FeedGrid db={db} role={role} jobs={found.jobs} />
+          <LoadMore paging={paging} />
         </div>
       ) : (
         <NoSearchResults search={ui.search} location={ui.location} allCities={ui.allCities} />
@@ -100,9 +104,14 @@ export function MobileFeed({ db, role, ui, ordered, found, chips, query, home, p
       </div>
       <div className="px-4 pt-4 pb-6">
         <div className="mural-frame flex flex-col gap-5">
-          <QueryView query={query} skeleton={<TileGridSkeleton count={4} />}>
-            {() => searchResults ?? browseResults}
-          </QueryView>
+          {/* AUD-110: typing keeps the list on screen until the new one arrives (no skeleton flash). */}
+          {searchResults && found?.jobs.length && query.status !== 'ready' ? (
+            searchResults
+          ) : (
+            <QueryView query={query} skeleton={<TileGridSkeleton count={4} />}>
+              {() => searchResults ?? browseResults}
+            </QueryView>
+          )}
         </div>
       </div>
     </div>

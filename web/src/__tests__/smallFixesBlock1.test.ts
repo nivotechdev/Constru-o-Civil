@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { restoreExperience } from '../utils/profileText';
-import { countText } from '../pages/recruiter/MyJobs';
+import { countText } from '../utils/format';
 
 const src = (p: string) => readFileSync(fileURLToPath(new URL('../' + p, import.meta.url)), 'utf8');
 
@@ -99,5 +99,21 @@ describe('AUD-086: fotos da vaga', () => {
   });
   it('sem problema, sem aviso', () => {
     expect(pickJobPhotos([photo()], 0, 6).problem).toBeNull();
+  });
+});
+
+describe('AUD-107 e AUD-110: busca do mural', () => {
+  const mobile = src('pages/worker/feed/MobileFeed.tsx');
+  const desktop = src('pages/worker/feed/DesktopFeed.tsx');
+  it('a busca tem "Carregar mais" e conta com "+"', () => {
+    for (const s of [mobile, desktop]) {
+      expect(s).toMatch(/countText\(/);
+      expect(s).toMatch(/<LoadMore paging=\{paging\} \/>/);
+    }
+    expect(mobile.match(/<LoadMore/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+  it('digitar mantém a lista até chegar a nova', () => {
+    expect(mobile).toMatch(/found\?\.jobs\.length && query\.status !== 'ready'/);
+    expect(desktop).toMatch(/found\?\.jobs\.length && query\.status !== 'ready'/);
   });
 });

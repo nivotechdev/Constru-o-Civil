@@ -5,6 +5,7 @@ import { TileGridSkeleton } from '../../../components/Skeleton';
 import { Tag } from '../../../components/Tag';
 import type { Database, Role } from '../../../types/models';
 import { cx } from '../../../utils/cx';
+import { countText } from '../../../utils/format';
 import { FeedGrid, LoadMore, NoJobsState, NoSearchResults, SearchPill, SearchScope } from './FeedParts';
 import { feedNarrowed, noFilters, setFeed, type SearchMatches } from './feedUI';
 import type { FeedLayoutProps } from './MobileFeed';
@@ -64,7 +65,10 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, 
       </div>
       <div className="page-x pt-8 pb-20">
         <div className="mural-frame">
-          <QueryView query={query} skeleton={<TileGridSkeleton count={8} />}>
+          <QueryView
+            query={found?.jobs.length && query.status !== 'ready' ? { ...query, status: 'ready' } : query}
+            skeleton={<TileGridSkeleton count={8} />}
+          >
             {() =>
               found ? (
                 <div className="flex flex-col gap-4">
@@ -75,6 +79,7 @@ export function DesktopFeed({ db, role, ui, ordered, found, chips, query, home, 
                     found={found}
                     location={ui.location}
                     allCities={ui.allCities}
+                    paging={paging}
                   />
                   <SearchScope location={ui.location} allCities={ui.allCities} />
                 </div>
@@ -96,9 +101,10 @@ interface SearchResultsProps {
   found: SearchMatches;
   location: string;
   allCities: boolean;
+  paging: FeedLayoutProps['paging'];
 }
 
-function SearchResults({ db, role, search, found, location, allCities }: SearchResultsProps) {
+function SearchResults({ db, role, search, found, location, allCities, paging }: SearchResultsProps) {
   const { jobs } = found;
   return (
     <div className="flex flex-col gap-6">
@@ -106,12 +112,15 @@ function SearchResults({ db, role, search, found, location, allCities }: SearchR
         <h1 className="text-[1.75rem] font-semibold leading-tight text-concrete-900">{`Resultados para “${search.trim()}”`}</h1>
         {jobs.length ? (
           <span className="text-concrete-500" role="status">
-            {jobs.length === 1 ? '1 vaga' : `${jobs.length} vagas`}
+            {jobs.length === 1 && !paging.hasMore ? '1 vaga' : `${countText(jobs.length, paging.hasMore)} vagas`}
           </span>
         ) : null}
       </div>
       {jobs.length ? (
-        <FeedGrid db={db} role={role} jobs={jobs} />
+        <>
+          <FeedGrid db={db} role={role} jobs={jobs} />
+          <LoadMore paging={paging} />
+        </>
       ) : (
         <NoSearchResults search={search} location={location} allCities={allCities} />
       )}

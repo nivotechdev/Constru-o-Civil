@@ -93,3 +93,8 @@ export function formatPostDate(isoDate: string): string {
 export function isValidMobile(v: string | null | undefined): boolean {
   return /^[1-9][1-9]9\d{8}$/.test(String(v || '').replace(/\D/g, ''));
 }
+
+/** AUD-111/107: a count that only covers the pages loaded so far reads "30+" while there is more to load. */
+export function countText(n: number, more: boolean): string {
+  return more ? `${n}+` : String(n);
+}

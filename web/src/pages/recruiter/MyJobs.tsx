@@ -26,6 +26,7 @@ import {
 import type { Database, Job, Worker } from '../../types/models';
 import type { ScreenProps } from '../../types/screen';
 import { cx } from '../../utils/cx';
+import { countText } from '../../utils/format';
 
 type Tab = 'todas' | 'abertas' | 'cheias';
 const TABS: { id: Tab; label: string }[] = [
@@ -48,11 +49,6 @@ export function jobsForView(db: Database, jobs: Job[], view: MyJobsView): Job[] 
   return view === 'encerradas'
     ? jobs.filter((j) => tabOf(db, j) === 'encerradas')
     : jobs.filter((j) => inTab(db, j, view));
-}
-
-/** AUD-111: the count only covers the pages loaded so far, so it reads "30+" while there is more to load. */
-export function countText(n: number, more: boolean): string {
-  return more ? `${n}+` : String(n);
 }
 
 export default function MyJobs({ params }: ScreenProps) {
