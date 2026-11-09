@@ -37,7 +37,7 @@ describe('getContact', () => {
     expect(r.ok && r.v.name).toBe('Eventos Meridiano');
     expect(r.ok && r.v.url).toContain('https://wa.me/5511988423310?text=');
     expect(r.ok && decodeURIComponent(r.v.url)).toContain(
-      'Aqui é Jorge, da Bicos. Fui aprovado para a vaga "Garçom para casamento" (BC-4821)'
+      'Aqui é Jorge, da Bicos. Minha candidatura foi aprovada para a vaga "Garçom para casamento" (BC-4821)'
     );
   });
 
@@ -49,7 +49,7 @@ describe('getContact', () => {
     await settle(m.apps.approve('BC-4998', 'rafael'));
     const after = await settle(m.contacts.getContact('a11'));
     expect(after.ok && after.v.phone).toBe('(11) 96630-1147');
-    expect(after.ok && decodeURIComponent(after.v.url)).toContain('Olá, Rafael! Aqui é da Eventos Meridiano');
+    expect(after.ok && decodeURIComponent(after.v.url)).toContain('Olá, Rafael! Aqui é Eventos Meridiano');
   });
 
   it("refuses anyone who isn't one of the two sides", async () => {
@@ -70,17 +70,17 @@ describe('ready-made messages', () => {
   const parts = { workerName: 'Jorge Mendes', companyName: 'Eventos Meridiano', job, hired: false };
   it('say who writes, which job (title, or the trade of an older job) and which day (P07, U01)', () => {
     expect(workerToCompanyMessage(parts)).toBe(
-      'Olá, Eventos Meridiano! Aqui é Jorge, da Bicos. Fui aprovado para a vaga "Garçom" (BC-4821) do dia 12/10. Podemos combinar os detalhes?'
+      'Olá, Eventos Meridiano! Aqui é Jorge, da Bicos. Minha candidatura foi aprovada para a vaga "Garçom" (BC-4821) do dia 12/10. Podemos combinar os detalhes?'
     );
     expect(companyToWorkerMessage({ ...parts, hired: true, job: { ...job, endDate: '2026-10-15' } })).toBe(
-      'Olá, Jorge! Aqui é da Eventos Meridiano, pela Bicos. Você foi contratado para a vaga "Garçom" (BC-4821) de 12/10 a 15/10. Podemos combinar os detalhes?'
+      'Olá, Jorge! Aqui é Eventos Meridiano, pela Bicos. Sua contratação foi confirmada para a vaga "Garçom" (BC-4821) de 12/10 a 15/10. Podemos combinar os detalhes?'
     );
     expect(workerToCompanyMessage({ ...parts, hired: true, job: { ...job, dateToArrange: true } })).toContain(
-      'Fui contratado para a vaga "Garçom" (BC-4821) com data a combinar.'
+      'Minha contratação foi confirmada para a vaga "Garçom" (BC-4821) com data a combinar.'
     );
     // U01: a job without a trade is called by its title.
     expect(workerToCompanyMessage({ ...parts, job: { ...job, oficioId: null, title: 'Reboco da fachada' } })).toContain(
-      'Fui aprovado para a vaga "Reboco da fachada" (BC-4821)'
+      'Minha candidatura foi aprovada para a vaga "Reboco da fachada" (BC-4821)'
     );
     expect(whatsappUrl('', 'oi')).toBeNull();
   });

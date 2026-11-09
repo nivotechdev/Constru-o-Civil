@@ -34,13 +34,13 @@ export function workerToCompanyMessage({ workerName, companyName, job, hired }: 
   const first = workerName.split(' ')[0];
   // U63: the one name of whoever hires (a person or a company).
   const to = companyName ? `, ${companyName}` : '';
-  return `Olá${to}! Aqui é ${first}, da Bicos. Fui ${hired ? 'contratado' : 'aprovado'} para a vaga "${jobTitle(job)}" (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
+  return `Olá${to}! Aqui é ${first}, da Bicos. ${hired ? 'Minha contratação foi confirmada' : 'Minha candidatura foi aprovada'} para a vaga "${jobTitle(job)}" (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
 }
 
 /** The company's first message to the worker it picked. */
 export function companyToWorkerMessage({ workerName, companyName, job, hired }: MessageParts): string {
   const first = workerName.split(' ')[0];
-  return `Olá, ${first}! Aqui é da ${companyName}, pela Bicos. Você foi ${hired ? 'contratado' : 'aprovado'} para a vaga "${jobTitle(job)}" (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
+  return `Olá, ${first}! Aqui é ${companyName}, pela Bicos. ${hired ? 'Sua contratação foi confirmada' : 'Sua candidatura foi aprovada'} para a vaga "${jobTitle(job)}" (${job.id}) ${whenText(job)}. Podemos combinar os detalhes?`;
 }
 
 export function workerToCompanyUrl(companyPhone: string, parts: MessageParts): string | null {
