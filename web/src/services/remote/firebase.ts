@@ -107,7 +107,7 @@ function closedByPerson(e: unknown): boolean {
 }
 
 /** Firebase's errors in the person's words. */
-function firebaseError(e: unknown): ServiceError {
+export function firebaseError(e: unknown): ServiceError {
   const code = String((e as { code?: string })?.code ?? '');
   if (code.includes('popup-closed') || code.includes('cancelled-popup') || code.includes('user-cancelled'))
     return serviceError('validacao', 'Você fechou a janela do Google antes de terminar. Tente de novo.');
@@ -125,7 +125,16 @@ function firebaseError(e: unknown): ServiceError {
   if (code.includes('code-expired') || code.includes('session-expired'))
     return serviceError('validacao', 'O código venceu. Peça outro código.');
   if (code.includes('network-request-failed')) return serviceError('offline');
-  if (code.includes('unauthorized-domain') || code.includes('operation-not-allowed') || code.includes('captcha'))
+  // AUD-097: a captcha that failed on this phone (ad blocker, slow network) is not "turned off".
+  if (code.includes('captcha') || code.includes('recaptcha'))
+    return serviceError('validacao', 'Não deu para confirmar que você não é um robô. Tente de novo.');
+  // AUD-097: apps with their own browser (WhatsApp, Instagram) cannot keep the Google login.
+  if (code.includes('web-storage-unsupported') || code.includes('operation-not-supported-in-this-environment'))
+    return serviceError(
+      'validacao',
+      'Este navegador não deixa entrar com o Google. Abra o site no Chrome ou no Safari e tente de novo.'
+    );
+  if (code.includes('unauthorized-domain') || code.includes('operation-not-allowed'))
     return serviceError('falha_demo', 'Esse jeito de entrar ainda não está ligado. Entre com e-mail e senha.');
   return toServiceError(e);
 }

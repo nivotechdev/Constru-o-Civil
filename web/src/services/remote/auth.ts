@@ -48,6 +48,20 @@ async function captchaToken(captcha: CaptchaSource): Promise<string | undefined>
 const TOO_MANY = 'Muitas tentativas. Espere 15 minutos e tente de novo, ou toque em "Esqueci minha senha".';
 
 /**
+ * AUD-096: the refusals every password/code check shares (too many tries, suspended account, captcha). Null means the
+ * error is something else and the caller decides.
+ */
+export function sharedAuthError(error: unknown): ServiceError | null {
+  const code = authCode(error);
+  if (code === 'over_request_rate_limit' || (error as { status?: number } | null)?.status === 429)
+    return serviceError('conflito', TOO_MANY);
+  if (code === 'user_banned')
+    return serviceError('nao_autorizado', 'Sua conta está suspensa. Fale com o suporte pela Ajuda.');
+  if (code === 'captcha_failed') return serviceError('validacao', NOT_A_ROBOT);
+  return null;
+}
+
+/**
  * E-mail + password, or CPF/CNPJ + password. For a document, the Edge Function checks the password on
  * the server and only then answers that account's e-mail (Z07: one answer for "no account" and "wrong
  * password", captcha and attempt limits); the sign-in itself is the normal e-mail one, from this device.
@@ -133,7 +147,7 @@ export async function checkPassword(password: string, captcha: CaptchaSource): P
   }
   if (!result.error) return true;
   if (authCode(result.error) === 'invalid_credentials') return false;
-  throw toServiceError(result.error);
+  throw sharedAuthError(result.error) ?? toServiceError(result.error);
 }
 
 // ---- U16: proving it is the owner without a password ----
@@ -188,9 +202,7 @@ export async function checkSecurityCode(code: string): Promise<void> {
     const reason = authCode(result.error);
     if (reason === 'otp_expired' || reason === 'otp_disabled' || result.error.status === 403)
       throw serviceError('validacao', WRONG_SECURITY_CODE);
-    if (reason === 'over_request_rate_limit')
-      throw serviceError('conflito', 'Muitas tentativas. Espere alguns minutos e tente de novo.');
-    throw toServiceError(result.error);
+    throw sharedAuthError(result.error) ?? toServiceError(result.error);
   }
   const user = result.data.user ?? result.data.session?.user;
   if (!user) throw serviceError('validacao', WRONG_SECURITY_CODE);
@@ -299,9 +311,7 @@ export async function verifyEmailCode(email: string, code: string): Promise<void
         'validacao',
         'Código incorreto ou vencido. Confira o e-mail mais recente ou peça outro código.'
       );
-    if (reason === 'over_request_rate_limit')
-      throw serviceError('conflito', 'Muitas tentativas. Espere alguns minutos e tente de novo.');
-    throw toServiceError(result.error);
+    throw sharedAuthError(result.error) ?? toServiceError(result.error);
   }
   const user = result.data.user ?? result.data.session?.user;
   if (!user) throw serviceError('validacao', 'Código incorreto ou vencido. Peça outro código.');
