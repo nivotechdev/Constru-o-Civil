@@ -1857,6 +1857,7 @@ export type Database = {
         Args: { p_type: Database['public']['Enums']['report_target']; p_id: string };
         Returns: Json;
       };
+      resend_pending_cron_alerts: { Args: Record<PropertyKey, never>; Returns: number };
       salvar_documento: { Args: { documento_texto: string }; Returns: undefined };
       save_address: { Args: { p_account: string; p: Json }; Returns: undefined };
       save_job_alert: {
