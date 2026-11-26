@@ -1889,6 +1889,7 @@ export type Database = {
         Returns: undefined;
       };
       storage_cleanup_overdue: { Args: Record<PropertyKey, never>; Returns: number };
+      storage_public_base: { Args: Record<PropertyKey, never>; Returns: string };
       storage_url_ok: { Args: { p_url: string; p_bucket: string; p_owner: string }; Returns: boolean };
       submit_application: { Args: { p_job_id: string }; Returns: undefined };
       submit_identity: {
