@@ -106,3 +106,31 @@ Ainda não feito no bloco 1:
 - AUD-022 e demais itens do bloco 0 que sobraram (AUD-056 a 068, 071, 074 a 080).
 
 Blocos 2 a 7: não iniciados.
+
+## Bloco 2 (confiabilidade e observabilidade)
+
+Feito, com teste (Vitest, SQL ou os dois):
+
+- Código do app: AUD-036 (erro inesperado vai ao monitor sem dado pessoal), 037 (captcha não trava o botão), 129 (fim da
+  sessão solta o push), 130 (rede caída numa Edge Function vira "sem internet"), 131 (supabase-js tenta de novo), 132
+  (aviso do tema com o motivo certo). Testes: `blockTwo.test.ts`.
+- Banco: AUD-139 (alertas que não saíram são reenviados), 133 (base do Storage ausente não aprova nem apaga tudo), 134
+  (a vaga é a primeira trava), 135 (limites diários atômicos; prova com 60 chamadas paralelas no banco local), 138
+  (a migration pendente que apaga o app antigo funciona), 137 (`l18` e `z06` ao rodar de novo), 038 (alerta de
+  devolução parada, estorno e contestação). Testes SQL novos: `aud133`, `aud134`, `aud135`, `aud138` (suíte inteira
+  com a pendente aplicada), `aud139`, `aud038`, `aud140`.
+- Edge Functions: AUD-140 (login por documento com tempo igual e limite por documento + IP) e AUD-038 (webhook de
+  pagamento responde 5xx quando o banco não aplica; `paymentOutcome.test.ts`).
+- AUD-040: passo a passo em `docs/SUPABASE.md` 5.1b (ação do responsável; é bloqueador do lançamento).
+
+Deixado para depois, de propósito:
+
+- AUD-039 (estados `reembolsado` e `estornado` e fila de devolução no `/admin`) e a parte de pagamento do 136: o
+  pagamento está inativo no piloto. Voltam junto com o AUD-032.
+- AUD-136 (publicar vaga notifica todos os alertas na mesma transação): precisa de fila em lotes (M) e só pesa com
+  milhares de alertas; no piloto não pesa.
+- AUD-137, parte restante: reaplicar a pilha inteira de migrations ainda falha numa migration antiga (`l11`, coluna
+  que sumiu depois) e `psql --single-transaction` não cabe em migrations que usam `alter type … add value`. O CI e a
+  produção aplicam cada migration uma vez, então isso não bloqueia.
+- A prova de "40 chamadas em paralelo" ficou como experimento no banco local (um teste dentro de `begin … rollback` não
+  consegue provar concorrência); o teste SQL confere que as três funções tomam a trava.

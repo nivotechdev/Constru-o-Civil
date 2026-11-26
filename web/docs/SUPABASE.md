@@ -149,6 +149,26 @@ avisado). Para ligar:
 3. Conferir: `select * from public.cron_health();` (todas com `last_status = succeeded`) e, uma hora depois, o
    check do healthchecks.io verde.
 
+#### 5.1b Para saber quando algo quebra (AUD-040) — **bloqueador do lançamento**, ação do responsável
+
+Sem estes passos o app pode quebrar e ninguém ser avisado. Em ordem (a ordem entre o 1 e o 2 não importa: um alerta
+que não conseguiu sair é reenviado de hora em hora por até 7 dias, `bicos-reenviar-alertas`, AUD-139):
+
+1. **Sentry no navegador**: variável `VITE_SENTRY_DSN` no build de produção (o build já não sai sem ela). Sentry ›
+   Alerts › "A new issue is created" → e-mail dos sócios.
+2. **Sentry nas funções**: no Supabase › Edge Functions › Secrets, `SENTRY_DSN` (o mesmo projeto; a função só manda nome,
+   tipo e mensagem do erro, sem dado pessoal). Vale também para `webhook-pagamento` (AUD-038).
+3. **Sentry no banco e sinal de vida**: os itens 1 e 2 da seção 5.1 (`bicos_sentry_dsn` e `bicos_heartbeat_url`).
+4. **Monitor de fora, grátis** (UptimeRobot ou Better Stack): dois monitores a cada 5 minutos — o endereço do site
+   (`https://bicos.nivotech.com.br/`) e `https://<projeto>.supabase.co/auth/v1/health` — com e-mail dos sócios.
+5. **Staging com Sentry de verdade**: outro projeto no Sentry só para o staging (`VITE_SENTRY_DSN` do staging e
+   `bicos_sentry_dsn` no Vault do staging), para ver o aviso chegar antes de ligar na produção.
+6. **Prova**: force um erro (roteiro de `IMPLANTACAO.md` §9) e confira que chega e-mail em menos de 1 hora; confira
+   `select * from public.cron_health();` e o check do healthchecks.io verde.
+
+Rotinas novas desta rodada (já agendadas pela migration): `bicos-reenviar-alertas` (reenvia alertas que não saíram) e
+`bicos-alertar-pagamentos` (devolução parada há mais de 1 hora, estorno ou contestação; só faz algo com o pagamento ligado).
+
 ### 5.2 Notificações no celular (push) — **desligadas no lançamento** (L12)
 
 O código está pronto (Edge Function `enviar-push` publicada, gatilho no banco, tela de permissão), mas o push fica
