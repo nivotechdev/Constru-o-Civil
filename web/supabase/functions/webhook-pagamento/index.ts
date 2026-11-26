@@ -9,7 +9,8 @@
 // Responde 200 para o Mercado Pago parar de reenviar.
 import { adminClient, json } from '../_shared/http.ts';
 import { getPayment, mercadoPagoConfigured, validSignature } from '../_shared/mercadopago.ts';
-import { monitored } from '../_shared/monitoring.ts';
+import { monitored, reportError } from '../_shared/monitoring.ts';
+import { applyPaymentStatus } from '../_shared/paymentOutcome.ts';
 
 Deno.serve(
   monitored('webhook-pagamento', async (req) => {
@@ -40,17 +41,15 @@ Deno.serve(
       const mp = await getPayment(dataId);
       const ours = mp.external_reference;
       if (ours) {
-        if (mp.status === 'approved') {
-          const { error } = await admin.rpc('confirm_boost_payment', { p_payment_id: ours });
-          result = error ? `erro:${error.message}` : 'confirmado';
-        } else if (mp.status === 'rejected' || mp.status === 'cancelled') {
-          await admin.rpc('fail_boost_payment', {
-            p_payment_id: ours,
-            p_status: 'recusado',
-            p_detail: mp.status_detail ?? null
-          });
-          result = 'recusado';
-        } else result = mp.status;
+        const outcome = await applyPaymentStatus(admin, ours, mp.status, mp.status_detail ?? null);
+        result = outcome.result;
+        if (outcome.failed) {
+          // AUD-038: o banco não aplicou o pagamento. Avisa o monitor (sem dado de ninguém), libera o aviso para o
+          // reenvio e responde 500 — o Mercado Pago tenta de novo.
+          await reportError('webhook-pagamento', new Error('Pagamento aprovado não aplicado: ' + mp.status));
+          await admin.from('payment_webhook_events').delete().eq('provider', 'mercadopago').eq('event_id', eventId);
+          return json({ erro: 'processamento' }, 500);
+        }
       }
     } catch (e) {
       console.error('webhook-pagamento', String(e));

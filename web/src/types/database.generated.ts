@@ -1624,6 +1624,7 @@ export type Database = {
       change_whatsapp: { Args: { p_whatsapp: string }; Returns: Json };
       check_cron_failures: { Args: Record<PropertyKey, never>; Returns: number };
       check_cron_http_calls: { Args: Record<PropertyKey, never>; Returns: number };
+      check_payment_alerts: { Args: Record<PropertyKey, never>; Returns: number };
       claim_document_for: { Args: { p_user_id: string; p_digits: string }; Returns: undefined };
       claim_whatsapp_for: { Args: { p_user_id: string; p_phone: string }; Returns: undefined };
       cnpj_valid: { Args: { p_document: string }; Returns: boolean };
