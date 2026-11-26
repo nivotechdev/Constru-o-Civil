@@ -7,7 +7,7 @@
 //     every screen after leaving or deleting the account are in the original (light) theme.
 // The theme is the `data-theme` attribute of <html>; the colours live in styles/tokens.css. It follows the store, so
 // signing in, out, switching accounts and deleting all land on the right theme on their own.
-import { serviceError } from './errors';
+import { errorMessage } from './errors';
 import { IS_DEMO } from './mode';
 import { showToast } from './toast';
 import { getDb, getSession, subscribe, updateAccount } from './store';
@@ -94,9 +94,10 @@ export function setTheme(theme: Theme): void {
   const before = getDb().accounts[account]?.theme ?? 'claro';
   if (before === theme) return;
   updateAccount(account, { theme });
-  saveMyTheme(theme).catch(() => {
+  saveMyTheme(theme).catch((e: unknown) => {
     if (getSession()?.accountId === account) updateAccount(account, { theme: before });
-    showToast(serviceError('offline').message + ' O tema não foi salvo.', { tone: 'error' });
+    // AUD-132: the reason is the real one (offline only when it is offline).
+    showToast(errorMessage(e) + ' O tema não foi salvo.', { tone: 'error' });
   });
 }
 
