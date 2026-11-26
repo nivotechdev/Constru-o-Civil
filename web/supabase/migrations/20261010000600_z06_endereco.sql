@@ -11,7 +11,12 @@ alter table public.jobs
   add column if not exists area_lat double precision generated always as (round(lat::numeric, 2)::double precision) stored,
   add column if not exists area_lon double precision generated always as (round(lon::numeric, 2)::double precision) stored;
 
-revoke select on public.jobs from authenticated, anon;
+-- AUD-137: só revoga se ainda houver o privilégio da tabela inteira; rodar de novo não apaga colunas liberadas depois.
+do $$ begin
+  if has_table_privilege('authenticated', 'public.jobs', 'select') or has_table_privilege('anon', 'public.jobs', 'select') then
+    revoke select on public.jobs from authenticated, anon;
+  end if;
+end $$;
 grant select (
   id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange,
   start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed,

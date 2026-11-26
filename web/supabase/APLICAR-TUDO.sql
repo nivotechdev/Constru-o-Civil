@@ -1065,7 +1065,12 @@ alter table public.jobs
   add column if not exists area_lat double precision generated always as (round(lat::numeric, 2)::double precision) stored,
   add column if not exists area_lon double precision generated always as (round(lon::numeric, 2)::double precision) stored;
 
-revoke select on public.jobs from authenticated, anon;
+-- AUD-137: só revoga se ainda houver o privilégio da tabela inteira; rodar de novo não apaga colunas liberadas depois.
+do $$ begin
+  if has_table_privilege('authenticated', 'public.jobs', 'select') or has_table_privilege('anon', 'public.jobs', 'select') then
+    revoke select on public.jobs from authenticated, anon;
+  end if;
+end $$;
 grant select (
   id, company_id, oficio_id, title, pay, neighborhood, city, uf, area_lat, area_lon, date_to_arrange,
   start_date, end_date, start_time, end_time, diarias, dias, urgent, boost_ends_at, photos, slots, closed,
@@ -2087,7 +2092,8 @@ end $$;
 
 -- Até aqui o app mostrava "Pagamento em PIX no fim da diária" em toda vaga: é o que as vagas antigas
 -- prometeram.
-update public.jobs set payment_method = 'pix_dia' where payment_method is null;
+-- AUD-137: só as vagas que já existiam em 12/10; rodar de novo não reescreve vagas novas sem forma de pagamento.
+update public.jobs set payment_method = 'pix_dia' where payment_method is null and created_at < timestamptz '2026-10-12';
 
 grant select (payment_method, payment_note) on public.jobs to authenticated;
 

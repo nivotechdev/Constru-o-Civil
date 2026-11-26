@@ -21,7 +21,8 @@ end $$;
 
 -- Até aqui o app mostrava "Pagamento em PIX no fim da diária" em toda vaga: é o que as vagas antigas
 -- prometeram.
-update public.jobs set payment_method = 'pix_dia' where payment_method is null;
+-- AUD-137: só as vagas que já existiam em 12/10; rodar de novo não reescreve vagas novas sem forma de pagamento.
+update public.jobs set payment_method = 'pix_dia' where payment_method is null and created_at < timestamptz '2026-10-12';
 
 grant select (payment_method, payment_note) on public.jobs to authenticated;
 
