@@ -133,7 +133,7 @@ jobs:
   # e-mail de confirmação de verdade e o e-mail padrão do Supabase só entrega para a equipe do projeto.
   e2e:
     needs: funcoes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # AUD-023: os segredos do staging ficam num environment restrito à branch master (configuração no GitHub).
     environment: staging
     timeout-minutes: 30

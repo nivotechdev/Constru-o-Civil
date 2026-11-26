@@ -23,7 +23,7 @@ defaults:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # AUD-INFRA: o Playwright ainda não instala o Chromium no ubuntu-latest (26.04)
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -144,7 +144,7 @@ jobs:
   e2e:
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     needs: [checks, sql]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
