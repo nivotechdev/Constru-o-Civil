@@ -8,6 +8,10 @@ staging, conferir, produção.
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `20261015000900_lanc07_apagar_app_antigo.sql` | Apaga as 7 tabelas do app antigo, o gatilho que ainda copia cada cadastro para `profiles` e as funções antigas; tira o ramo "app antigo" das funções de documento. **Mantém** a chave `nivotech_documento_key` (cifra os documentos das contas atuais). | Backup; `./scripts/exportar-app-antigo.sh` e guardar o arquivo fora do repositório; ao mover, apagar `supabase/tests/z08_app_antigo.sql` (testa o app antigo, que deixa de existir). |
 
+**Ao mover (AUD-138):** renomeie o arquivo com um número **maior que o da última migration** (hoje, por exemplo,
+`20261102009900_lanc07_apagar_app_antigo.sql`): ele redefine `document_login_email`, `signup_taken` e
+`purge_unconfirmed_signups` sem o ramo do app antigo, e uma migration mais nova que leia `profiles` desfaria isso.
+
 Conferido localmente: com este arquivo aplicado, os outros testes SQL passam (`node supabase/tests/run.mjs --with
 supabase/pendentes/<arquivo> supabase/tests/[a-z]*.sql`, como `supabase_admin` — o `x13` acusa um falso alarme
 nesse modo porque os privilégios padrão são do papel `postgres`).

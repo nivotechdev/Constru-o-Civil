@@ -60,13 +60,66 @@ declare
 begin
   select u.* into v_user from public.accounts a join auth.users u on u.id = a.id
    where a.document_hash = public.document_hash(p_document);
-  if v_user.id is null or v_user.encrypted_password is null or v_user.encrypted_password = ''
+  if v_user.id is null then
+    -- AUD-140: conta que não existe gasta o mesmo tempo de uma senha errada (uma conferência bcrypt).
+    perform extensions.crypt(coalesce(p_password, ''), '$2a$10$DDLb6h3pZuW2JLYpc11QHeXgO05MZKU2aq1yMhKdQpe2fuyCCdE4q');
+    return null;
+  end if;
+  if v_user.encrypted_password is null or v_user.encrypted_password = ''
      or extensions.crypt(coalesce(p_password, ''), v_user.encrypted_password) <> v_user.encrypted_password then
     return null;
   end if;
   return v_user.email;
 end;
 $$;
+
+-- AUD-138: signup_taken (U10) e purge_unconfirmed_signups (U37) também liam `profiles`; sem a tabela, o cadastro e a
+-- limpeza noturna de cadastros quebrariam. As duas voltam sem o ramo do app antigo.
+CREATE OR REPLACE FUNCTION public.signup_taken(p_kind text, p_value text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+declare
+  v text := btrim(coalesce(p_value, ''));
+  v_digits text := regexp_replace(v, '[^0-9]', '', 'g');
+begin
+  if p_kind = 'email' then
+    return v <> '' and exists (
+      select 1 from auth.users where lower(email) = lower(v) and email_confirmed_at is not null);
+  elsif p_kind = 'documento' then
+    if length(v_digits) not in (11, 14) then return false; end if;
+    return exists (select 1 from public.accounts a join auth.users u on u.id = a.id
+                    where a.document_hash = public.document_hash(v_digits) and u.email_confirmed_at is not null);
+  elsif p_kind = 'whatsapp' then
+    return v_digits <> '' and exists (
+      select 1 from public.accounts a join auth.users u on u.id = a.id
+       where a.whatsapp = v_digits and u.email_confirmed_at is not null);
+  end if;
+  raise exception using errcode = 'BC422', message = 'Campo inválido.';
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.purge_unconfirmed_signups()
+ RETURNS integer
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  with x as (
+    delete from auth.users u
+     where u.created_at < now() - interval '7 days'
+       and (
+         u.email_confirmed_at is null
+         or (
+           (u.raw_app_meta_data->>'provider' = 'google' or u.raw_app_meta_data->>'via' = 'firebase')
+           and not exists (select 1 from public.accounts a where a.id = u.id)
+         )
+       )
+    returning 1
+  ) select count(*)::int from x
+$function$;
 
 create or replace function public.ensure_my_account()
 returns void language plpgsql security definer set search_path = public as $$

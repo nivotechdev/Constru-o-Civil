@@ -18,7 +18,7 @@ select pg_temp.login('96000000-0000-0000-0000-000000000ae1');
 select pg_temp.ok(public.cpf_valid('52998224725') and public.whatsapp_valid('11988887777'), 'conta logada ainda valida');
 select pg_temp.logout();
 -- O cadastro novo não cria mais o perfil do app antigo.
-select pg_temp.ok(not exists (select 1 from public.profiles where id = '96000000-0000-0000-0000-000000000ae1'),
+select pg_temp.ok(to_regclass('public.profiles') is null or not exists (select 1 from pg_trigger where tgname = 'on_auth_user_created'),
                   'sem cópia de nome e e-mail para profiles');
 select pg_temp.ok(exists (select 1 from public.accounts where id = '96000000-0000-0000-0000-000000000ae1'), 'a conta nova nasce normal');
 rollback;
