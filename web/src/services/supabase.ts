@@ -37,13 +37,19 @@ export function getSupabase(): Promise<BicosSupabase | null> {
   if (!client) {
     const config = supabaseConfig();
     client = config
-      ? import('@supabase/supabase-js').then(({ createClient }) =>
-          createClient<SupabaseDatabase>(config.url, config.anonKey, {
-            // The links sent by e-mail bring the tokens in the URL's #fragment, which is also the
-            // router's: services/remote/session.ts takes them out before the router starts.
-            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'implicit' }
+      ? import('@supabase/supabase-js')
+          .then(({ createClient }) =>
+            createClient<SupabaseDatabase>(config.url, config.anonKey, {
+              // The links sent by e-mail bring the tokens in the URL's #fragment, which is also the
+              // router's: services/remote/session.ts takes them out before the router starts.
+              auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'implicit' }
+            })
+          )
+          .catch((e: unknown) => {
+            // AUD-131: a download that failed once must not stay as the answer; the next call tries again.
+            client = undefined;
+            throw e;
           })
-        )
       : Promise.resolve(null);
   }
   return client;
