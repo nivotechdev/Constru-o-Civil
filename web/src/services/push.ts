@@ -98,3 +98,13 @@ export async function disablePush(): Promise<void> {
     await sub.unsubscribe().catch(() => false);
   }
 }
+
+/**
+ * AUD-129: the session ended some way other than the "Sair" button (expired, revoked, signed out on another tab).
+ * There is no login left to tell the server, so this device just drops its own subscription: the old account stops
+ * reaching it, and the server forgets the dead address the next time it tries.
+ */
+export async function dropPushOnThisDevice(): Promise<void> {
+  const sub = await (await registration())?.pushManager.getSubscription();
+  await sub?.unsubscribe().catch(() => false);
+}

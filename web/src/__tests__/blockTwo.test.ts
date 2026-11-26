@@ -90,3 +90,12 @@ describe('AUD-037: o captcha não deixa o botão girando para sempre', () => {
     expect(s).toMatch(/'unsupported-callback'/);
   });
 });
+
+describe('AUD-129: o fim da sessão, por qualquer caminho, desliga o push deste aparelho', () => {
+  it('leaveSession solta a assinatura do aparelho', () => {
+    expect(src('services/remote/session.ts')).toMatch(/dropPushOnThisDevice/);
+    const push = src('services/push.ts');
+    expect(push).toMatch(/export async function dropPushOnThisDevice/);
+    expect(push).toMatch(/sub\?\.unsubscribe\(\)/);
+  });
+});

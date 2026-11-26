@@ -364,6 +364,10 @@ export function enterPendingSession(pending: { id: string; email: string; role: 
 
 /** Ends the session on this device (the store, the loaded screens and the history are forgotten). */
 export async function leaveSession(): Promise<void> {
+  // AUD-129: whatever ended the session, this device stops receiving the old account's notices (best effort, short).
+  void import('../push')
+    .then((m) => Promise.race([m.dropPushOnThisDevice(), new Promise((r) => setTimeout(r, 2000))]))
+    .catch(() => undefined);
   clearAccountCache();
   await stopRealtime().catch(() => undefined);
   clearSessionData();
