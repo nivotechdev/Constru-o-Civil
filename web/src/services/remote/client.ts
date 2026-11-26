@@ -3,6 +3,7 @@
 // codes and plain-Portuguese messages the screens already show in demo mode (services/errors.ts).
 import { getSupabase, type BicosSupabase } from '../supabase';
 import { serviceError, ServiceError, type ServiceErrorCode } from '../errors';
+import { reportError } from '../monitoring';
 
 /** The client; only called with the real backend on (services/mode.ts), where it always exists. */
 export async function db(): Promise<BicosSupabase> {
@@ -41,7 +42,9 @@ const PG_CODES: Record<string, ServiceErrorCode> = {
 function isNetworkFailure(e: ErrorLike): boolean {
   if (globalThis.navigator?.onLine === false) return true;
   const text = `${String(e.name ?? '')} ${String(e.message ?? '')}`;
-  return /Failed to fetch|NetworkError|Load failed|fetch failed|AuthRetryableFetchError|network/i.test(text);
+  return /Failed to fetch|NetworkError|Load failed|fetch failed|AuthRetryableFetchError|FunctionsFetchError|network/i.test(
+    text
+  );
 }
 
 // Y27: an expired or revoked session (PostgREST JWT codes, the Auth's refresh errors).
@@ -75,7 +78,26 @@ export function toServiceError(error: unknown): ServiceError {
   }
   if (RPC_CODES[code]) return serviceError(RPC_CODES[code], message || undefined);
   if (PG_CODES[code]) return serviceError(PG_CODES[code]);
+  reportUnexpected(e, code);
   return serviceError('falha_demo');
+}
+
+const reportedKeys = new Set<string>();
+/**
+ * AUD-036: an answer nobody planned for ("Não deu certo agora" to the person) is also sent to the team's monitor — with
+ * only the error's name, code and HTTP status (never the message or any data), once per kind per visit.
+ */
+function reportUnexpected(e: ErrorLike, code: string): void {
+  const status = String(
+    (e as { status?: number }).status ?? (e as { context?: { status?: number } }).context?.status ?? ''
+  );
+  const name = typeof e.name === 'string' ? e.name : 'Error';
+  const key = `${name}|${code}|${status}`;
+  if (reportedKeys.has(key) || reportedKeys.size >= 10) return;
+  reportedKeys.add(key);
+  const err = new Error('Falha inesperada do servidor');
+  err.name = 'UnexpectedServerError';
+  reportError(err, { where: 'servico', kind: name, code: code || 'sem-codigo', status: status || 'sem-status' });
 }
 
 /** The data of a supabase-js answer that succeeded (its `{ data, error }` has `error: null`). */
