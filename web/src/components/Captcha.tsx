@@ -6,6 +6,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FEATURES, TURNSTILE_SITE_KEY } from '../services/features';
 import type { CaptchaSource } from '../services/auth';
+import { waitForToken } from '../utils/tokenWait';
+
+/** How long a sign-in waits for the captcha before it says it could not confirm (AUD-037). */
+const TOKEN_WAIT_MS = 45_000;
 
 interface TurnstileApi {
   render: (el: HTMLElement, options: Record<string, unknown>) => string;
@@ -63,6 +67,9 @@ export function useCaptcha(): { widget: React.ReactNode; getToken: CaptchaSource
           execution: 'execute',
           callback: (token: string) => waiting.current.splice(0).forEach((done) => done(token)),
           'error-callback': () => waiting.current.splice(0).forEach((done) => done(undefined)),
+          // AUD-037: a challenge that timed out or a browser that cannot run it also end the wait.
+          'timeout-callback': () => waiting.current.splice(0).forEach((done) => done(undefined)),
+          'unsupported-callback': () => waiting.current.splice(0).forEach((done) => done(undefined)),
           'expired-callback': () => undefined
         });
       })
@@ -83,11 +90,14 @@ export function useCaptcha(): { widget: React.ReactNode; getToken: CaptchaSource
     if (!FEATURES.captcha) return undefined;
     const t = await loadApi().catch(() => null);
     if (!t || !widgetId.current) return undefined;
-    return new Promise<string | undefined>((resolve) => {
-      waiting.current.push(resolve);
-      t.reset(widgetId.current as string);
-      t.execute(widgetId.current as string);
-    });
+    return waitForToken(
+      waiting.current,
+      () => {
+        t.reset(widgetId.current as string);
+        t.execute(widgetId.current as string);
+      },
+      TOKEN_WAIT_MS
+    );
   }, []);
 
   // U45: above the invisible "loading" layer (services/busy.ts) — a challenge, when there is one, shows while the

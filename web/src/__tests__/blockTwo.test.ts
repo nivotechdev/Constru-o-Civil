@@ -59,3 +59,34 @@ describe('AUD-132: tema que não salvou diz o motivo verdadeiro', () => {
     expect(s).toMatch(/errorMessage\(e\)/);
   });
 });
+
+import { waitForToken } from '../utils/tokenWait';
+
+describe('AUD-037: o captcha não deixa o botão girando para sempre', () => {
+  it('sem resposta no prazo, a espera termina com undefined e sai da fila', async () => {
+    vi.useFakeTimers();
+    const waiting: ((t: string | undefined) => void)[] = [];
+    const started = vi.fn();
+    const p = waitForToken(waiting, started, 1000);
+    expect(started).toHaveBeenCalledTimes(1);
+    expect(waiting).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await expect(p).resolves.toBeUndefined();
+    expect(waiting).toHaveLength(0);
+    vi.useRealTimers();
+  });
+  it('com a resposta do widget, entrega o token e cancela o prazo', async () => {
+    vi.useFakeTimers();
+    const waiting: ((t: string | undefined) => void)[] = [];
+    const p = waitForToken(waiting, () => undefined, 1000);
+    waiting.splice(0).forEach((done) => done('abc'));
+    await expect(p).resolves.toBe('abc');
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+  it('o widget também termina a espera em timeout e em navegador sem suporte', () => {
+    const s = src('components/Captcha.tsx');
+    expect(s).toMatch(/'timeout-callback'/);
+    expect(s).toMatch(/'unsupported-callback'/);
+  });
+});
