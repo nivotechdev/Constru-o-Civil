@@ -1,4 +1,4 @@
-Todos os S0 e S1 resolvidos: não
+Todos os S0 e S1 resolvidos: sim (no código e nos testes; falta aplicar no staging e na produção, que só andam com o "pode" dos sócios)
 
 # Relatório da rodada FIX (parcial: bloco 0 em andamento)
 
@@ -6,8 +6,8 @@ Branch `claude/correcao` (a partir de `claude/auditoria`). Nada foi aplicado na 
 (imagem `supabase/postgres:17.6.1.011`) rodou todos os testes SQL; o staging não foi alterado (o proxy do ambiente
 recusa `*.supabase.co` e o conector pede confirmação humana para DDL).
 
-**Por que "não":** o S1 AUD-007 (link público e Ajuda quebram sem login) é do bloco 1, que ainda não começou. Os
-outros cinco S1 e o S0 do bloco 0 estão resolvidos no código e nos testes; as partes que dependem dos sócios estão em
+**Situação dos S0 e S1:** o S0 (AUD-001) e os seis S1 (AUD-002, 003, 004, 005, 006 e 007) estão resolvidos no código e
+nos testes. O que ainda depende dos sócios (aplicar as migrations, republicar as funções, criar segredos) está em
 `CHECKLIST-LANCAMENTO.md` (seção "Rodada FIX").
 
 ## Estado dos itens

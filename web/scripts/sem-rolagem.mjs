@@ -121,7 +121,7 @@ async function walk(width, height, role) {
     await page.waitForTimeout(400);
     await page.fill('#completar-cidade-search', 'Caxias do Sul');
     await page
-      .getByRole('option', { name: /Caxias do Sul/ })
+      .getByRole('button', { name: /Caxias do Sul/ })
       .first()
       .click();
     await page.waitForTimeout(300);
