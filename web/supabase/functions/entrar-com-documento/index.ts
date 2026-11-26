@@ -4,7 +4,7 @@
 // no banco (document_login_email) e só então devolve o e-mail da própria conta; o navegador entra com
 // e-mail e senha normalmente (do IP de quem está entrando, com os limites do Auth para cada pessoa).
 // Z07: uma resposta só para "não existe" e "senha errada"; captcha (Turnstile, quando configurado);
-// limite de 5 tentativas por documento e 20 por IP a cada 15 minutos.
+// limite de 5 tentativas por documento + IP (30 por documento) e 20 por IP a cada 15 minutos.
 //
 // Respostas: 200 { email } · 401 { erro: 'credenciais' } · 400 { erro: 'captcha' } ·
 // 429 { erro: 'muitas-tentativas' } · 405/502 { erro }.
@@ -38,14 +38,18 @@ Deno.serve(
     const senha = String(body.senha ?? '');
     const admin = adminClient();
 
-    // Conta cada tentativa (mesmo as inválidas) por IP e por documento.
+    // Conta cada tentativa (mesmo as inválidas) por IP, por documento + IP e, num teto mais alto, por documento.
+    // AUD-140: o limite de 5 vale para o par documento + IP; assim quem erra a senha de outra pessoa trava só o próprio
+    // aparelho, não o login do dono (o teto por documento, de 30, ainda barra a força bruta espalhada por muitos IPs).
+    const docKey = await keyedHash(documento, PEPPER);
     const limits = await Promise.all([
       admin.rpc('rate_limit_hit', { p_key: 'ip:' + ip, p_max: 20, p_window: '15 minutes' }),
       admin.rpc('rate_limit_hit', {
-        p_key: 'doc:' + (await keyedHash(documento, PEPPER)),
+        p_key: 'docip:' + (await keyedHash(documento + '|' + ip, PEPPER)),
         p_max: 5,
         p_window: '15 minutes'
-      })
+      }),
+      admin.rpc('rate_limit_hit', { p_key: 'doc:' + docKey, p_max: 30, p_window: '15 minutes' })
     ]);
     if (limits.some((r) => r.error)) return json({ erro: 'falha' }, 502);
     if (limits.some((r) => r.data === true)) return json({ erro: 'muitas-tentativas' }, 429);
